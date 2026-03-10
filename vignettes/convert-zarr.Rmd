@@ -1,0 +1,828 @@
+---
+title: 'Conversions: Seurat and Zarr'
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Conversions: Seurat and Zarr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE, purl = FALSE}
+knitr::opts_chunk$set(
+  eval = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  tidy = FALSE,
+  out.width = "100%",
+  dev = "png",
+  fig.width = 8,
+  fig.height = 6,
+  purl = FALSE
+)
+can_run <- requireNamespace("scConvert", quietly = TRUE) &&
+  requireNamespace("hdf5r", quietly = TRUE) &&
+  requireNamespace("jsonlite", quietly = TRUE) &&
+  requireNamespace("ggplot2", quietly = TRUE)
+has_SeuratData <- can_run &&
+  requireNamespace("SeuratData", quietly = TRUE) &&
+  tryCatch({
+    library(SeuratData)
+    "pbmc3k.SeuratData" %in% rownames(InstalledData())
+  }, error = function(e) FALSE)
+has_scanpy <- FALSE
+if (requireNamespace("reticulate", quietly = TRUE)) {
+  scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
+  if (dir.exists(scverse_path)) {
+    reticulate::use_condaenv("scverse", required = FALSE)
+    Sys.setenv(
+      OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
+      MKL_NUM_THREADS = "1", NUMBA_THREADING_LAYER = "tbb"
+    )
+    has_scanpy <- reticulate::py_module_available("scanpy")
+    if (has_scanpy) {
+      reticulate::py_run_string("import matplotlib; matplotlib.use('Agg')")
+    }
+  }
+}
+has_anndata <- has_scanpy && tryCatch({
+  reticulate::py_module_available("anndata")
+}, error = function(e) FALSE)
+```
+
+```{r cleanup, echo=FALSE, results='hide', purl = FALSE}
+outs <- c(
+  "pbmc3k.zarr", "pbmc3k_rt.zarr", "from_scanpy.zarr",
+  "roundtrip.zarr", "roundtrip_from_zarr.h5ad",
+  "pbmc_zarr_scanpy.png", "pbmc_zarr_roundtrip.png"
+)
+for (d in outs) {
+  if (dir.exists(d)) unlink(d, recursive = TRUE)
+  if (file.exists(d)) file.remove(d)
+}
+```
+
+This vignette demonstrates how to convert between Seurat objects and
+[Zarr](https://zarr.dev/) stores using scConvert. Zarr is a chunked,
+compressed N-dimensional array format commonly used in cloud-native
+single-cell workflows, including [CELLxGENE Census](https://chanzuckerberg.github.io/cellxgene-census/),
+[SpatialData](https://spatialdata.scverse.org/), and the
+[Human Cell Atlas](https://data.humancellatlas.org/).
+
+scConvert reads and writes Zarr v2 stores following the
+[AnnData on-disk specification](https://anndata.readthedocs.io/en/latest/fileformat-prose.html),
+with no Python dependency. Zarr stores produced by `SaveZarr()` are directly
+readable by Python `anndata.read_zarr()` and scanpy.
+
+```{r packages, eval = can_run, purl = FALSE}
+library(Seurat)
+library(scConvert)
+library(ggplot2)
+library(patchwork)
+```
+
+## Seurat to Zarr
+
+### Basic conversion
+
+To save a Seurat object as a Zarr store, use `SaveZarr()` directly or
+`scConvert()` with the `.zarr` extension:
+
+```{r save_zarr_basic, eval = has_SeuratData, purl = FALSE}
+library(SeuratData)
+if (!"pbmc3k.final" %in% rownames(InstalledData())) {
+  InstallData("pbmc3k")
+}
+
+data("pbmc3k.final", package = "pbmc3k.SeuratData")
+pbmc <- UpdateSeuratObject(pbmc3k.final)
+cat("Input:", ncol(pbmc), "cells x", nrow(pbmc), "genes\n")
+cat("Reductions:", paste(Reductions(pbmc), collapse = ", "), "\n")
+cat("Layers:", paste(Layers(pbmc), collapse = ", "), "\n")
+```
+
+```{r save_zarr, eval = has_SeuratData, purl = FALSE}
+# Direct API
+SaveZarr(pbmc, "pbmc3k.zarr", overwrite = TRUE)
+
+# Or via scConvert()
+# scConvert(pbmc, dest = "pbmc3k.zarr", overwrite = TRUE)
+```
+
+`SaveZarr()` writes the following components:
+
+| Seurat Source | Zarr Destination | Description |
+|--------------|-----------------|-------------|
+| `GetAssayData(layer = "counts")` | `X/` | Primary expression matrix (prefers counts) |
+| `GetAssayData(layer = "data")` | `layers/data/` | Normalized data (if different from counts) |
+| `meta.data` | `obs/` | Cell metadata with categorical encoding |
+| Assay feature metadata | `var/` | Gene-level annotations |
+| `Embeddings(, "pca")` | `obsm/X_pca/` | PCA coordinates |
+| `Embeddings(, "umap")` | `obsm/X_umap/` | UMAP coordinates |
+| `Graphs(, "RNA_snn")` | `obsp/connectivities/` | SNN graph (sparse CSR) |
+| `Graphs(, "RNA_nn")` | `obsp/distances/` | NN distance graph |
+| `Misc()` | `uns/` | Unstructured annotations |
+
+### Zarr store structure
+
+The Zarr store is a directory tree following AnnData v0.1.0 conventions:
+
+```
+pbmc3k.zarr/
+├── .zgroup            # Root group metadata
+├── .zattrs            # encoding-type: anndata, encoding-version: 0.1.0
+├── X/                 # Expression matrix (sparse CSR or dense)
+│   ├── .zattrs        # encoding-type: csr_matrix / array
+│   ├── data/          # Non-zero values
+│   ├── indices/       # Column indices (0-based)
+│   └── indptr/        # Row pointers
+├── obs/               # Cell metadata
+│   ├── .zattrs        # encoding-type: dataframe, column-order
+│   ├── _index/        # Cell barcodes (string-array)
+│   ├── seurat_clusters/  # Categorical: codes/ + categories/
+│   └── nCount_RNA/    # Numeric array
+├── var/               # Feature metadata
+│   ├── _index/        # Gene names
+│   └── ...
+├── obsm/              # Dimensional reductions
+│   ├── X_pca/         # [n_cells, n_components] dense array
+│   └── X_umap/        # [n_cells, 2] dense array
+└── obsp/              # Pairwise cell annotations (graphs)
+    ├── connectivities/  # SNN graph (sparse)
+    └── distances/       # NN distance graph (sparse)
+```
+
+## Zarr to Seurat
+
+### Loading a Zarr store
+
+Use `LoadZarr()` to read a Zarr store into a Seurat object:
+
+```{r load_zarr, eval = has_SeuratData, purl = FALSE}
+obj <- LoadZarr("pbmc3k.zarr", verbose = TRUE)
+cat("Loaded:", ncol(obj), "cells x", nrow(obj), "genes\n")
+cat("Reductions:", paste(Reductions(obj), collapse = ", "), "\n")
+cat("Metadata columns:", paste(colnames(obj[[]]), collapse = ", "), "\n")
+```
+
+`LoadZarr()` maps AnnData fields to Seurat:
+
+| Zarr Source | Seurat Destination | Notes |
+|------------|-------------------|-------|
+| `X/` | Default assay counts/data | Sparse CSR or dense |
+| `layers/*` | Additional assay layers | Via `AnnDataLayerToSeurat()` mapping |
+| `obs/` | `meta.data` | Categoricals become factors |
+| `var/` | Feature metadata | `highly_variable` → `VariableFeatures()` |
+| `obsm/X_pca` | `reductions$pca` | Smart transpose handling |
+| `obsm/X_umap` | `reductions$umap` | Smart transpose handling |
+| `obsp/connectivities` | `graphs$RNA_snn` | Sparse matrix |
+| `obsp/distances` | `graphs$RNA_nn` | Sparse matrix |
+| `varp/*` | `misc[["__varp__"]]` | Pairwise variable annotations |
+| `uns/*` | `misc` | Best-effort for strings/numerics |
+
+### Alternative: scConvert()
+
+`scConvert()` also works with Zarr — it auto-detects the format from the file
+extension:
+
+```{r convert_zarr, eval = FALSE, purl = FALSE}
+# Convert from other formats to zarr
+scConvert("data.h5ad", dest = "data.zarr", overwrite = TRUE)
+scConvert("data.rds", dest = "data.zarr", overwrite = TRUE)
+scConvert("data.loom", dest = "data.zarr", overwrite = TRUE)
+
+# Direct converters (streaming by default, no Seurat intermediate)
+H5ADToZarr("data.h5ad", "data.zarr", overwrite = TRUE)
+ZarrToH5AD("data.zarr", "output.h5ad", overwrite = TRUE)
+H5SeuratToZarr("data.h5seurat", "data.zarr", overwrite = TRUE)
+ZarrToH5Seurat("data.zarr", "data.h5seurat", overwrite = TRUE)
+
+# Convert via Seurat hub (any format pair)
+scConvert("data.zarr", dest = "data.rds", overwrite = TRUE)
+scConvert("data.zarr", dest = "data.loom", overwrite = TRUE)
+
+# scConvert_cli() auto-dispatches to the best path
+scConvert_cli("data.h5ad", "data.zarr", overwrite = TRUE)
+```
+
+### Streaming conversion
+
+The direct converters (`H5ADToZarr`, `ZarrToH5AD`, `H5SeuratToZarr`,
+`ZarrToH5Seurat`) use **streaming** by default (`stream = TRUE`). This copies
+AnnData fields (X, obs, var, obsm, obsp, layers, uns, varp, raw) directly
+between backends without materializing a Seurat object in memory.
+
+Streaming conversion:
+
+- **Avoids loading all data into R memory** — matrices are read and written
+  one field at a time
+- **Preserves the exact data layout** — no lossy conversion through Seurat
+- **Handles all AnnData components** including `raw/` (pre-filtering data),
+  `varp` (gene-gene matrices), and complex categorical metadata
+- **Translates format conventions** automatically — h5seurat factor encoding
+  (levels/values, 1-based) ↔ AnnData categoricals (categories/codes, 0-based),
+  sparse matrix orientation (CSC genes×cells ↔ CSR cells×genes)
+
+Set `stream = FALSE` to fall back to the Seurat hub path:
+
+```{r streaming_example, eval = FALSE}
+# Streaming (default): direct field-by-field copy
+H5ADToZarr("large_dataset.h5ad", "large_dataset.zarr")
+
+# Hub path: load as Seurat, then save (stream = FALSE)
+H5ADToZarr("data.h5ad", "data.zarr", stream = FALSE)
+
+# scConvert_cli uses streaming automatically for zarr pairs
+scConvert_cli("data.h5seurat", "data.zarr")
+scConvert_cli("data.zarr", "output.h5ad")
+```
+
+## Visualizing Zarr round-trip data
+
+After converting to Zarr and loading back, the UMAP coordinates, cluster
+labels, and expression values are preserved exactly:
+
+```{r viz_roundtrip, eval = has_SeuratData, fig.width = 12, fig.height = 5, purl = FALSE}
+p1 <- DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
+              label = TRUE, pt.size = 0.5) +
+  ggtitle("Original Seurat") + NoLegend()
+
+p2 <- DimPlot(obj, reduction = "umap", group.by = "seurat_annotations",
+              label = TRUE, pt.size = 0.5) +
+  ggtitle("After Zarr round-trip") + NoLegend()
+
+p1 + p2
+```
+
+Expression patterns are also preserved:
+
+```{r viz_feature, eval = has_SeuratData, fig.width = 12, fig.height = 5, purl = FALSE}
+p1 <- FeaturePlot(pbmc, features = "CD14", pt.size = 0.5) +
+  ggtitle("Original")
+p2 <- FeaturePlot(obj, features = "CD14", pt.size = 0.5) +
+  ggtitle("Zarr round-trip")
+p1 + p2
+```
+
+## Python interoperability
+
+Zarr stores written by `SaveZarr()` are directly readable by Python's
+`anndata.read_zarr()` and scanpy. No intermediate conversion needed.
+
+### Reading scConvert Zarr in Python
+
+```{python read_zarr_python, eval = has_anndata && has_SeuratData}
+import anndata as ad
+import scanpy as sc
+
+adata = ad.read_zarr("pbmc3k.zarr")
+print(adata)
+print(f"Embeddings: {list(adata.obsm.keys())}")
+print(f"Graphs: {list(adata.obsp.keys())}")
+```
+
+### Visualizing in scanpy
+
+```{python scanpy_zarr_viz, eval = has_scanpy && has_SeuratData}
+import scanpy as sc
+import matplotlib.pyplot as plt
+import anndata as ad
+
+adata = ad.read_zarr("pbmc3k.zarr")
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+sc.pl.embedding(adata, basis="X_umap", color="seurat_annotations",
+                title="scConvert Zarr in scanpy\n(cluster annotations)",
+                ax=axes[0], show=False, legend_loc="on data", legend_fontsize=7)
+
+sc.pl.embedding(adata, basis="X_umap", color="CD14",
+                title="scConvert Zarr in scanpy\n(CD14 expression)",
+                ax=axes[1], show=False, use_raw=False)
+
+plt.tight_layout()
+plt.savefig("pbmc_zarr_scanpy.png", dpi=150, bbox_inches="tight")
+plt.close()
+```
+
+```{r show_scanpy_zarr, eval = has_scanpy && has_SeuratData, echo = FALSE, out.width = "100%"}
+knitr::include_graphics("pbmc_zarr_scanpy.png")
+```
+
+### Reading Python-generated Zarr in R
+
+Zarr stores created by scanpy or anndata are readable by `LoadZarr()`.
+Note that Python's default compressor is blosc (not zlib), so reading
+Python-generated zarr stores requires the
+[blosc](https://CRAN.R-project.org/package=blosc) R package:
+
+```{python create_scanpy_zarr, eval = has_anndata && has_SeuratData}
+import scanpy as sc
+import anndata as ad
+
+# Process a dataset in scanpy
+adata = ad.read_zarr("pbmc3k.zarr")
+sc.pp.neighbors(adata, use_rep="X_pca", n_neighbors=15)
+sc.tl.leiden(adata, resolution=0.8)
+
+# Write back to zarr
+adata.write_zarr("from_scanpy.zarr")
+print(f"Wrote zarr with leiden clusters: {adata.obs['leiden'].nunique()} clusters")
+```
+
+```{r load_scanpy_zarr, eval = has_anndata && has_SeuratData, purl = FALSE}
+# Load the scanpy-generated zarr store in R
+obj_scanpy <- LoadZarr("from_scanpy.zarr", verbose = TRUE)
+
+cat("Cells:", ncol(obj_scanpy), "| Genes:", nrow(obj_scanpy), "\n")
+cat("Metadata:", paste(colnames(obj_scanpy[[]]), collapse = ", "), "\n")
+cat("Leiden clusters:", nlevels(obj_scanpy[["leiden", drop = TRUE]]), "\n")
+
+DimPlot(obj_scanpy, reduction = "umap", group.by = "leiden",
+        label = TRUE, pt.size = 0.5) +
+  ggtitle("scanpy-computed leiden clusters loaded via LoadZarr()") +
+  NoLegend()
+```
+
+## Seurat analysis with Zarr storage
+
+Zarr can serve as the persistent storage format for a Seurat analysis workflow.
+This section demonstrates a complete pipeline: loading data, running standard
+Seurat analysis, saving checkpoints to Zarr, and resuming from saved state.
+
+### Starting from an h5ad file
+
+Many public datasets (CELLxGENE, HCA) distribute data as h5ad or zarr. Here
+we start from the shipped test h5ad and run a standard Seurat pipeline:
+
+```{r seurat_workflow_start, eval = can_run, purl = FALSE}
+library(scConvert)
+library(Seurat)
+
+# Load from h5ad
+h5ad_path <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
+pbmc_wf <- LoadH5AD(h5ad_path, verbose = FALSE)
+
+cat("Loaded:", ncol(pbmc_wf), "cells x", nrow(pbmc_wf), "genes\n")
+cat("Layers:", paste(Layers(pbmc_wf), collapse = ", "), "\n")
+cat("Reductions:", paste(Reductions(pbmc_wf), collapse = ", "), "\n")
+```
+
+### Running Seurat analysis
+
+The loaded object has counts and normalized data from scanpy. We can run
+Seurat's standard pipeline on top:
+
+```{r seurat_workflow_analysis, eval = can_run, purl = FALSE}
+# Variable features, scaling, PCA
+pbmc_wf <- FindVariableFeatures(pbmc_wf, verbose = FALSE)
+pbmc_wf <- ScaleData(pbmc_wf, verbose = FALSE)
+pbmc_wf <- RunPCA(pbmc_wf, verbose = FALSE)
+
+# Clustering
+pbmc_wf <- FindNeighbors(pbmc_wf, dims = 1:20, verbose = FALSE)
+pbmc_wf <- FindClusters(pbmc_wf, resolution = 0.5, verbose = FALSE)
+
+# UMAP
+pbmc_wf <- RunUMAP(pbmc_wf, dims = 1:20, verbose = FALSE)
+
+cat("Clusters:", nlevels(pbmc_wf$seurat_clusters), "\n")
+cat("Reductions:", paste(Reductions(pbmc_wf), collapse = ", "), "\n")
+cat("Graphs:", paste(names(pbmc_wf@graphs), collapse = ", "), "\n")
+```
+
+### Saving analysis state to Zarr
+
+Save the full analysis state — expression data, metadata, PCA, UMAP,
+clusters, and neighbor graphs — to a Zarr store:
+
+```{r seurat_workflow_save, eval = can_run, purl = FALSE}
+SaveZarr(pbmc_wf, "analysis_checkpoint.zarr", overwrite = TRUE, verbose = FALSE)
+
+# Verify the store is valid
+cat("Zarr store size:", sum(file.info(
+  list.files("analysis_checkpoint.zarr", recursive = TRUE, full.names = TRUE)
+)$size) / 1024, "KB\n")
+```
+
+### Resuming from Zarr checkpoint
+
+Load the checkpoint and verify the full analysis state is preserved:
+
+```{r seurat_workflow_resume, eval = can_run, purl = FALSE}
+resumed <- LoadZarr("analysis_checkpoint.zarr", verbose = FALSE)
+
+cat("Cells:", ncol(resumed), "| Genes:", nrow(resumed), "\n")
+cat("Clusters:", nlevels(resumed$seurat_clusters), "\n")
+cat("Reductions:", paste(Reductions(resumed), collapse = ", "), "\n")
+cat("Graphs:", paste(names(resumed@graphs), collapse = ", "), "\n")
+
+# Verify PCA is exact
+stopifnot(max(abs(
+  Embeddings(pbmc_wf, "pca")[colnames(resumed), ] -
+  Embeddings(resumed, "pca")
+)) < 1e-10)
+cat("PCA: exact match\n")
+
+# Verify clusters match
+stopifnot(identical(
+  as.character(pbmc_wf$seurat_clusters[colnames(resumed)]),
+  as.character(resumed$seurat_clusters)
+))
+cat("Cluster assignments: exact match\n")
+```
+
+### Visualization from Zarr checkpoint
+
+```{r seurat_workflow_viz, eval = can_run, fig.width = 12, fig.height = 5, purl = FALSE}
+library(ggplot2)
+library(patchwork)
+
+p1 <- DimPlot(pbmc_wf, reduction = "umap", label = TRUE, pt.size = 0.5) +
+  ggtitle("Original analysis") + NoLegend()
+p2 <- DimPlot(resumed, reduction = "umap", label = TRUE, pt.size = 0.5) +
+  ggtitle("Resumed from Zarr") + NoLegend()
+p1 + p2
+```
+
+### Continued analysis from checkpoint
+
+After loading from Zarr, you can continue the analysis — find markers,
+subset clusters, or add new annotations. Note that cell identities need to
+be set explicitly after loading (Zarr doesn't store R's active identity class):
+
+```{r seurat_workflow_continue, eval = can_run, purl = FALSE}
+# Set cluster identities from saved metadata
+Idents(resumed) <- "seurat_clusters"
+
+# Find markers for the first cluster
+first_cluster <- levels(Idents(resumed))[1]
+markers_c0 <- FindMarkers(resumed, ident.1 = first_cluster, verbose = FALSE)
+cat("Top 5 markers for cluster", first_cluster, ":\n")
+print(head(markers_c0[order(markers_c0$p_val_adj), ], 5))
+
+# Save updated object with marker results
+resumed[["has_markers"]] <- TRUE
+SaveZarr(resumed, "analysis_with_markers.zarr", overwrite = TRUE, verbose = FALSE)
+cat("\nSaved updated analysis to Zarr\n")
+```
+
+```{r seurat_workflow_feature, eval = can_run, fig.width = 12, fig.height = 5, purl = FALSE}
+top_gene <- rownames(markers_c0)[which.min(markers_c0$p_val_adj)]
+p1 <- FeaturePlot(resumed, features = top_gene, pt.size = 0.5) +
+  ggtitle(paste(top_gene, "(top marker for cluster", first_cluster, ")"))
+p2 <- VlnPlot(resumed, features = top_gene, pt.size = 0) +
+  NoLegend()
+p1 + p2
+```
+
+### Cross-ecosystem workflow
+
+A common pattern is to process data in scanpy, save to Zarr, then load in
+Seurat for downstream analysis (or vice versa):
+
+```{r cross_ecosystem, eval = FALSE, purl = FALSE}
+# Step 1: Load scanpy-processed zarr from a collaborator
+obj <- LoadZarr("scanpy_analysis.zarr")
+
+# Step 2: Continue analysis in Seurat
+obj <- FindVariableFeatures(obj, verbose = FALSE)
+obj <- ScaleData(obj, verbose = FALSE)
+obj <- RunPCA(obj, verbose = FALSE)
+obj <- FindNeighbors(obj, dims = 1:30, verbose = FALSE)
+obj <- FindClusters(obj, resolution = 0.8, verbose = FALSE)
+
+# Step 3: Save back to zarr for the Python side
+SaveZarr(obj, "seurat_analysis.zarr", overwrite = TRUE)
+
+# Or convert to h5ad for scanpy
+scConvert("seurat_analysis.zarr", dest = "seurat_analysis.h5ad", overwrite = TRUE)
+```
+
+```{r seurat_workflow_cleanup, echo = FALSE, results = 'hide', purl = FALSE}
+for (d in c("analysis_checkpoint.zarr", "analysis_with_markers.zarr")) {
+  if (dir.exists(d)) unlink(d, recursive = TRUE)
+}
+```
+
+## Conversion fidelity
+
+This section verifies exact data preservation through Zarr round-trips.
+
+### Seurat to Zarr to Seurat
+
+```{r fidelity_seurat_zarr, eval = has_SeuratData, purl = FALSE}
+# --- Dimensions ---
+stopifnot(ncol(obj) == ncol(pbmc))
+stopifnot(nrow(obj) == nrow(pbmc))
+cat("Dimensions:", ncol(obj), "cells x", nrow(obj), "genes -- OK\n")
+
+# --- Barcodes and features ---
+stopifnot(identical(sort(colnames(obj)), sort(colnames(pbmc))))
+stopifnot(identical(sort(rownames(obj)), sort(rownames(pbmc))))
+cat("Barcodes and features: exact match\n")
+
+# --- Metadata preservation ---
+cat("\nMetadata column checks:\n")
+for (col in colnames(pbmc[[]])) {
+  if (!col %in% colnames(obj[[]])) {
+    cat(sprintf("  %-25s MISSING\n", col))
+    next
+  }
+  orig <- pbmc[[col, drop = TRUE]]
+  loaded <- obj[[col, drop = TRUE]]
+  orig_class <- class(orig)[1]
+  load_class <- class(loaded)[1]
+
+  status <- "OK"
+  if (is.numeric(orig) && is.numeric(loaded)) {
+    vals_match <- isTRUE(all.equal(
+      orig[colnames(obj)], loaded, tolerance = 1e-6
+    ))
+    if (!vals_match) status <- "MISMATCH"
+    stopifnot(vals_match)
+  } else if (is.factor(orig) && is.factor(loaded)) {
+    stopifnot(identical(sort(levels(orig)), sort(levels(loaded))))
+  }
+  cat(sprintf("  %-25s %-10s -> %-10s %s\n", col, orig_class, load_class, status))
+}
+```
+
+### PCA and UMAP preservation
+
+```{r fidelity_reductions, eval = has_SeuratData, purl = FALSE}
+# PCA: exact component match
+pca_orig <- Embeddings(pbmc, "pca")[colnames(obj), ]
+pca_loaded <- Embeddings(obj, "pca")
+pca_diff <- max(abs(pca_orig - pca_loaded))
+stopifnot(pca_diff < 1e-10)
+cat("PCA:", ncol(pca_loaded), "components, max diff =", pca_diff, "\n")
+
+# UMAP: exact match
+umap_orig <- Embeddings(pbmc, "umap")[colnames(obj), ]
+umap_loaded <- Embeddings(obj, "umap")
+umap_diff <- max(abs(umap_orig - umap_loaded))
+stopifnot(umap_diff < 1e-10)
+cat("UMAP: max diff =", umap_diff, "\n")
+```
+
+### Expression values
+
+```{r fidelity_expression, eval = has_SeuratData, purl = FALSE}
+# Compare counts (exact)
+counts_orig <- GetAssayData(pbmc, layer = "counts")
+counts_loaded <- GetAssayData(obj, layer = "counts")
+
+# Align by common barcodes/features
+common_cells <- intersect(colnames(counts_orig), colnames(counts_loaded))
+common_genes <- intersect(rownames(counts_orig), rownames(counts_loaded))
+diff <- max(abs(
+  counts_orig[common_genes, common_cells] -
+  counts_loaded[common_genes, common_cells]
+))
+stopifnot(diff == 0)
+cat("Counts: exact match (", length(common_genes), "genes x",
+    length(common_cells), "cells)\n")
+
+# Compare data layer if available
+if ("data" %in% Layers(obj)) {
+  data_orig <- GetAssayData(pbmc, layer = "data")
+  data_loaded <- GetAssayData(obj, layer = "data")
+  diff_data <- max(abs(
+    data_orig[common_genes, common_cells] -
+    data_loaded[common_genes, common_cells]
+  ))
+  stopifnot(diff_data < 1e-6)
+  cat("Data layer: max diff =", diff_data, "\n")
+}
+```
+
+### Neighbor graph preservation
+
+```{r fidelity_graphs, eval = has_SeuratData, purl = FALSE}
+for (g in names(pbmc@graphs)) {
+  if (!g %in% names(obj@graphs)) {
+    cat(g, ": not in zarr output (expected for some graph types)\n")
+    next
+  }
+  g_orig <- pbmc@graphs[[g]]
+  g_loaded <- obj@graphs[[g]]
+  common <- intersect(rownames(g_orig), rownames(g_loaded))
+  diff <- max(abs(g_orig[common, common] - g_loaded[common, common]))
+  stopifnot(diff == 0)
+  cat(g, ": exact match (nnz =", length(g_loaded@x), ")\n")
+}
+```
+
+### Full round-trip: h5ad to Zarr to h5ad
+
+```{r fidelity_h5ad_zarr, eval = can_run, purl = FALSE}
+# Start from the shipped test h5ad
+h5ad_src <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
+ref <- LoadH5AD(h5ad_src, verbose = FALSE)
+
+# h5ad -> Seurat -> Zarr
+SaveZarr(ref, "roundtrip.zarr", overwrite = TRUE, verbose = FALSE)
+
+# Zarr -> Seurat
+rt <- LoadZarr("roundtrip.zarr", verbose = FALSE)
+
+# Verify
+stopifnot(ncol(rt) == ncol(ref))
+stopifnot(nrow(rt) == nrow(ref))
+stopifnot(identical(sort(colnames(rt)), sort(colnames(ref))))
+stopifnot(identical(sort(rownames(rt)), sort(rownames(ref))))
+
+# PCA
+pca_ref <- Embeddings(ref, "pca")[colnames(rt), ]
+pca_rt <- Embeddings(rt, "pca")
+stopifnot(max(abs(pca_ref - pca_rt)) < 1e-10)
+
+cat("h5ad -> Zarr -> Seurat round-trip: all checks passed\n")
+cat("  Cells:", ncol(rt), "| Genes:", nrow(rt), "\n")
+cat("  Reductions:", paste(Reductions(rt), collapse = ", "), "\n")
+```
+
+### Zarr to h5ad (cross-format chain)
+
+```{r fidelity_zarr_h5ad, eval = can_run, purl = FALSE}
+# Zarr -> h5ad via scConvert()
+scConvert("roundtrip.zarr", dest = "roundtrip_from_zarr.h5ad", overwrite = TRUE)
+rt_h5ad <- LoadH5AD("roundtrip_from_zarr.h5ad", verbose = FALSE)
+
+stopifnot(ncol(rt_h5ad) == ncol(ref))
+stopifnot(nrow(rt_h5ad) == nrow(ref))
+stopifnot(identical(sort(colnames(rt_h5ad)), sort(colnames(ref))))
+
+cat("Zarr -> h5ad cross-format chain: all checks passed\n")
+cat("  Cells:", ncol(rt_h5ad), "| Genes:", nrow(rt_h5ad), "\n")
+```
+
+### Visual validation of round-trip
+
+```{r viz_roundtrip_fidelity, eval = has_SeuratData, fig.width = 14, fig.height = 5, purl = FALSE}
+p1 <- DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
+              pt.size = 0.5) +
+  ggtitle("Original Seurat object") +
+  theme(legend.position = "none")
+
+p2 <- DimPlot(obj, reduction = "umap", group.by = "seurat_annotations",
+              pt.size = 0.5) +
+  ggtitle("After SaveZarr + LoadZarr") +
+  theme(legend.position = "none")
+
+# Overlay: compute per-cell UMAP difference
+umap_orig <- Embeddings(pbmc, "umap")[colnames(obj), ]
+umap_rt <- Embeddings(obj, "umap")
+cell_drift <- sqrt(rowSums((umap_orig - umap_rt)^2))
+obj$umap_drift <- cell_drift
+
+p3 <- FeaturePlot(obj, features = "umap_drift", pt.size = 0.5) +
+  scale_color_viridis_c() +
+  ggtitle(paste0("Per-cell UMAP drift\n(max = ",
+                 formatC(max(cell_drift), format = "e", digits = 1), ")")) +
+  theme(legend.position = "right")
+
+p1 + p2 + p3
+```
+
+The per-cell UMAP drift plot confirms zero displacement — coordinates are
+preserved exactly through the Zarr round-trip, not approximately.
+
+## Python validation of Zarr round-trip
+
+```{python validate_zarr_python, eval = has_anndata && has_SeuratData}
+import anndata as ad
+import numpy as np
+import matplotlib.pyplot as plt
+
+adata = ad.read_zarr("pbmc3k.zarr")
+
+# Check PCA/UMAP preserved
+assert "X_pca" in adata.obsm, "PCA missing"
+assert "X_umap" in adata.obsm, "UMAP missing"
+print(f"PCA shape: {adata.obsm['X_pca'].shape}")
+print(f"UMAP shape: {adata.obsm['X_umap'].shape}")
+
+# Check metadata
+cat_cols = [c for c in adata.obs.columns if adata.obs[c].dtype.name == "category"]
+print(f"Categorical columns: {cat_cols}")
+print(f"Numeric columns: {[c for c in adata.obs.columns if np.issubdtype(adata.obs[c].dtype, np.number)]}")
+
+# Verify expression matrix
+print(f"\nExpression matrix: {adata.X.shape}, type={type(adata.X).__name__}")
+if hasattr(adata.X, 'nnz'):
+    sparsity = 1 - adata.X.nnz / np.prod(adata.X.shape)
+    print(f"Sparsity: {sparsity:.1%}")
+
+# Visual comparison: original vs re-read
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+sc_colors = dict(zip(adata.obs["seurat_annotations"].cat.categories,
+                      plt.cm.tab20.colors[:len(adata.obs["seurat_annotations"].cat.categories)]))
+
+for ax, (title, color_col) in zip(axes, [
+    ("Cluster annotations", "seurat_annotations"),
+    ("CD14 expression", "CD14")
+]):
+    import scanpy as sc
+    sc.pl.embedding(adata, basis="X_umap", color=color_col,
+                    title=f"Python read of scConvert Zarr\n({title})",
+                    ax=ax, show=False,
+                    **({"use_raw": False} if color_col == "CD14" else
+                       {"legend_loc": "on data", "legend_fontsize": 7}))
+
+plt.tight_layout()
+plt.savefig("pbmc_zarr_roundtrip.png", dpi=150, bbox_inches="tight")
+plt.close()
+print("\nAll Python validations passed")
+```
+
+```{r show_python_roundtrip, eval = has_scanpy && has_SeuratData, echo = FALSE, out.width = "100%"}
+knitr::include_graphics("pbmc_zarr_roundtrip.png")
+```
+
+## Zarr format details
+
+### Compression
+
+`SaveZarr()` uses zlib compression by default (level 4). Compression is
+applied per-chunk and stored in each array's `.zarray` metadata. This matches
+the scanpy/anndata default compressor:
+
+```{r compression, eval = FALSE, purl = FALSE}
+# Default (zlib level 4)
+SaveZarr(obj, "data.zarr")
+
+# The compression level can be set globally
+options(scConvert.compression_level = 6)
+SaveZarr(obj, "data_compressed.zarr")
+```
+
+### Supported data types
+
+| R Type | Zarr dtype | Encoding |
+|--------|-----------|----------|
+| `numeric` (double) | `<f8` | 64-bit float, little-endian |
+| `integer` | `<i4` | 32-bit int, little-endian |
+| `logical` | `\|b1` | Boolean (1 byte) |
+| `character` | vlen-utf8 | Variable-length UTF-8 strings |
+| `factor` | categorical | `codes/` (int8) + `categories/` (strings) |
+| Sparse matrix (`dgCMatrix`) | CSR/CSC | `data/`, `indices/`, `indptr/` arrays |
+
+### Chunking
+
+Zarr stores data in chunks. `SaveZarr()` writes single-chunk arrays by
+default (the entire array is one chunk). For multi-chunk zarr stores produced
+by other tools (e.g., cloud-hosted CELLxGENE Census data), `LoadZarr()`
+automatically assembles chunks following the grid layout.
+
+### Zarr v2 vs v3
+
+scConvert supports Zarr **v2** format, which is the format used by:
+
+- `anndata.read_zarr()` / `anndata.write_zarr()` (Python anndata)
+- CELLxGENE Census
+- SpatialData (scverse)
+- Human Cell Atlas data portals
+
+Zarr v3 detection exists but full read/write support is not yet implemented.
+
+## Comparison with h5ad
+
+Both Zarr and h5ad store AnnData objects, but with different trade-offs:
+
+| Feature | Zarr (.zarr) | h5ad (.h5ad) |
+|---------|-------------|--------------|
+| Storage | Directory of files | Single HDF5 file |
+| Cloud-native | Yes (S3, GCS) | No (must download) |
+| Partial reads | Per-chunk | Requires HDF5 VFD |
+| Parallel writes | Yes (separate chunks) | No (single file lock) |
+| Tool support | anndata, scanpy, CELLxGENE | anndata, scanpy, squidpy |
+| R dependency | jsonlite only | hdf5r |
+| scConvert read | `LoadZarr()` | `LoadH5AD()` |
+| scConvert write | `SaveZarr()` | `SeuratToH5AD()` |
+| CLI (C binary) | No | Yes (fastest) |
+
+Use Zarr when working with cloud storage or tools that expect directory-based
+stores. Use h5ad for single-file portability and when the C binary's speed
+advantage matters.
+
+## Session Info
+
+```{r session, eval = TRUE, purl = FALSE}
+sessionInfo()
+```
+
+```{r cleanup-final, echo=FALSE, results='hide', purl = FALSE}
+outs <- c(
+  "pbmc3k.zarr", "pbmc3k_rt.zarr", "from_scanpy.zarr",
+  "roundtrip.zarr", "roundtrip_from_zarr.h5ad",
+  "pbmc_zarr_scanpy.png", "pbmc_zarr_roundtrip.png"
+)
+for (d in outs) {
+  if (dir.exists(d)) unlink(d, recursive = TRUE)
+  if (file.exists(d)) file.remove(d)
+}
+```

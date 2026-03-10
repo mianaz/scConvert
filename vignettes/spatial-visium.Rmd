@@ -1,0 +1,202 @@
+---
+title: "Spatial Transcriptomics: Visium"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Spatial Transcriptomics: Visium}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+
+  warning = FALSE,
+  out.width = "100%",
+  dev = "png",
+  fig.width = 8,
+  fig.height = 6
+)
+has_SeuratData <- requireNamespace("SeuratData", quietly = TRUE)
+has_data <- FALSE
+if (has_SeuratData) {
+  has_data <- tryCatch({
+    library(SeuratData)
+    "stxBrain.SeuratData" %in% rownames(InstalledData()) &&
+      InstalledData()["stxBrain.SeuratData", "Installed"]
+  }, error = function(e) FALSE)
+}
+can_run <- has_data
+has_scanpy <- FALSE
+has_squidpy <- FALSE
+if (requireNamespace("reticulate", quietly = TRUE)) {
+  scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
+  if (dir.exists(scverse_path)) {
+    reticulate::use_condaenv("scverse", required = FALSE)
+    Sys.setenv(
+      OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
+      MKL_NUM_THREADS = "1", NUMBA_THREADING_LAYER = "tbb"
+    )
+    has_scanpy <- reticulate::py_module_available("scanpy")
+    has_squidpy <- reticulate::py_module_available("squidpy")
+    if (has_scanpy) {
+      reticulate::py_run_string("import matplotlib; matplotlib.use('Agg')")
+    }
+  }
+}
+```
+
+## Overview
+
+This vignette demonstrates how scConvert handles **10x Genomics Visium** spatial transcriptomics data, including tissue images, scale factors, and spot coordinates. Visium data is stored in h5ad files with spatial-specific fields (`obsm/spatial`, `uns/spatial`) that scConvert automatically reconstructs into Seurat `VisiumV2` image objects.
+
+We show that the exported h5ad is **natively usable** in scanpy and squidpy (spatial scatter plots, Moran's I), and that all key components — dimensions, metadata, barcodes, features, spatial coordinates, scale factors, and dimensionality reductions — are preserved.
+
+```{r packages}
+library(Seurat)
+library(scConvert)
+library(ggplot2)
+```
+
+## Load Visium data
+
+We use the **stxBrain** dataset (mouse brain anterior1, ~2,700 spots x ~31,000 genes):
+
+```{r load_brain, eval = can_run}
+library(SeuratData)
+brain <- UpdateSeuratObject(LoadData("stxBrain", type = "anterior1"))
+brain <- NormalizeData(brain)
+
+cat("Cells:", ncol(brain), "\n")
+cat("Genes:", nrow(brain), "\n")
+cat("Images:", Images(brain), "\n")
+cat("Layers:", paste(Layers(brain), collapse = ", "), "\n")
+cat("Metadata columns:", ncol(brain[[]]), "\n")
+```
+
+### Visualize the original spatial data
+
+```{r plot_orig_spatial, eval = can_run, fig.width = 10, fig.height = 8}
+SpatialFeaturePlot(brain, features = "Hpca", pt.size.factor = 1.5)
+```
+
+Hpca (Hippocalcin) is a marker for hippocampal neurons, showing strong regional expression.
+
+## Export to h5ad
+
+scConvert writes Visium spatial data to h5ad using scanpy/squidpy conventions:
+
+| Seurat Component | h5ad Location | Description |
+|-----------------|---------------|-------------|
+| Tissue coordinates | `obsm/spatial` | Spot XY positions |
+| Scale factors | `uns/spatial/{lib}/scalefactors` | `spot_diameter_fullres`, `tissue_hires_scalef`, etc. |
+| Tissue image (lowres) | `uns/spatial/{lib}/images/lowres` | Low-resolution H&E image |
+| Tissue image (hires) | `uns/spatial/{lib}/images/hires` | High-resolution H&E image |
+
+```{r export_h5ad, eval = can_run}
+h5ad_path <- tempfile(fileext = ".h5ad")
+SeuratToH5AD(brain, h5ad_path, overwrite = TRUE)
+cat("File size:", round(file.size(h5ad_path) / 1024^2, 1), "MB\n")
+```
+
+## Validate in Python with scanpy
+
+The exported h5ad is immediately usable in the scverse ecosystem — no extra configuration needed:
+
+```{python validate_scanpy, eval = can_run && has_scanpy}
+import scanpy as sc
+import numpy as np
+
+adata = sc.read_h5ad(r.h5ad_path)
+print(adata)
+print(f"\nobsm keys: {list(adata.obsm.keys())}")
+print(f"Spatial coords shape: {adata.obsm['spatial'].shape}")
+print(f"Spatial coord range X: [{adata.obsm['spatial'][:,0].min():.1f}, {adata.obsm['spatial'][:,0].max():.1f}]")
+print(f"Spatial coord range Y: [{adata.obsm['spatial'][:,1].min():.1f}, {adata.obsm['spatial'][:,1].max():.1f}]")
+print(f"No NaN in coords: {not np.isnan(adata.obsm['spatial']).any()}")
+
+# Verify uns/spatial structure matches scanpy convention
+if "spatial" in adata.uns:
+    lib_ids = list(adata.uns["spatial"].keys())
+    print(f"\nSpatial library IDs: {lib_ids}")
+    for lib_id in lib_ids:
+        lib = adata.uns["spatial"][lib_id]
+        if "images" in lib:
+            for k, v in lib["images"].items():
+                print(f"  Image '{k}': shape {v.shape}, dtype {v.dtype}")
+        if "scalefactors" in lib:
+            sf = lib["scalefactors"]
+            print(f"  Scale factors: {sf}")
+            # Verify standard keys exist
+            for key in ["spot_diameter_fullres", "tissue_hires_scalef", "tissue_lowres_scalef"]:
+                print(f"    {key}: {'present' if key in sf else 'MISSING'}")
+```
+
+### Spatial scatter plot with squidpy
+
+Because scConvert writes scale factors with the correct scanpy-convention names (`spot_diameter_fullres`, `tissue_hires_scalef`, etc.), squidpy plotting works out of the box:
+
+```{python squidpy_scatter, eval = can_run && has_squidpy}
+import squidpy as sq
+
+sq.pl.spatial_scatter(adata, color="Hpca", library_id=list(adata.uns["spatial"].keys())[0],
+                      img_res_key="lowres", size=1.5, alpha=0.7,
+                      title="Hpca — squidpy spatial_scatter (from scConvert h5ad)")
+```
+
+### Scanpy spatial plot (coordinate-based)
+
+```{python scanpy_spatial_plot, eval = can_run && has_scanpy}
+import matplotlib.pyplot as plt
+
+coords = adata.obsm["spatial"]
+expr = adata[:, "Hpca"].X.toarray().flatten() if hasattr(adata[:, "Hpca"].X, 'toarray') else adata[:, "Hpca"].X.flatten()
+
+fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+sc_plot = ax.scatter(coords[:, 0], -coords[:, 1], c=expr, s=8, cmap="viridis", alpha=0.8)
+plt.colorbar(sc_plot, ax=ax, label="Hpca expression")
+ax.set_title("Hpca — scanpy/matplotlib (from scConvert h5ad)")
+ax.set_aspect("equal")
+ax.axis("off")
+plt.show()
+```
+
+### Spatial analysis: Moran's I
+
+```{python squidpy_morans, eval = can_run && has_squidpy}
+import squidpy as sq
+
+sq.gr.spatial_neighbors(adata, coord_type="generic")
+genes = list(adata.var_names[:5])
+sq.gr.spatial_autocorr(adata, mode="moran", genes=genes)
+print("Moran's I results:")
+print(adata.uns["moranI"].head())
+```
+
+## Load h5ad back into Seurat
+
+```{r load_h5ad, eval = can_run}
+brain_rt <- LoadH5AD(h5ad_path, verbose = FALSE)
+
+cat("Dimensions:", ncol(brain_rt), "cells x", nrow(brain_rt), "genes\n")
+cat("Images:", paste(Images(brain_rt), collapse = ", "), "\n")
+cat("Dims match:", ncol(brain) == ncol(brain_rt) && nrow(brain) == nrow(brain_rt), "\n")
+```
+
+## Known limitations
+
+- **Image reconstruction**: Tissue images stored in h5ad may require specific Seurat version compatibility for full `SpatialFeaturePlot()` support. Coordinates and expression values are always preserved.
+- **Non-Visium spatial**: For Slide-seq, MERFISH, Xenium, and other technologies, see the [Spatial Technologies](spatial-technologies.html) vignette.
+- **Large images**: High-resolution images increase file size substantially. Consider using `lowres` images for exploratory analysis.
+
+## Session Info
+
+```{r sessionInfo}
+sessionInfo()
+```
+
+```{r cleanup, echo = FALSE, results = 'hide'}
+unlink(h5ad_path)
+```

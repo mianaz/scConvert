@@ -1,0 +1,47 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.git$
+^\.github$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^doc$
+^Meta$
+^README\.Rmd$
+^README\.html$
+^cran-comments\.md$
+
+# Vignette data artifacts
+^vignettes/.*\.loom$
+^vignettes/.*\.h5ad$
+^vignettes/.*\.h5seurat$
+^vignettes/.*\.h5Seurat$
+^vignettes/.*\.rds$
+^vignettes/.*\.Rds$
+^vignettes/.*\.png$
+^vignettes/.*\.html$
+^vignettes/.*\.R$
+^vignettes/.*_files$
+^vignettes/\.build\.timestamp$
+
+# Test data (keep shipped samples)
+^inst/testdata/.*\.h5seurat$
+^inst/testdata/.*\.h5Seurat$
+^inst/testdata/.*\.DS_Store$
+
+# Build artifacts
+^scConvert_.*\.tar\.gz$
+^scConvert_.*\.tgz$
+^\.\.Rcheck$
+^scConvert\.Rcheck$
+^check_output\.log$
+^knitted_vignettes$
+
+# Development files
+^\.claude$
+^SESSION_SUMMARY\.md$
+^SCHOLAR_EVALUATION.*\.md$
+^codecov\.yml$
+
+# C CLI (standalone tool, not R extension)
+^src$

@@ -1,0 +1,191 @@
+#' @include UtilsAssayCompat.R
+#' @importFrom Seurat Assays Reductions Images scalefactors
+#' @importFrom SeuratObject Graphs
+#' @importFrom methods slot slotNames
+#'
+NULL
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# V5-specific helper functions
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#' Transfer metadata from V5 h5Seurat to h5ad
+#'
+#' @param source Source H5 group (potentially wrapped in environment)
+#' @param dfile Destination H5 file
+#' @param dname Destination group name
+#' @param index Cell index for subsetting
+#' @param verbose Logical, print messages
+#' @return NULL invisibly
+#' @keywords internal
+#'
+TransferMetadataV5 <- function(source, dfile, dname = "obs", index = NULL, verbose = TRUE) {
+  # Handle environment wrapper (common in V5)
+  if (is.environment(x = source)) {
+    if (exists("hgroup", envir = source, inherits = FALSE)) {
+      source <- get("hgroup", envir = source, inherits = FALSE)
+    } else {
+      # Direct metadata transfer from parent file
+      parent_file <- dfile$get_file_id()
+      if (parent_file$exists(name = 'meta.data')) {
+        source <- parent_file[['meta.data']]
+      } else {
+        warning("Could not extract metadata from environment wrapper", immediate. = TRUE)
+        return(invisible(x = NULL))
+      }
+    }
+  }
+
+  if (!inherits(x = source, what = c('H5D', 'H5Group'))) {
+    warning("Invalid source type for metadata transfer", immediate. = TRUE)
+    return(invisible(x = NULL))
+  }
+
+  if (verbose) {
+    message("Transferring metadata to ", dname)
+  }
+
+  # Create obs group
+  if (!dfile$exists(name = dname)) {
+    dfile$create_group(name = dname)
+  }
+
+  if (inherits(x = source, what = 'H5Group')) {
+    # Transfer each metadata column
+    for (col in names(x = source)) {
+      if (col == '__categories' || col == '_index') next
+
+      if (IsFactor(x = source[[col]])) {
+        # Handle categorical data
+        if (!dfile[[dname]]$exists(name = '__categories')) {
+          dfile[[dname]]$create_group(name = '__categories')
+        }
+
+        # Convert to 0-based indexing for anndata
+        values <- if (is.null(index)) {
+          source[[col]][['values']][] - 1L
+        } else {
+          source[[col]][['values']][index] - 1L
+        }
+
+        dfile[[dname]]$create_dataset(
+          name = col,
+          robj = values,
+          dtype = source[[col]][['values']]$get_type()
+        )
+
+        dfile[[dname]][['__categories']]$create_dataset(
+          name = col,
+          robj = source[[col]][['levels']][],
+          dtype = source[[col]][['levels']]$get_type()
+        )
+      } else {
+        # Regular column
+        data <- if (is.null(index)) {
+          source[[col]][]
+        } else {
+          source[[col]][index]
+        }
+
+        dfile[[dname]]$create_dataset(
+          name = col,
+          robj = data,
+          dtype = source[[col]]$get_type()
+        )
+      }
+    }
+
+    # Add column order
+    if (source$attr_exists(attr_name = 'colnames')) {
+      dfile[[dname]]$create_attr(
+        attr_name = 'column-order',
+        robj = h5attr(x = source, which = 'colnames'),
+        dtype = GuessDType(x = h5attr(x = source, which = 'colnames'))
+      )
+    }
+  }
+
+  # Add encoding attributes for anndata
+  encoding.info <- c('type' = 'dataframe', 'version' = '0.1.0')
+  names(x = encoding.info) <- paste0('encoding-', names(x = encoding.info))
+
+  for (i in seq_along(along.with = encoding.info)) {
+    attr.name <- names(x = encoding.info)[i]
+    if (!dfile[[dname]]$attr_exists(attr_name = attr.name)) {
+      dfile[[dname]]$create_attr(
+        attr_name = attr.name,
+        robj = encoding.info[i],
+        dtype = CachedGuessDType(x = encoding.info[i]),
+        space = ScalarSpace()
+      )
+    }
+  }
+
+  return(invisible(x = NULL))
+}
+
+#' Handle spatial data for V5 objects
+#'
+#' @param object A Seurat object
+#' @param hgroup An H5Group to write to
+#' @param verbose Logical, print messages
+#' @return NULL invisibly
+#' @keywords internal
+#'
+WriteH5SpatialV5 <- function(object, hgroup, verbose = TRUE) {
+  # Check for spatial data
+  if (length(x = Images(object = object)) > 0) {
+    if (verbose) {
+      message("Adding spatial information")
+    }
+
+    spatial.group <- hgroup$create_group(name = 'images')
+
+    for (img in Images(object = object)) {
+      if (verbose) {
+        message("Adding image: ", img)
+      }
+
+      img.data <- object[[img]]
+      img.group <- spatial.group$create_group(name = img)
+
+      # Write coordinates if available
+      coords <- GetTissueCoordinates(object = object[[img]])
+      if (!is.null(coords)) {
+        WriteH5Group(
+          x = coords,
+          name = 'coordinates',
+          hgroup = img.group,
+          verbose = verbose
+        )
+      }
+
+      # Write scale factors
+      scale.factors <- scalefactors(object[[img]])
+      if (!is.null(scale.factors)) {
+        for (sf.name in names(scale.factors)) {
+          img.group$create_attr(
+            attr_name = sf.name,
+            robj = scale.factors[[sf.name]],
+            dtype = GuessDType(x = scale.factors[[sf.name]])
+          )
+        }
+      }
+
+      # Write image data if available and not too large
+      # Note: Large images should be handled with care
+      if (inherits(x = img.data, what = "VisiumV1")) {
+        # Handle Visium-specific data
+        img.group$create_attr(
+          attr_name = 'assay',
+          robj = DefaultAssay(object = img.data),
+          dtype = GuessDType(x = DefaultAssay(object = img.data))
+        )
+      }
+    }
+  }
+
+  return(invisible(x = NULL))
+}
+
+

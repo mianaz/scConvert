@@ -1,0 +1,63 @@
+# RStudio
+.Rproj.user
+*.Rproj
+.Rhistory
+.RData
+.Ruserdata
+
+# R package build artifacts
+*.tar.gz
+..Rcheck/
+scConvert.Rcheck/
+inst/doc
+doc
+Meta
+check_output.log
+
+# pkgdown site (keep pre-built articles for gh-pages deployment)
+docs/*
+!docs/articles/
+
+# macOS
+.DS_Store
+
+# Development files
+FUNCTION_INDEX.md
+CLAUDE.md
+README.html
+SESSION_SUMMARY.md
+SCHOLAR_EVALUATION*.md
+.claude
+
+# Top-level data files
+/*.loom
+/*.h5ad
+/*.h5seurat
+/*.h5Seurat
+/*.rds
+/*.Rds
+
+# Test data (keep shipped samples)
+inst/testdata/*
+!inst/testdata/pbmc_small.h5ad
+!inst/testdata/pbmc_small.rds
+tests/testdata/
+tests/*.h5seurat
+tests/*.pdf
+
+# Vignette build artifacts
+vignettes/*.png
+vignettes/*.h5ad
+vignettes/*.h5Seurat
+vignettes/*.h5seurat
+vignettes/*.h5mu
+vignettes/*.loom
+vignettes/*.html
+knitted_vignettes/
+
+# Compiled C CLI
+src/scconvert
+src/*.o
+
+# Manuscript (separate repo at ~/Desktop/scConvert-manuscript)
+manuscript/

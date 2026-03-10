@@ -1,0 +1,97 @@
+Package: scConvert
+Type: Package
+Title: Universal Single-Cell Format Conversion for R
+Version: 0.1.0
+Date: 2026-03-10
+Authors@R: c(
+  person(given = 'Ziyu', family = 'Zeng', email = 'zzeng4@nd.edu', role = c('aut', 'cre', 'cph'), comment = c(ORCID = '0009-0005-4055-8492'))
+  )
+Description: Universal converter between single-cell data formats in R. Converts
+  between any pair of h5Seurat, h5ad (AnnData), h5mu (MuData), Loom, Zarr, RDS,
+  and SingleCellExperiment formats through a hub architecture using Seurat as an
+  intermediate. Features memory-efficient direct HDF5 paths for h5ad/h5Seurat
+  conversions, Visium spatial data roundtripping with image reconstruction,
+  multimodal MuData support, and full Seurat v5 Assay5 compatibility. No Python
+  or reticulate dependency required. Originally derived from SeuratDisk with
+  substantial extensions for universal format coverage.
+URL: https://github.com/mianaz/scConvert
+BugReports: https://github.com/mianaz/scConvert/issues
+License: GPL-3 | file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+SystemRequirements: HDF5 (>= 1.8.13)
+Depends:
+  R (>= 4.1.0)
+Imports:
+  cli (>= 2.0.1),
+  crayon (>= 1.3.4),
+  hdf5r (>= 1.3.0),
+  Matrix (>= 1.2.18),
+  methods (>= 3.6.0),
+  R6 (>= 2.4.1),
+  rlang (>= 0.4.4),
+  Seurat (>= 3.2.0),
+  SeuratObject (>= 4.0.0),
+  stats,
+  stringi (>= 1.4.6),
+  tools,
+  utils
+Collate:
+    'zzz.R'
+    'AnnDataEncoding.R'
+    'GetObject.R'
+    'UtilsH5Access.R'
+    'AssembleObject.R'
+    'AppendData.R'
+    'TestObject.R'
+    'TestH5.R'
+    'h5info.R'
+    'scdisk.R'
+    'h5Seurat.R'
+    'Connect.R'
+    'PadMatrix.R'
+    'sparse_matrix.R'
+    'Transpose.R'
+    'FormatRegistry.R'
+    'Convert.R'
+    'H5DAccess.R'
+    'LoadH5AD.R'
+    'LoadH5MU.R'
+    'LoadH5Seurat.R'
+    'loom.R'
+    'loom_bindings.R'
+    'LoadLoom.R'
+    'LoadZarr.R'
+    'ReadH5.R'
+    'SaveH5MU.R'
+    'UtilsAssayCompat.R'
+    'WriteH5Group.R'
+    'SaveH5Seurat.R'
+    'SaveLoom.R'
+    'SaveZarr.R'
+    'SpatialConversion.R'
+    'SpatialFOV.R'
+    'V5Compatibility.R'
+    'V5LayerSupport.R'
+    'h5Seurat_bindings.R'
+Suggests:
+    BiocGenerics,
+    blosc,
+    BPCells,
+    formatR,
+    httr,
+    jsonlite,
+    knitr,
+    MuDataSeurat,
+    reticulate,
+    rmarkdown,
+    SeuratData,
+    Signac,
+    SingleCellExperiment,
+    SummarizedExperiment,
+    testthat (>= 3.0.0)
+Additional_repositories:
+    https://satijalab.r-universe.dev
+Conflicts: SeuratDisk
+Config/testthat/edition: 3
+VignetteBuilder: knitr

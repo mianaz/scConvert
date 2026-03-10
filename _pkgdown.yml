@@ -1,0 +1,174 @@
+url: https://mianaz.github.io/scConvert/
+destination: docs
+
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+
+development:
+  mode: auto
+
+home:
+  strip_header: false
+  links:
+  - text: Browse source code
+    href: https://github.com/mianaz/scConvert
+
+reference:
+  - title: "Package Information"
+    desc: "Overview and utilities"
+    contents:
+      - scConvert-package
+      - scdisk
+      - IsSCDisk
+      - RegisterSCDisk
+
+  - title: "h5Seurat Format"
+    desc: "Working with h5Seurat files - the native HDF5-based R/Seurat format"
+    contents:
+      - scSaveH5Seurat
+      - scLoadH5Seurat
+      - h5Seurat-class
+      - h5Seurat-bindings
+      - scConnect
+      - h5SI
+
+  - title: "AnnData (h5ad) Format"
+    desc: "Converting between Seurat and Python AnnData format"
+    contents:
+      - H5ADToH5Seurat
+      - H5SeuratToH5AD
+      - SeuratToH5AD
+      - LoadH5AD
+      - readH5AD_obs
+      - readH5AD_obsm
+
+  - title: "MuData (h5mu) Format"
+    desc: "Working with MuData multimodal HDF5 files"
+    contents:
+      - LoadH5MU
+      - SaveH5MU
+      - SeuratToH5MU
+
+  - title: "Loom Format"
+    desc: "Loading and saving Loom files for interoperability with loompy"
+    contents:
+      - scLoadLoom
+      - scSaveLoom
+      - loom-class
+      - loom-bindings
+      - LoomLoading
+      - ValidateLoom
+
+  - title: "Spatial Data Conversion"
+    desc: "Converting spatial data between Seurat and AnnData formats"
+    contents:
+      - ConvertH5ADSpatialToSeurat
+      - ConvertSeuratSpatialToH5AD
+
+  - title: "Zarr Format"
+    desc: "Loading, saving, and converting Zarr-based AnnData stores"
+    contents:
+      - LoadZarr
+      - SaveZarr
+      - H5ADToZarr
+      - ZarrToH5AD
+      - H5SeuratToZarr
+      - ZarrToH5Seurat
+
+  - title: "Format Conversion"
+    desc: "General conversion utilities between all supported formats"
+    contents:
+      - scConvert
+      - FileType
+      - scConvert_cli
+
+  - title: "Reading & Writing"
+    desc: "Low-level HDF5 reading and writing functions"
+    contents:
+      - ReadH5
+      - as.sparse.H5D
+      - WriteH5Group
+      - BasicWrite
+      - ImageWrite
+      - SparseWrite
+      - H5Exists
+      - H5Path
+
+  - title: "Object Operations"
+    desc: "Utilities for working with HDF5 objects and attributes"
+    contents:
+      - GetObject
+      - AssembleObject
+      - scAppendData
+      - scTranspose
+      - PadMatrix
+
+  - title: "Testing & Validation"
+    desc: "Functions for testing and validating HDF5 files and Seurat objects"
+    contents:
+      - TestH5
+      - TestObject
+      - CheckMatrix
+      - IsMatrixEmpty
+
+  - title: "Data Type Utilities"
+    desc: "Utilities for handling data types and format conversions"
+    contents:
+      - GuessDType
+      - IsDType
+      - StringType
+      - BoolToInt
+      - Dims
+      - GetClass
+      - GetMargin
+      - GetParent
+      - SparsePointers
+      - ClosestVersion
+      - ChunkPoints
+      - MakeSpace
+
+  - title: "Metadata & Attributes"
+    desc: "Working with HDF5 attributes and metadata"
+    contents:
+      - PadNames
+      - RandomName
+      - Timestamp
+      - UpdateKey
+      - UpdateSlots
+      - FixFeatures
+      - CompoundToGroup
+      - Writeable
+      - WriteMode
+
+  - title: "Internal"
+    desc: "Internal functions and methods"
+    contents:
+      - has_keyword("internal")
+
+articles:
+  - title: "Getting Started"
+    navbar: "Getting Started"
+    contents:
+      - convert-anndata
+      - h5Seurat-load
+      - cli-usage
+
+  - title: "Format Guides"
+    navbar: "Format Guides"
+    contents:
+      - convert-loom
+      - convert-zarr
+      - multimodal-h5mu
+      - h5Seurat-spec
+      - data-mapping-reference
+
+  - title: "Applications"
+    navbar: "Applications"
+    contents:
+      - multimodal-citeseq
+      - scatac-signac
+      - spatial-visium
+      - spatial-technologies
+      - immune-repertoire
+

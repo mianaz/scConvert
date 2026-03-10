@@ -1,0 +1,10 @@
+*.html
+*.R
+*.pdf
+*.h5ad
+*.h5Seurat
+*.h5seurat
+*.h5mu
+*.loom
+*.rds
+*.png
