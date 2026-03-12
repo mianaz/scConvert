@@ -43,6 +43,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
     <li><a class="dropdown-item" href="articles/convert-loom.html">Conversions: Seurat and Loom</a></li>
+    <li><a class="dropdown-item" href="articles/convert-zarr.html">Conversions: Seurat and Zarr</a></li>
     <li><a class="dropdown-item" href="articles/multimodal-h5mu.html">Multimodal Data with MuData (h5mu)</a></li>
     <li><a class="dropdown-item" href="articles/h5Seurat-spec.html">h5Seurat File Format Specification</a></li>
     <li><a class="dropdown-item" href="articles/data-mapping-reference.html">Data Mapping Reference</a></li>
@@ -75,7 +76,7 @@
 <!-- badges: start -->
 
 <p><strong>Universal single-cell format conversion for R. No Python required.</strong></p>
-<p>scConvert converts between <strong>7 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>30+ conversion paths</strong> from a single <code><a href="reference/Convert.html">Convert()</a></code> interface.</p>
+<p>scConvert converts between <strong>7 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>30+ conversion paths</strong> from a single <code>scConvert()</code> interface. Direct streaming converters bypass the hub for h5ad, h5Seurat, and Zarr pairs.</p>
 <div class="section level2">
 <h2 id="supported-formats">Supported Formats<a class="anchor" aria-label="anchor" href="#supported-formats"></a>
 </h2>
@@ -154,9 +155,9 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">scConvert</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># One-line conversion between any format pair</span></span>
-<span><span class="fu"><a href="reference/Convert.html">Convert</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/Convert.html">Convert</a></span><span class="op">(</span><span class="st">"data.h5mu"</span>, dest <span class="op">=</span> <span class="st">"rds"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/Convert.html">Convert</a></span><span class="op">(</span><span class="va">seurat_obj</span>, dest <span class="op">=</span> <span class="st">"output.h5ad"</span><span class="op">)</span></span>
+<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span>
+<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.h5mu"</span>, dest <span class="op">=</span> <span class="st">"rds"</span><span class="op">)</span></span>
+<span><span class="fu">scConvert</span><span class="op">(</span><span class="va">seurat_obj</span>, dest <span class="op">=</span> <span class="st">"output.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Direct h5ad loading with full metadata preservation</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"data.h5ad"</span><span class="op">)</span></span>
@@ -166,29 +167,63 @@
 <span></span>
 <span><span class="co"># Multimodal (CITE-seq, ATAC+RNA) support</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/LoadH5MU.html">LoadH5MU</a></span><span class="op">(</span><span class="st">"citeseq.h5mu"</span><span class="op">)</span>   <span class="co"># auto-maps rna-&gt;RNA, prot-&gt;ADT</span></span>
-<span><span class="fu"><a href="reference/SaveH5MU.html">SaveH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"output.h5mu"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/SaveH5MU.html">SaveH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"output.h5mu"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Direct format converters (streaming, no Seurat intermediate)</span></span>
+<span><span class="fu"><a href="reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/ZarrToH5AD.html">ZarrToH5AD</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"output.h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/H5SeuratToZarr.html">H5SeuratToZarr</a></span><span class="op">(</span><span class="st">"data.h5seurat"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/ZarrToH5Seurat.html">ZarrToH5Seurat</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5seurat"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="hub-architecture">Hub Architecture<a class="anchor" aria-label="anchor" href="#hub-architecture"></a>
+<h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a>
 </h2>
-<p>All conversions route through Seurat as a universal intermediate. Direct HDF5 paths bypass the hub for h5ad/h5Seurat conversions.</p>
-<pre><code>             ┌─── h5ad (AnnData)
-             │
-             ├─── h5Seurat
-             │        ╎
-  ┌────────┐ ├─── h5mu (MuData)
-  │ Seurat │─┤
-  └────────┘ ├─── Loom
-             │
-             ├─── Zarr
-             │
-             ├─── RDS
-             │
-             └─── SCE (Bioconductor)
+<p>All conversions route through Seurat as a universal intermediate. Direct paths bypass the hub for performance-critical format pairs.</p>
+<pre><code>             ┌─── h5ad (AnnData) ───┐
+             │        ╎             │
+             ├─── h5Seurat          ├── Zarr
+             │        ╎             │    ┊
+  ┌────────┐ ├─── h5mu (MuData)    │
+  │ Seurat │─┤                     │
+  └────────┘ ├─── Loom             │
+             │                     │
+             ├─── RDS              │
+             │                     │
+             └─── SCE (Bioc)       │
 
   ─── hub path (via Seurat)
-  ╎╎╎ direct HDF5 path (no intermediate)</code></pre>
-<p>This hub design achieves <strong>O(n) implementation complexity</strong> for n formats instead of O(n^2) pairwise converters.</p>
+  ╎╎╎ direct HDF5 path (C binary)
+  ┊┊┊ streaming path (field-by-field)</code></pre>
+<p>Three conversion tiers:</p>
+<table class="table">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr class="header">
+<th>Tier</th>
+<th>Formats</th>
+<th>Method</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong>C binary</strong></td>
+<td>h5ad / h5Seurat / h5mu</td>
+<td>On-disk HDF5 remapping, constant memory</td>
+</tr>
+<tr class="even">
+<td><strong>Streaming</strong></td>
+<td>h5ad / h5Seurat ↔︎ Zarr</td>
+<td>Field-by-field copy, no Seurat intermediate</td>
+</tr>
+<tr class="odd">
+<td><strong>Hub</strong></td>
+<td>All other pairs</td>
+<td>Load → Seurat → Save</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section level2">
 <h2 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
@@ -224,15 +259,35 @@
 <td>On-disk matrix loading – 87% memory reduction at atlas scale.</td>
 </tr>
 <tr class="even">
-<td><strong>Variable features</strong></td>
-<td>Automatic <code>highly_variable</code> column mapping.</td>
+<td><strong>Streaming</strong></td>
+<td>Direct h5ad/h5Seurat/Zarr conversion without Seurat intermediate.</td>
 </tr>
 <tr class="odd">
 <td><strong>C CLI</strong></td>
-<td>Standalone binary for streaming on-disk conversion.</td>
+<td>Standalone binary for on-disk HDF5 conversion.</td>
 </tr>
 </tbody>
 </table>
+</div>
+<div class="section level2">
+<h2 id="direct-converters">Direct Converters<a class="anchor" aria-label="anchor" href="#direct-converters"></a>
+</h2>
+<p>Named converters provide direct format-to-format conversion with streaming enabled by default. These avoid the Seurat hub entirely, preserving all data bit-for-bit:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># h5ad &lt;-&gt; Zarr (same AnnData spec, different storage backend)</span></span>
+<span><span class="fu"><a href="reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/ZarrToH5AD.html">ZarrToH5AD</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5ad"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># h5Seurat &lt;-&gt; Zarr (structural translation: factor encoding, matrix layout)</span></span>
+<span><span class="fu"><a href="reference/H5SeuratToZarr.html">H5SeuratToZarr</a></span><span class="op">(</span><span class="st">"data.h5seurat"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/ZarrToH5Seurat.html">ZarrToH5Seurat</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5seurat"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># h5ad &lt;-&gt; h5Seurat (direct HDF5 path)</span></span>
+<span><span class="fu"><a href="reference/H5ADToH5Seurat.html">H5ADToH5Seurat</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.h5seurat"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/H5SeuratToH5AD.html">H5SeuratToH5AD</a></span><span class="op">(</span><span class="st">"data.h5seurat"</span>, <span class="st">"data.h5ad"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Fall back to Seurat hub if needed</span></span>
+<span><span class="fu"><a href="reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span>, stream <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a>
@@ -278,20 +333,25 @@
 </tr>
 </tbody>
 </table>
-<p>Benchmarked on Apple M4 Max, 48 GB RAM.</p>
 </div>
 <div class="section level2">
 <h2 id="command-line-interface">Command-Line Interface<a class="anchor" aria-label="anchor" href="#command-line-interface"></a>
 </h2>
 <p>A standalone C binary for HDF5-based conversions without R or Python:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Build (requires HDF5 headers)</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="bu">cd</span> src <span class="kw">&amp;&amp;</span> <span class="fu">make</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Convert</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.h5seurat</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="ex">scconvert</span> data.h5seurat data.h5ad <span class="at">--assay</span> RNA</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="ex">scconvert</span> multimodal.h5mu multimodal.h5seurat</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.h5seurat <span class="at">--gzip</span> 6 <span class="at">--overwrite</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Build (requires HDF5 headers)</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="bu">cd</span> src <span class="kw">&amp;&amp;</span> <span class="fu">make</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># Convert between HDF5 formats</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.h5seurat</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="ex">scconvert</span> data.h5seurat data.h5ad <span class="at">--assay</span> RNA</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="ex">scconvert</span> multimodal.h5mu multimodal.h5seurat</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.h5seurat <span class="at">--gzip</span> 6 <span class="at">--overwrite</span></span></code></pre></div>
+<p>The R-level <code><a href="reference/scConvert_cli.html">scConvert_cli()</a></code> extends this to all format pairs, automatically selecting the fastest available path (C binary → streaming → hub):</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span><span class="op">)</span>       <span class="co"># streaming</span></span>
+<span><span class="fu"><a href="reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.h5seurat"</span>, <span class="st">"data.zarr"</span><span class="op">)</span>   <span class="co"># streaming</span></span>
+<span><span class="fu"><a href="reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.h5seurat"</span><span class="op">)</span>   <span class="co"># C binary</span></span>
+<span><span class="fu"><a href="reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.rds"</span>, <span class="st">"data.zarr"</span><span class="op">)</span>        <span class="co"># hub</span></span></code></pre></div>
 <p>Options: <code>--assay &lt;name&gt;</code>, <code>--gzip &lt;0-9&gt;</code>, <code>--overwrite</code>, <code>--quiet</code>, <code>--version</code>, <code>--help</code></p>
 </div>
 <div class="section level2">
@@ -299,11 +359,12 @@
 </h2>
 <ul>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-anndata.html">Conversions: h5Seurat and AnnData</a></li>
-<li><a href="https://mianaz.github.io/scConvert/articles/direct-h5ad-loading.html">Direct H5AD Loading</a></li>
+<li><a href="https://mianaz.github.io/scConvert/articles/convert-zarr.html">Conversions: Zarr Format</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/multimodal-h5mu.html">Multimodal H5MU</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-loom.html">Loom Format</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/cli-usage.html">CLI Usage</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/h5Seurat-spec.html">h5Seurat Specification</a></li>
+<li><a href="https://mianaz.github.io/scConvert/articles/data-mapping-reference.html">Data Mapping Reference</a></li>
 </ul>
 </div>
 <div class="section level2">

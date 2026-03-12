@@ -5,6 +5,7 @@ articles:
   cli-usage: cli-usage.html
   convert-anndata: convert-anndata.html
   convert-loom: convert-loom.html
+  convert-zarr: convert-zarr.html
   data-mapping-reference: data-mapping-reference.html
   h5Seurat-load: h5Seurat-load.html
   h5Seurat-spec: h5Seurat-spec.html
@@ -14,7 +15,7 @@ articles:
   scatac-signac: scatac-signac.html
   spatial-technologies: spatial-technologies.html
   spatial-visium: spatial-visium.html
-last_built: 2026-03-11T16:22Z
+last_built: 2026-03-12T22:54Z
 urls:
   reference: https://mianaz.github.io/scConvert/reference
   article: https://mianaz.github.io/scConvert/articles
