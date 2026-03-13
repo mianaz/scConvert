@@ -200,7 +200,7 @@ Common column names differ between ecosystems:
 | `Phase` | `phase` / `cell_cycle_phase` | Cell cycle |
 
 Use `standardize = TRUE` in
-[`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html)
+[`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html)
 for automatic name translation.
 
 ## Indexing conventions

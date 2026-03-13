@@ -100,7 +100,7 @@ multimodal data in the scverse ecosystem, storing each modality as a
 separate AnnData within a single file.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mianaz/scConvert" class="external-link">scConvert</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -384,7 +384,7 @@ ideal for multimodal data:</p>
 <span><span class="va">h5s_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">pbmc.rna</span>, <span class="va">h5s_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="va">h5s_path</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="va">h5s_path</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"\\.h5Seurat$"</span>, <span class="st">".h5ad"</span>, <span class="va">h5s_path</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">rna_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -411,7 +411,7 @@ motifs, annotations) require separate handling</li>
 <code class="sourceCode R"><span><span class="co"># Convert ATAC peak matrix</span></span>
 <span><span class="va">atac_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">peak_matrix</span>, assay <span class="op">=</span> <span class="st">"ATAC"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">atac_obj</span>, <span class="st">"atac.h5Seurat"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"atac.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"atac.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fragment files must be copied separately</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="st">"fragments.tsv.gz"</span>, <span class="st">"output_dir/fragments.tsv.gz"</span><span class="op">)</span></span>
@@ -546,36 +546,37 @@ motifs, annotations) require separate handling</li>
 <span><span class="co">#&gt;  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       </span></span>
 <span><span class="co">#&gt;  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              </span></span>
 <span><span class="co">#&gt;  [31] fastmap_1.2.0          fitdistrplus_1.2-6     shiny_1.13.0          </span></span>
-<span><span class="co">#&gt;  [34] digest_0.6.39          tensor_1.5.1           RSpectra_0.16-2       </span></span>
-<span><span class="co">#&gt;  [37] irlba_2.3.7            textshaping_1.0.4      labeling_0.4.3        </span></span>
-<span><span class="co">#&gt;  [40] progressr_0.18.0       spatstat.sparse_3.1-0  httr_1.4.8            </span></span>
-<span><span class="co">#&gt;  [43] polyclip_1.10-7        abind_1.4-8            compiler_4.5.2        </span></span>
-<span><span class="co">#&gt;  [46] bit64_4.6.0-1          withr_3.0.2            S7_0.2.1              </span></span>
-<span><span class="co">#&gt;  [49] fastDummies_1.7.5      MASS_7.3-65            rappdirs_0.3.4        </span></span>
-<span><span class="co">#&gt;  [52] tools_4.5.2            lmtest_0.9-40          otel_0.2.0            </span></span>
-<span><span class="co">#&gt;  [55] httpuv_1.6.16          future.apply_1.20.2    goftest_1.2-3         </span></span>
-<span><span class="co">#&gt;  [58] glue_1.8.0             nlme_3.1-168           promises_1.5.0        </span></span>
-<span><span class="co">#&gt;  [61] grid_4.5.2             Rtsne_0.17             cluster_2.1.8.2       </span></span>
-<span><span class="co">#&gt;  [64] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          </span></span>
-<span><span class="co">#&gt;  [67] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
-<span><span class="co">#&gt;  [70] data.table_1.18.2.1    spatstat.geom_3.7-0    RcppAnnoy_0.0.23      </span></span>
-<span><span class="co">#&gt;  [73] ggrepel_0.9.7          RANN_2.6.2             pillar_1.11.1         </span></span>
-<span><span class="co">#&gt;  [76] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        </span></span>
-<span><span class="co">#&gt;  [79] later_1.4.8            splines_4.5.2          dplyr_1.2.0           </span></span>
-<span><span class="co">#&gt;  [82] lattice_0.22-9         bit_4.6.0              survival_3.8-6        </span></span>
-<span><span class="co">#&gt;  [85] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          </span></span>
-<span><span class="co">#&gt;  [88] pbapply_1.7-4          knitr_1.51             gridExtra_2.3         </span></span>
-<span><span class="co">#&gt;  [91] scattermore_1.2        xfun_0.56              matrixStats_1.5.0     </span></span>
-<span><span class="co">#&gt;  [94] stringi_1.8.7          lazyeval_0.2.2         yaml_2.3.12           </span></span>
-<span><span class="co">#&gt;  [97] evaluate_1.0.5         codetools_0.2-20       tibble_3.3.1          </span></span>
-<span><span class="co">#&gt; [100] cli_3.6.5              uwot_0.2.4             xtable_1.8-8          </span></span>
-<span><span class="co">#&gt; [103] reticulate_1.45.0      systemfonts_1.3.1      jquerylib_0.1.4       </span></span>
-<span><span class="co">#&gt; [106] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.0        </span></span>
-<span><span class="co">#&gt; [109] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 </span></span>
-<span><span class="co">#&gt; [112] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         </span></span>
-<span><span class="co">#&gt; [115] listenv_0.10.0         viridisLite_0.4.3      scales_1.4.0          </span></span>
-<span><span class="co">#&gt; [118] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
-<span><span class="co">#&gt; [121] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
+<span><span class="co">#&gt;  [34] digest_0.6.39          rprojroot_2.1.1        tensor_1.5.1          </span></span>
+<span><span class="co">#&gt;  [37] RSpectra_0.16-2        irlba_2.3.7            textshaping_1.0.4     </span></span>
+<span><span class="co">#&gt;  [40] labeling_0.4.3         progressr_0.18.0       spatstat.sparse_3.1-0 </span></span>
+<span><span class="co">#&gt;  [43] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           </span></span>
+<span><span class="co">#&gt;  [46] compiler_4.5.2         here_1.0.2             bit64_4.6.0-1         </span></span>
+<span><span class="co">#&gt;  [49] withr_3.0.2            S7_0.2.1               fastDummies_1.7.5     </span></span>
+<span><span class="co">#&gt;  [52] MASS_7.3-65            rappdirs_0.3.4         tools_4.5.2           </span></span>
+<span><span class="co">#&gt;  [55] lmtest_0.9-40          otel_0.2.0             httpuv_1.6.16         </span></span>
+<span><span class="co">#&gt;  [58] future.apply_1.20.2    goftest_1.2-3          glue_1.8.0            </span></span>
+<span><span class="co">#&gt;  [61] nlme_3.1-168           promises_1.5.0         grid_4.5.2            </span></span>
+<span><span class="co">#&gt;  [64] Rtsne_0.17             cluster_2.1.8.2        reshape2_1.4.5        </span></span>
+<span><span class="co">#&gt;  [67] generics_0.1.4         hdf5r_1.3.12           gtable_0.3.6          </span></span>
+<span><span class="co">#&gt;  [70] spatstat.data_3.1-9    tidyr_1.3.2            data.table_1.18.2.1   </span></span>
+<span><span class="co">#&gt;  [73] spatstat.geom_3.7-0    RcppAnnoy_0.0.23       ggrepel_0.9.7         </span></span>
+<span><span class="co">#&gt;  [76] RANN_2.6.2             pillar_1.11.1          stringr_1.6.0         </span></span>
+<span><span class="co">#&gt;  [79] spam_2.11-3            RcppHNSW_0.6.0         later_1.4.8           </span></span>
+<span><span class="co">#&gt;  [82] splines_4.5.2          dplyr_1.2.0            lattice_0.22-9        </span></span>
+<span><span class="co">#&gt;  [85] bit_4.6.0              survival_3.8-6         deldir_2.0-4          </span></span>
+<span><span class="co">#&gt;  [88] tidyselect_1.2.1       miniUI_0.1.2           pbapply_1.7-4         </span></span>
+<span><span class="co">#&gt;  [91] knitr_1.51             gridExtra_2.3          scattermore_1.2       </span></span>
+<span><span class="co">#&gt;  [94] xfun_0.56              matrixStats_1.5.0      stringi_1.8.7         </span></span>
+<span><span class="co">#&gt;  [97] lazyeval_0.2.2         yaml_2.3.12            evaluate_1.0.5        </span></span>
+<span><span class="co">#&gt; [100] codetools_0.2-20       tibble_3.3.1           cli_3.6.5             </span></span>
+<span><span class="co">#&gt; [103] uwot_0.2.4             xtable_1.8-8           reticulate_1.45.0     </span></span>
+<span><span class="co">#&gt; [106] systemfonts_1.3.1      jquerylib_0.1.4        dichromat_2.0-0.1     </span></span>
+<span><span class="co">#&gt; [109] Rcpp_1.1.1             globals_0.19.0         spatstat.random_3.4-4 </span></span>
+<span><span class="co">#&gt; [112] png_0.1-8              spatstat.univar_3.1-6  parallel_4.5.2        </span></span>
+<span><span class="co">#&gt; [115] pkgdown_2.2.0          dotCall64_1.2          listenv_0.10.0        </span></span>
+<span><span class="co">#&gt; [118] viridisLite_0.4.3      scales_1.4.0           ggridges_0.5.7        </span></span>
+<span><span class="co">#&gt; [121] purrr_1.2.1            crayon_1.5.3           rlang_1.1.7           </span></span>
+<span><span class="co">#&gt; [124] cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -687,7 +687,7 @@ references (which may need path adjustment).</p>
 </tr>
 </tbody>
 </table>
-<p>Use <code>standardize = TRUE</code> in <code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code> for
+<p>Use <code>standardize = TRUE</code> in <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> for
 automatic name translation.</p>
 </div>
 <div class="section level2">
@@ -729,12 +729,12 @@ automatic name translation.</p>
 </h2>
 <p>After any conversion, verify data integrity:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mianaz/scConvert" class="external-link">scConvert</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load original and roundtripped</span></span>
 <span><span class="va">orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"original.h5ad"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">orig</span>, <span class="st">"temp.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"temp.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"temp.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"temp.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Check dimensions</span></span>
