@@ -1,0 +1,536 @@
+# Saving and Loading Data from an h5Seurat File
+
+The h5Seurat file format, based on
+[HDF5](https://en.wikipedia.org/wiki/Hierarchical_Data_Format), is
+specifically designed for the storage and analysis of multi-modal
+single-cell and spatially-resolved expression experiments, for example,
+from CITE-seq or 10X Visium technologies. It holds all molecular
+information and associated metadata, including (for example)
+nearest-neighbor graphs, dimensional reduction information, spatial
+coordinates and image data, and cluster labels.
+
+This vignette serves as a guide to saving and loading `Seurat` objects
+to h5Seurat files. **This implementation supports Seurat v5 with full
+Assay5 compatibility**, automatically handling both legacy Assay and
+modern Assay5 objects. For more details about h5Seurat files, please see
+the h5Seurat-spec vignette.
+
+## Saving a dataset
+
+Saving a `Seurat` object to an h5Seurat file is a fairly painless
+process. All assays, dimensional reductions, spatial images, and
+nearest-neighbor graphs are automatically saved as well as extra
+metadata such as miscellaneous data, command logs, or cell identity
+classes from a `Seurat` object. To save a `Seurat` object, we need the
+[Seurat](https://satijalab.org/seurat) and scConvert R packages.
+
+``` r
+
+library(Seurat)
+library(scConvert)
+library(ggplot2)
+library(patchwork)
+```
+
+For this vignette, we’ll use the `pbmc3k.final` dataset from
+SeuratData - a fully processed PBMC dataset with clustering, dimensional
+reductions, and nearest-neighbor graphs.
+
+``` r
+
+library(SeuratData)
+
+# Install pbmc3k if not already installed
+if (!"pbmc3k.final" %in% rownames(InstalledData())) {
+  InstallData("pbmc3k")
+}
+
+# Load the processed pbmc3k dataset
+data("pbmc3k.final", package = "pbmc3k.SeuratData")
+pbmc <- UpdateSeuratObject(pbmc3k.final)
+pbmc
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  3 layers present: counts, data, scale.data
+#>  2 dimensional reductions calculated: pca, umap
+```
+
+As seen, we have a dataset with multiple components to it. Saving an
+object is as simple as calling
+[`scSaveH5Seurat()`](https://mianaz.github.io/scConvert/reference/scSaveH5Seurat.md);
+minimally, this function takes a `Seurat` object and nothing else.
+Optional arguments are present for specifying a filename and whether or
+not you want to overwrite a preexisting file.
+
+``` r
+
+scSaveH5Seurat(pbmc, filename = "pbmc3k.h5Seurat", overwrite = TRUE)
+```
+
+This process is quick and results in a compact on-disk file.
+
+``` r
+
+size <- file.size("pbmc3k.h5Seurat")
+print(structure(size, class = "object_size"), units = "Mb")
+#> 52.1 Mb
+```
+
+h5Seurat files are HDF5-based and can be read in other languages, such
+as Python, providing better interoperability than Rds files.
+
+## Connecting to and querying h5Seurat files
+
+Unlike most data formats, HDF5 files can be connected to and explored
+without loading the data into memory. To facilitate this, we’ve built an
+`h5Seurat` object to serve as an interface to h5Seurat files in R.
+`h5Seurat` objects are built off of the `H5File` object from the hdf5r
+package.
+
+`h5Seurat` objects and R6 classes
+
+One thing to note, `h5Seurat` and `H5File` objects are R6 objects.
+Unlike most R objects (called S3 and S4), and more like objects in
+Python, R6 objects are *encapsulated* objects; this means that methods
+are attached directly to the object instead of to a generic function.\
+In Seurat, most functions take an object as input and return an object
+as output. These functions actually run differently depending on the
+class of the object passed to them. For example, `RunUMAP` has several
+different modes of operation, depending on the type of object that’s
+passed to it. One can see which objects trigger different routines by
+using the
+[`methods`](https://stat.ethz.ch/R-manual/R-patched/library/utils/html/methods.html)
+function. Functions that change behavior are known as “generics” and the
+exact implementations are known as “methods”; these methods are
+associated with the generic instead of with the object itself.\
+R6 objects, however, have their methods attached directly to the object.
+Calling an R6 method is done similarly to data access in R’s S3 and S4
+object system: using the `$` operator. For example, creating a new
+Seurat object is done with `CreateSeuratObject` or
+`new(Class = "Seurat")` (for advanced users), while initializing a new
+`h5Seurat` object is done with `h5Seurat$new()`\
+For more details about R6 objects, please see the [R6 website and
+documentation](https://r6.r-lib.org/)
+
+Connecting to an h5Seurat file is as simple as instantiating an
+`h5Seurat` object.
+
+``` r
+
+hfile <- scConnect("pbmc3k.h5Seurat")
+hfile
+#> Class: h5Seurat
+#> Filename: /Users/miana/Desktop/scConvert/vignettes/pbmc3k.h5Seurat
+#> Access type: H5F_ACC_RDONLY
+#> Attributes: version, project, active.assay
+#> Listing:
+#>          name    obj_type dataset.dims dataset.type_class
+#>  active.ident   H5I_GROUP         <NA>               <NA>
+#>        assays   H5I_GROUP         <NA>               <NA>
+#>    cell.names H5I_DATASET         2638         H5T_STRING
+#>      commands   H5I_GROUP         <NA>               <NA>
+#>        graphs   H5I_GROUP         <NA>               <NA>
+#>        images   H5I_GROUP         <NA>               <NA>
+#>     meta.data   H5I_GROUP         <NA>               <NA>
+#>          misc   H5I_GROUP         <NA>               <NA>
+#>     neighbors   H5I_GROUP         <NA>               <NA>
+#>    reductions   H5I_GROUP         <NA>               <NA>
+#> < Printed 10, out of 11>
+```
+
+As seen, the h5Seurat file is structured similarly to a `Seurat` object,
+with different HDF5 groups sharing the names of slots in a `Seurat`
+object. However, it’s difficult to glean what data is present in this
+dataset similar to calling a `Seurat` object in the R console. To get
+around this, we’ve created an `index` method for `h5Seurat` objects;
+this method creates a summary of the data stored within the h5Seurat
+object. As `Seurat` objects are organized around the assay data, this
+h5Seurat index showcases the data grouped by assay.
+
+``` r
+
+hfile$index()
+#> Data for assay RNA★ (default assay)
+#>    counts      data    scale.data
+#>      ✔          ✔          ✔     
+#> Dimensional reductions:
+#>         Embeddings  Loadings  Projected  JackStraw 
+#>  pca:       ✔          ✔          ✖          ✔     
+#>  umap:      ✔          ✖          ✖          ✖     
+#> Graphs:
+#>  ─ RNA_nn
+#>  ─ RNA_snn
+```
+
+First we get a breakdown of what slots are filled within each assay,
+followed by a table of dimensional reduction information. This table
+shows which bits of information (eg. cell embeddings, feature loadings,
+JackStraw data) are present. these tables, we get a list of
+nearest-neighbor graphs and spatial image data. This way, we can see
+what data gets loaded on a per-assay basis as is required by Seurat.
+
+To explore an h5Seurat file deeper, we can use the double bracket `[[`
+operator to explore various aspects of the dataset. The double bracket
+`[[` operator takes a UNIX-style path comprised of dataset names.
+
+``` r
+
+hfile[["assays"]]
+#> Class: H5Group
+#> Filename: /Users/miana/Desktop/scConvert/vignettes/pbmc3k.h5Seurat
+#> Group: /assays
+#> Listing:
+#>  name  obj_type dataset.dims dataset.type_class
+#>   RNA H5I_GROUP         <NA>               <NA>
+hfile[["assays/RNA"]]
+#> Class: H5Group
+#> Filename: /Users/miana/Desktop/scConvert/vignettes/pbmc3k.h5Seurat
+#> Group: /assays/RNA
+#> Attributes: key
+#> Listing:
+#>               name    obj_type dataset.dims dataset.type_class
+#>             counts   H5I_GROUP         <NA>               <NA>
+#>               data   H5I_GROUP         <NA>               <NA>
+#>           features H5I_DATASET        13714         H5T_STRING
+#>      meta.features   H5I_GROUP         <NA>               <NA>
+#>         scale.data H5I_DATASET 13714 x 2638          H5T_FLOAT
+#>    scaled.features H5I_DATASET        13714         H5T_STRING
+#>  variable.features H5I_DATASET         2000         H5T_STRING
+hfile[["reductions"]]
+#> Class: H5Group
+#> Filename: /Users/miana/Desktop/scConvert/vignettes/pbmc3k.h5Seurat
+#> Group: /reductions
+#> Listing:
+#>  name  obj_type dataset.dims dataset.type_class
+#>   pca H5I_GROUP         <NA>               <NA>
+#>  umap H5I_GROUP         <NA>               <NA>
+hfile[["reductions/umap"]]
+#> Class: H5Group
+#> Filename: /Users/miana/Desktop/scConvert/vignettes/pbmc3k.h5Seurat
+#> Group: /reductions/umap
+#> Attributes: active.assay, key, global
+#> Listing:
+#>             name    obj_type dataset.dims dataset.type_class
+#>  cell.embeddings H5I_DATASET     2638 x 2          H5T_FLOAT
+#>             misc   H5I_GROUP         <NA>               <NA>
+```
+
+When finished exploring an h5Seurat file, remember to close the
+connection. Because we’re working with file on disk directly rather than
+loading it into memory, we need to close it to prevent file corruption.
+You can also open the file in read-only mode (`mode = "r"`) to help
+alleviate file corruption, though it’s still a good habit to close the
+h5Seurat file when done working with it.
+
+``` r
+
+hfile$close_all()
+```
+
+## Loading datasets
+
+Reading data from an h5Seurat file is as simple as calling
+[`scLoadH5Seurat()`](https://mianaz.github.io/scConvert/reference/scLoadH5Seurat.md);
+by default, it loads the entire object into memory.
+
+``` r
+
+pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat")
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  3 layers present: counts, data, scale.data
+#>  2 dimensional reductions calculated: pca, umap
+```
+
+The loaded object preserves all components — clusters, reductions, and
+expression data:
+
+``` r
+
+library(patchwork)
+p1 <- DimPlot(pbmc2, reduction = "umap", group.by = "seurat_annotations",
+              label = TRUE, pt.size = 0.5) + NoLegend() + ggtitle("Clusters (from h5Seurat)")
+p2 <- FeaturePlot(pbmc2, features = "CD14", pt.size = 0.5) + ggtitle("CD14 expression")
+p1 + p2
+```
+
+![](h5Seurat-load_files/figure-html/plot_loaded-1.png)
+
+However, there are situations in which loading an entire `Seurat` object
+is not desirable. As such, we can leverage the HDF5 format and load only
+parts of a dataset at a time. `scLoadH5Seurat` makes use of assay
+association to limit the data loaded. In `Seurat` objects, all
+dimensional reduction information, nearest-neighbor graphs, and spatial
+image data have an assay they “belong” to (see
+[`DefaultAssay()`](https://mianaz.github.io/scConvert/reference/h5Seurat-bindings.md)
+in the Seurat package for more details). If only certain assays are
+requested, then only the object associated with those assays are loaded.
+
+There are four main parameters for controlling data loading. The first
+is the `assays` parameter; this parameter controls which assays are
+loaded and which slots of each assay are loaded. The simplest level of
+control is specifying the assays to load. For our dataset, passing an
+assay name will load the entire assay object for the assay specified.
+
+``` r
+
+pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = "RNA")
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  3 layers present: counts, data, scale.data
+#>  2 dimensional reductions calculated: pca, umap
+```
+
+We can also choose the slots to load; the slots available are “counts”
+for the raw expression data, “data” for the normalized expression data,
+or “scale.data” for the scaled expression data. Specifying slots instead
+of assays will load the desired slots from all assays that have the
+requested slots. When specifying slots, one of either “counts” or “data”
+**must** be specified as the `Seurat` object uses these slots to control
+dataset dimensionality information.
+
+``` r
+
+pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = "data")
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  2 layers present: counts, data
+#>  2 dimensional reductions calculated: pca, umap
+```
+
+For more fine-tuned control, the `assays` parameter can also take a
+named list or vector, where the names are the names of the assays to
+load and the values are the slots to load.
+
+``` r
+
+pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = list("RNA" = c("data", "scale.data")))
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  3 layers present: counts, data, scale.data
+#>  2 dimensional reductions calculated: pca, umap
+```
+
+Finally, passing `NULL` to `assays` (the default behavior) loads all
+assays and all slots.
+
+The second of the main parameters is the `reductions` parameter; this
+parameter controls which dimensional reductions are loaded. As
+dimensional reductions are tied to assays, the data request needs to be
+either associated to a loaded assay or marked as global to be loaded
+(see details below).
+
+``` r
+
+pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = "RNA", reductions = "pca")
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  3 layers present: counts, data, scale.data
+#>  1 dimensional reduction calculated: pca
+```
+
+There are three special values the `reductions` parameter can take:
+`NULL` for all dimensional reductions that can be loaded (the default
+behavior), `NA` for *global* dimensional reductions only, or `FALSE` for
+no dimensional reduction information.
+
+The `graphs` parameter is the third main parameter; this parameter
+controls which nearest-neighbor graphs to load. Just like dimensional
+reduction information, nearest-neighbor graphs are tied to assays, and
+thus are only loaded when their associated assay is loaded as well.
+There are two special values the `graphs` parameter can take: `NULL` for
+all graphs that can be loaded (the default behavior) or `FALSE` for no
+nearest-neighbor graphs.
+
+The final main parameter is the `images` parameter; this parameter
+controls which spatial image data is loaded. All spatial image data are
+marked global by default, so they are loaded whether or not their
+associated assays are loaded as well. The `images` parameter has three
+special values: `NULL` for all spatial image data (the default), `NA`
+for *global* spatial image data (typically the same as `NULL`), or
+`FALSE` for no spatial image data.
+
+With these four parameters, there is a lot of customization for loading
+`Seurat` objects from h5Seurat files. For example, the following will
+load the “data” and “scale.data” slots from the “RNA” assay, *global*
+dimensional reductions, none of the nearest neighbor graphs, and no
+spatial images.
+
+``` r
+
+pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = list("RNA" = c("data", "scale.data")), reductions = NA, graphs = FALSE, images = FALSE)
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  3 layers present: counts, data, scale.data
+#>  1 dimensional reduction calculated: umap
+```
+
+In addition, there are four secondary parameters to `scLoadH5Seurat`:
+`meta.data`, `commands`, `misc`, and `tools`; these all take simple
+`TRUE`/`FALSE` values to control the loading of cell-level metadata,
+command logs, miscellaneous information, or tool-specific results,
+respectively.
+
+Global objects
+
+The concept of global objects in Seurat is designed as an extension to
+the assay-centric nature of `Seurat` objects. In Seurat, each assay is
+considered to be one experiment or measurement of data for a common
+group of cells. These assays are then used to generate working
+summaries, such as reduced dimension space or nearest-neighbor graphs.
+Generally, if an assay is removed from an object, the working summaries
+are of little use so they get removed as well.\
+However, there are some instances in which these working summaries are
+useful outside the context of their assay. For example, some reduced
+representations of the data such as tSNE or UMAP are useful for
+visualization regardless of the the assay. As such, certain reduced
+representations and all spatial image data are marked as *global*,
+allowing them to persist as useful visualization contexts without their
+associated assay and large expression matrices being present.\
+For more details about global objects, please see the documentation for
+[globality in Seurat](https://rdrr.io/cran/Seurat/man/IsGlobal.html)
+
+Partial loading of datasets is an excellent way to limit memory usage
+and prevent the loading of massive datasets into memory. However, there
+can be instances in which a partial dataset was loaded, but then needs
+to be expanded with additional data from the h5Seurat file. Instead of
+redoing the partial load, we can make use of
+[`scAppendData()`](https://mianaz.github.io/scConvert/reference/scAppendData.md)
+to add additional objects from an h5Seurat file to an already-loaded
+`Seurat` object. To show how this works, we’ll start off by loading just
+the “data” slot from the “RNA” assay, but not load any dimensional
+reduction information or nearest-neighbor graphs.
+
+``` r
+
+pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = c("RNA" = "data"), reductions = FALSE, graphs = FALSE, images = FALSE)
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  2 layers present: counts, data
+```
+
+`scAppendData` takes the h5Seurat file, the `Seurat` object generated
+from `scLoadH5Seurat` and uses the four main paramters from
+`scLoadH5Seurat` (`assays`, `reductions`, `graphs`, and `images`). These
+parameters are used in the same way as `scLoadH5Seurat` with one
+exception: `assays` can now take `FALSE` as a value. By passing `FALSE`,
+we prevent other assay information from being loaded; this is useful if
+we only want to add other bits of data to our `Seurat` object. For
+example, we can choose to add only *global* dimensional reductions to
+the already existing `Seurat` object.
+
+``` r
+
+pbmc2 <- scAppendData("pbmc3k.h5Seurat", pbmc2, assays = FALSE, reductions = NA, graphs = FALSE, images = FALSE)
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  2 layers present: counts, data
+#>  1 dimensional reduction calculated: umap
+```
+
+The only limits to the number of times `scAppendData` can be run is when
+the `h5Seurat` file has run out of data not present in the `Seurat`
+object. Otherwise, it can be run multiple times, adding new bits of data
+to our `Seurat` object. Here, we fill out the rest of the “RNA” assay,
+but load no other information
+
+``` r
+
+pbmc2 <- scAppendData("pbmc3k.h5Seurat", pbmc2, assays = "RNA", reductions = FALSE, graphs = FALSE, images = FALSE)
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  2 layers present: counts, data
+#>  1 dimensional reduction calculated: umap
+```
+
+If we want to perform a “full append” (loading all bits of data of a
+`Seurat` object from an h5Seurat file), we can set the four parameters
+to `NULL`, which happens to be the default values for these parmaters.
+This loads the rest of the `Seurat` object from the h5Seurat file into
+memory.
+
+``` r
+
+pbmc2 <- scAppendData("pbmc3k.h5Seurat", pbmc2)
+pbmc2
+#> An object of class Seurat 
+#> 13714 features across 2638 samples within 1 assay 
+#> Active assay: RNA (13714 features, 2000 variable features)
+#>  2 layers present: counts, data
+#>  2 dimensional reductions calculated: umap, pca
+```
+
+## Working with Spatial Data
+
+For spatial transcriptomics data, we can use the stxBrain dataset from
+SeuratData:
+
+``` r
+
+library(SeuratData)
+
+# Install stxBrain if not already installed
+if (!"stxBrain" %in% rownames(InstalledData())) {
+  InstallData("stxBrain")
+}
+
+# Load anterior1 section
+brain <- UpdateSeuratObject(LoadData("stxBrain", type = "anterior1"))
+brain
+#> An object of class Seurat 
+#> 31053 features across 2696 samples within 1 assay 
+#> Active assay: Spatial (31053 features, 0 variable features)
+#>  1 layer present: counts
+#>  1 spatial field of view present: anterior1
+```
+
+Save and reload to demonstrate h5Seurat with spatial data:
+
+``` r
+
+brain <- NormalizeData(brain, verbose = FALSE)
+scSaveH5Seurat(brain, filename = "stxBrain.h5Seurat", overwrite = TRUE)
+
+# Reload
+brain2 <- scLoadH5Seurat("stxBrain.h5Seurat")
+
+# Verify spatial images are preserved
+cat("Original images:", Images(brain), "\n")
+#> Original images: anterior1
+cat("Reloaded images:", Images(brain2), "\n")
+#> Reloaded images: anterior1
+```
+
+``` r
+
+SpatialFeaturePlot(brain2, features = "Hpca", pt.size.factor = 1.5) +
+  ggtitle("Hpca (loaded from h5Seurat)")
+```
+
+![](h5Seurat-load_files/figure-html/plot_spatial-1.png)
+
+## Session Info
+
+``` r
+
+sessionInfo()
+```

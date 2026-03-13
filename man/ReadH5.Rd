@@ -45,7 +45,7 @@
 
 \item{recursive}{Whether to recursively convert subgroups to nested lists}
 
-\item{transpose}{Transpose the matrix before returning}
+\item{transpose}{scTranspose the matrix before returning}
 }
 \value{
 Varies depending on the method being called

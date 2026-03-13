@@ -121,9 +121,9 @@ ZarrToH5AD("data.zarr", "data.h5ad")
 H5SeuratToZarr("data.h5seurat", "data.zarr")
 ZarrToH5Seurat("data.zarr", "data.h5seurat")
 
-# h5ad <-> h5Seurat (direct HDF5 path)
-H5ADToH5Seurat("data.h5ad", "data.h5seurat")
-H5SeuratToH5AD("data.h5seurat", "data.h5ad")
+# h5ad <-> h5Seurat (via dispatcher — uses C binary or direct HDF5 path)
+scConvert("data.h5ad", "data.h5seurat")
+scConvert("data.h5seurat", "data.h5ad")
 
 # Fall back to Seurat hub if needed
 H5ADToZarr("data.h5ad", "data.zarr", stream = FALSE)

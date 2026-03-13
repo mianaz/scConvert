@@ -2,18 +2,25 @@
 % Please edit documentation in R/zzz.R
 \name{FileType}
 \alias{FileType}
-\title{Determine a filetype based on its extension}
+\title{Convert an HDF5 compound dataset to a group (legacy version)}
 \usage{
 FileType(file)
 }
 \arguments{
 \item{file}{Name of file}
+
+\item{src}{An HDF5 dataset}
+
+\item{dest}{An HDF5 file or group}
+
+\item{dst.name}{Name of group in \code{dest}
+Determine a filetype based on its extension}
 }
 \value{
 The extension, all lowercase
 }
 \description{
-Determine a filetype based on its extension
+Convert an HDF5 compound dataset to a group (legacy version)
 }
 \examples{
 \donttest{

@@ -41,6 +41,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Conversions: Seurat and Loom</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Conversions: Seurat and Zarr</a></li>
     <li><a class="dropdown-item" href="../articles/multimodal-h5mu.html">Multimodal Data with MuData (h5mu)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat File Format Specification</a></li>
     <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Data Mapping Reference</a></li>
@@ -130,7 +131,7 @@ annotations</li>
 <h3 id="basic-conversion">Basic Conversion<a class="anchor" aria-label="anchor" href="#basic-conversion"></a>
 </h3>
 <p>To save a Seurat object as a Loom file, use
-<code><a href="../reference/SaveLoom.html">SaveLoom()</a></code>:</p>
+<code><a href="../reference/scSaveLoom.html">scSaveLoom()</a></code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.satijalab.org/seurat" class="external-link">SeuratData</a></span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="st">"pbmc3k.final"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.org/seurat/reference/InstalledData.html" class="external-link">InstalledData</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -153,7 +154,7 @@ annotations</li>
 <p><img src="convert-loom_files/figure-html/plot_pbmc_cd14-1.png" class="r-plt" alt="" width="100%"></p>
 <p>Now save to Loom format:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/SaveLoom.html">SaveLoom</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/scSaveLoom.html">scSaveLoom</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="what-gets-saved">What Gets Saved<a class="anchor" aria-label="anchor" href="#what-gets-saved"></a>
@@ -261,11 +262,11 @@ Python:</p>
 <div class="section level3">
 <h3 id="loading-loom-files">Loading Loom Files<a class="anchor" aria-label="anchor" href="#loading-loom-files"></a>
 </h3>
-<p>Use <code><a href="../reference/LoadLoom.html">LoadLoom()</a></code> to read a Loom file as a Seurat
+<p>Use <code><a href="../reference/scLoadLoom.html">scLoadLoom()</a></code> to read a Loom file as a Seurat
 object:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load the loom file we just created</span></span>
-<span><span class="va">loaded_pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span><span class="st">"pbmc3k.loom"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">loaded_pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"pbmc3k.loom"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">loaded_pbmc</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -289,39 +290,20 @@ object:</p>
 <span><span class="co">#&gt; [7] "seurat_clusters"</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="visualize-roundtrip">Visualize roundtrip<a class="anchor" aria-label="anchor" href="#visualize-roundtrip"></a>
+<h3 id="visualize-loaded-data">Visualize loaded data<a class="anchor" aria-label="anchor" href="#visualize-loaded-data"></a>
 </h3>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">loaded_pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>                label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Loom roundtrip"</span><span class="op">)</span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/annotate.html" class="external-link">annotate</a></span><span class="op">(</span><span class="st">"text"</span>, x <span class="op">=</span> <span class="fl">0.5</span>, y <span class="op">=</span> <span class="fl">0.5</span>, label <span class="op">=</span> <span class="st">"UMAP not preserved in Loom"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_void</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Loom roundtrip"</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-loom_files/figure-html/plot_loom_roundtrip-1.png" class="r-plt" alt="" width="100%"></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"CD14 — Original"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">loaded_pbmc</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"CD14 — Loom roundtrip"</span><span class="op">)</span></span>
-<span><span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_void</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"CD14 — Loom roundtrip (UMAP unavailable)"</span><span class="op">)</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Loom does not preserve UMAP embeddings, so we show expression data</span></span>
+<span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">loaded_pbmc</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"CD14 (from Loom)"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="convert-loom_files/figure-html/plot_loom_feature-1.png" class="r-plt" alt="" width="100%"></p>
 </div>
 <div class="section level3">
-<h3 id="loadloom-parameters">LoadLoom Parameters<a class="anchor" aria-label="anchor" href="#loadloom-parameters"></a>
+<h3 id="scloadloom-parameters">scLoadLoom Parameters<a class="anchor" aria-label="anchor" href="#scloadloom-parameters"></a>
 </h3>
-<p><code><a href="../reference/LoadLoom.html">LoadLoom()</a></code> provides several options for customizing the
-import:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span></span>
+<p><code><a href="../reference/scLoadLoom.html">scLoadLoom()</a></code> provides several options for customizing
+the import:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span></span>
 <span>  <span class="va">file</span>,                    <span class="co"># Path to loom file</span></span>
 <span></span>
 <span>  assay <span class="op">=</span> <span class="cn">NULL</span>,            <span class="co"># Name for the assay (default: "RNA" or from file)</span></span>
@@ -337,9 +319,9 @@ import:</p>
 <h3 id="loading-specific-layers">Loading Specific Layers<a class="anchor" aria-label="anchor" href="#loading-specific-layers"></a>
 </h3>
 <p>If your Loom file has additional layers (e.g., from velocyto):</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load with specific layers</span></span>
-<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span></span>
+<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span></span>
 <span>  <span class="st">"velocity_data.loom"</span>,</span>
 <span>  normalized <span class="op">=</span> <span class="st">"spliced"</span>,      <span class="co"># Use spliced counts as normalized</span></span>
 <span>  scaled <span class="op">=</span> <span class="st">"ambiguous"</span>         <span class="co"># Optional scaled layer</span></span>
@@ -350,10 +332,10 @@ import:</p>
 </h3>
 <p>Loom files from velocyto contain spliced, unspliced, and ambiguous
 count matrices:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load velocyto loom file</span></span>
 <span><span class="co"># The main matrix typically contains spliced counts</span></span>
-<span><span class="va">velocity_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span></span>
+<span><span class="va">velocity_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span></span>
 <span>  <span class="st">"sample.loom"</span>,</span>
 <span>  cells <span class="op">=</span> <span class="st">"CellID"</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"Gene"</span></span>
@@ -368,7 +350,7 @@ count matrices:</p>
 </h2>
 <p>scConvert preserves data integrity during Seurat ↔︎ Loom
 conversion:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create a simple test object</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">test_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span></span>
@@ -379,8 +361,8 @@ conversion:</p>
 <span><span class="va">test_obj</span><span class="op">$</span><span class="va">numeric_value</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">50</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save and reload</span></span>
-<span><span class="fu"><a href="../reference/SaveLoom.html">SaveLoom</a></span><span class="op">(</span><span class="va">test_obj</span>, <span class="st">"test_roundtrip.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">reloaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span><span class="st">"test_roundtrip.loom"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/scSaveLoom.html">scSaveLoom</a></span><span class="op">(</span><span class="va">test_obj</span>, <span class="st">"test_roundtrip.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">reloaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"test_roundtrip.loom"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Compare</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cell names match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">test_obj</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">reloaded</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -390,7 +372,7 @@ conversion:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Metadata columns:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">reloaded</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, custom_cluster, numeric_value</span></span></code></pre></div>
 <p>Verify expression data is preserved:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">original_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">test_obj</span>, layer <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span><span class="va">reloaded_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">reloaded</span>, layer <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">original_data</span><span class="op">)</span>,</span>
@@ -409,17 +391,17 @@ typical workflow:</p>
 <div class="section level3">
 <h3 id="generate-loom-with-velocyto">1. Generate Loom with velocyto<a class="anchor" aria-label="anchor" href="#generate-loom-with-velocyto"></a>
 </h3>
-<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Run velocyto on Cell Ranger output (command line)</span></span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="ex">velocyto</span> run10x <span class="at">-m</span> repeat_mask.gtf sample_dir genes.gtf</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Run velocyto on Cell Ranger output (command line)</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="ex">velocyto</span> run10x <span class="at">-m</span> repeat_mask.gtf sample_dir genes.gtf</span></code></pre></div>
 <p>This creates a <code>.loom</code> file with spliced/unspliced
 counts.</p>
 </div>
 <div class="section level3">
 <h3 id="load-in-r-for-qc-and-annotation">2. Load in R for QC and Annotation<a class="anchor" aria-label="anchor" href="#load-in-r-for-qc-and-annotation"></a>
 </h3>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load velocyto output</span></span>
-<span><span class="va">velocity_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span><span class="st">"sample.loom"</span><span class="op">)</span></span>
+<span><span class="va">velocity_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"sample.loom"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Perform standard Seurat QC and clustering</span></span>
 <span><span class="va">velocity_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">velocity_data</span><span class="op">)</span></span>
@@ -434,24 +416,24 @@ counts.</p>
 <span><span class="va">velocity_data</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="va">...</span>  <span class="co"># Your annotation method</span></span>
 <span></span>
 <span><span class="co"># Save back to loom with annotations</span></span>
-<span><span class="fu"><a href="../reference/SaveLoom.html">SaveLoom</a></span><span class="op">(</span><span class="va">velocity_data</span>, <span class="st">"sample_annotated.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/scSaveLoom.html">scSaveLoom</a></span><span class="op">(</span><span class="va">velocity_data</span>, <span class="st">"sample_annotated.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="continue-velocity-analysis-in-python">3. Continue Velocity Analysis in Python<a class="anchor" aria-label="anchor" href="#continue-velocity-analysis-in-python"></a>
 </h3>
-<div class="sourceCode" id="cb19"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="im">import</span> scvelo <span class="im">as</span> scv</span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="co"># Load annotated loom file</span></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a>adata <span class="op">=</span> scv.read(<span class="st">"sample_annotated.loom"</span>)</span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a></span>
-<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="co"># Run velocity analysis</span></span>
-<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>scv.pp.filter_and_normalize(adata)</span>
-<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a>scv.pp.moments(adata)</span>
-<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a>scv.tl.velocity(adata)</span>
-<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a>scv.tl.velocity_graph(adata)</span>
-<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a></span>
-<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a><span class="co"># Visualize with Seurat annotations</span></span>
-<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a>scv.pl.velocity_embedding_stream(adata, color<span class="op">=</span><span class="st">'cell_type'</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="im">import</span> scvelo <span class="im">as</span> scv</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="co"># Load annotated loom file</span></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>adata <span class="op">=</span> scv.read(<span class="st">"sample_annotated.loom"</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="co"># Run velocity analysis</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a>scv.pp.filter_and_normalize(adata)</span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a>scv.pp.moments(adata)</span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a>scv.tl.velocity(adata)</span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a>scv.tl.velocity_graph(adata)</span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a><span class="co"># Visualize with Seurat annotations</span></span>
+<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a>scv.pl.velocity_embedding_stream(adata, color<span class="op">=</span><span class="st">'cell_type'</span>)</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -669,29 +651,29 @@ counts.</p>
 <p><strong>“Cannot find feature names dataset”</strong></p>
 <p>The Loom file uses non-standard attribute names. Specify them
 explicitly:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Check what attributes exist</span></span>
 <span><span class="va">h5</span> <span class="op">&lt;-</span> <span class="fu">hdf5r</span><span class="fu">::</span><span class="va"><a href="http://hhoeflin.github.io/hdf5r/reference/H5File-class.html" class="external-link">H5File</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"data.loom"</span>, mode <span class="op">=</span> <span class="st">"r"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">h5</span><span class="op">[[</span><span class="st">"row_attrs"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">h5</span><span class="op">$</span><span class="fu">close_all</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Use the correct attribute name</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, features <span class="op">=</span> <span class="st">"gene_name"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, features <span class="op">=</span> <span class="st">"gene_name"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>“Cannot find cell names dataset”</strong></p>
 <p>Similar to above, check column attributes:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">h5</span> <span class="op">&lt;-</span> <span class="fu">hdf5r</span><span class="fu">::</span><span class="va"><a href="http://hhoeflin.github.io/hdf5r/reference/H5File-class.html" class="external-link">H5File</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"data.loom"</span>, mode <span class="op">=</span> <span class="st">"r"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">h5</span><span class="op">[[</span><span class="st">"col_attrs"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">h5</span><span class="op">$</span><span class="fu">close_all</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Use the correct attribute name</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, cells <span class="op">=</span> <span class="st">"obs_names"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, cells <span class="op">=</span> <span class="st">"obs_names"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Duplicate feature names</strong></p>
 <p>Loom files sometimes have duplicate gene names. scConvert will make
 them unique with a warning:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Warning: Duplicate feature names found, making unique</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadLoom.html">LoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># The names will be Gene, Gene.1, Gene.2, etc.</span></span></code></pre></div>
 </div>
@@ -699,7 +681,7 @@ them unique with a warning:</p>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

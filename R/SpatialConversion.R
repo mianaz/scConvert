@@ -292,6 +292,15 @@ ConvertSeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
     robj = t(spatial_matrix),
     dtype = h5types$H5T_NATIVE_DOUBLE
   )
+  # anndata requires encoding attributes on obsm datasets
+  h5ad[["obsm"]][["spatial"]]$create_attr(
+    attr_name = 'encoding-type', robj = 'array',
+    dtype = CachedGuessDType(x = 'array'), space = ScalarSpace()
+  )
+  h5ad[["obsm"]][["spatial"]]$create_attr(
+    attr_name = 'encoding-version', robj = '0.2.0',
+    dtype = CachedGuessDType(x = '0.2.0'), space = ScalarSpace()
+  )
 
   if (verbose) message("Wrote spatial coordinates to obsm['spatial']")
 
@@ -333,10 +342,14 @@ ConvertSeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
         if (is.finite(val)) {
           # Use mapped name if available, otherwise keep original
           dst_name <- if (!is.null(sf_name_map[[sf_name]])) sf_name_map[[sf_name]] else sf_name
+          # Write as HDF5 scalar (shape=()) not 1-element array (shape=(1,)).
+          # squidpy/scanpy expect scalars; arrays cause plotting issues.
           sf_group$create_dataset(
             name = dst_name,
             robj = val,
-            dtype = h5types$H5T_NATIVE_DOUBLE
+            dtype = h5types$H5T_NATIVE_DOUBLE,
+            space = ScalarSpace(),
+            chunk_dims = NULL
           )
         }
       }
