@@ -1,0 +1,358 @@
+# h5Seurat File Format Specification
+
+## Overall File Structure
+
+### Required Attributes
+
+There are three required top-level HDF5 attributes: “project”,
+“active.assay”, and “version”. Each of these must be a single
+[character](https://mianaz.github.io/scConvert/articles/char). The
+“project” attribute corresponds to the project value of a `Seurat`
+object; the “active.assay” attribute is the name of the default assay
+and must be present in the [“assays” group](#assay-expression-data). The
+“version” corresponds to the version of Seurat that the h5Seurat file is
+based on.
+
+### Top-Level Datasets and Groups
+
+There are two required top-level HDF5 datasets: “cell.names” and
+“meta.data”. The “cell.names” dataset should be a one-dimensional
+[character](https://mianaz.github.io/scConvert/articles/char) dataset,
+with a length equal to the number of cells present in the data. Cell
+names are not stored anywhere else in the h5Seurat file.
+
+The “meta.data” dataset contains cell-level metadata. It should be
+stored as either an [HDF5 dataset or
+group](https://mianaz.github.io/scConvert/articles/data-frame-rep),
+depending on the contents of the meta data. See the [data frame
+representation](https://mianaz.github.io/scConvert/articles/data-frame-rep)
+for more details.
+
+## Assay Expression Data
+
+[`Assay`](https://mianaz.github.io/scConvert/articles/Assay-class)
+objects are stored in the top-level group “assays”; each assay is stored
+as its own group within the “assays” group. Within each assay group,
+there must be a dataset named “features” and either a dataset or group
+named “data”; the “features” dataset must be a one-dimensional
+[character](https://mianaz.github.io/scConvert/articles/char) dataset
+with a length equal to the number of total features within the assay.
+The “data” entry is a matrix, with dimensions of
+$`m_{features} x n_{cells}`$; this entry may be either a dataset, if
+“data” is a [dense
+matrix](https://mianaz.github.io/scConvert/articles/dense), or a group,
+if “data” is a [sparse
+matrix](https://mianaz.github.io/scConvert/articles/sparse). Assay
+groups must also have an attribute named “key”; this is a single
+[character](https://mianaz.github.io/scConvert/articles/char) value.
+
+Assay groups may also have the following optional groups and datasets:
+
+- “counts”: either a
+  [dense](https://mianaz.github.io/scConvert/articles/dense) or
+  [sparse](https://mianaz.github.io/scConvert/articles/sparse) matrix;
+  must have the same dimesions as “data”
+- “scale.data”: a
+  [dense](https://mianaz.github.io/scConvert/articles/dense) matrix; if
+  “scale.data” is present, a one-dimensional
+  [character](https://mianaz.github.io/scConvert/articles/char) dataset
+  must also be present. The “scale.data” matrix must be of dimensions
+  $`m_{scaled features} x n_{cells}`$
+- “meta.features”: a [data
+  frame](https://mianaz.github.io/scConvert/articles/data-frame-rep)
+  with the same number of rows as values present in “features”
+- “variable.features”: a one-dimensional
+  [character](https://mianaz.github.io/scConvert/articles/char) dataset
+- “misc”: a [list](https://mianaz.github.io/scConvert/articles/list)
+
+Subclasses of
+[`Assay`](https://mianaz.github.io/scConvert/articles/Assay-class)
+objects must also follow the same rules as [custom S4
+classes](https://mianaz.github.io/scConvert/articles/list).
+
+**Seurat V5 Assay5 Support**: This implementation fully supports Seurat
+v5 `Assay5` objects. When saving to h5Seurat, `Assay5` objects are
+automatically converted to the storage format described above, with
+layers (counts, data, scale.data) preserved as separate matrices. When
+loading, the format is compatible with both legacy `Assay` and modern
+`Assay5` objects.
+
+## Dimensional Reductions
+
+[Dimensional reduction
+information](https://mianaz.github.io/scConvert/articles/DimReduc-class)
+is stored in the top-level group “reductions”; each dimensional
+reduction is stored as its own group within the “reductions” group.
+Within each dimensional reduction group, there are three required
+attributes: “active.assay”, “key”, and “global”; “active.assay” must be
+one or more
+[character](https://mianaz.github.io/scConvert/articles/char) values
+where each value is a name of an [assay](#assay-expression-data), “key”
+must be a single a
+[character](https://mianaz.github.io/scConvert/articles/char) value, and
+“global” must be a single
+[logical](https://mianaz.github.io/scConvert/articles/log) value. In
+addition, there must also be a dataset named “cell.embeddings”
+representing a [dense
+matrix](https://mianaz.github.io/scConvert/articles/dense). This matrix
+must have the same number of rows as cells present in the h5Seurat file.
+
+Dimensional reduction groups may also have the following optional groups
+and datasets:
+
+- “feature.loadings”: …
+- “feature.loadings.projected”: …
+- “misc”: a [list](https://mianaz.github.io/scConvert/articles/list)
+- “jackstraw”: a [custom S4
+  group](https://mianaz.github.io/scConvert/articles/list)
+
+## Nearest-Neighbor Graphs
+
+[Nearest-neighbor
+graphs](https://mianaz.github.io/scConvert/articles/Graph-class) are
+stored in the top-level group “graphs”; each graph is stored as its own
+group within the “graphs” group. Graph names become graph group names.
+Graphs are stored as [sparse
+matrices](https://mianaz.github.io/scConvert/articles/sparse) with an
+additional HDF5 attribute: “assay.used”. This HDF5 attribute should be a
+single [character](https://mianaz.github.io/scConvert/articles/char)
+value.
+
+## Spatial Image Data
+
+Spatial image data is stored in the top-level group “images”; each image
+is stored as its own group within the “images” group. Actual structure
+of the image group is dependent on the structure of the spatial image
+data. However, it follows the same rules as [custom S4
+classes](https://mianaz.github.io/scConvert/articles/list).
+
+**Note**: spatial images are only supported in objects that were
+generated by a version of Seurat that has spatial support. Currently,
+this is restricted to version 3.1.5.9900 or higher.
+
+## Command Logs
+
+## Miscellaneous Information and Tool-Specific Results
+
+Miscellaneous information is stored in the top-level group “misc”; this
+group follows the same runs as
+[lists](https://mianaz.github.io/scConvert/articles/list). The “misc”
+group is required to be present, but not required to be filled.
+
+Tool-specific results are stored in the top-level group “tools”; this
+group follows the same runs as
+[lists](https://mianaz.github.io/scConvert/articles/list). The “tools”
+group is required to be present, but not required to be filled.
+
+## Common Data Structures
+
+Some data types are found commonly throughout `Seurat` objects
+
+### Character Representation
+
+All [character](https://mianaz.github.io/scConvert/articles/character)
+values (strings in other languages) should be encoding as
+variable-length UTF-8 strings; this applies to HDF5 datasets (including
+standalone [string](https://mianaz.github.io/scConvert/articles/STRING)
+datasets as well as parts of
+[compound](https://mianaz.github.io/scConvert/articles/COMPOUND)
+datasets) and HDF5 attributes.
+
+### Dense Matrix Representation
+
+Dense matrices should be stored as a two-dimensional dataset of any
+type. Datasets should be written in a
+[column-major](https://en.wikipedia.org/wiki/Row-_and_column-major_order)
+order. For column-major implementations (eg. R, Fortran), dataset
+dimensions on-disk should be the same as dimensions in-memory (eg.
+$`m_{diskrow} x n_{diskcol} \sim m_{memrow} x n_{memcol}`$). For
+row-major implmentations (eg. C/C++, Python), dataset dimensions on-disk
+should appear *transposed* to dimensions in-memory (eg.
+$`m_{diskrow} x n_{diskcol} \sim n_{memrow} x m_{memcol}`$); row-major
+implmemetnations transpose datasets prior to reading and writing data.
+
+### Sparse Matrix Representation
+
+Sparse matrices are stored as an HDF5 group with three datasets:
+“indices”, “indptr”, and “data”; the “indices” and “data” datasets must
+be the same length. “data” represents each non-zero element of the
+matrix. “indices” represents the $`0`$-based row numbers for each value
+in “data”
+
+“indptr” represents the points in “data” at which a new column is
+started. This dataset is $`0`$-based and should be $`n_{columns} + 1`$
+in length.
+
+The “indices”, “indptr”, and “data” datasets correspond to the “i”, “p”,
+and “x” slots in a
+[`dgCMatrix`](https://mianaz.github.io/scConvert/articles/dgCMatrix-class),
+respectively.
+
+There may optionally be an HDF5 attribute called “dims”; this attribute
+should be a two
+[integer](https://mianaz.github.io/scConvert/articles/INTEGER) values
+corresponding to the number of rows and number of columns, in that
+order, in the sparse matrix.
+
+### Factor Representation
+
+[Factors](https://mianaz.github.io/scConvert/articles/factor) should be
+stored as an HDF5 group with two datasets: “levels” and “values”
+
+The “levels” dataset should be a
+[character](https://mianaz.github.io/scConvert/articles/char) dataset
+with one entry per
+[level](https://mianaz.github.io/scConvert/articles/levels)
+
+The “values” dataset should be an integer dataset with one entry per
+value in the original factor. These integers should correspond to the
+factor level they had in R
+
+The number of unique entries in “values” should not exceed the number of
+unique entries in “levels”
+
+Rationale
+
+Storing factors in this manner seems excessive from an R perspective.
+HDF5 has the concept of [enumerated datasets
+(enums)](https://mianaz.github.io/scConvert/articles/ENUM) which are an
+efficient way to store R factors on-disk. However, [some implementations
+of HDF5 do not support
+enums](http://docs.h5py.org/en/stable/special.html#enumerated-types) and
+thus lose factor level information. In order to make h5Seurat as
+cross-language as possible, we have opted to store factors as HDF5
+groups instead of HDF5 enums.
+
+### Logical Representation
+
+[Logical](https://mianaz.github.io/scConvert/articles/logical) values
+(booleans in other languages) are encoded as integers in the following
+manner: `FALSE` is encoded as `0`, `TRUE` is encoded as `1`, and `NA` is
+encoded as `2`
+
+An optional HDF5 attribute named “s3class” with the value “logical” is
+allowed to enforce reading in the dataset as logical values. This HDF5
+attribute is a single
+[character](https://mianaz.github.io/scConvert/articles/char) value.
+
+Rationale
+
+Unlike most languages,
+[logicals](https://mianaz.github.io/scConvert/articles/logical) (or
+booleans) can take one of *three* values: `TRUE`, `FALSE`, or
+[`NA`](https://stat.ethz.ch/R-manual/R-devel/library/base/html/NA.html);
+as such, an extra integer value is needed to handle the additional
+logical value. Typically, these values are stored as
+[enums](https://mianaz.github.io/scConvert/articles/ENUM) with mappings
+between the logical representation and integer value. However, [some
+implementations of HDF5 do not support
+enums](http://docs.h5py.org/en/stable/special.html#enumerated-types) and
+thus lose the logical representation. Since the mappings are lost, all
+logicals are stored as integers instead.
+
+### Data Frame Representation
+
+There are two ways of storing [data
+frames](https://mianaz.github.io/scConvert/articles/data.frame) in
+h5Seurat files: as
+[datasets](https://mianaz.github.io/scConvert/articles/datasets) or as
+[groups](https://mianaz.github.io/scConvert/articles/groups). Data frame
+groups are required when data frames contain
+[factors](https://mianaz.github.io/scConvert/articles/factor); if no
+factors are present, data frames can be stored in either type.
+
+Rationale
+
+[Storing factors](https://mianaz.github.io/scConvert/articles/factor)
+on-disk in an HDF5 file poses a unique set of challenges. Namely,
+[enumerated datasets
+(enums)](https://mianaz.github.io/scConvert/articles/ENUM), which are an
+ideal method of storing mapping values, [are not supported in some
+implementations of
+HDF5](http://docs.h5py.org/en/stable/special.html#enumerated-types). As
+factor level information is lost under implementations that do not
+support HDF5 enums, we need a method of storing factors in a
+cross-language manner. Two options were presented: groups or [compound
+datasets](https://mianaz.github.io/scConvert/articles/COMPOUND). While
+the former seems excessive, the latter presents issues with unequal
+dataset length. Therefore, to accomodate factor level information in
+data frames, we utilize HDF5 groups to store data frames when one or
+more columns are
+[factors](https://mianaz.github.io/scConvert/articles/factor).
+
+#### Data Frame Datasets
+
+Data frames stored as datasets should be a one-dimensional [compound
+dataset](https://mianaz.github.io/scConvert/articles/COMPOUND). The
+single dimension should be equal to the number of observations (number
+of rows) in the data frame. Each data type in the compound dataset must
+adhere to the same requirements as standard datasets (eg. [character
+encodings](https://mianaz.github.io/scConvert/articles/char), [logical
+mapping](https://mianaz.github.io/scConvert/articles/log), etc). The
+compound labels should correspond to the data frame column names.
+
+Row names are not stored with the dataset itself, but may be stored
+elsewhere in the h5Seurat file, typically named
+`dataset_name.row.names`; an optional HDF5 attribute called “logicals”
+containing the names of
+[logical](https://mianaz.github.io/scConvert/articles/logical) columns
+is allowed. This attribute consists of [character
+values](https://mianaz.github.io/scConvert/articles/char).
+
+#### Data Frame Groups
+
+Data frames stored as groups are used when
+[factors](https://mianaz.github.io/scConvert/articles/factor) are
+present in the data frame. Within the data frame group, there should be
+one dataset or group per column. Columns that are factors are [stored as
+groups](https://mianaz.github.io/scConvert/articles/factor) while all
+other columns are stored as one-dimensional datasets. Each dataset
+within the group must adhere to the same requirements as standard
+datasets (eg. [character
+encodings](https://mianaz.github.io/scConvert/articles/char), [logical
+mapping](https://mianaz.github.io/scConvert/articles/log), etc). The
+names of the datasets within the group correspond to the data frame
+column names
+
+Data frame row names may be stored in a dataset called “row.names”
+within the group; this dataset should be a one-dimensional
+[character](https://mianaz.github.io/scConvert/articles/char) dataset.
+There are two optional attributes allowed: “colnames” and “logicals”;
+the “colnames” attribute contains the column names in the same order as
+was present in the in-memory [data
+frame](https://mianaz.github.io/scConvert/articles/data.frame) as
+[character values](https://mianaz.github.io/scConvert/articles/char).
+This is used to control column order when reading the data frame back
+into memory. Note, the “colnames” attribute does not need to contain the
+name of every dataset.
+
+The “logicals” attribute contains the names of
+[logical](https://mianaz.github.io/scConvert/articles/logical) columns;
+this attribute should consist of [character
+values](https://mianaz.github.io/scConvert/articles/char).
+
+### List and Custom Class Representation
+
+[Lists](https://mianaz.github.io/scConvert/articles/list) are stored as
+HDF5 groups. Each entry in a list must be named; the names serve as the
+names of datasets and groups within the list group. List values are
+stored as HDF5 datasets or groups, depending on their R object type. For
+example, a list within a list would be stored as a group within the
+first group.
+
+Custom classes are stored as
+[lists](https://mianaz.github.io/scConvert/articles/list) with a special
+HDF5 attribute. S3 classes are stored with the attribute “s3class”,
+which has a value equal to the class of the object. This attribute is a
+variable-length
+[character](https://mianaz.github.io/scConvert/articles/char) value.
+
+Custom S4 classes are also stored as
+[lists](https://mianaz.github.io/scConvert/articles/list) where each
+entry is a slot in the S4 class. S4 class groups have an attribute named
+“s4class”; this attribute should be a single-length
+[character](https://mianaz.github.io/scConvert/articles/char) storing
+the name of the class and the package that defines the class in the form
+of `package:class` (eg. `Signac:ChromatinAssay`); custom S4 classes
+defined in the [Seurat](https://satijalab.org/seurat) package can be
+named with just the class of the object.

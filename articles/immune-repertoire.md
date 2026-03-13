@@ -1,0 +1,227 @@
+# Immune Repertoire (TCR/BCR) Data with scConvert
+
+## Introduction
+
+Single-cell immune repertoire profiling (TCR/BCR sequencing) is often
+paired with gene expression (GEX) in multimodal experiments such as 10x
+Genomics 5’ GEX + VDJ. This vignette explains how scConvert handles
+immune repertoire data during format conversion.
+
+### Key concepts
+
+- **TCR/BCR clonotype data** is stored as cell-level metadata (e.g.,
+  `clonotype_id`, `TRA_cdr3`, `TRB_cdr3`, `IGH_cdr3`)
+- In scanpy/scirpy workflows, TCR/BCR annotations live in `obs` (cell
+  metadata) and `obsm` (alignment matrices)
+- In Seurat, clonotype data lives in `meta.data` after tools like
+  [scRepertoire](https://github.com/ncborcherding/scRepertoire) or
+  [Immcantation](https://immcantation.readthedocs.io/)
+- scConvert preserves all cell metadata during conversion, so TCR/BCR
+  annotations survive roundtrip
+
+``` r
+
+library(Seurat)
+library(scConvert)
+```
+
+## Workflow: Seurat + scRepertoire to h5ad
+
+A typical immune repertoire workflow starts with 10x Cell Ranger output
+(both GEX and VDJ), then uses scRepertoire to add clonotype annotations:
+
+``` r
+
+# Step 1: Load GEX data into Seurat
+gex <- Read10X_h5("filtered_feature_bc_matrix.h5")
+obj <- CreateSeuratObject(counts = gex, project = "TCR_study")
+
+# Step 2: Add TCR clonotype annotations via scRepertoire
+# (scRepertoire reads the Cell Ranger VDJ output)
+library(scRepertoire)
+tcr <- combineTCR(
+  read.csv("filtered_contig_annotations.csv"),
+  samples = "Sample1"
+)
+obj <- combineExpression(tcr, obj,
+  cloneCall = "aa",
+  group.by = "sample"
+)
+
+# Step 3: Standard Seurat processing
+obj <- NormalizeData(obj)
+obj <- FindVariableFeatures(obj)
+obj <- ScaleData(obj)
+obj <- RunPCA(obj)
+obj <- FindNeighbors(obj, dims = 1:30)
+obj <- FindClusters(obj)
+obj <- RunUMAP(obj, dims = 1:30)
+
+# Step 4: Export to h5ad for scirpy analysis in Python
+scConvert(obj, dest = "tcr_annotated.h5ad")
+# All TCR metadata columns (clonotype_id, CDR3 sequences, frequency, etc.)
+# are preserved in obs of the h5ad file
+```
+
+### What gets preserved
+
+When converting a Seurat object with TCR/BCR annotations to h5ad:
+
+| Seurat Location | h5ad Location | Example Columns |
+|----|----|----|
+| `meta.data` | `obs` | `clonotype_id`, `CTgene`, `CTnt`, `CTaa`, `CTstrict` |
+| `meta.data` | `obs` | `Frequency`, `cloneType`, `Proportion` |
+| `meta.data` | `obs` | `TCR_alpha_cdr3`, `TCR_beta_cdr3` |
+| Reductions | `obsm` | PCA, UMAP embeddings |
+| Graphs | `obsp` | SNN/KNN neighbor graphs |
+
+All string and numeric columns in `meta.data` are written to the h5ad
+`obs` dataframe. Factor columns are encoded as HDF5 categorical (enum)
+types, which scirpy and scanpy read natively.
+
+## Workflow: scirpy h5ad to Seurat
+
+If your immune repertoire analysis starts in Python with scirpy:
+
+``` r
+
+# Load h5ad with TCR/BCR annotations from scirpy
+obj <- LoadH5AD("scirpy_analyzed.h5ad")
+
+# TCR metadata is in meta.data
+head(obj[["IR_VJ_1_junction_aa"]])  # alpha chain CDR3
+head(obj[["IR_VDJ_1_junction_aa"]])  # beta chain CDR3
+head(obj[["clone_id"]])
+head(obj[["receptor_type"]])  # TCR, BCR, etc.
+
+# Continue analysis in Seurat
+DimPlot(obj, group.by = "clone_id")
+```
+
+### scirpy column naming
+
+scirpy stores TCR/BCR data using a standardized naming convention in
+`obs`:
+
+| scirpy Column          | Description                                |
+|------------------------|--------------------------------------------|
+| `IR_VJ_1_junction_aa`  | Alpha/light chain CDR3 amino acid sequence |
+| `IR_VDJ_1_junction_aa` | Beta/heavy chain CDR3 amino acid sequence  |
+| `IR_VJ_1_v_call`       | V gene usage (alpha/light)                 |
+| `IR_VDJ_1_v_call`      | V gene usage (beta/heavy)                  |
+| `clone_id`             | Clonotype identifier                       |
+| `receptor_type`        | TCR, BCR, or multichain                    |
+| `chain_pairing`        | Single pair, extra VJ, etc.                |
+
+All these columns are loaded as `meta.data` columns by
+[`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md).
+
+## Multimodal: GEX + VDJ + ADT via h5mu
+
+For experiments combining gene expression, VDJ, and surface protein
+(CITE-seq):
+
+``` r
+
+# Create a multimodal Seurat object
+# RNA assay: gene expression
+# ADT assay: surface protein (CITE-seq)
+# TCR annotations: in meta.data
+
+# Save as h5mu (preserves both assays)
+SaveH5MU(obj, "gex_adt_tcr.h5mu")
+
+# Load back
+obj_loaded <- LoadH5MU("gex_adt_tcr.h5mu")
+
+# Both assays + TCR metadata preserved
+Assays(obj_loaded)  # RNA, ADT
+head(obj_loaded[["clonotype_id"]])  # TCR annotations in meta.data
+```
+
+### MuData and scirpy
+
+In the muon/scirpy ecosystem, TCR data can be stored as a separate
+modality in h5mu:
+
+| h5mu Location | Content                         |
+|---------------|---------------------------------|
+| `/mod/rna/`   | Gene expression (AnnData)       |
+| `/mod/prot/`  | Surface protein (AnnData)       |
+| `/mod/airr/`  | TCR/BCR receptor data (AnnData) |
+| `/obs`        | Shared cell metadata            |
+
+scConvert’s
+[`LoadH5MU()`](https://mianaz.github.io/scConvert/reference/LoadH5MU.md)
+reads all modalities as separate Seurat assays. The `airr` modality
+becomes an assay containing receptor gene usage counts or binary chain
+presence matrices, depending on how the data was encoded.
+
+## BCR (B-cell receptor) data
+
+BCR data follows the same patterns as TCR, with heavy (IGH) and light
+(IGK/IGL) chains:
+
+``` r
+
+# BCR annotations from scRepertoire
+library(scRepertoire)
+bcr <- combineBCR(
+  read.csv("filtered_contig_annotations.csv"),
+  samples = "Sample1"
+)
+obj <- combineExpression(bcr, obj,
+  cloneCall = "aa",
+  group.by = "sample"
+)
+
+# Export preserving BCR metadata
+scConvert(obj, dest = "bcr_study.h5ad")
+```
+
+### BCR-specific columns
+
+| Column                  | Description                 |
+|-------------------------|-----------------------------|
+| `IGH_cdr3`              | Heavy chain CDR3            |
+| `IGK_cdr3` / `IGL_cdr3` | Light chain CDR3            |
+| `isotype`               | IgM, IgG, IgA, etc.         |
+| `SHM_count`             | Somatic hypermutation count |
+
+## Limitations and considerations
+
+1.  **VDJ contigs are not stored in h5ad/h5mu**: Raw contig sequences
+    and alignment information (BAM-level data) are not part of the
+    h5ad/h5mu specification. Only summarized annotations (CDR3
+    sequences, gene calls, clonotype IDs) in cell metadata are
+    preserved.
+
+2.  **AIRR format**: The [AIRR Community
+    standard](https://docs.airr-community.org/) defines a tabular format
+    for adaptive immune receptor repertoires. scConvert preserves
+    AIRR-standard columns when they appear in `obs` metadata, but does
+    not perform AIRR-specific validation.
+
+3.  **Clonotype graphs**: Some tools (scirpy, Dandelion) compute
+    clonotype similarity networks stored in `obsp`. scConvert preserves
+    these as Seurat `Graph` objects during h5ad loading.
+
+4.  **Large VDJ metadata**: TCR/BCR annotations can add 20+ columns per
+    cell. All columns are preserved during conversion as categorical
+    (factor) or character types.
+
+## Data mapping summary
+
+| Source | Destination | TCR/BCR Data Path |
+|----|----|----|
+| Seurat → h5ad | `meta.data` → `obs` | All clonotype columns preserved |
+| h5ad → Seurat | `obs` → `meta.data` | All columns loaded, categoricals → factors |
+| Seurat → h5mu | `meta.data` → `/obs` + per-modality | Shared metadata in global obs |
+| h5mu → Seurat | `/obs` + `/mod/*/obs` → `meta.data` | All modality metadata merged |
+
+## Session Info
+
+``` r
+
+sessionInfo()
+```
