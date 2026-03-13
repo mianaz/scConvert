@@ -175,7 +175,7 @@ conventions:</p>
 </table>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/SeuratToH5AD.html">SeuratToH5AD</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">h5ad_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">h5ad_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"File size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; File size: 70 MB</span></span></code></pre></div>
 </div>
@@ -252,7 +252,7 @@ the box:</p>
 <span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">8</span>))</span>
 <span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>sc_plot <span class="op">=</span> ax.scatter(coords[:, <span class="dv">0</span>], <span class="op">-</span>coords[:, <span class="dv">1</span>], c<span class="op">=</span>expr, s<span class="op">=</span><span class="dv">8</span>, cmap<span class="op">=</span><span class="st">"viridis"</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
 <span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>plt.colorbar(sc_plot, ax<span class="op">=</span>ax, label<span class="op">=</span><span class="st">"Hpca expression"</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; &lt;matplotlib.colorbar.Colorbar object at 0x3ace9a930&gt;</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; &lt;matplotlib.colorbar.Colorbar object at 0x3b10185c0&gt;</span></span>
 <span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>ax.set_title(<span class="st">"Hpca — scanpy/matplotlib (from scConvert h5ad)"</span>)</span>
 <span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>ax.set_aspect(<span class="st">"equal"</span>)</span>
 <span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>ax.axis(<span class="st">"off"</span>)</span>
@@ -285,7 +285,7 @@ the box:</p>
 <h2 id="load-h5ad-back-into-seurat">Load h5ad back into Seurat<a class="anchor" aria-label="anchor" href="#load-h5ad-back-into-seurat"></a>
 </h2>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Dimensions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Dimensions: 2696 cells x 31053 genes</span></span>

@@ -86,7 +86,7 @@ If your immune repertoire analysis starts in Python with scirpy:
 ``` r
 
 # Load h5ad with TCR/BCR annotations from scirpy
-obj <- LoadH5AD("scirpy_analyzed.h5ad")
+obj <- readH5AD("scirpy_analyzed.h5ad")
 
 # TCR metadata is in meta.data
 head(obj[["IR_VJ_1_junction_aa"]])  # alpha chain CDR3
@@ -114,7 +114,7 @@ scirpy stores TCR/BCR data using a standardized naming convention in
 | `chain_pairing`        | Single pair, extra VJ, etc.                |
 
 All these columns are loaded as `meta.data` columns by
-[`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md).
+[`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md).
 
 ## Multimodal: GEX + VDJ + ADT via h5mu
 
@@ -129,10 +129,10 @@ For experiments combining gene expression, VDJ, and surface protein
 # TCR annotations: in meta.data
 
 # Save as h5mu (preserves both assays)
-SaveH5MU(obj, "gex_adt_tcr.h5mu")
+writeH5MU(obj, "gex_adt_tcr.h5mu")
 
 # Load back
-obj_loaded <- LoadH5MU("gex_adt_tcr.h5mu")
+obj_loaded <- readH5MU("gex_adt_tcr.h5mu")
 
 # Both assays + TCR metadata preserved
 Assays(obj_loaded)  # RNA, ADT
@@ -152,7 +152,7 @@ modality in h5mu:
 | `/obs`        | Shared cell metadata            |
 
 scConvert’s
-[`LoadH5MU()`](https://mianaz.github.io/scConvert/reference/LoadH5MU.md)
+[`readH5MU()`](https://mianaz.github.io/scConvert/reference/readH5MU.md)
 reads all modalities as separate Seurat assays. The `airr` modality
 becomes an assay containing receptor gene usage counts or binary chain
 presence matrices, depending on how the data was encoded.

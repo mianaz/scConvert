@@ -25,7 +25,7 @@ Discover](https://cellxgene.cziscience.com/collections):
 # Alternative: download from CellxGene (Tabula Microcebus lung, ~1.7K cells)
 cxg_url <- "https://datasets.cellxgene.cziscience.com/582ffa61-1c54-4492-8763-2ecfa9efa070.h5ad"
 download.file(cxg_url, destfile = "cxg_demo.h5ad", mode = "wb")
-pbmc <- LoadH5AD("cxg_demo.h5ad")
+pbmc <- readH5AD("cxg_demo.h5ad")
 ```
 
 ``` r
@@ -65,7 +65,7 @@ FeaturePlot(pbmc, features = "CD14", pt.size = 0.5)
 Converting the `Seurat` object to an AnnData file is a two-step process:
 
 1.  Save the `Seurat` object as an h5Seurat file using
-    [`scSaveH5Seurat()`](https://mianaz.github.io/scConvert/reference/scSaveH5Seurat.md)
+    [`writeH5Seurat()`](https://mianaz.github.io/scConvert/reference/writeH5Seurat.md)
 2.  Convert to AnnData using
     [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html)
 
@@ -73,7 +73,7 @@ Converting the `Seurat` object to an AnnData file is a two-step process:
 
 cat("Seurat layers:", paste(Layers(pbmc), collapse = ", "), "\n")
 #> Seurat layers: counts, data, scale.data
-scSaveH5Seurat(pbmc, filename = "pbmc3k.h5Seurat", overwrite = TRUE)
+writeH5Seurat(pbmc, filename = "pbmc3k.h5Seurat", overwrite = TRUE)
 scConvert("pbmc3k.h5Seurat", dest = "h5ad", overwrite = TRUE)
 ```
 
@@ -109,20 +109,20 @@ sc.pl.umap(adata, color='CD14', use_raw=False)
 The conversion preserves expression patterns - CD14 shows consistent
 distribution in both tools.
 
-## Direct Loading with LoadH5AD
+## Direct Loading with readH5AD
 
 In addition to the two-step
 [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html) +
-[`scLoadH5Seurat()`](https://mianaz.github.io/scConvert/reference/scLoadH5Seurat.md)
+[`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md)
 workflow shown above, scConvert provides
-[`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md)
+[`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
 for loading h5ad files directly into Seurat objects without creating an
 intermediate h5Seurat file.
 
 ``` r
 
 # One-step: load h5ad directly into a Seurat object
-pbmc_direct <- LoadH5AD("pbmc3k.h5ad", verbose = TRUE)
+pbmc_direct <- readH5AD("pbmc3k.h5ad", verbose = TRUE)
 
 # Compare with the two-step approach
 cat("Direct cells:", ncol(pbmc_direct), "| Two-step cells:", ncol(pbmc), "\n")
@@ -131,7 +131,7 @@ cat("Direct reductions:", paste(names(pbmc_direct@reductions), collapse = ", "),
 #> Direct reductions: pca, umap
 ```
 
-[`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md)
+[`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
 reads the following from h5ad files:
 
 | h5ad Location | Seurat Destination | Description |
@@ -145,7 +145,7 @@ reads the following from h5ad files:
 | `obsm/X_umap` | `reductions$umap` | UMAP coordinates |
 | `obsm/X_pca` | `reductions$pca` | PCA embeddings |
 | `obsm/X_tsne` | `reductions$tsne` | tSNE coordinates |
-| `obsm/spatial` | Spatial coordinates | Via [`ConvertH5ADSpatialToSeurat()`](https://mianaz.github.io/scConvert/reference/ConvertH5ADSpatialToSeurat.md) |
+| `obsm/spatial` | Spatial coordinates | Via [`H5ADSpatialToSeurat()`](https://mianaz.github.io/scConvert/reference/H5ADSpatialToSeurat.md) |
 | `obsp/connectivities` | `graphs$RNA_snn` | SNN graph |
 | `obsp/distances` | `graphs$RNA_nn` | Distance graph |
 | `uns/*` | `misc` | Unstructured annotations |
@@ -154,11 +154,11 @@ reads the following from h5ad files:
 
 | Scenario | Recommended |
 |----|----|
-| Quick exploration of an h5ad file | [`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md) |
-| Round-trip editing (load, modify, re-export) | [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html) + [`scLoadH5Seurat()`](https://mianaz.github.io/scConvert/reference/scLoadH5Seurat.md) |
+| Quick exploration of an h5ad file | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
+| Round-trip editing (load, modify, re-export) | [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html) + [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md) |
 | Need h5Seurat for other tools | [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html) |
-| Loading scanpy-processed data for Seurat analysis | [`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md) |
-| Working with spatial h5ad from CellxGene | [`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md) |
+| Loading scanpy-processed data for Seurat analysis | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
+| Working with spatial h5ad from CellxGene | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
 
 ## Converting from AnnData to Seurat via h5Seurat
 
@@ -231,7 +231,7 @@ Convert to Seurat:
 ``` r
 
 scConvert("crc_normalized.h5ad", dest = "h5seurat", overwrite = TRUE)
-crc <- scLoadH5Seurat("crc_normalized.h5seurat")
+crc <- readH5Seurat("crc_normalized.h5seurat")
 
 # Verify layer mapping: X -> data (log-normalized), raw/X -> counts (if exists)
 cat("Layers:", paste(Layers(crc), collapse = ", "), "\n")
@@ -294,7 +294,7 @@ Convert to h5ad using the direct pipeline:
 
 ``` r
 
-SeuratToH5AD(brain, "stxBrain.h5ad", overwrite = TRUE)
+writeH5AD(brain, "stxBrain.h5ad", overwrite = TRUE)
 ```
 
 View in Python with Squidpy:
@@ -372,7 +372,7 @@ Convert RNA assay to h5ad:
 ``` r
 
 DefaultAssay(cbmc) <- "RNA"
-scSaveH5Seurat(cbmc, "cbmc_rna.h5seurat", overwrite = TRUE)
+writeH5Seurat(cbmc, "cbmc_rna.h5seurat", overwrite = TRUE)
 scConvert("cbmc_rna.h5seurat", dest = "h5ad", overwrite = TRUE)
 ```
 
@@ -403,7 +403,7 @@ Convert the ADT assay separately:
 
 # Convert ADT assay
 DefaultAssay(cbmc) <- "ADT"
-scSaveH5Seurat(cbmc, "cbmc_adt.h5seurat", overwrite = TRUE)
+writeH5Seurat(cbmc, "cbmc_adt.h5seurat", overwrite = TRUE)
 scConvert("cbmc_adt.h5seurat", dest = "h5ad", overwrite = TRUE)
 ```
 
@@ -427,9 +427,9 @@ different features.
 > interoperability, consider the [MuData/h5mu
 > format](https://muon.scverse.org/) from the scverse ecosystem.
 > scConvert provides native
-> [`SaveH5MU()`](https://mianaz.github.io/scConvert/reference/SaveH5MU.md)
+> [`writeH5MU()`](https://mianaz.github.io/scConvert/reference/writeH5MU.md)
 > and
-> [`LoadH5MU()`](https://mianaz.github.io/scConvert/reference/LoadH5MU.md)
+> [`readH5MU()`](https://mianaz.github.io/scConvert/reference/readH5MU.md)
 > functions for reading and writing h5mu files with no external
 > dependencies. See
 > [`vignette("multimodal-h5mu")`](https://mianaz.github.io/scConvert/articles/multimodal-h5mu.md)
@@ -514,7 +514,7 @@ Convert to Seurat:
 ``` r
 
 scConvert("visium_normalized.h5ad", dest = "h5seurat", overwrite = TRUE)
-visium <- scLoadH5Seurat("visium_normalized.h5seurat")
+visium <- readH5Seurat("visium_normalized.h5seurat")
 
 # Verify layer mapping: X -> data (log-normalized)
 cat("Layers:", paste(Layers(visium), collapse = ", "), "\n")

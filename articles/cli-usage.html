@@ -341,7 +341,7 @@ with the CLI, then visualize the output in both Seurat and scanpy.</p>
 <span></span>
 <span><span class="co"># Save as h5Seurat</span></span>
 <span><span class="va">h5s_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/scSaveH5Seurat.html">scSaveH5Seurat</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5s_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5s_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Convert h5Seurat -&gt; h5ad using the CLI</span></span>
 <span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
@@ -349,7 +349,7 @@ with the CLI, then visualize the output in both Seurat and scanpy.</p>
 <span><span class="co">#&gt; Validating h5Seurat file</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Converted:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">h5s_path</span><span class="op">)</span>, <span class="st">"-&gt;"</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Converted: file123bb7dd4ad32.h5Seurat -&gt; file123bb15b6ee28.h5ad</span></span></code></pre></div>
+<span><span class="co">#&gt; Converted: file1674017817d82.h5Seurat -&gt; file167403656eddc.h5ad</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="visualize-in-seurat-r">Visualize in Seurat (R)<a class="anchor" aria-label="anchor" href="#visualize-in-seurat-r"></a>
@@ -359,7 +359,7 @@ with the CLI, then visualize the output in both Seurat and scanpy.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load CLI h5ad output</span></span>
-<span><span class="va">obj_cli</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">obj_cli</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj_cli</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj_cli</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Cells: 214 | Genes: 2000</span></span>
@@ -434,7 +434,7 @@ expression values.</p>
 <span><span class="co">#&gt; Adding X_pca as cell embeddings for pca</span></span>
 <span><span class="co">#&gt; Adding X_umap as cell embeddings for umap</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
-<span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="va">h5s_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5s_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating h5Seurat file</span></span>
 <span></span>
 <span><span class="co"># Dimension check</span></span>
@@ -518,13 +518,13 @@ expression values.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Save reference as h5seurat (via R), then convert to h5ad (via CLI)</span></span>
 <span><span class="va">h5s_tmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/scSaveH5Seurat.html">scSaveH5Seurat</a></span><span class="op">(</span><span class="va">ref</span>, <span class="va">h5s_tmp</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">ref</span>, <span class="va">h5s_tmp</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">h5ad_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="va">h5s_tmp</span>, <span class="va">h5ad_out</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating h5Seurat file</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
-<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="va">h5ad_out</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_out</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
@@ -587,7 +587,7 @@ expression values.</p>
 <span><span class="co">#&gt; Adding X_pca as cell embeddings for pca</span></span>
 <span><span class="co">#&gt; Adding X_umap as cell embeddings for umap</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
-<span><span class="va">obj_test</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="va">h5s_test</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">obj_test</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5s_test</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating h5Seurat file</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">ref</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -629,10 +629,10 @@ format matrix.</p>
 <h3 id="benchmark-results">Benchmark results<a class="anchor" aria-label="anchor" href="#benchmark-results"></a>
 </h3>
 <p>The most common workflows are loading h5ad into Seurat
-(<code>LoadH5AD</code>) and writing back to h5ad
-(<code>SeuratToH5AD</code>). The table below shows performance on
-synthetic sparse h5ad files (5% density, 20,000 genes). RDS round-trips
-include <code>readRDS</code>/<code>saveRDS</code> time:</p>
+(<code>readH5AD</code>) and writing back to h5ad
+(<code>writeH5AD</code>). The table below shows performance on synthetic
+sparse h5ad files (5% density, 20,000 genes). RDS round-trips include
+<code>readRDS</code>/<code>saveRDS</code> time:</p>
 <table class="table">
 <caption>scConvert performance (median wall-clock seconds, 20K
 genes)</caption>
@@ -681,16 +681,16 @@ genes)</caption>
 </tr>
 </tbody>
 </table>
-<p><code>LoadH5AD</code> and <code>SeuratToH5AD</code> are the fastest
+<p><code>readH5AD</code> and <code>writeH5AD</code> are the fastest
 paths because they work directly with HDF5 — no intermediate
 serialization. The RDS paths include R object serialization overhead;
 <code>h5ad → RDS</code> is dominated by <code><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS()</a></code>
 compressing the Seurat object.</p>
-<p>For datasets exceeding available memory, <code><a href="../reference/LoadH5AD.html">LoadH5AD()</a></code>
+<p>For datasets exceeding available memory, <code><a href="../reference/readH5AD.html">readH5AD()</a></code>
 supports on-disk loading via BPCells:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># On-disk loading — minimal memory footprint</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"large_dataset.h5ad"</span>, use.bpcells <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"large_dataset.h5ad"</span>, use.bpcells <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="cli-usage_files/figure-html/benchmark_plot-1.png" class="r-plt" alt="" width="768"></p>
 </div>
 <div class="section level3">
@@ -751,7 +751,7 @@ v2 stores following the AnnData on-disk specification.</p>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Zarr -&gt; Seurat</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadZarr.html">LoadZarr</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Zarr -&gt; other formats</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, dest <span class="op">=</span> <span class="st">"roundtrip.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -764,7 +764,7 @@ v2 stores following the AnnData on-disk specification.</p>
 <p>RDS files store native R objects, preserving the complete Seurat
 object with all assays, reductions, and metadata. SingleCellExperiment
 (SCE) objects can be converted through Seurat’s built-in
-<code><a href="https://satijalab.org/seurat/reference/as.SingleCellExperiment.html" class="external-link">as.SingleCellExperiment()</a></code> and <code><a href="../reference/scLoadH5Seurat.html">as.Seurat()</a></code>
+<code><a href="https://satijalab.org/seurat/reference/as.SingleCellExperiment.html" class="external-link">as.SingleCellExperiment()</a></code> and <code><a href="../reference/readH5Seurat.html">as.Seurat()</a></code>
 methods.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># h5ad -&gt; RDS</span></span>
@@ -775,10 +775,10 @@ methods.</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.rds"</span>, dest <span class="op">=</span> <span class="st">"data.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Seurat &lt;-&gt; SCE</span></span>
-<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"data.h5ad"</span><span class="op">)</span></span>
+<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"data.h5ad"</span><span class="op">)</span></span>
 <span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/as.SingleCellExperiment.html" class="external-link">as.SingleCellExperiment</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span></span>
-<span><span class="va">seurat_from_sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">as.Seurat</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/SeuratToH5AD.html">SeuratToH5AD</a></span><span class="op">(</span><span class="va">seurat_from_sce</span>, <span class="st">"from_sce.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">seurat_from_sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">as.Seurat</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">seurat_from_sce</span>, <span class="st">"from_sce.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="multi-step-conversion-chain">Multi-step conversion chain<a class="anchor" aria-label="anchor" href="#multi-step-conversion-chain"></a>
@@ -807,7 +807,7 @@ as a reduction in h5seurat format.</p>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"spatial.h5seurat"</span>, <span class="st">"spatial.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load and visualize</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"spatial.h5ad"</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"spatial.h5ad"</span><span class="op">)</span></span>
 <span><span class="co"># For non-Visium spatial (IMC, MERFISH, etc.):</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"spatial_x"</span><span class="op">]</span><span class="op">]</span>, <span class="va">obj</span><span class="op">[[</span><span class="st">"spatial_y"</span><span class="op">]</span><span class="op">]</span>, pch <span class="op">=</span> <span class="fl">19</span>, cex <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
 <p>The C binary handles both sparse and dense expression matrices

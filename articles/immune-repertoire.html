@@ -212,7 +212,7 @@ natively.</p>
 <p>If your immune repertoire analysis starts in Python with scirpy:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load h5ad with TCR/BCR annotations from scirpy</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"scirpy_analyzed.h5ad"</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"scirpy_analyzed.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># TCR metadata is in meta.data</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"IR_VJ_1_junction_aa"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>  <span class="co"># alpha chain CDR3</span></span>
@@ -264,7 +264,7 @@ natively.</p>
 </tbody>
 </table>
 <p>All these columns are loaded as <code>meta.data</code> columns by
-<code><a href="../reference/LoadH5AD.html">LoadH5AD()</a></code>.</p>
+<code><a href="../reference/readH5AD.html">readH5AD()</a></code>.</p>
 </div>
 </div>
 <div class="section level2">
@@ -279,10 +279,10 @@ natively.</p>
 <span><span class="co"># TCR annotations: in meta.data</span></span>
 <span></span>
 <span><span class="co"># Save as h5mu (preserves both assays)</span></span>
-<span><span class="fu"><a href="../reference/SaveH5MU.html">SaveH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"gex_adt_tcr.h5mu"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"gex_adt_tcr.h5mu"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load back</span></span>
-<span><span class="va">obj_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5MU.html">LoadH5MU</a></span><span class="op">(</span><span class="st">"gex_adt_tcr.h5mu"</span><span class="op">)</span></span>
+<span><span class="va">obj_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="st">"gex_adt_tcr.h5mu"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Both assays + TCR metadata preserved</span></span>
 <span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">obj_loaded</span><span class="op">)</span>  <span class="co"># RNA, ADT</span></span>
@@ -316,7 +316,7 @@ modality in h5mu:</p>
 </tr>
 </tbody>
 </table>
-<p>scConvert’s <code><a href="../reference/LoadH5MU.html">LoadH5MU()</a></code> reads all modalities as separate
+<p>scConvert’s <code><a href="../reference/readH5MU.html">readH5MU()</a></code> reads all modalities as separate
 Seurat assays. The <code>airr</code> modality becomes an assay
 containing receptor gene usage counts or binary chain presence matrices,
 depending on how the data was encoded.</p>

@@ -92,7 +92,7 @@ and the <a href="https://data.humancellatlas.org/" class="external-link">Human C
 Atlas</a>.</p>
 <p>scConvert reads and writes Zarr v2 stores following the <a href="https://anndata.readthedocs.io/en/latest/fileformat-prose.html" class="external-link">AnnData
 on-disk specification</a>, with no Python dependency. Zarr stores
-produced by <code><a href="../reference/SaveZarr.html">SaveZarr()</a></code> are directly readable by Python
+produced by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> are directly readable by Python
 <code>anndata.read_zarr()</code> and scanpy.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
@@ -105,7 +105,7 @@ produced by <code><a href="../reference/SaveZarr.html">SaveZarr()</a></code> are
 <div class="section level3">
 <h3 id="basic-conversion">Basic conversion<a class="anchor" aria-label="anchor" href="#basic-conversion"></a>
 </h3>
-<p>To save a Seurat object as a Zarr store, use <code><a href="../reference/SaveZarr.html">SaveZarr()</a></code>
+<p>To save a Seurat object as a Zarr store, use <code><a href="../reference/writeZarr.html">writeZarr()</a></code>
 directly or <code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code> with the <code>.zarr</code>
 extension:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -124,11 +124,11 @@ extension:</p>
 <span><span class="co">#&gt; Layers: counts, data, scale.data</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Direct API</span></span>
-<span><span class="fu"><a href="../reference/SaveZarr.html">SaveZarr</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pbmc3k.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pbmc3k.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or via scConvert()</span></span>
 <span><span class="co"># scConvert(pbmc, dest = "pbmc3k.zarr", overwrite = TRUE)</span></span></code></pre></div>
-<p><code><a href="../reference/SaveZarr.html">SaveZarr()</a></code> writes the following components:</p>
+<p><code><a href="../reference/writeZarr.html">writeZarr()</a></code> writes the following components:</p>
 <table class="table">
 <colgroup>
 <col width="31%">
@@ -224,17 +224,17 @@ conventions:</p>
 <div class="section level3">
 <h3 id="loading-a-zarr-store">Loading a Zarr store<a class="anchor" aria-label="anchor" href="#loading-a-zarr-store"></a>
 </h3>
-<p>Use <code><a href="../reference/LoadZarr.html">LoadZarr()</a></code> to read a Zarr store into a Seurat
+<p>Use <code><a href="../reference/readZarr.html">readZarr()</a></code> to read a Zarr store into a Seurat
 object:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadZarr.html">LoadZarr</a></span><span class="op">(</span><span class="st">"pbmc3k.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"pbmc3k.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loaded:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loaded: 2638 cells x 13714 genes</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Reductions</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Reductions: pca, umap</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Metadata columns:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, seurat_annotations, percent.mt, RNA_snn_res.0.5, seurat_clusters</span></span></code></pre></div>
-<p><code><a href="../reference/LoadZarr.html">LoadZarr()</a></code> maps AnnData fields to Seurat:</p>
+<p><code><a href="../reference/readZarr.html">readZarr()</a></code> maps AnnData fields to Seurat:</p>
 <table class="table">
 <colgroup>
 <col width="31%">
@@ -395,7 +395,7 @@ cluster labels, and expression values are preserved exactly:</p>
 <div class="section level2">
 <h2 id="python-interoperability">Python interoperability<a class="anchor" aria-label="anchor" href="#python-interoperability"></a>
 </h2>
-<p>Zarr stores written by <code><a href="../reference/SaveZarr.html">SaveZarr()</a></code> are directly readable
+<p>Zarr stores written by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> are directly readable
 by Python’s <code>anndata.read_zarr()</code> and scanpy. No intermediate
 conversion needed.</p>
 <div class="section level3">
@@ -409,11 +409,11 @@ conversion needed.</p>
 <span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; AnnData object with n_obs × n_vars = 2638 × 13714</span></span>
 <span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;     obs: 'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'seurat_annotations', 'percent.mt', 'RNA_snn_res.0.5', 'seurat_clusters'</span></span>
 <span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;     var: 'vst.mean', 'vst.variance', 'vst.variance.expected', 'vst.variance.standardized', 'vst.variable'</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;     obsm: 'X_pca', 'X_umap'</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;     layers: 'scaled', 'data'</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;     obsm: 'X_umap', 'X_pca'</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;     layers: 'data', 'scaled'</span></span>
 <span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;     obsp: 'connectivities', 'distances'</span></span>
 <span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Embeddings: </span><span class="sc">{</span><span class="bu">list</span>(adata.obsm.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Embeddings: ['X_pca', 'X_umap']</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Embeddings: ['X_umap', 'X_pca']</span></span>
 <span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Graphs: </span><span class="sc">{</span><span class="bu">list</span>(adata.obsp.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
 <span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; Graphs: ['connectivities', 'distances']</span></span></code></pre></div>
 </div>
@@ -445,7 +445,7 @@ conversion needed.</p>
 <h3 id="reading-python-generated-zarr-in-r">Reading Python-generated Zarr in R<a class="anchor" aria-label="anchor" href="#reading-python-generated-zarr-in-r"></a>
 </h3>
 <p>Zarr stores created by scanpy or anndata are readable by
-<code><a href="../reference/LoadZarr.html">LoadZarr()</a></code>. Note that Python’s default compressor is blosc
+<code><a href="../reference/readZarr.html">readZarr()</a></code>. Note that Python’s default compressor is blosc
 (not zlib), so reading Python-generated zarr stores requires the <a href="https://CRAN.R-project.org/package=blosc" class="external-link">blosc</a> R package:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
@@ -461,7 +461,7 @@ conversion needed.</p>
 <span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co">#&gt; Wrote zarr with leiden clusters: 7 clusters</span></span></code></pre></div>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load the scanpy-generated zarr store in R</span></span>
-<span><span class="va">obj_scanpy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadZarr.html">LoadZarr</a></span><span class="op">(</span><span class="st">"from_scanpy.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">obj_scanpy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"from_scanpy.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj_scanpy</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj_scanpy</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Cells: 2638 | Genes: 13714</span></span>
@@ -472,7 +472,7 @@ conversion needed.</p>
 <span></span>
 <span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">obj_scanpy</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"leiden"</span>,</span>
 <span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"scanpy-computed leiden clusters loaded via LoadZarr()"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"scanpy-computed leiden clusters loaded via readZarr()"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="convert-zarr_files/figure-html/load_scanpy_zarr-1.png" class="r-plt" alt="" width="100%"></p>
 </div>
@@ -496,7 +496,7 @@ pipeline:</p>
 <span></span>
 <span><span class="co"># Load from h5ad</span></span>
 <span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"pbmc_small.h5ad"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loaded:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loaded: 214 cells x 2000 genes</span></span>
@@ -536,7 +536,7 @@ run Seurat’s standard pipeline on top:</p>
 <p>Save the full analysis state — expression data, metadata, PCA, UMAP,
 clusters, and neighbor graphs — to a Zarr store:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/SaveZarr.html">SaveZarr</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, <span class="st">"analysis_checkpoint.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, <span class="st">"analysis_checkpoint.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify the store is valid</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Zarr store size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.info</a></span><span class="op">(</span></span>
@@ -550,7 +550,7 @@ clusters, and neighbor graphs — to a Zarr store:</p>
 <p>Load the checkpoint and verify the full analysis state is
 preserved:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">resumed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadZarr.html">LoadZarr</a></span><span class="op">(</span><span class="st">"analysis_checkpoint.zarr"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">resumed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"analysis_checkpoint.zarr"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Cells: 214 | Genes: 2000</span></span>
@@ -617,7 +617,7 @@ R’s active identity class):</p>
 <span></span>
 <span><span class="co"># Save updated object with marker results</span></span>
 <span><span class="va">resumed</span><span class="op">[[</span><span class="st">"has_markers"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
-<span><span class="fu"><a href="../reference/SaveZarr.html">SaveZarr</a></span><span class="op">(</span><span class="va">resumed</span>, <span class="st">"analysis_with_markers.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">resumed</span>, <span class="st">"analysis_with_markers.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nSaved updated analysis to Zarr\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Saved updated analysis to Zarr</span></span></code></pre></div>
@@ -637,7 +637,7 @@ R’s active identity class):</p>
 load in Seurat for downstream analysis (or vice versa):</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Step 1: Load scanpy-processed zarr from a collaborator</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadZarr.html">LoadZarr</a></span><span class="op">(</span><span class="st">"scanpy_analysis.zarr"</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"scanpy_analysis.zarr"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Step 2: Continue analysis in Seurat</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">obj</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -647,7 +647,7 @@ load in Seurat for downstream analysis (or vice versa):</p>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">FindClusters</a></span><span class="op">(</span><span class="va">obj</span>, resolution <span class="op">=</span> <span class="fl">0.8</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Step 3: Save back to zarr for the Python side</span></span>
-<span><span class="fu"><a href="../reference/SaveZarr.html">SaveZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"seurat_analysis.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"seurat_analysis.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or convert to h5ad for scanpy</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"seurat_analysis.zarr"</span>, dest <span class="op">=</span> <span class="st">"seurat_analysis.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
@@ -786,13 +786,13 @@ round-trips.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Start from the shipped test h5ad</span></span>
 <span><span class="va">h5ad_src</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"pbmc_small.h5ad"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
-<span><span class="va">ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="va">h5ad_src</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_src</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># h5ad -&gt; Seurat -&gt; Zarr</span></span>
-<span><span class="fu"><a href="../reference/SaveZarr.html">SaveZarr</a></span><span class="op">(</span><span class="va">ref</span>, <span class="st">"roundtrip.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">ref</span>, <span class="st">"roundtrip.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Zarr -&gt; Seurat</span></span>
-<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadZarr.html">LoadZarr</a></span><span class="op">(</span><span class="st">"roundtrip.zarr"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"roundtrip.zarr"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
@@ -818,7 +818,7 @@ round-trips.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Zarr -&gt; h5ad via scConvert()</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"roundtrip.zarr"</span>, dest <span class="op">=</span> <span class="st">"roundtrip_from_zarr.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">rt_h5ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"roundtrip_from_zarr.h5ad"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">rt_h5ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"roundtrip_from_zarr.h5ad"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
@@ -840,7 +840,7 @@ round-trips.</p>
 <span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
 <span>              pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"After SaveZarr + LoadZarr"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"After writeZarr + readZarr"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Overlay: compute per-cell UMAP difference</span></span>
@@ -926,17 +926,17 @@ approximately.</p>
 <div class="section level3">
 <h3 id="compression">Compression<a class="anchor" aria-label="anchor" href="#compression"></a>
 </h3>
-<p><code><a href="../reference/SaveZarr.html">SaveZarr()</a></code> uses zlib compression by default (level 4).
+<p><code><a href="../reference/writeZarr.html">writeZarr()</a></code> uses zlib compression by default (level 4).
 Compression is applied per-chunk and stored in each array’s
 <code>.zarray</code> metadata. This matches the scanpy/anndata default
 compressor:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default (zlib level 4)</span></span>
-<span><span class="fu"><a href="../reference/SaveZarr.html">SaveZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># The compression level can be set globally</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>scConvert.compression_level <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/SaveZarr.html">SaveZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"data_compressed.zarr"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"data_compressed.zarr"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="supported-data-types">Supported data types<a class="anchor" aria-label="anchor" href="#supported-data-types"></a>
@@ -993,10 +993,10 @@ arrays</td>
 <div class="section level3">
 <h3 id="chunking">Chunking<a class="anchor" aria-label="anchor" href="#chunking"></a>
 </h3>
-<p>Zarr stores data in chunks. <code><a href="../reference/SaveZarr.html">SaveZarr()</a></code> writes
+<p>Zarr stores data in chunks. <code><a href="../reference/writeZarr.html">writeZarr()</a></code> writes
 single-chunk arrays by default (the entire array is one chunk). For
 multi-chunk zarr stores produced by other tools (e.g., cloud-hosted
-CELLxGENE Census data), <code><a href="../reference/LoadZarr.html">LoadZarr()</a></code> automatically assembles
+CELLxGENE Census data), <code><a href="../reference/readZarr.html">readZarr()</a></code> automatically assembles
 chunks following the grid layout.</p>
 </div>
 <div class="section level3">
@@ -1060,13 +1060,13 @@ trade-offs:</p>
 </tr>
 <tr class="odd">
 <td>scConvert read</td>
-<td><code><a href="../reference/LoadZarr.html">LoadZarr()</a></code></td>
-<td><code><a href="../reference/LoadH5AD.html">LoadH5AD()</a></code></td>
+<td><code><a href="../reference/readZarr.html">readZarr()</a></code></td>
+<td><code><a href="../reference/readH5AD.html">readH5AD()</a></code></td>
 </tr>
 <tr class="even">
 <td>scConvert write</td>
-<td><code><a href="../reference/SaveZarr.html">SaveZarr()</a></code></td>
-<td><code><a href="../reference/SeuratToH5AD.html">SeuratToH5AD()</a></code></td>
+<td><code><a href="../reference/writeZarr.html">writeZarr()</a></code></td>
+<td><code><a href="../reference/writeH5AD.html">writeH5AD()</a></code></td>
 </tr>
 <tr class="odd">
 <td>CLI (C binary)</td>

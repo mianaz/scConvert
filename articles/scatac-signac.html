@@ -231,12 +231,12 @@ object.</p>
 <div class="section level2">
 <h2 id="convert-signac-to-h5ad">Convert Signac to h5ad<a class="anchor" aria-label="anchor" href="#convert-signac-to-h5ad"></a>
 </h2>
-<p>The <code><a href="../reference/SeuratToH5AD.html">SeuratToH5AD()</a></code> function writes the peak matrix, cell
+<p>The <code><a href="../reference/writeH5AD.html">writeH5AD()</a></code> function writes the peak matrix, cell
 metadata, and embeddings directly to h5ad format. The
 <code>ChromatinAssay</code> peak matrix is extracted as a standard
 sparse matrix during conversion.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/SeuratToH5AD.html">SeuratToH5AD</a></span><span class="op">(</span><span class="va">pbmc_atac</span>, filename <span class="op">=</span> <span class="st">"pbmc_atac.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">pbmc_atac</span>, filename <span class="op">=</span> <span class="st">"pbmc_atac.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5ad file size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="st">"pbmc_atac.h5ad"</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span></code></pre></div>
 <p>The resulting h5ad file can be loaded in Python with scanpy or
 episcanpy:</p>
@@ -263,11 +263,11 @@ episcanpy:</p>
 <h2 id="convert-h5ad-back-to-seurat-with-signac">Convert h5ad back to Seurat with Signac<a class="anchor" aria-label="anchor" href="#convert-h5ad-back-to-seurat-with-signac"></a>
 </h2>
 <p>When loading an h5ad file that contains a peak matrix,
-<code><a href="../reference/LoadH5AD.html">LoadH5AD()</a></code> returns a standard Seurat object. You can then
+<code><a href="../reference/readH5AD.html">readH5AD()</a></code> returns a standard Seurat object. You can then
 upgrade the assay to a Signac <code>ChromatinAssay</code> if needed.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load the h5ad as a standard Seurat object</span></span>
-<span><span class="va">atac_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"pbmc_atac.h5ad"</span><span class="op">)</span></span>
+<span><span class="va">atac_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"pbmc_atac.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">atac_loaded</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Peaks:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">atac_loaded</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -319,7 +319,7 @@ requires re-attaching any Signac-specific annotations.</p>
 data structures are preserved.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Reload from h5ad</span></span>
-<span><span class="va">atac_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"pbmc_atac.h5ad"</span><span class="op">)</span></span>
+<span><span class="va">atac_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"pbmc_atac.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># --- Dimension check ---</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Dimensions ===\n"</span><span class="op">)</span></span>
@@ -416,13 +416,13 @@ assay becomes a separate modality.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_atac</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Export both modalities to h5mu</span></span>
-<span><span class="fu"><a href="../reference/SeuratToH5MU.html">SeuratToH5MU</a></span><span class="op">(</span><span class="va">pbmc_atac</span>, filename <span class="op">=</span> <span class="st">"pbmc_atac_multiome.h5mu"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">pbmc_atac</span>, filename <span class="op">=</span> <span class="st">"pbmc_atac_multiome.h5mu"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5mu file size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="st">"pbmc_atac_multiome.h5mu"</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="load-h5mu-back">Load h5mu back<a class="anchor" aria-label="anchor" href="#load-h5mu-back"></a>
 </h3>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">multiome_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5MU.html">LoadH5MU</a></span><span class="op">(</span><span class="st">"pbmc_atac_multiome.h5mu"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">multiome_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="st">"pbmc_atac_multiome.h5mu"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">multiome_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ATAC peaks:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">multiome_rt</span><span class="op">[[</span><span class="st">"ATAC"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>

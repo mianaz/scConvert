@@ -190,7 +190,7 @@ obj <- readRDS(system.file("testdata", "pbmc_small.rds", package = "scConvert"))
 
 # Save as h5Seurat
 h5s_path <- tempfile(fileext = ".h5Seurat")
-scSaveH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
+writeH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
 
 # Convert h5Seurat -> h5ad using the CLI
 h5ad_path <- tempfile(fileext = ".h5ad")
@@ -198,7 +198,7 @@ scConvert_cli(h5s_path, h5ad_path, verbose = FALSE)
 #> Validating h5Seurat file
 #> [1] TRUE
 cat("Converted:", basename(h5s_path), "->", basename(h5ad_path), "\n")
-#> Converted: file123bb7dd4ad32.h5Seurat -> file123bb15b6ee28.h5ad
+#> Converted: file1674017817d82.h5Seurat -> file167403656eddc.h5ad
 ```
 
 ### Visualize in Seurat (R)
@@ -210,7 +210,7 @@ Load the CLI-produced h5ad back into R and verify:
 library(ggplot2)
 
 # Load CLI h5ad output
-obj_cli <- LoadH5AD(h5ad_path, verbose = FALSE)
+obj_cli <- readH5AD(h5ad_path, verbose = FALSE)
 
 cat("Cells:", ncol(obj_cli), "| Genes:", nrow(obj_cli), "\n")
 #> Cells: 214 | Genes: 2000
@@ -290,7 +290,7 @@ scConvert_cli(h5ad_src, h5s_path, overwrite = TRUE, verbose = FALSE)
 #> Adding X_pca as cell embeddings for pca
 #> Adding X_umap as cell embeddings for umap
 #> [1] TRUE
-loaded <- scLoadH5Seurat(h5s_path, verbose = FALSE)
+loaded <- readH5Seurat(h5s_path, verbose = FALSE)
 #> Validating h5Seurat file
 
 # Dimension check
@@ -375,13 +375,13 @@ unlink(h5s_path)
 
 # Save reference as h5seurat (via R), then convert to h5ad (via CLI)
 h5s_tmp <- tempfile(fileext = ".h5Seurat")
-scSaveH5Seurat(ref, h5s_tmp, overwrite = TRUE, verbose = FALSE)
+writeH5Seurat(ref, h5s_tmp, overwrite = TRUE, verbose = FALSE)
 
 h5ad_out <- tempfile(fileext = ".h5ad")
 scConvert_cli(h5s_tmp, h5ad_out, overwrite = TRUE, verbose = FALSE)
 #> Validating h5Seurat file
 #> [1] TRUE
-rt <- LoadH5AD(h5ad_out, verbose = FALSE)
+rt <- readH5AD(h5ad_out, verbose = FALSE)
 
 stopifnot(ncol(rt) == ncol(ref), nrow(rt) == nrow(ref))
 stopifnot(identical(sort(colnames(rt)), sort(colnames(ref))))
@@ -446,7 +446,7 @@ scConvert_cli(h5ad_src, h5s_test, overwrite = TRUE, verbose = FALSE)
 #> Adding X_pca as cell embeddings for pca
 #> Adding X_umap as cell embeddings for umap
 #> [1] TRUE
-obj_test <- scLoadH5Seurat(h5s_test, verbose = FALSE)
+obj_test <- readH5Seurat(h5s_test, verbose = FALSE)
 #> Validating h5Seurat file
 
 p1 <- DimPlot(ref, reduction = "umap", group.by = "seurat_annotations") +
@@ -486,10 +486,10 @@ format matrix.
 
 ### Benchmark results
 
-The most common workflows are loading h5ad into Seurat (`LoadH5AD`) and
-writing back to h5ad (`SeuratToH5AD`). The table below shows performance
-on synthetic sparse h5ad files (5% density, 20,000 genes). RDS
-round-trips include `readRDS`/`saveRDS` time:
+The most common workflows are loading h5ad into Seurat (`readH5AD`) and
+writing back to h5ad (`writeH5AD`). The table below shows performance on
+synthetic sparse h5ad files (5% density, 20,000 genes). RDS round-trips
+include `readRDS`/`saveRDS` time:
 
 |   Cells | h5ad → Seurat | Seurat → h5ad | CLI h5ad → h5seurat | CLI h5seurat → h5ad |
 |--------:|--------------:|--------------:|--------------------:|--------------------:|
@@ -500,20 +500,20 @@ round-trips include `readRDS`/`saveRDS` time:
 
 scConvert performance (median wall-clock seconds, 20K genes) {.table}
 
-`LoadH5AD` and `SeuratToH5AD` are the fastest paths because they work
+`readH5AD` and `writeH5AD` are the fastest paths because they work
 directly with HDF5 — no intermediate serialization. The RDS paths
 include R object serialization overhead; `h5ad → RDS` is dominated by
 [`saveRDS()`](https://rdrr.io/r/base/readRDS.html) compressing the
 Seurat object.
 
 For datasets exceeding available memory,
-[`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md)
+[`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
 supports on-disk loading via BPCells:
 
 ``` r
 
 # On-disk loading — minimal memory footprint
-obj <- LoadH5AD("large_dataset.h5ad", use.bpcells = TRUE)
+obj <- readH5AD("large_dataset.h5ad", use.bpcells = TRUE)
 ```
 
 ![](cli-usage_files/figure-html/benchmark_plot-1.png)
@@ -555,7 +555,7 @@ scConvert("data.h5ad", dest = "data.zarr", overwrite = TRUE)
 scConvert_cli("data.h5ad", "data.zarr", overwrite = TRUE)
 
 # Zarr -> Seurat
-obj <- LoadZarr("data.zarr", verbose = TRUE)
+obj <- readZarr("data.zarr", verbose = TRUE)
 
 # Zarr -> other formats
 scConvert("data.zarr", dest = "roundtrip.h5ad", overwrite = TRUE)
@@ -570,7 +570,7 @@ with all assays, reductions, and metadata. SingleCellExperiment (SCE)
 objects can be converted through Seurat’s built-in
 [`as.SingleCellExperiment()`](https://satijalab.org/seurat/reference/as.SingleCellExperiment.html)
 and
-[`as.Seurat()`](https://mianaz.github.io/scConvert/reference/scLoadH5Seurat.md)
+[`as.Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md)
 methods.
 
 ``` r
@@ -583,10 +583,10 @@ scConvert_cli("data.h5ad", "data.rds", overwrite = TRUE)
 scConvert("data.rds", dest = "data.h5ad", overwrite = TRUE)
 
 # Seurat <-> SCE
-seurat_obj <- LoadH5AD("data.h5ad")
+seurat_obj <- readH5AD("data.h5ad")
 sce <- as.SingleCellExperiment(seurat_obj)
 seurat_from_sce <- as.Seurat(sce)
-SeuratToH5AD(seurat_from_sce, "from_sce.h5ad", overwrite = TRUE)
+writeH5AD(seurat_from_sce, "from_sce.h5ad", overwrite = TRUE)
 ```
 
 ### Multi-step conversion chain
@@ -619,7 +619,7 @@ scConvert_cli("spatial.h5ad", "spatial.h5seurat", overwrite = TRUE)
 scConvert_cli("spatial.h5seurat", "spatial.h5ad", overwrite = TRUE)
 
 # Load and visualize
-obj <- LoadH5AD("spatial.h5ad")
+obj <- readH5AD("spatial.h5ad")
 # For non-Visium spatial (IMC, MERFISH, etc.):
 plot(obj[["spatial_x"]], obj[["spatial_y"]], pch = 19, cex = 0.3)
 ```

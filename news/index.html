@@ -72,21 +72,21 @@
 <div class="section level4">
 <h4 id="direct-h5ad-loading-0-1-0">Direct h5ad Loading<a class="anchor" aria-label="anchor" href="#direct-h5ad-loading-0-1-0"></a></h4>
 <ul><li>
-<code><a href="../reference/LoadH5AD.html">LoadH5AD()</a></code> for native h5ad-to-Seurat conversion without intermediate files</li>
+<code><a href="../reference/readH5AD.html">readH5AD()</a></code> for native h5ad-to-Seurat conversion without intermediate files</li>
 <li>Sparse (CSR/CSC) and dense matrix support</li>
 <li>Categorical metadata, dimensional reductions, neighbor graphs, and spatial data</li>
 </ul></div>
 <div class="section level4">
 <h4 id="mudata-h5mu-multimodal-support-0-1-0">MuData (h5mu) Multimodal Support<a class="anchor" aria-label="anchor" href="#mudata-h5mu-multimodal-support-0-1-0"></a></h4>
 <ul><li>
-<code><a href="../reference/LoadH5MU.html">LoadH5MU()</a></code> / <code><a href="../reference/SaveH5MU.html">SaveH5MU()</a></code> for multimodal single-cell data</li>
+<code><a href="../reference/readH5MU.html">readH5MU()</a></code> / <code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> for multimodal single-cell data</li>
 <li>Automatic modality-to-assay name mapping (rna-&gt;RNA, prot-&gt;ADT, atac-&gt;ATAC)</li>
 <li>No MuDataSeurat or Python dependency required</li>
 </ul></div>
 <div class="section level4">
 <h4 id="zarr-anndata-support-0-1-0">Zarr AnnData Support<a class="anchor" aria-label="anchor" href="#zarr-anndata-support-0-1-0"></a></h4>
 <ul><li>
-<code><a href="../reference/LoadZarr.html">LoadZarr()</a></code> and <code><a href="../reference/SaveZarr.html">SaveZarr()</a></code> for Zarr-based AnnData stores (v2 format)</li>
+<code><a href="../reference/readZarr.html">readZarr()</a></code> and <code><a href="../reference/writeZarr.html">writeZarr()</a></code> for Zarr-based AnnData stores (v2 format)</li>
 <li>Sparse CSR/CSC and dense matrix support</li>
 <li>Categorical metadata and dimensional reduction preservation</li>
 </ul></div>
@@ -106,7 +106,7 @@
 <div class="section level4">
 <h4 id="bpcells-on-disk-loading-0-1-0">BPCells On-Disk Loading<a class="anchor" aria-label="anchor" href="#bpcells-on-disk-loading-0-1-0"></a></h4>
 <ul><li>
-<code>LoadH5AD(..., use.bpcells = TRUE)</code> for memory-efficient atlas-scale analysis</li>
+<code>readH5AD(..., use.bpcells = TRUE)</code> for memory-efficient atlas-scale analysis</li>
 <li>Compatible with all Seurat analysis functions</li>
 </ul></div>
 <div class="section level4">

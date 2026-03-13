@@ -57,8 +57,8 @@ SpatialFeaturePlot(ss, features = "HPCA", pt.size.factor = 1) +
 ``` r
 
 h5ad_path <- tempfile(fileext = ".h5ad")
-SeuratToH5AD(ss, h5ad_path, overwrite = TRUE, verbose = FALSE)
-ss_rt <- LoadH5AD(h5ad_path, verbose = FALSE)
+writeH5AD(ss, h5ad_path, overwrite = TRUE, verbose = FALSE)
+ss_rt <- readH5AD(h5ad_path, verbose = FALSE)
 
 cat("Roundtrip beads:", ncol(ss_rt), "/", ncol(ss), "\n")
 #> Roundtrip beads: 53173 / 53173
@@ -165,8 +165,8 @@ if (length(kidney_markers) > 0) {
 ``` r
 
 h5ad_path <- tempfile(fileext = ".h5ad")
-SeuratToH5AD(kidney, h5ad_path, overwrite = TRUE, verbose = FALSE)
-kidney_rt <- LoadH5AD(h5ad_path, verbose = FALSE)
+writeH5AD(kidney, h5ad_path, overwrite = TRUE, verbose = FALSE)
+kidney_rt <- readH5AD(h5ad_path, verbose = FALSE)
 
 common_c <- intersect(colnames(kidney), colnames(kidney_rt))
 common_g <- intersect(rownames(kidney), rownames(kidney_rt))
@@ -241,7 +241,7 @@ For h5ad files from technologies not directly tested:
 ``` r
 
 # Load any h5ad with spatial coordinates
-obj <- LoadH5AD("spatial_data.h5ad")
+obj <- readH5AD("spatial_data.h5ad")
 
 # Check if spatial data was detected
 cat("Images:", Images(obj), "\n")
