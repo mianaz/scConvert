@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# scConvert <img src="man/figures/graphical_abstract.png" align="right" width="45%" />
+# scConvert <img src="man/figures/graphical_abstract.png" alt="scConvert graphical abstract showing format conversion paths" align="right" width="45%" />
 
 <!-- badges: start -->
 

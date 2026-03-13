@@ -67,7 +67,7 @@ Converting the `Seurat` object to an AnnData file is a two-step process:
 1.  Save the `Seurat` object as an h5Seurat file using
     [`writeH5Seurat()`](https://mianaz.github.io/scConvert/reference/writeH5Seurat.md)
 2.  Convert to AnnData using
-    [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html)
+    [`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html)
 
 ``` r
 
@@ -112,7 +112,7 @@ distribution in both tools.
 ## Direct Loading with readH5AD
 
 In addition to the two-step
-[`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html) +
+[`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html) +
 [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md)
 workflow shown above, scConvert provides
 [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
@@ -155,8 +155,8 @@ reads the following from h5ad files:
 | Scenario | Recommended |
 |----|----|
 | Quick exploration of an h5ad file | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
-| Round-trip editing (load, modify, re-export) | [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html) + [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md) |
-| Need h5Seurat for other tools | [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html) |
+| Round-trip editing (load, modify, re-export) | [`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html) + [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md) |
+| Need h5Seurat for other tools | [`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html) |
 | Loading scanpy-processed data for Seurat analysis | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
 | Working with spatial h5ad from CellxGene | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
 

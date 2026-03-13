@@ -14,7 +14,7 @@ Description: Universal converter between single-cell data formats in R. Converts
   multimodal MuData support, and full Seurat v5 Assay5 compatibility. No Python
   or reticulate dependency required. Originally derived from SeuratDisk with
   substantial extensions for universal format coverage.
-URL: https://github.com/mianaz/scConvert
+URL: https://mianaz.github.io/scConvert/, https://github.com/mianaz/scConvert
 BugReports: https://github.com/mianaz/scConvert/issues
 License: GPL-3 | file LICENSE
 Encoding: UTF-8

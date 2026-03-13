@@ -96,7 +96,7 @@ produced by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> a
 <code>anndata.read_zarr()</code> and scanpy.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mianaz/scConvert" class="external-link">scConvert</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
@@ -106,7 +106,7 @@ produced by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> a
 <h3 id="basic-conversion">Basic conversion<a class="anchor" aria-label="anchor" href="#basic-conversion"></a>
 </h3>
 <p>To save a Seurat object as a Zarr store, use <code><a href="../reference/writeZarr.html">writeZarr()</a></code>
-directly or <code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code> with the <code>.zarr</code>
+directly or <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> with the <code>.zarr</code>
 extension:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.satijalab.org/seurat" class="external-link">SeuratData</a></span><span class="op">)</span></span>
@@ -305,13 +305,13 @@ object:</p>
 <div class="section level3">
 <h3 id="alternative-scconvert">Alternative: scConvert()<a class="anchor" aria-label="anchor" href="#alternative-scconvert"></a>
 </h3>
-<p><code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code> also works with Zarr — it auto-detects the
+<p><code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> also works with Zarr — it auto-detects the
 format from the file extension:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Convert from other formats to zarr</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.rds"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.loom"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.rds"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.loom"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Direct converters (streaming by default, no Seurat intermediate)</span></span>
 <span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -320,8 +320,8 @@ format from the file extension:</p>
 <span><span class="fu"><a href="../reference/ZarrToH5Seurat.html">ZarrToH5Seurat</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Convert via Seurat hub (any format pair)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, dest <span class="op">=</span> <span class="st">"data.rds"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, dest <span class="op">=</span> <span class="st">"data.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, dest <span class="op">=</span> <span class="st">"data.rds"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, dest <span class="op">=</span> <span class="st">"data.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># scConvert_cli() auto-dispatches to the best path</span></span>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
@@ -410,7 +410,7 @@ conversion needed.</p>
 <span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;     obs: 'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'seurat_annotations', 'percent.mt', 'RNA_snn_res.0.5', 'seurat_clusters'</span></span>
 <span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;     var: 'vst.mean', 'vst.variance', 'vst.variance.expected', 'vst.variance.standardized', 'vst.variable'</span></span>
 <span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;     obsm: 'X_umap', 'X_pca'</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;     layers: 'data', 'scaled'</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;     layers: 'scaled', 'data'</span></span>
 <span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;     obsp: 'connectivities', 'distances'</span></span>
 <span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Embeddings: </span><span class="sc">{</span><span class="bu">list</span>(adata.obsm.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
 <span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Embeddings: ['X_umap', 'X_pca']</span></span>
@@ -491,7 +491,7 @@ resuming from saved state.</p>
 zarr. Here we start from the shipped test h5ad and run a standard Seurat
 pipeline:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mianaz/scConvert" class="external-link">scConvert</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load from h5ad</span></span>
@@ -650,7 +650,7 @@ load in Seurat for downstream analysis (or vice versa):</p>
 <span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"seurat_analysis.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Or convert to h5ad for scanpy</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"seurat_analysis.zarr"</span>, dest <span class="op">=</span> <span class="st">"seurat_analysis.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"seurat_analysis.zarr"</span>, dest <span class="op">=</span> <span class="st">"seurat_analysis.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -817,7 +817,7 @@ round-trips.</p>
 </h3>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Zarr -&gt; h5ad via scConvert()</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"roundtrip.zarr"</span>, dest <span class="op">=</span> <span class="st">"roundtrip_from_zarr.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"roundtrip.zarr"</span>, dest <span class="op">=</span> <span class="st">"roundtrip_from_zarr.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">rt_h5ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"roundtrip_from_zarr.h5ad"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
@@ -1114,51 +1114,52 @@ the C binary’s speed advantage matters.</p>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;   [1] RcppAnnoy_0.0.23       splines_4.5.2          later_1.4.8           </span></span>
 <span><span class="co">#&gt;   [4] tibble_3.3.1           BPCells_0.2.0          polyclip_1.10-7       </span></span>
-<span><span class="co">#&gt;   [7] fastDummies_1.7.5      lifecycle_1.0.5        globals_0.19.0        </span></span>
-<span><span class="co">#&gt;  [10] lattice_0.22-9         hdf5r_1.3.12           MASS_7.3-65           </span></span>
-<span><span class="co">#&gt;  [13] magrittr_2.0.4         limma_3.66.0           plotly_4.12.0         </span></span>
-<span><span class="co">#&gt;  [16] sass_0.4.10            rmarkdown_2.30         jquerylib_0.1.4       </span></span>
-<span><span class="co">#&gt;  [19] yaml_2.3.12            httpuv_1.6.16          otel_0.2.0            </span></span>
-<span><span class="co">#&gt;  [22] sctransform_0.4.3      spam_2.11-3            spatstat.sparse_3.1-0 </span></span>
-<span><span class="co">#&gt;  [25] reticulate_1.45.0      cowplot_1.2.0          pbapply_1.7-4         </span></span>
-<span><span class="co">#&gt;  [28] RColorBrewer_1.1-3     abind_1.4-8            Rtsne_0.17            </span></span>
-<span><span class="co">#&gt;  [31] GenomicRanges_1.62.1   purrr_1.2.1            presto_1.0.0          </span></span>
-<span><span class="co">#&gt;  [34] BiocGenerics_0.56.0    rappdirs_0.3.4         IRanges_2.44.0        </span></span>
-<span><span class="co">#&gt;  [37] S4Vectors_0.48.0       ggrepel_0.9.7          irlba_2.3.7           </span></span>
-<span><span class="co">#&gt;  [40] listenv_0.10.0         spatstat.utils_3.2-1   goftest_1.2-3         </span></span>
-<span><span class="co">#&gt;  [43] RSpectra_0.16-2        spatstat.random_3.4-4  fitdistrplus_1.2-6    </span></span>
-<span><span class="co">#&gt;  [46] parallelly_1.46.1      pkgdown_2.2.0          codetools_0.2-20      </span></span>
-<span><span class="co">#&gt;  [49] tidyselect_1.2.1       UCSC.utils_1.6.1       farver_2.1.2          </span></span>
-<span><span class="co">#&gt;  [52] matrixStats_1.5.0      stats4_4.5.2           spatstat.explore_3.7-0</span></span>
-<span><span class="co">#&gt;  [55] Seqinfo_1.0.0          jsonlite_2.0.0         progressr_0.18.0      </span></span>
-<span><span class="co">#&gt;  [58] ggridges_0.5.7         survival_3.8-6         systemfonts_1.3.1     </span></span>
-<span><span class="co">#&gt;  [61] tools_4.5.2            ragg_1.5.0             ica_1.0-3             </span></span>
-<span><span class="co">#&gt;  [64] Rcpp_1.1.1             glue_1.8.0             gridExtra_2.3         </span></span>
-<span><span class="co">#&gt;  [67] xfun_0.56              MatrixGenerics_1.22.0  GenomeInfoDb_1.46.2   </span></span>
-<span><span class="co">#&gt;  [70] dplyr_1.2.0            withr_3.0.2            fastmap_1.2.0         </span></span>
-<span><span class="co">#&gt;  [73] digest_0.6.39          R6_2.6.1               mime_0.13             </span></span>
-<span><span class="co">#&gt;  [76] textshaping_1.0.4      scattermore_1.2        tensor_1.5.1          </span></span>
-<span><span class="co">#&gt;  [79] dichromat_2.0-0.1      spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
-<span><span class="co">#&gt;  [82] generics_0.1.4         data.table_1.18.2.1    httr_1.4.8            </span></span>
-<span><span class="co">#&gt;  [85] htmlwidgets_1.6.4      uwot_0.2.4             pkgconfig_2.0.3       </span></span>
-<span><span class="co">#&gt;  [88] gtable_0.3.6           lmtest_0.9-40          S7_0.2.1              </span></span>
-<span><span class="co">#&gt;  [91] XVector_0.50.0         htmltools_0.5.9        dotCall64_1.2         </span></span>
-<span><span class="co">#&gt;  [94] scales_1.4.0           blosc_0.1.2            png_0.1-8             </span></span>
-<span><span class="co">#&gt;  [97] spatstat.univar_3.1-6  knitr_1.51             reshape2_1.4.5        </span></span>
-<span><span class="co">#&gt; [100] nlme_3.1-168           cachem_1.1.0           zoo_1.8-15            </span></span>
-<span><span class="co">#&gt; [103] stringr_1.6.0          KernSmooth_2.23-26     parallel_4.5.2        </span></span>
-<span><span class="co">#&gt; [106] miniUI_0.1.2           vipor_0.4.7            ggrastr_1.0.2         </span></span>
-<span><span class="co">#&gt; [109] desc_1.4.3             pillar_1.11.1          grid_4.5.2            </span></span>
-<span><span class="co">#&gt; [112] vctrs_0.7.1            RANN_2.6.2             promises_1.5.0        </span></span>
-<span><span class="co">#&gt; [115] xtable_1.8-8           cluster_2.1.8.2        beeswarm_0.4.0        </span></span>
-<span><span class="co">#&gt; [118] evaluate_1.0.5         cli_3.6.5              compiler_4.5.2        </span></span>
-<span><span class="co">#&gt; [121] rlang_1.1.7            crayon_1.5.3           future.apply_1.20.2   </span></span>
-<span><span class="co">#&gt; [124] labeling_0.4.3         plyr_1.8.9             fs_1.6.6              </span></span>
-<span><span class="co">#&gt; [127] ggbeeswarm_0.7.3       stringi_1.8.7          viridisLite_0.4.3     </span></span>
-<span><span class="co">#&gt; [130] deldir_2.0-4           lazyeval_0.2.2         spatstat.geom_3.7-0   </span></span>
-<span><span class="co">#&gt; [133] Matrix_1.7-4           RcppHNSW_0.6.0         bit64_4.6.0-1         </span></span>
-<span><span class="co">#&gt; [136] statmod_1.5.1          shiny_1.13.0           ROCR_1.0-12           </span></span>
-<span><span class="co">#&gt; [139] igraph_2.2.2           bslib_0.10.0           bit_4.6.0</span></span></code></pre></div>
+<span><span class="co">#&gt;   [7] fastDummies_1.7.5      lifecycle_1.0.5        rprojroot_2.1.1       </span></span>
+<span><span class="co">#&gt;  [10] globals_0.19.0         lattice_0.22-9         hdf5r_1.3.12          </span></span>
+<span><span class="co">#&gt;  [13] MASS_7.3-65            magrittr_2.0.4         limma_3.66.0          </span></span>
+<span><span class="co">#&gt;  [16] plotly_4.12.0          sass_0.4.10            rmarkdown_2.30        </span></span>
+<span><span class="co">#&gt;  [19] jquerylib_0.1.4        yaml_2.3.12            httpuv_1.6.16         </span></span>
+<span><span class="co">#&gt;  [22] otel_0.2.0             sctransform_0.4.3      spam_2.11-3           </span></span>
+<span><span class="co">#&gt;  [25] spatstat.sparse_3.1-0  reticulate_1.45.0      cowplot_1.2.0         </span></span>
+<span><span class="co">#&gt;  [28] pbapply_1.7-4          RColorBrewer_1.1-3     abind_1.4-8           </span></span>
+<span><span class="co">#&gt;  [31] Rtsne_0.17             GenomicRanges_1.62.1   purrr_1.2.1           </span></span>
+<span><span class="co">#&gt;  [34] presto_1.0.0           BiocGenerics_0.56.0    rappdirs_0.3.4        </span></span>
+<span><span class="co">#&gt;  [37] IRanges_2.44.0         S4Vectors_0.48.0       ggrepel_0.9.7         </span></span>
+<span><span class="co">#&gt;  [40] irlba_2.3.7            listenv_0.10.0         spatstat.utils_3.2-1  </span></span>
+<span><span class="co">#&gt;  [43] goftest_1.2-3          RSpectra_0.16-2        spatstat.random_3.4-4 </span></span>
+<span><span class="co">#&gt;  [46] fitdistrplus_1.2-6     parallelly_1.46.1      pkgdown_2.2.0         </span></span>
+<span><span class="co">#&gt;  [49] codetools_0.2-20       tidyselect_1.2.1       UCSC.utils_1.6.1      </span></span>
+<span><span class="co">#&gt;  [52] farver_2.1.2           matrixStats_1.5.0      stats4_4.5.2          </span></span>
+<span><span class="co">#&gt;  [55] spatstat.explore_3.7-0 Seqinfo_1.0.0          jsonlite_2.0.0        </span></span>
+<span><span class="co">#&gt;  [58] progressr_0.18.0       ggridges_0.5.7         survival_3.8-6        </span></span>
+<span><span class="co">#&gt;  [61] systemfonts_1.3.1      tools_4.5.2            ragg_1.5.0            </span></span>
+<span><span class="co">#&gt;  [64] ica_1.0-3              Rcpp_1.1.1             glue_1.8.0            </span></span>
+<span><span class="co">#&gt;  [67] gridExtra_2.3          xfun_0.56              here_1.0.2            </span></span>
+<span><span class="co">#&gt;  [70] MatrixGenerics_1.22.0  GenomeInfoDb_1.46.2    dplyr_1.2.0           </span></span>
+<span><span class="co">#&gt;  [73] withr_3.0.2            fastmap_1.2.0          digest_0.6.39         </span></span>
+<span><span class="co">#&gt;  [76] R6_2.6.1               mime_0.13              textshaping_1.0.4     </span></span>
+<span><span class="co">#&gt;  [79] scattermore_1.2        tensor_1.5.1           dichromat_2.0-0.1     </span></span>
+<span><span class="co">#&gt;  [82] spatstat.data_3.1-9    tidyr_1.3.2            generics_0.1.4        </span></span>
+<span><span class="co">#&gt;  [85] data.table_1.18.2.1    httr_1.4.8             htmlwidgets_1.6.4     </span></span>
+<span><span class="co">#&gt;  [88] uwot_0.2.4             pkgconfig_2.0.3        gtable_0.3.6          </span></span>
+<span><span class="co">#&gt;  [91] lmtest_0.9-40          S7_0.2.1               XVector_0.50.0        </span></span>
+<span><span class="co">#&gt;  [94] htmltools_0.5.9        dotCall64_1.2          scales_1.4.0          </span></span>
+<span><span class="co">#&gt;  [97] blosc_0.1.2            png_0.1-8              spatstat.univar_3.1-6 </span></span>
+<span><span class="co">#&gt; [100] knitr_1.51             reshape2_1.4.5         nlme_3.1-168          </span></span>
+<span><span class="co">#&gt; [103] cachem_1.1.0           zoo_1.8-15             stringr_1.6.0         </span></span>
+<span><span class="co">#&gt; [106] KernSmooth_2.23-26     parallel_4.5.2         miniUI_0.1.2          </span></span>
+<span><span class="co">#&gt; [109] vipor_0.4.7            ggrastr_1.0.2          desc_1.4.3            </span></span>
+<span><span class="co">#&gt; [112] pillar_1.11.1          grid_4.5.2             vctrs_0.7.1           </span></span>
+<span><span class="co">#&gt; [115] RANN_2.6.2             promises_1.5.0         xtable_1.8-8          </span></span>
+<span><span class="co">#&gt; [118] cluster_2.1.8.2        beeswarm_0.4.0         evaluate_1.0.5        </span></span>
+<span><span class="co">#&gt; [121] cli_3.6.5              compiler_4.5.2         rlang_1.1.7           </span></span>
+<span><span class="co">#&gt; [124] crayon_1.5.3           future.apply_1.20.2    labeling_0.4.3        </span></span>
+<span><span class="co">#&gt; [127] plyr_1.8.9             fs_1.6.6               ggbeeswarm_0.7.3      </span></span>
+<span><span class="co">#&gt; [130] stringi_1.8.7          viridisLite_0.4.3      deldir_2.0-4          </span></span>
+<span><span class="co">#&gt; [133] lazyeval_0.2.2         spatstat.geom_3.7-0    Matrix_1.7-4          </span></span>
+<span><span class="co">#&gt; [136] RcppHNSW_0.6.0         bit64_4.6.0-1          statmod_1.5.1         </span></span>
+<span><span class="co">#&gt; [139] shiny_1.13.0           ROCR_1.0-12            igraph_2.2.2          </span></span>
+<span><span class="co">#&gt; [142] bslib_0.10.0           bit_4.6.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

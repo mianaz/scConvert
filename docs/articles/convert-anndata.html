@@ -88,7 +88,7 @@ objects and AnnData files via h5Seurat files. This allows
 interoperability between Seurat and <a href="https://scanpy.readthedocs.io/" class="external-link">Scanpy</a>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mianaz/scConvert" class="external-link">scConvert</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
@@ -132,14 +132,14 @@ two-step process:</p>
 <li>Save the <code>Seurat</code> object as an h5Seurat file using
 <code><a href="../reference/writeH5Seurat.html">writeH5Seurat()</a></code>
 </li>
-<li>Convert to AnnData using <code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code>
+<li>Convert to AnnData using <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code>
 </li>
 </ol>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Seurat layers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Seurat layers: counts, data, scale.data</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>We can view the AnnData file in Scanpy:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"pbmc3k.h5ad"</span>)</span>
@@ -162,7 +162,7 @@ distribution in both tools.</p>
 <div class="section level2">
 <h2 id="direct-loading-with-readh5ad">Direct Loading with readH5AD<a class="anchor" aria-label="anchor" href="#direct-loading-with-readh5ad"></a>
 </h2>
-<p>In addition to the two-step <code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code> +
+<p>In addition to the two-step <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> +
 <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code> workflow shown above, scConvert provides
 <code><a href="../reference/readH5AD.html">readH5AD()</a></code> for loading h5ad files directly into Seurat
 objects without creating an intermediate h5Seurat file.</p>
@@ -275,12 +275,12 @@ objects without creating an intermediate h5Seurat file.</p>
 <tr class="even">
 <td>Round-trip editing (load, modify, re-export)</td>
 <td>
-<code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code> + <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code>
+<code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> + <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code>
 </td>
 </tr>
 <tr class="odd">
 <td>Need h5Seurat for other tools</td>
-<td><code><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert()</a></code></td>
+<td><code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code></td>
 </tr>
 <tr class="even">
 <td>Loading scanpy-processed data for Seurat analysis</td>
@@ -346,7 +346,7 @@ During conversion, scConvert automatically uses gene symbols when
 <p><img src="convert-anndata_files/figure-html/normalize_crc-3.png" class="r-plt" alt="" width="100%"></p>
 <p>Convert to Seurat:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"crc_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"crc_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">crc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"crc_normalized.h5seurat"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify layer mapping: X -&gt; data (log-normalized), raw/X -&gt; counts (if exists)</span></span>
@@ -462,7 +462,7 @@ times, once per assay</li>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"RNA"</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">cbmc</span>, <span class="st">"cbmc_rna.h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"cbmc_rna.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"cbmc_rna.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Verify and visualize the converted file in scanpy:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>adata_rna <span class="op">=</span> sc.read_h5ad(<span class="st">"cbmc_rna.h5ad"</span>)</span>
@@ -483,7 +483,7 @@ cell metadata (obs), gene info (var), and UMAP coordinates.</p>
 <code class="sourceCode R"><span><span class="co"># Convert ADT assay</span></span>
 <span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"ADT"</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">cbmc</span>, <span class="st">"cbmc_adt.h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"cbmc_adt.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"cbmc_adt.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
 <span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>adata_adt <span class="op">=</span> sc.read_h5ad(<span class="st">"cbmc_adt.h5ad"</span>)</span>
 <span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="bu">print</span>(adata_adt)</span>
@@ -568,7 +568,7 @@ with scanpy/squidpy standard workflows:</p>
 <p><img src="convert-anndata_files/figure-html/squidpy_spatial_ACTC1-1.png" class="r-plt" alt="" width="100%"></p>
 <p>Convert to Seurat:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"visium_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"visium_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">visium</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"visium_normalized.h5seurat"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify layer mapping: X -&gt; data (log-normalized)</span></span>
@@ -850,10 +850,10 @@ conventions:</p>
 </table>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Preserve original names (default)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Convert to scanpy naming conventions</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"data.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, standardize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, standardize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="expression-scale-handling">Expression Scale Handling<a class="anchor" aria-label="anchor" href="#expression-scale-handling"></a>

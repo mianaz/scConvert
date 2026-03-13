@@ -53,6 +53,7 @@ vignettes/*.h5seurat
 vignettes/*.h5mu
 vignettes/*.loom
 vignettes/*.html
+vignettes/*.zarr/
 knitted_vignettes/
 
 # Compiled C CLI
