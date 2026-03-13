@@ -222,6 +222,76 @@
 
         </dt>
         <dd>Save a Seurat object to h5mu format</dd>
+
+        <dt>
+
+          <code><a href="H5MUToH5Seurat.html">H5MUToH5Seurat()</a></code>
+
+        </dt>
+        <dd>Convert H5MU files to h5Seurat files</dd>
+
+        <dt>
+
+          <code><a href="H5SeuratToH5MU.html">H5SeuratToH5MU()</a></code>
+
+        </dt>
+        <dd>Convert h5Seurat files to H5MU files</dd>
+
+        <dt>
+
+          <code><a href="H5MUToH5AD.html">H5MUToH5AD()</a></code>
+
+        </dt>
+        <dd>Convert H5MU files to H5AD files (extract single modality)</dd>
+
+        <dt>
+
+          <code><a href="H5ADToH5MU.html">H5ADToH5MU()</a></code>
+
+        </dt>
+        <dd>Convert an h5ad file to h5mu format</dd>
+
+        <dt>
+
+          <code><a href="H5MUToLoom.html">H5MUToLoom()</a></code>
+
+        </dt>
+        <dd>Convert an h5mu file to loom format</dd>
+
+        <dt>
+
+          <code><a href="LoomToH5MU.html">LoomToH5MU()</a></code>
+
+        </dt>
+        <dd>Convert a loom file to h5mu format</dd>
+
+        <dt>
+
+          <code><a href="H5MUToZarr.html">H5MUToZarr()</a></code>
+
+        </dt>
+        <dd>Convert an h5mu file to zarr format</dd>
+
+        <dt>
+
+          <code><a href="ZarrToH5MU.html">ZarrToH5MU()</a></code>
+
+        </dt>
+        <dd>Convert a zarr store to h5mu format</dd>
+
+        <dt>
+
+          <code><a href="H5MUToSOMA.html">H5MUToSOMA()</a></code>
+
+        </dt>
+        <dd>Convert H5MU (MuData) to SOMA format</dd>
+
+        <dt>
+
+          <code><a href="SOMAToH5MU.html">SOMAToH5MU()</a></code>
+
+        </dt>
+        <dd>Convert SOMA to H5MU (MuData) format</dd>
       </dl></div><div class="section level2">
       <h2 id="loom-format">Loom Format<a class="anchor" aria-label="anchor" href="#loom-format"></a></h2>
 
@@ -273,29 +343,62 @@
 
         </dt>
         <dd>Validate Loom Files</dd>
-      </dl></div><div class="section level2">
-      <h2 id="spatial-data-conversion">Spatial Data Conversion<a class="anchor" aria-label="anchor" href="#spatial-data-conversion"></a></h2>
-
-      <div class="section-desc"><p>Converting spatial data between Seurat and AnnData formats</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="H5ADSpatialToSeurat.html">H5ADSpatialToSeurat()</a></code>
-
-        </dt>
-        <dd>Convert spatial coordinates from h5ad to Seurat format</dd>
 
         <dt>
 
-          <code><a href="SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code>
+          <code><a href="LoomToH5Seurat.html">LoomToH5Seurat()</a></code>
 
         </dt>
-        <dd>Convert Seurat spatial data to h5ad format</dd>
+        <dd>Convert a loom file to h5seurat format</dd>
+
+        <dt>
+
+          <code><a href="H5SeuratToLoom.html">H5SeuratToLoom()</a></code>
+
+        </dt>
+        <dd>Convert an h5seurat file to loom format</dd>
+
+        <dt>
+
+          <code><a href="LoomToH5AD.html">LoomToH5AD()</a></code>
+
+        </dt>
+        <dd>Convert a loom file to h5ad format</dd>
+
+        <dt>
+
+          <code><a href="H5ADToLoom.html">H5ADToLoom()</a></code>
+
+        </dt>
+        <dd>Convert an h5ad file to loom format</dd>
+
+        <dt>
+
+          <code><a href="LoomToZarr.html">LoomToZarr()</a></code>
+
+        </dt>
+        <dd>Convert a loom file to zarr format</dd>
+
+        <dt>
+
+          <code><a href="ZarrToLoom.html">ZarrToLoom()</a></code>
+
+        </dt>
+        <dd>Convert a zarr store to loom format</dd>
+
+        <dt>
+
+          <code><a href="LoomToSOMA.html">LoomToSOMA()</a></code>
+
+        </dt>
+        <dd>Convert Loom to SOMA format</dd>
+
+        <dt>
+
+          <code><a href="SOMAToLoom.html">SOMAToLoom()</a></code>
+
+        </dt>
+        <dd>Convert SOMA to Loom format</dd>
       </dl></div><div class="section level2">
       <h2 id="zarr-format">Zarr Format<a class="anchor" aria-label="anchor" href="#zarr-format"></a></h2>
 
@@ -347,6 +450,150 @@
 
         </dt>
         <dd>Convert a zarr (AnnData) store to h5seurat format</dd>
+
+        <dt>
+
+          <code><a href="ZarrToSOMA.html">ZarrToSOMA()</a></code>
+
+        </dt>
+        <dd>Convert Zarr to SOMA format</dd>
+
+        <dt>
+
+          <code><a href="SOMAToZarr.html">SOMAToZarr()</a></code>
+
+        </dt>
+        <dd>Convert SOMA to Zarr format</dd>
+      </dl></div><div class="section level2">
+      <h2 id="tiledb-soma-format">TileDB-SOMA Format<a class="anchor" aria-label="anchor" href="#tiledb-soma-format"></a></h2>
+
+      <div class="section-desc"><p>Reading and writing TileDB-SOMA for CELLxGENE Census interoperability</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="readSOMA.html">readSOMA()</a></code>
+
+        </dt>
+        <dd>Read a TileDB-SOMA experiment as a Seurat object</dd>
+
+        <dt>
+
+          <code><a href="writeSOMA.html">writeSOMA()</a></code>
+
+        </dt>
+        <dd>Write a Seurat object to TileDB-SOMA format</dd>
+
+        <dt>
+
+          <code><a href="H5ADToSOMA.html">H5ADToSOMA()</a></code>
+
+        </dt>
+        <dd>Convert h5ad to SOMA format</dd>
+
+        <dt>
+
+          <code><a href="SOMAToH5AD.html">SOMAToH5AD()</a></code>
+
+        </dt>
+        <dd>Convert SOMA to h5ad format</dd>
+
+        <dt>
+
+          <code><a href="H5SeuratToSOMA.html">H5SeuratToSOMA()</a></code>
+
+        </dt>
+        <dd>Convert h5Seurat to SOMA format</dd>
+
+        <dt>
+
+          <code><a href="SOMAToH5Seurat.html">SOMAToH5Seurat()</a></code>
+
+        </dt>
+        <dd>Convert SOMA to h5Seurat format</dd>
+      </dl></div><div class="section level2">
+      <h2 id="spatial-data-conversion">Spatial Data Conversion<a class="anchor" aria-label="anchor" href="#spatial-data-conversion"></a></h2>
+
+      <div class="section-desc"><p>Converting spatial data between Seurat, AnnData, and SpatialData formats</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="H5ADSpatialToSeurat.html">H5ADSpatialToSeurat()</a></code>
+
+        </dt>
+        <dd>Convert spatial coordinates from h5ad to Seurat format</dd>
+
+        <dt>
+
+          <code><a href="SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code>
+
+        </dt>
+        <dd>Convert Seurat spatial data to h5ad format</dd>
+
+        <dt>
+
+          <code><a href="readSpatialData.html">readSpatialData()</a></code>
+
+        </dt>
+        <dd>Read a SpatialData zarr store into a Seurat object</dd>
+
+        <dt>
+
+          <code><a href="writeSpatialData.html">writeSpatialData()</a></code>
+
+        </dt>
+        <dd>Write a Seurat object to SpatialData zarr format</dd>
+
+        <dt>
+
+          <code><a href="SpatialDataToH5AD.html">SpatialDataToH5AD()</a></code>
+
+        </dt>
+        <dd>Convert a SpatialData zarr store to h5ad format</dd>
+
+        <dt>
+
+          <code><a href="H5ADToSpatialData.html">H5ADToSpatialData()</a></code>
+
+        </dt>
+        <dd>Convert an h5ad file to SpatialData zarr format</dd>
+
+        <dt>
+
+          <code><a href="SpatialDataToH5Seurat.html">SpatialDataToH5Seurat()</a></code>
+
+        </dt>
+        <dd>Convert a SpatialData zarr store to h5Seurat format</dd>
+
+        <dt>
+
+          <code><a href="H5SeuratToSpatialData.html">H5SeuratToSpatialData()</a></code>
+
+        </dt>
+        <dd>Convert an h5Seurat file to SpatialData zarr format</dd>
+
+        <dt>
+
+          <code><a href="SpatialDataToZarr.html">SpatialDataToZarr()</a></code>
+
+        </dt>
+        <dd>Convert a SpatialData zarr store to a standard anndata zarr store</dd>
+
+        <dt>
+
+          <code><a href="ZarrToSpatialData.html">ZarrToSpatialData()</a></code>
+
+        </dt>
+        <dd>Wrap a standard anndata zarr store as a SpatialData store</dd>
       </dl></div><div class="section level2">
       <h2 id="format-conversion">Format Conversion<a class="anchor" aria-label="anchor" href="#format-conversion"></a></h2>
 
@@ -1456,6 +1703,27 @@
 
         <dt>
 
+          <code><a href="dot-add_spatialdata_coords.html">.add_spatialdata_coords()</a></code>
+
+        </dt>
+        <dd>Add spatial coordinates from SpatialData to Seurat object</dd>
+
+        <dt>
+
+          <code><a href="dot-assay_to_modality.html">.assay_to_modality()</a></code>
+
+        </dt>
+        <dd>Map Seurat assay name to h5mu modality name</dd>
+
+        <dt>
+
+          <code><a href="dot-attach_spatialdata_image.html">.attach_spatialdata_image()</a></code>
+
+        </dt>
+        <dd>Attach an image array to a Seurat object</dd>
+
+        <dt>
+
           <code><a href="dot-decode_vlen_utf8.html">.decode_vlen_utf8()</a></code>
 
         </dt>
@@ -1470,10 +1738,199 @@
 
         <dt>
 
+          <code><a href="dot-h5ad_write_dict_group.html">.h5ad_write_dict_group()</a></code>
+
+        </dt>
+        <dd>Write an AnnData dict-style empty group</dd>
+
+        <dt>
+
+          <code><a href="dot-h5seurat_write_scaffold.html">.h5seurat_write_scaffold()</a></code>
+
+        </dt>
+        <dd>Write required h5seurat root attributes and empty groups</dd>
+
+        <dt>
+
+          <code><a href="dot-modality_to_assay.html">.modality_to_assay()</a></code>
+
+        </dt>
+        <dd>Map h5mu modality name to Seurat assay name</dd>
+
+        <dt>
+
+          <code><a href="dot-ome_ngff_to_hwc.html">.ome_ngff_to_hwc()</a></code>
+
+        </dt>
+        <dd>Convert raw OME-NGFF array to height x width x channels format</dd>
+
+        <dt>
+
           <code><a href="dot-raw_to_r_type.html">.raw_to_r_type()</a></code>
 
         </dt>
         <dd>Convert raw bytes to R type</dd>
+
+        <dt>
+
+          <code><a href="dot-read_ome_ngff_image.html">.read_ome_ngff_image()</a></code>
+
+        </dt>
+        <dd>Read an OME-NGFF image from a zarr directory</dd>
+
+        <dt>
+
+          <code><a href="dot-read_spatialdata_points.html">.read_spatialdata_points()</a></code>
+
+        </dt>
+        <dd>Read points from a SpatialData points directory</dd>
+
+        <dt>
+
+          <code><a href="dot-read_spatialdata_shapes.html">.read_spatialdata_shapes()</a></code>
+
+        </dt>
+        <dd>Read shapes from a SpatialData shapes directory</dd>
+
+        <dt>
+
+          <code><a href="dot-sd_read_column.html">.sd_read_column()</a></code>
+
+        </dt>
+        <dd>Read a single column from a zarr DataFrame</dd>
+
+        <dt>
+
+          <code><a href="dot-soma_has_write_soma.html">.soma_has_write_soma()</a></code>
+
+        </dt>
+        <dd>Check whether tiledbsoma::write_soma is available</dd>
+
+        <dt>
+
+          <code><a href="dot-soma_read_extra_measurements.html">.soma_read_extra_measurements()</a></code>
+
+        </dt>
+        <dd>Read additional measurements as extra assays</dd>
+
+        <dt>
+
+          <code><a href="dot-soma_read_obs.html">.soma_read_obs()</a></code>
+
+        </dt>
+        <dd>Read obs from a SOMA experiment</dd>
+
+        <dt>
+
+          <code><a href="dot-soma_read_obsm.html">.soma_read_obsm()</a></code>
+
+        </dt>
+        <dd>Read obsm embeddings from a SOMA measurement</dd>
+
+        <dt>
+
+          <code><a href="dot-soma_read_obsp.html">.soma_read_obsp()</a></code>
+
+        </dt>
+        <dd>Read obsp graphs from a SOMA measurement</dd>
+
+        <dt>
+
+          <code><a href="dot-soma_read_var.html">.soma_read_var()</a></code>
+
+        </dt>
+        <dd>Read var from a SOMA measurement</dd>
+
+        <dt>
+
+          <code><a href="dot-soma_read_x.html">.soma_read_x()</a></code>
+
+        </dt>
+        <dd>Read X matrix from a SOMA measurement</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_composite_via_h5seurat.html">.stream_composite_via_h5seurat()</a></code>
+
+        </dt>
+        <dd>Run two-step streaming conversion via a temp h5seurat file</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_dense_matrix.html">.stream_dense_matrix()</a></code>
+
+        </dt>
+        <dd>Stream a dense matrix from one HDF5 file to another</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_h5ad_df_to_h5seurat_md.html">.stream_h5ad_df_to_h5seurat_md()</a></code>
+
+        </dt>
+        <dd>Stream an h5ad-style DataFrame group to h5seurat meta.data</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_h5mu_to_h5seurat.html">.stream_h5mu_to_h5seurat()</a></code>
+
+        </dt>
+        <dd>Stream h5mu to h5seurat (direct HDF5-to-HDF5)</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_h5seurat_md_to_h5ad_df.html">.stream_h5seurat_md_to_h5ad_df()</a></code>
+
+        </dt>
+        <dd>Stream h5seurat meta.data to an h5ad-style DataFrame group</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_h5seurat_to_h5mu.html">.stream_h5seurat_to_h5mu()</a></code>
+
+        </dt>
+        <dd>Stream h5seurat to h5mu (direct HDF5-to-HDF5)</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_h5seurat_to_loom.html">.stream_h5seurat_to_loom()</a></code>
+
+        </dt>
+        <dd>Stream h5seurat to loom (direct HDF5-to-HDF5)</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_loom_to_h5seurat.html">.stream_loom_to_h5seurat()</a></code>
+
+        </dt>
+        <dd>Stream loom to h5seurat (direct HDF5-to-HDF5)</dd>
+
+        <dt>
+
+          <code><a href="dot-stream_sparse_group.html">.stream_sparse_group()</a></code>
+
+        </dt>
+        <dd>Stream a sparse matrix group from one HDF5 file to another</dd>
+
+        <dt>
+
+          <code><a href="dot-write_ome_ngff_image.html">.write_ome_ngff_image()</a></code>
+
+        </dt>
+        <dd>Write an image as an OME-NGFF zarr store</dd>
+
+        <dt>
+
+          <code><a href="dot-write_spatialdata_points.html">.write_spatialdata_points()</a></code>
+
+        </dt>
+        <dd>Write point coordinates as a SpatialData points directory</dd>
+
+        <dt>
+
+          <code><a href="dot-write_spatialdata_shapes.html">.write_spatialdata_shapes()</a></code>
+
+        </dt>
+        <dd>Write spatial coordinates as a SpatialData shapes directory</dd>
 
         <dt>
 
@@ -1558,6 +2015,13 @@
 
         </dt>
         <dd>Read AnnData index from obs or var group</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_read_anndata_index_from_attrs.html">.zarr_read_anndata_index_from_attrs()</a></code>
+
+        </dt>
+        <dd>Read an anndata index given pre-read attrs</dd>
 
         <dt>
 

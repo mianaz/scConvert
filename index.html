@@ -76,7 +76,7 @@
 <!-- badges: start -->
 
 <p><strong>Universal single-cell format conversion for R. No Python required.</strong></p>
-<p>scConvert converts between <strong>7 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>30+ conversion paths</strong> from a single <code>scConvert()</code> interface.</p>
+<p>scConvert converts between <strong>9 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>50+ conversion paths</strong> from a single <code>scConvert()</code> interface.</p>
 <div class="section level2">
 <h2 id="supported-formats">Supported Formats<a class="anchor" aria-label="anchor" href="#supported-formats"></a>
 </h2>
@@ -132,6 +132,20 @@
 <td align="center">yes</td>
 </tr>
 <tr class="even">
+<td>TileDB-SOMA</td>
+<td><code>soma://</code></td>
+<td>CELLxGENE Census</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+</tr>
+<tr class="odd">
+<td>SpatialData</td>
+<td><code>.zarr</code></td>
+<td>scverse spatial</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+</tr>
+<tr class="even">
 <td>RDS</td>
 <td><code>.rds</code></td>
 <td>R native</td>
@@ -174,29 +188,49 @@
 <span></span>
 <span><span class="co"># Multimodal (CITE-seq, ATAC+RNA) support</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="st">"citeseq.h5mu"</span><span class="op">)</span>   <span class="co"># auto-maps rna-&gt;RNA, prot-&gt;ADT</span></span>
-<span><span class="fu"><a href="reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"output.h5mu"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"output.h5mu"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># TileDB-SOMA (CELLxGENE Census)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/readSOMA.html">readSOMA</a></span><span class="op">(</span><span class="st">"soma://collection/measurement"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/writeSOMA.html">writeSOMA</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"output.soma"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># SpatialData zarr stores</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="st">"experiment.spatialdata.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/writeSpatialData.html">writeSpatialData</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"output.spatialdata.zarr"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="hub-architecture">Hub Architecture<a class="anchor" aria-label="anchor" href="#hub-architecture"></a>
 </h2>
-<p>All conversions route through Seurat as a universal intermediate. Direct HDF5 paths bypass the hub for h5ad/h5Seurat conversions.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>             ┌─── <span class="fu">h5ad</span> (AnnData)</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>             │</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>             ├─── h5Seurat</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>             │        ╎</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  ┌────────┐ ├─── <span class="fu">h5mu</span> (MuData)</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  │ Seurat │─┤</span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  └────────┘ ├─── Loom</span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>             │</span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>             ├─── Zarr</span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>             │</span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>             ├─── RDS</span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>             │</span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>             └─── <span class="fu">SCE</span> (Bioconductor)</span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>  ─── hub <span class="fu">path</span> (via Seurat)</span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>  ╎╎╎ direct HDF5 <span class="fu">path</span> (no intermediate)</span></code></pre></div>
-<p>This hub design achieves <strong>O(n) implementation complexity</strong> for n formats instead of O(n^2) pairwise converters.</p>
+<p>Three conversion tiers provide optimal speed for each format pair:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>                  ┌─── h5ad ───┐</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>                  │      ╎     │</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>                  ├─── h5Seurat│</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>                  │      ╎     ├── C <span class="fu">CLI</span> (fastest, streaming)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>   ┌────────┐     ├─── h5mu ───┤</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>   │ Seurat │─────┤      ╎     │</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>   └────────┘     ├─── Loom ───┘</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>                  │</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>                  ├─── Zarr ········ R <span class="fu">streaming</span> (no Seurat)</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>                  │</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>                  ├─── TileDB<span class="sc">-</span>SOMA</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>                  │</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>                  ├─── SpatialData</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>                  │</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>                  ├─── RDS</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>                  │</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>                  └─── <span class="fu">SCE</span> (Bioconductor)</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>   ─── hub <span class="fu">path</span> (via Seurat)</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>   ╎╎╎ direct HDF5 <span class="fu">streaming</span> (no intermediate)</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>   ··· R streaming via temp h5seurat</span></code></pre></div>
+<ul>
+<li>
+<strong>C CLI</strong>: All HDF5 pairs (h5ad, h5Seurat, h5mu, Loom) – streaming, constant memory</li>
+<li>
+<strong>R streaming</strong>: Direct format-to-format without materializing a Seurat object</li>
+<li>
+<strong>Hub path</strong>: Load → Seurat → Save for RDS, SCE, and cross-tier pairs</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
@@ -224,20 +258,24 @@
 <td>Visium roundtrip with image reconstruction and scale factors.</td>
 </tr>
 <tr class="even">
+<td><strong>SpatialData</strong></td>
+<td>Read/write scverse SpatialData zarr stores with OME-NGFF images.</td>
+</tr>
+<tr class="odd">
 <td><strong>Multimodal</strong></td>
 <td>Native h5mu read/write for CITE-seq, ATAC+RNA, etc.</td>
+</tr>
+<tr class="even">
+<td><strong>TileDB-SOMA</strong></td>
+<td>Read/write SOMA for CELLxGENE Census interoperability.</td>
 </tr>
 <tr class="odd">
 <td><strong>BPCells</strong></td>
 <td>On-disk matrix loading – 87% memory reduction at atlas scale.</td>
 </tr>
 <tr class="even">
-<td><strong>Variable features</strong></td>
-<td>Automatic <code>highly_variable</code> column mapping.</td>
-</tr>
-<tr class="odd">
 <td><strong>C CLI</strong></td>
-<td>Standalone binary for streaming on-disk conversion.</td>
+<td>Standalone binary for streaming on-disk HDF5 conversion.</td>
 </tr>
 </tbody>
 </table>
@@ -291,15 +329,16 @@
 <div class="section level2">
 <h2 id="command-line-interface">Command-Line Interface<a class="anchor" aria-label="anchor" href="#command-line-interface"></a>
 </h2>
-<p>A standalone C binary for HDF5-based conversions without R or Python:</p>
+<p>A standalone C binary for HDF5-based conversions (h5ad, h5Seurat, h5mu, Loom) without R or Python:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Build (requires HDF5 headers)</span></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="bu">cd</span> src <span class="kw">&amp;&amp;</span> <span class="fu">make</span></span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Convert</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Convert between any HDF5 format pair</span></span>
 <span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.h5seurat</span>
 <span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="ex">scconvert</span> data.h5seurat data.h5ad <span class="at">--assay</span> RNA</span>
 <span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="ex">scconvert</span> multimodal.h5mu multimodal.h5seurat</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.h5seurat <span class="at">--gzip</span> 6 <span class="at">--overwrite</span></span></code></pre></div>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.loom</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="ex">scconvert</span> data.loom data.h5seurat</span></code></pre></div>
 <p>Options: <code>--assay &lt;name&gt;</code>, <code>--gzip &lt;0-9&gt;</code>, <code>--overwrite</code>, <code>--quiet</code>, <code>--version</code>, <code>--help</code></p>
 </div>
 <div class="section level2">
@@ -310,6 +349,8 @@
 <li><a href="https://mianaz.github.io/scConvert/articles/direct-h5ad-loading.html">Direct H5AD Loading</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/multimodal-h5mu.html">Multimodal H5MU</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-loom.html">Loom Format</a></li>
+<li><a href="https://mianaz.github.io/scConvert/articles/convert-zarr.html">Zarr Format</a></li>
+<li><a href="https://mianaz.github.io/scConvert/articles/spatial-technologies.html">Spatial Technologies</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/cli-usage.html">CLI Usage</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/h5Seurat-spec.html">h5Seurat Specification</a></li>
 </ul>
