@@ -118,7 +118,8 @@ int sc_stream_df_group(hid_t src_grp, hid_t dst_grp, int gzip_level);
 
 /* Metadata / group transfer (sc_groups.c) */
 int sc_stream_obsm(hid_t src, hid_t dst, sc_direction_t dir);
-int sc_stream_obsp(hid_t src, hid_t dst, sc_direction_t dir);
+int sc_stream_obsp(hid_t src, hid_t dst, sc_direction_t dir,
+                    const char *assay);
 int sc_stream_layers(hid_t src, hid_t dst, sc_direction_t dir, int gzip_level);
 int sc_stream_uns(hid_t src, hid_t dst, sc_direction_t dir);
 int sc_ensure_empty_groups(hid_t file, sc_direction_t dir);

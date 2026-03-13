@@ -645,7 +645,8 @@ LoadH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL, verbose = TRU
     for (graph_name in names(h5ad[["obsp"]])) {
       if (verbose) message("  Adding graph: ", graph_name)
 
-      graph_matrix <- ReadH5ADMatrix(h5ad[["obsp"]][[graph_name]], transpose = FALSE)
+      # obsp stores CSR; read as-is then transpose to get correct orientation
+      graph_matrix <- Matrix::t(ReadH5ADMatrix(h5ad[["obsp"]][[graph_name]], transpose = FALSE))
 
       # Ensure square matrix with correct dimensions
       if (nrow(graph_matrix) == ncol(graph_matrix) && nrow(graph_matrix) == ncol(seurat_obj)) {
@@ -659,7 +660,9 @@ LoadH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL, verbose = TRU
           graph_name
         )
 
-        seurat_obj@graphs[[seurat_graph_name]] <- as.Graph(graph_matrix)
+        graph_obj <- as.Graph(graph_matrix)
+        DefaultAssay(graph_obj) <- assay.name
+        seurat_obj@graphs[[seurat_graph_name]] <- graph_obj
       }
     }
   }

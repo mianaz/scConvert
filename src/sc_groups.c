@@ -340,7 +340,8 @@ int sc_stream_obsm(hid_t src, hid_t dst, sc_direction_t dir) {
 
 /* ── obsp: graph matrices ───────────────────────────────────────────────────── */
 
-int sc_stream_obsp(hid_t src, hid_t dst, sc_direction_t dir) {
+int sc_stream_obsp(hid_t src, hid_t dst, sc_direction_t dir,
+                    const char *assay) {
     const char *src_path, *dst_path;
 
     if (dir == SC_H5AD_TO_H5SEURAT) {
@@ -438,6 +439,9 @@ int sc_stream_obsp(hid_t src, hid_t dst, sc_direction_t dir) {
                     H5Adelete(dst_child, "encoding-type");
                 if (H5Aexists(dst_child, "encoding-version") > 0)
                     H5Adelete(dst_child, "encoding-version");
+                /* Set assay.used so scLoadH5Seurat indexes this graph */
+                if (assay != NULL)
+                    sc_set_str_attr(dst_child, "assay.used", assay);
                 H5Gclose(dst_child);
             }
         }

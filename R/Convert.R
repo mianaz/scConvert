@@ -2123,6 +2123,20 @@ except Exception as e:
       )
       FixGraphAttrs(dfile[['graphs']][[snn.graph.name]], assay)
     }
+
+    # Transfer any remaining obsp graphs not already handled
+    handled <- c('distances', 'connectivities')
+    for (oname in setdiff(obsp_names, handled)) {
+      if (!dfile[['graphs']]$exists(oname)) {
+        if (verbose) message("Saving obsp/", oname, " as graph")
+        dfile[['graphs']]$obj_copy_from(
+          src_loc = source,
+          src_name = paste0('obsp/', oname),
+          dst_name = oname
+        )
+        FixGraphAttrs(dfile[['graphs']][[oname]], assay)
+      }
+    }
   }
 
   # Add miscellaneous information
@@ -4076,7 +4090,11 @@ H5SeuratToH5AD <- function(
   }
 
   # Add graphs to obsp (pairwise observations)
-  graphs.available <- source$index()[[assay]]$graphs
+  # Include graphs from both the assay index and no.assay (untagged graphs)
+  graphs.available <- unique(c(
+    source$index()[[assay]]$graphs,
+    source$index()[['no.assay']]$graphs
+  ))
   if (length(graphs.available) > 0 && source$exists('graphs')) {
     if (verbose) {
       message("Adding graph information to obsp")
@@ -4089,11 +4107,11 @@ H5SeuratToH5AD <- function(
     for (graph.name in graphs.available) {
       if (source[['graphs']]$exists(name = graph.name)) {
         # Map Seurat graph names to anndata conventions
-        # e.g., RNA_nn -> connectivities, RNA_snn -> distances
+        # RNA_nn (kNN distances) -> distances, RNA_snn (shared NN weights) -> connectivities
         obsp.name <- if (grepl("_nn$", graph.name)) {
-          "connectivities"
-        } else if (grepl("_snn$", graph.name)) {
           "distances"
+        } else if (grepl("_snn$", graph.name)) {
+          "connectivities"
         } else {
           gsub(paste0("^", assay, "_"), "", graph.name)
         }
