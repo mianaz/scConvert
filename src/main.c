@@ -31,9 +31,12 @@ static void print_usage(const char *prog) {
         "  .h5ad     ↔ .h5seurat\n"
         "  .h5mu     ↔ .h5seurat   (multi-assay)\n"
         "  .h5mu     ↔ .h5ad       (single modality)\n"
+        "  .loom     ↔ .h5seurat\n"
+        "  .loom     ↔ .h5ad\n"
+        "  .loom     ↔ .h5mu\n"
         "\n"
-        "For .loom, .rds, .zarr use the R backend:\n"
-        "  Rscript -e 'scConvert::sc_cli_convert(\"in.h5ad\", \"out.loom\")'\n"
+        "For .rds, .zarr use the R backend:\n"
+        "  Rscript -e 'scConvert::sc_cli_convert(\"in.h5ad\", \"out.zarr\")'\n"
         "\n"
         "Options:\n"
         "  --assay <name>   Assay/modality name (default: RNA)\n"
@@ -47,8 +50,10 @@ static void print_usage(const char *prog) {
         "  %s data.h5ad data.h5seurat\n"
         "  %s data.h5seurat data.h5ad --assay RNA --gzip 6\n"
         "  %s data.h5mu data.h5seurat\n"
-        "  %s data.h5mu data.h5ad --assay RNA\n",
-        SC_VERSION_STRING, prog, prog, prog, prog, prog);
+        "  %s data.h5mu data.h5ad --assay RNA\n"
+        "  %s data.loom data.h5seurat\n"
+        "  %s data.h5ad data.loom\n",
+        SC_VERSION_STRING, prog, prog, prog, prog, prog, prog, prog);
 }
 
 static int has_extension(const char *path, const char *ext) {
@@ -61,7 +66,8 @@ static int has_extension(const char *path, const char *ext) {
 static int is_hdf5_format(const char *path) {
     return has_extension(path, ".h5ad") ||
            has_extension(path, ".h5seurat") ||
-           has_extension(path, ".h5mu");
+           has_extension(path, ".h5mu") ||
+           has_extension(path, ".loom");
 }
 
 static sc_direction_t detect_direction(const char *input, const char *output) {
@@ -80,6 +86,21 @@ static sc_direction_t detect_direction(const char *input, const char *output) {
         return SC_H5MU_TO_H5AD;
     if (has_extension(input, ".h5ad") && has_extension(output, ".h5mu"))
         return SC_H5AD_TO_H5MU;
+    /* loom ↔ h5seurat */
+    if (has_extension(input, ".loom") && has_extension(output, ".h5seurat"))
+        return SC_LOOM_TO_H5SEURAT;
+    if (has_extension(input, ".h5seurat") && has_extension(output, ".loom"))
+        return SC_H5SEURAT_TO_LOOM;
+    /* loom ↔ h5ad */
+    if (has_extension(input, ".loom") && has_extension(output, ".h5ad"))
+        return SC_LOOM_TO_H5AD;
+    if (has_extension(input, ".h5ad") && has_extension(output, ".loom"))
+        return SC_H5AD_TO_LOOM;
+    /* loom ↔ h5mu */
+    if (has_extension(input, ".loom") && has_extension(output, ".h5mu"))
+        return SC_LOOM_TO_H5MU;
+    if (has_extension(input, ".h5mu") && has_extension(output, ".loom"))
+        return SC_H5MU_TO_LOOM;
     /* Non-HDF5 formats require the R backend */
     if (!is_hdf5_format(input) || !is_hdf5_format(output))
         return SC_DIRECTION_UNKNOWN;
@@ -193,14 +214,32 @@ int main(int argc, char **argv) {
     case SC_H5AD_TO_H5MU:
         rc = sc_h5ad_to_h5mu(&opts);
         break;
+    case SC_LOOM_TO_H5SEURAT:
+        rc = sc_loom_to_h5seurat(&opts);
+        break;
+    case SC_H5SEURAT_TO_LOOM:
+        rc = sc_h5seurat_to_loom(&opts);
+        break;
+    case SC_LOOM_TO_H5AD:
+        rc = sc_loom_to_h5ad(&opts);
+        break;
+    case SC_H5AD_TO_LOOM:
+        rc = sc_h5ad_to_loom(&opts);
+        break;
+    case SC_LOOM_TO_H5MU:
+        rc = sc_loom_to_h5mu(&opts);
+        break;
+    case SC_H5MU_TO_LOOM:
+        rc = sc_h5mu_to_loom(&opts);
+        break;
     case SC_DIRECTION_UNKNOWN:
         fprintf(stderr,
             "Error: this format pair requires the R backend.\n"
             "Use the R wrapper instead:\n"
             "  Rscript -e 'scConvert::sc_cli_convert(\"%s\", \"%s\")'\n"
             "\n"
-            "The C binary supports: .h5ad, .h5seurat, .h5mu\n"
-            "The R backend adds:    .loom, .rds, .zarr\n",
+            "The C binary supports: .h5ad, .h5seurat, .h5mu, .loom\n"
+            "The R backend adds:    .rds, .zarr\n",
             opts.input_path, opts.output_path);
         rc = SC_ERR_ARG;
         break;

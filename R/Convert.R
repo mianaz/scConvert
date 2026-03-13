@@ -6860,24 +6860,40 @@ scConvert_cli <- function(
   stype <- FileType(file = input)
   dtype <- FileType(file = output)
 
-  # Direct zarr converters (streaming by default, no Seurat intermediate)
-  zarr_pair <- (stype %in% c("h5ad", "h5seurat") && dtype == "zarr") ||
-               (stype == "zarr" && dtype %in% c("h5ad", "h5seurat"))
-  if (zarr_pair) {
+  # Direct streaming converters (zarr pairs + h5mu/loom pairs)
+  streaming_converters <- list(
+    # zarr pairs
+    "h5ad|zarr"      = function() H5ADToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|h5ad"      = function() ZarrToH5AD(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5seurat|zarr"  = function() H5SeuratToZarr(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|h5seurat"  = function() ZarrToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # h5mu ↔ zarr
+    "h5mu|zarr"      = function() H5MUToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|h5mu"      = function() ZarrToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ zarr
+    "loom|zarr"      = function() LoomToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|loom"      = function() ZarrToLoom(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # h5mu ↔ h5seurat (R streaming)
+    "h5mu|h5seurat"  = function() H5MUToH5Seurat(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5seurat|h5mu"  = function() H5SeuratToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ h5seurat (R streaming)
+    "loom|h5seurat"  = function() LoomToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5seurat|loom"  = function() H5SeuratToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # h5mu ↔ h5ad (R streaming via h5seurat)
+    "h5mu|h5ad"      = function() H5MUToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5ad|h5mu"      = function() H5ADToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ h5ad (R streaming via h5seurat)
+    "loom|h5ad"      = function() LoomToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5ad|loom"      = function() H5ADToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ h5mu (R streaming via h5seurat)
+    "loom|h5mu"      = function() LoomToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5mu|loom"      = function() H5MUToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose)
+  )
+
+  pair_key <- paste0(stype, "|", dtype)
+  if (pair_key %in% names(streaming_converters)) {
     result <- tryCatch({
-      if (stype == "h5ad" && dtype == "zarr") {
-        H5ADToZarr(input, output, overwrite = overwrite, gzip = gzip,
-                    verbose = verbose)
-      } else if (stype == "zarr" && dtype == "h5ad") {
-        ZarrToH5AD(input, output, overwrite = overwrite, gzip = gzip,
-                    verbose = verbose)
-      } else if (stype == "h5seurat" && dtype == "zarr") {
-        H5SeuratToZarr(input, output, assay = assay, overwrite = overwrite,
-                        gzip = gzip, verbose = verbose)
-      } else if (stype == "zarr" && dtype == "h5seurat") {
-        ZarrToH5Seurat(input, output, assay = assay, overwrite = overwrite,
-                        gzip = gzip, verbose = verbose)
-      }
+      streaming_converters[[pair_key]]()
       TRUE
     }, error = function(e) {
       if (verbose) message("Direct conversion failed: ", e$message,
@@ -6887,7 +6903,7 @@ scConvert_cli <- function(
     if (result) return(TRUE)
   }
 
-  hdf5_formats <- c("h5ad", "h5seurat", "h5mu")
+  hdf5_formats <- c("h5ad", "h5seurat", "h5mu", "loom")
   use_c_cli <- stype %in% hdf5_formats && dtype %in% hdf5_formats
 
   if (use_c_cli) {

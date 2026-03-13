@@ -415,6 +415,37 @@ obj <- readLoom("data.loom")
 # The names will be Gene, Gene.1, Gene.2, etc.
 ```
 
+## Direct Streaming Converters
+
+In addition to `readLoom()` and `writeLoom()`, scConvert provides direct
+streaming converters that bypass Seurat object construction. These are faster
+for format-to-format conversion because they operate directly on the HDF5 files:
+
+```{r streaming, eval = FALSE, purl = FALSE}
+# Loom <-> h5Seurat (direct HDF5 streaming)
+LoomToH5Seurat("data.loom", "data.h5seurat")
+H5SeuratToLoom("data.h5seurat", "data.loom")
+
+# Loom <-> h5ad (via temp h5seurat, no Seurat object)
+LoomToH5AD("data.loom", "data.h5ad")
+H5ADToLoom("data.h5ad", "data.loom")
+
+# Loom <-> Zarr
+LoomToZarr("data.loom", "data.zarr")
+ZarrToLoom("data.zarr", "data.loom")
+
+# Loom <-> h5mu
+LoomToH5MU("data.loom", "data.h5mu")
+H5MUToLoom("data.h5mu", "data.loom")
+```
+
+The C CLI binary also supports Loom for maximum speed:
+
+```{bash cli_loom, eval = FALSE}
+scconvert data.h5ad data.loom
+scconvert data.loom data.h5seurat
+```
+
 ## Session Info
 
 ```{r sessionInfo, purl = FALSE}

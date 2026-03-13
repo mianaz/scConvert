@@ -24,7 +24,7 @@ ifeq ($(HDF5_LIBS),)
   endif
 endif
 
-SRCS     = main.c sc_h5ad.c sc_h5mu.c sc_modality.c sc_sparse.c sc_dataframe.c sc_groups.c sc_util.c
+SRCS     = main.c sc_h5ad.c sc_h5mu.c sc_loom.c sc_modality.c sc_sparse.c sc_dataframe.c sc_groups.c sc_util.c
 OBJS     = $(SRCS:.c=.o)
 TARGET   = scconvert
 

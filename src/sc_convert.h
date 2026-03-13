@@ -72,6 +72,12 @@ typedef enum {
     SC_H5SEURAT_TO_H5MU,
     SC_H5MU_TO_H5AD,
     SC_H5AD_TO_H5MU,
+    SC_LOOM_TO_H5SEURAT,
+    SC_H5SEURAT_TO_LOOM,
+    SC_LOOM_TO_H5AD,
+    SC_H5AD_TO_LOOM,
+    SC_LOOM_TO_H5MU,
+    SC_H5MU_TO_LOOM,
     SC_DIRECTION_UNKNOWN
 } sc_direction_t;
 
@@ -97,6 +103,14 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts);
 int sc_h5seurat_to_h5mu(const sc_opts_t *opts);
 int sc_h5mu_to_h5ad(const sc_opts_t *opts);
 int sc_h5ad_to_h5mu(const sc_opts_t *opts);
+
+/* Loom conversion entry points (sc_loom.c) */
+int sc_loom_to_h5seurat(const sc_opts_t *opts);
+int sc_h5seurat_to_loom(const sc_opts_t *opts);
+int sc_loom_to_h5ad(const sc_opts_t *opts);
+int sc_h5ad_to_loom(const sc_opts_t *opts);
+int sc_loom_to_h5mu(const sc_opts_t *opts);
+int sc_h5mu_to_loom(const sc_opts_t *opts);
 
 /* Modality name mapping (sc_modality.c) */
 const char *sc_modality_to_assay(const char *modality);

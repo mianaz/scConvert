@@ -1253,9 +1253,57 @@ SafeSetLayerData <- function(object, layer, value) {
   RegisterFormat(ext = 'rds', loader = .rds_loader, saver = .rds_saver)
   RegisterFormat(ext = 'zarr', loader = .zarr_loader, saver = .zarr_saver)
 
-  # Register direct HDF5-level conversion paths
+  # Register direct HDF5-level conversion paths (h5ad ↔ h5seurat)
   RegisterDirectPath('h5ad', 'h5seurat', .h5ad_to_h5seurat_direct)
   RegisterDirectPath('h5seurat', 'h5ad', .h5seurat_to_h5ad_direct)
+
+  # Register streaming HDF5 paths (h5mu ↔ h5seurat, loom ↔ h5seurat)
+  RegisterDirectPath('h5mu', 'h5seurat', function(source, dest, ...) {
+    H5MUToH5Seurat(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('h5seurat', 'h5mu', function(source, dest, ...) {
+    H5SeuratToH5MU(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('loom', 'h5seurat', function(source, dest, ...) {
+    LoomToH5Seurat(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('h5seurat', 'loom', function(source, dest, ...) {
+    H5SeuratToLoom(source, dest, stream = TRUE, ...)
+  })
+
+  # Register streaming composite HDF5 paths (via h5seurat hub)
+  RegisterDirectPath('h5mu', 'h5ad', function(source, dest, ...) {
+    H5MUToH5AD(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('h5ad', 'h5mu', function(source, dest, ...) {
+    H5ADToH5MU(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('loom', 'h5ad', function(source, dest, ...) {
+    LoomToH5AD(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('h5ad', 'loom', function(source, dest, ...) {
+    H5ADToLoom(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('loom', 'h5mu', function(source, dest, ...) {
+    LoomToH5MU(source, dest, stream = TRUE, ...)
+  })
+  RegisterDirectPath('h5mu', 'loom', function(source, dest, ...) {
+    H5MUToLoom(source, dest, stream = TRUE, ...)
+  })
+
+  # Register SOMA format
+  RegisterFormat(ext = 'soma', loader = function(source, ...) {
+    readSOMA(source, ...)
+  }, saver = function(object, dest, ...) {
+    writeSOMA(object, dest, ...)
+  })
+
+  # Register SpatialData zarr format (uses .spatialdata.zarr extension)
+  RegisterFormat(ext = 'spatialdata.zarr', loader = function(source, ...) {
+    readSpatialData(source, ...)
+  }, saver = function(object, dest, ...) {
+    writeSpatialData(object, dest, ...)
+  })
 
   invisible(x = NULL)
 }

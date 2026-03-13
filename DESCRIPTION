@@ -61,6 +61,7 @@ Collate:
     'LoadLoom.R'
     'LoadZarr.R'
     'ReadH5.R'
+    'ReadWriteSOMA.R'
     'SaveH5MU.R'
     'UtilsAssayCompat.R'
     'WriteH5Group.R'
@@ -68,7 +69,9 @@ Collate:
     'SaveLoom.R'
     'SaveZarr.R'
     'SpatialConversion.R'
+    'SpatialData.R'
     'SpatialFOV.R'
+    'StreamHDF5.R'
     'sparse_matrix.R'
     'Transpose.R'
     'V5Compatibility.R'
@@ -89,7 +92,8 @@ Suggests:
     Signac,
     SingleCellExperiment,
     SummarizedExperiment,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    tiledbsoma
 Additional_repositories:
     https://satijalab.r-universe.dev
 Conflicts: SeuratDisk

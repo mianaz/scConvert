@@ -30,8 +30,8 @@ pkg.version <- package_version(x = description[1, "Version"])
 
 **Universal single-cell format conversion for R. No Python required.**
 
-scConvert converts between **7 single-cell data formats** through a hub
-architecture using Seurat as a universal intermediate, providing **30+
+scConvert converts between **9 single-cell data formats** through a hub
+architecture using Seurat as a universal intermediate, providing **50+
 conversion paths** from a single `scConvert()` interface.
 
 ## Supported Formats
@@ -43,6 +43,8 @@ conversion paths** from a single `scConvert()` interface.
 | MuData | `.h5mu` | muon / multimodal | yes | yes |
 | Loom | `.loom` | loompy / HCA | yes | yes |
 | Zarr | `.zarr` | cloud AnnData | yes | yes |
+| TileDB-SOMA | `soma://` | CELLxGENE Census | yes | yes |
+| SpatialData | `.zarr` | scverse spatial | yes | yes |
 | RDS | `.rds` | R native | yes | yes |
 | SingleCellExperiment | in-memory | Bioconductor | yes | -- |
 
@@ -72,34 +74,47 @@ obj <- readH5AD("atlas_1M_cells.h5ad", use.bpcells = TRUE)
 # Multimodal (CITE-seq, ATAC+RNA) support
 obj <- readH5MU("citeseq.h5mu")   # auto-maps rna->RNA, prot->ADT
 writeH5MU(obj, "output.h5mu")
+
+# TileDB-SOMA (CELLxGENE Census)
+obj <- readSOMA("soma://collection/measurement")
+writeSOMA(obj, "output.soma")
+
+# SpatialData zarr stores
+obj <- readSpatialData("experiment.spatialdata.zarr")
+writeSpatialData(obj, "output.spatialdata.zarr")
 ```
 
 ## Hub Architecture
 
-All conversions route through Seurat as a universal intermediate.
-Direct HDF5 paths bypass the hub for h5ad/h5Seurat conversions.
+Three conversion tiers provide optimal speed for each format pair:
 
 ```
-             ┌─── h5ad (AnnData)
-             │
-             ├─── h5Seurat
-             │        ╎
-  ┌────────┐ ├─── h5mu (MuData)
-  │ Seurat │─┤
-  └────────┘ ├─── Loom
-             │
-             ├─── Zarr
-             │
-             ├─── RDS
-             │
-             └─── SCE (Bioconductor)
+                  ┌─── h5ad ───┐
+                  │      ╎     │
+                  ├─── h5Seurat│
+                  │      ╎     ├── C CLI (fastest, streaming)
+   ┌────────┐     ├─── h5mu ───┤
+   │ Seurat │─────┤      ╎     │
+   └────────┘     ├─── Loom ───┘
+                  │
+                  ├─── Zarr ········ R streaming (no Seurat)
+                  │
+                  ├─── TileDB-SOMA
+                  │
+                  ├─── SpatialData
+                  │
+                  ├─── RDS
+                  │
+                  └─── SCE (Bioconductor)
 
-  ─── hub path (via Seurat)
-  ╎╎╎ direct HDF5 path (no intermediate)
+   ─── hub path (via Seurat)
+   ╎╎╎ direct HDF5 streaming (no intermediate)
+   ··· R streaming via temp h5seurat
 ```
 
-This hub design achieves **O(n) implementation complexity** for n formats
-instead of O(n^2) pairwise converters.
+- **C CLI**: All HDF5 pairs (h5ad, h5Seurat, h5mu, Loom) -- streaming, constant memory
+- **R streaming**: Direct format-to-format without materializing a Seurat object
+- **Hub path**: Load → Seurat → Save for RDS, SCE, and cross-tier pairs
 
 ## Key Features
 
@@ -108,10 +123,11 @@ instead of O(n^2) pairwise converters.
 | **No Python** | Pure R via hdf5r. No reticulate, no conda environments. |
 | **Seurat v5** | Full Assay5 support with layered counts/data/scale.data. |
 | **Spatial** | Visium roundtrip with image reconstruction and scale factors. |
+| **SpatialData** | Read/write scverse SpatialData zarr stores with OME-NGFF images. |
 | **Multimodal** | Native h5mu read/write for CITE-seq, ATAC+RNA, etc. |
+| **TileDB-SOMA** | Read/write SOMA for CELLxGENE Census interoperability. |
 | **BPCells** | On-disk matrix loading -- 87% memory reduction at atlas scale. |
-| **Variable features** | Automatic `highly_variable` column mapping. |
-| **C CLI** | Standalone binary for streaming on-disk conversion. |
+| **C CLI** | Standalone binary for streaming on-disk HDF5 conversion. |
 
 ## Performance
 
@@ -129,17 +145,19 @@ Benchmarked on Apple M4 Max, 48 GB RAM.
 
 ## Command-Line Interface
 
-A standalone C binary for HDF5-based conversions without R or Python:
+A standalone C binary for HDF5-based conversions (h5ad, h5Seurat, h5mu, Loom)
+without R or Python:
 
 ```bash
 # Build (requires HDF5 headers)
 cd src && make
 
-# Convert
+# Convert between any HDF5 format pair
 scconvert data.h5ad data.h5seurat
 scconvert data.h5seurat data.h5ad --assay RNA
 scconvert multimodal.h5mu multimodal.h5seurat
-scconvert data.h5ad data.h5seurat --gzip 6 --overwrite
+scconvert data.h5ad data.loom
+scconvert data.loom data.h5seurat
 ```
 
 Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`, `--version`, `--help`
@@ -150,6 +168,8 @@ Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`, `--version`
 - [Direct H5AD Loading](https://mianaz.github.io/scConvert/articles/direct-h5ad-loading.html)
 - [Multimodal H5MU](https://mianaz.github.io/scConvert/articles/multimodal-h5mu.html)
 - [Loom Format](https://mianaz.github.io/scConvert/articles/convert-loom.html)
+- [Zarr Format](https://mianaz.github.io/scConvert/articles/convert-zarr.html)
+- [Spatial Technologies](https://mianaz.github.io/scConvert/articles/spatial-technologies.html)
 - [CLI Usage](https://mianaz.github.io/scConvert/articles/cli-usage.html)
 - [h5Seurat Specification](https://mianaz.github.io/scConvert/articles/h5Seurat-spec.html)
 

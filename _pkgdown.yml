@@ -49,6 +49,16 @@ reference:
       - readH5MU
       - writeH5MU
       - as.h5mu
+      - H5MUToH5Seurat
+      - H5SeuratToH5MU
+      - H5MUToH5AD
+      - H5ADToH5MU
+      - H5MUToLoom
+      - LoomToH5MU
+      - H5MUToZarr
+      - ZarrToH5MU
+      - H5MUToSOMA
+      - SOMAToH5MU
 
   - title: "Loom Format"
     desc: "Loading and saving Loom files for interoperability with loompy"
@@ -59,12 +69,14 @@ reference:
       - loom-bindings
       - LoomLoading
       - ValidateLoom
-
-  - title: "Spatial Data Conversion"
-    desc: "Converting spatial data between Seurat and AnnData formats"
-    contents:
-      - H5ADSpatialToSeurat
-      - SeuratSpatialToH5AD
+      - LoomToH5Seurat
+      - H5SeuratToLoom
+      - LoomToH5AD
+      - H5ADToLoom
+      - LoomToZarr
+      - ZarrToLoom
+      - LoomToSOMA
+      - SOMAToLoom
 
   - title: "Zarr Format"
     desc: "Loading, saving, and converting Zarr-based AnnData stores"
@@ -75,6 +87,32 @@ reference:
       - ZarrToH5AD
       - H5SeuratToZarr
       - ZarrToH5Seurat
+      - ZarrToSOMA
+      - SOMAToZarr
+
+  - title: "TileDB-SOMA Format"
+    desc: "Reading and writing TileDB-SOMA for CELLxGENE Census interoperability"
+    contents:
+      - readSOMA
+      - writeSOMA
+      - H5ADToSOMA
+      - SOMAToH5AD
+      - H5SeuratToSOMA
+      - SOMAToH5Seurat
+
+  - title: "Spatial Data Conversion"
+    desc: "Converting spatial data between Seurat, AnnData, and SpatialData formats"
+    contents:
+      - H5ADSpatialToSeurat
+      - SeuratSpatialToH5AD
+      - readSpatialData
+      - writeSpatialData
+      - SpatialDataToH5AD
+      - H5ADToSpatialData
+      - SpatialDataToH5Seurat
+      - H5SeuratToSpatialData
+      - SpatialDataToZarr
+      - ZarrToSpatialData
 
   - title: "Format Conversion"
     desc: "General conversion utilities between all supported formats"
