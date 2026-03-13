@@ -198,7 +198,7 @@ scConvert_cli(h5s_path, h5ad_path, verbose = FALSE)
 #> Validating h5Seurat file
 #> [1] TRUE
 cat("Converted:", basename(h5s_path), "->", basename(h5ad_path), "\n")
-#> Converted: filef11425cc586.h5Seurat -> filef11418abe1a0.h5ad
+#> Converted: file123bb7dd4ad32.h5Seurat -> file123bb15b6ee28.h5ad
 ```
 
 ### Visualize in Seurat (R)
@@ -348,19 +348,16 @@ stopifnot(max(abs(umap_ref - umap_load)) == 0)
 cat("UMAP: exact match\n")
 #> UMAP: exact match
 
-# Neighbor graphs (CLI preserves graph data in h5seurat; loading may skip them
-# depending on SeuratDisk/hdf5r version, so check conditionally)
-if (length(names(loaded@graphs)) > 0) {
-  for (g in intersect(names(ref@graphs), names(loaded@graphs))) {
-    common <- intersect(rownames(ref@graphs[[g]]), rownames(loaded@graphs[[g]]))
-    diff <- max(abs(ref@graphs[[g]][common, common] - loaded@graphs[[g]][common, common]))
-    stopifnot(diff == 0)
-    cat(g, ": exact match (nnz =", length(loaded@graphs[[g]]@x), ")\n")
-  }
-} else {
-  cat("Graphs: not loaded (expected with some SeuratDisk versions)\n")
+# Neighbor graphs
+for (g in names(ref@graphs)) {
+  stopifnot(g %in% names(loaded@graphs))
+  common <- intersect(rownames(ref@graphs[[g]]), rownames(loaded@graphs[[g]]))
+  diff <- max(abs(ref@graphs[[g]][common, common] - loaded@graphs[[g]][common, common]))
+  stopifnot(diff == 0)
+  cat(g, ": exact match (nnz =", length(loaded@graphs[[g]]@x), ")\n")
 }
-#> Graphs: not loaded (expected with some SeuratDisk versions)
+#> RNA_nn : exact match (nnz = 957 )
+#> RNA_snn : exact match (nnz = 2076 )
 
 # Expression counts (exact)
 ref_c <- GetAssayData(ref, layer = "counts")
@@ -393,7 +390,8 @@ stopifnot(identical(sort(colnames(rt)), sort(colnames(ref))))
 pca_diff <- max(abs(Embeddings(ref, "pca")[colnames(rt), ] - Embeddings(rt, "pca")))
 stopifnot(pca_diff == 0)
 
-for (g in intersect(names(ref@graphs), names(rt@graphs))) {
+for (g in names(ref@graphs)) {
+  stopifnot(g %in% names(rt@graphs))
   common <- intersect(rownames(ref@graphs[[g]]), rownames(rt@graphs[[g]]))
   stopifnot(max(abs(ref@graphs[[g]][common, common] - rt@graphs[[g]][common, common])) == 0)
 }
