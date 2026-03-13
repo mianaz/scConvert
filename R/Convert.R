@@ -6903,8 +6903,8 @@ scConvert_cli <- function(
     if (result) return(TRUE)
   }
 
-  hdf5_formats <- c("h5ad", "h5seurat", "h5mu", "loom")
-  use_c_cli <- stype %in% hdf5_formats && dtype %in% hdf5_formats
+  cli_formats <- c("h5ad", "h5seurat", "h5mu", "loom", "zarr")
+  use_c_cli <- stype %in% cli_formats && dtype %in% cli_formats
 
   if (use_c_cli) {
     cli_bin <- sc_find_cli()

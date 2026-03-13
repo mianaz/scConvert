@@ -27,16 +27,20 @@ static void print_usage(const char *prog) {
         "\n"
         "Usage: %s <input> <output> [options]\n"
         "\n"
-        "HDF5 format pairs (fast C binary, auto-detected from extensions):\n"
+        "Supported format pairs (auto-detected from extensions):\n"
         "  .h5ad     ↔ .h5seurat\n"
         "  .h5mu     ↔ .h5seurat   (multi-assay)\n"
         "  .h5mu     ↔ .h5ad       (single modality)\n"
         "  .loom     ↔ .h5seurat\n"
         "  .loom     ↔ .h5ad\n"
         "  .loom     ↔ .h5mu\n"
+        "  .zarr     ↔ .h5seurat\n"
+        "  .zarr     ↔ .h5ad\n"
+        "  .zarr     ↔ .h5mu\n"
+        "  .zarr     ↔ .loom\n"
         "\n"
-        "For .rds, .zarr use the R backend:\n"
-        "  Rscript -e 'scConvert::sc_cli_convert(\"in.h5ad\", \"out.zarr\")'\n"
+        "For .rds, .soma use the R backend:\n"
+        "  Rscript -e 'scConvert::scConvert_cli(\"in.h5ad\", \"out.rds\")'\n"
         "\n"
         "Options:\n"
         "  --assay <name>   Assay/modality name (default: RNA)\n"
@@ -63,11 +67,12 @@ static int has_extension(const char *path, const char *ext) {
     return strcasecmp(path + plen - elen, ext) == 0;
 }
 
-static int is_hdf5_format(const char *path) {
+static int is_supported_format(const char *path) {
     return has_extension(path, ".h5ad") ||
            has_extension(path, ".h5seurat") ||
            has_extension(path, ".h5mu") ||
-           has_extension(path, ".loom");
+           has_extension(path, ".loom") ||
+           has_extension(path, ".zarr");
 }
 
 static sc_direction_t detect_direction(const char *input, const char *output) {
@@ -101,8 +106,28 @@ static sc_direction_t detect_direction(const char *input, const char *output) {
         return SC_LOOM_TO_H5MU;
     if (has_extension(input, ".h5mu") && has_extension(output, ".loom"))
         return SC_H5MU_TO_LOOM;
-    /* Non-HDF5 formats require the R backend */
-    if (!is_hdf5_format(input) || !is_hdf5_format(output))
+    /* zarr ↔ h5seurat */
+    if (has_extension(input, ".zarr") && has_extension(output, ".h5seurat"))
+        return SC_ZARR_TO_H5SEURAT;
+    if (has_extension(input, ".h5seurat") && has_extension(output, ".zarr"))
+        return SC_H5SEURAT_TO_ZARR;
+    /* zarr ↔ h5ad */
+    if (has_extension(input, ".zarr") && has_extension(output, ".h5ad"))
+        return SC_ZARR_TO_H5AD;
+    if (has_extension(input, ".h5ad") && has_extension(output, ".zarr"))
+        return SC_H5AD_TO_ZARR;
+    /* zarr ↔ h5mu */
+    if (has_extension(input, ".zarr") && has_extension(output, ".h5mu"))
+        return SC_ZARR_TO_H5MU;
+    if (has_extension(input, ".h5mu") && has_extension(output, ".zarr"))
+        return SC_H5MU_TO_ZARR;
+    /* zarr ↔ loom */
+    if (has_extension(input, ".zarr") && has_extension(output, ".loom"))
+        return SC_ZARR_TO_LOOM;
+    if (has_extension(input, ".loom") && has_extension(output, ".zarr"))
+        return SC_LOOM_TO_ZARR;
+    /* Unsupported pairs require the R backend */
+    if (!is_supported_format(input) || !is_supported_format(output))
         return SC_DIRECTION_UNKNOWN;
     /* Default: try to infer from input */
     if (has_extension(input, ".h5ad"))
@@ -175,17 +200,26 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    /* Check input file exists */
-    if (access(opts.input_path, R_OK) != 0) {
-        fprintf(stderr, "Error: cannot read input file: %s\n", opts.input_path);
+    /* Check input exists (file or directory for zarr) */
+    struct stat in_stat;
+    if (stat(opts.input_path, &in_stat) != 0) {
+        fprintf(stderr, "Error: cannot read input: %s\n", opts.input_path);
         return 1;
     }
 
     /* Check output doesn't exist (unless --overwrite) */
-    if (!opts.overwrite && access(opts.output_path, F_OK) == 0) {
-        fprintf(stderr, "Error: output file exists: %s (use --overwrite)\n",
+    struct stat out_stat;
+    if (!opts.overwrite && stat(opts.output_path, &out_stat) == 0) {
+        fprintf(stderr, "Error: output exists: %s (use --overwrite)\n",
                 opts.output_path);
         return 1;
+    }
+    /* If overwrite and output is a directory (zarr), remove it */
+    if (opts.overwrite && stat(opts.output_path, &out_stat) == 0) {
+        if (S_ISDIR(out_stat.st_mode))
+            sc_rmdir_recursive(opts.output_path);
+        else
+            unlink(opts.output_path);
     }
 
     /* Detect direction */
@@ -232,14 +266,38 @@ int main(int argc, char **argv) {
     case SC_H5MU_TO_LOOM:
         rc = sc_h5mu_to_loom(&opts);
         break;
+    case SC_ZARR_TO_H5SEURAT:
+        rc = sc_zarr_to_h5seurat(&opts);
+        break;
+    case SC_H5SEURAT_TO_ZARR:
+        rc = sc_h5seurat_to_zarr(&opts);
+        break;
+    case SC_ZARR_TO_H5AD:
+        rc = sc_zarr_to_h5ad(&opts);
+        break;
+    case SC_H5AD_TO_ZARR:
+        rc = sc_h5ad_to_zarr(&opts);
+        break;
+    case SC_ZARR_TO_H5MU:
+        rc = sc_zarr_to_h5mu(&opts);
+        break;
+    case SC_H5MU_TO_ZARR:
+        rc = sc_h5mu_to_zarr(&opts);
+        break;
+    case SC_ZARR_TO_LOOM:
+        rc = sc_zarr_to_loom(&opts);
+        break;
+    case SC_LOOM_TO_ZARR:
+        rc = sc_loom_to_zarr(&opts);
+        break;
     case SC_DIRECTION_UNKNOWN:
         fprintf(stderr,
             "Error: this format pair requires the R backend.\n"
             "Use the R wrapper instead:\n"
             "  Rscript -e 'scConvert::sc_cli_convert(\"%s\", \"%s\")'\n"
             "\n"
-            "The C binary supports: .h5ad, .h5seurat, .h5mu, .loom\n"
-            "The R backend adds:    .rds, .zarr\n",
+            "The C binary supports: .h5ad, .h5seurat, .h5mu, .loom, .zarr\n"
+            "The R backend adds:    .rds, .soma, .spatialdata.zarr\n",
             opts.input_path, opts.output_path);
         rc = SC_ERR_ARG;
         break;
@@ -251,8 +309,14 @@ int main(int argc, char **argv) {
 
     if (rc != SC_OK) {
         fprintf(stderr, "Conversion failed (error code %d)\n", rc);
-        /* Clean up partial output */
-        unlink(opts.output_path);
+        /* Clean up partial output (file or directory) */
+        struct stat out_st;
+        if (stat(opts.output_path, &out_st) == 0) {
+            if (S_ISDIR(out_st.st_mode))
+                sc_rmdir_recursive(opts.output_path);
+            else
+                unlink(opts.output_path);
+        }
         return 1;
     }
 

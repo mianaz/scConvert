@@ -78,6 +78,14 @@ typedef enum {
     SC_H5AD_TO_LOOM,
     SC_LOOM_TO_H5MU,
     SC_H5MU_TO_LOOM,
+    SC_ZARR_TO_H5SEURAT,
+    SC_H5SEURAT_TO_ZARR,
+    SC_ZARR_TO_H5AD,
+    SC_H5AD_TO_ZARR,
+    SC_ZARR_TO_H5MU,
+    SC_H5MU_TO_ZARR,
+    SC_ZARR_TO_LOOM,
+    SC_LOOM_TO_ZARR,
     SC_DIRECTION_UNKNOWN
 } sc_direction_t;
 
@@ -111,6 +119,51 @@ int sc_loom_to_h5ad(const sc_opts_t *opts);
 int sc_h5ad_to_loom(const sc_opts_t *opts);
 int sc_loom_to_h5mu(const sc_opts_t *opts);
 int sc_h5mu_to_loom(const sc_opts_t *opts);
+
+/* Zarr array metadata (parsed from .zarray JSON) */
+typedef struct {
+    int64_t zarr_format;
+    int64_t shape[2];
+    int     ndim;
+    int64_t chunks[2];
+    char    dtype[16];
+    char    compressor_id[16];
+    int     compressor_level;
+    int     has_vlen_utf8;
+    char    order;
+    double  fill_value;
+} sc_zarr_meta_t;
+
+/* Zarr conversion entry points (sc_zarr.c) */
+int sc_zarr_to_h5seurat(const sc_opts_t *opts);
+int sc_h5seurat_to_zarr(const sc_opts_t *opts);
+int sc_zarr_to_h5ad(const sc_opts_t *opts);
+int sc_h5ad_to_zarr(const sc_opts_t *opts);
+int sc_zarr_to_h5mu(const sc_opts_t *opts);
+int sc_h5mu_to_zarr(const sc_opts_t *opts);
+int sc_zarr_to_loom(const sc_opts_t *opts);
+int sc_loom_to_zarr(const sc_opts_t *opts);
+
+/* JSON utilities (sc_json.c) */
+char *sc_json_read_file(const char *path);
+const char *sc_json_find_key(const char *json, const char *key);
+int sc_json_get_string(const char *json, const char *key, char *buf, size_t buflen);
+int sc_json_get_int(const char *json, const char *key, int64_t *val);
+int sc_json_get_double(const char *json, const char *key, double *val);
+int sc_json_get_bool(const char *json, const char *key, int *val);
+int sc_json_is_null(const char *json, const char *key);
+int sc_json_get_int_array(const char *json, const char *key, int64_t *arr, int max_n);
+int sc_json_get_str_array(const char *json, const char *key, char ***out_arr, int *out_n);
+void sc_json_free_str_array(char **arr, int n);
+int sc_json_get_object(const char *json, const char *key, char *buf, size_t buflen);
+int sc_json_parse_zarray(const char *json, sc_zarr_meta_t *meta);
+int sc_json_write_zgroup(const char *dir);
+int sc_json_write_zarray(const char *dir, const sc_zarr_meta_t *meta);
+int sc_json_write_zattrs_str(const char *dir, const char *json_str);
+
+/* Directory utilities */
+int sc_rmdir_recursive(const char *path);
+int sc_mkdir_p(const char *path);
 
 /* Modality name mapping (sc_modality.c) */
 const char *sc_modality_to_assay(const char *modality);

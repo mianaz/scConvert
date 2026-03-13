@@ -46,7 +46,7 @@ for HDF5 pairs, R streaming for zarr/loom cross-format pairs, and R hub for the 
 | SeuratDisk HDF5 | `.h5seurat` | C binary + R streaming |
 | MuData HDF5 | `.h5mu` | C binary + R streaming |
 | Loom HDF5 | `.loom` | C binary + R streaming |
-| AnnData Zarr | `.zarr` | R streaming |
+| AnnData Zarr | `.zarr` | C binary + R streaming |
 | TileDB-SOMA | `soma://` | R (requires tiledbsoma) |
 | SpatialData | `.spatialdata.zarr` | R |
 | R serialized | `.rds` | R hub |
@@ -129,12 +129,12 @@ The conversion direction is auto-detected from file extensions.
 
 ### R backend (all formats)
 
-For formats not supported by the C binary (zarr, SOMA, SpatialData, rds), use
+For formats not supported by the C binary (SOMA, SpatialData, rds), use
 the R wrapper script installed with the package:
 
 ```bash
-Rscript -e 'scConvert::scConvert_cli("data.h5ad", "data.zarr")'
-Rscript -e 'scConvert::scConvert_cli("data.zarr", "data.loom")'
+Rscript -e 'scConvert::scConvert_cli("data.h5ad", "data.rds")'
+Rscript -e 'scConvert::scConvert_cli("data.soma", "data.h5ad")'
 ```
 
 ## Examples
