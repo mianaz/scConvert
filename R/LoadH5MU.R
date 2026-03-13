@@ -39,13 +39,13 @@
 #' @examples
 #' \dontrun{
 #' # Load all modalities from an h5mu file
-#' seurat_obj <- LoadH5MU("multimodal_data.h5mu")
+#' seurat_obj <- readH5MU("multimodal_data.h5mu")
 #'
 #' # Load specific modalities only
-#' seurat_obj <- LoadH5MU("multimodal_data.h5mu", modalities = c("rna", "prot"))
+#' seurat_obj <- readH5MU("multimodal_data.h5mu", modalities = c("rna", "prot"))
 #'
 #' # Custom assay name mapping
-#' seurat_obj <- LoadH5MU(
+#' seurat_obj <- readH5MU(
 #'   "data.h5mu",
 #'   assay.names = c(rna = "RNA", prot = "Protein")
 #' )
@@ -59,7 +59,7 @@
 #'
 #' @export
 #'
-LoadH5MU <- function(file,
+readH5MU <- function(file,
                      modalities = NULL,
                      assay.names = NULL,
                      restore.spatial = TRUE,

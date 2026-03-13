@@ -69,11 +69,11 @@ NULL
 #' }
 #'
 #' @seealso
-#' \code{\link{SeuratToH5AD}} for direct Seurat to h5ad convenience function
-#' \code{\link{scSaveH5Seurat}} to save Seurat objects
-#' \code{\link{scLoadH5Seurat}} to load h5Seurat files
-#' \code{\link{LoadH5AD}} to directly load h5ad files
-#' \code{\link{LoadH5MU}} to load h5mu files
+#' \code{\link{writeH5AD}} for direct Seurat to h5ad convenience function
+#' \code{\link{writeH5Seurat}} to save Seurat objects
+#' \code{\link{readH5Seurat}} to load h5Seurat files
+#' \code{\link{readH5AD}} to directly load h5ad files
+#' \code{\link{readH5MU}} to load h5mu files
 #' \code{\link{scConnect}} to establish file connections
 #'
 #' @examples
@@ -4475,7 +4475,7 @@ readH5AD_obsm <- function(file) {
 #' @param verbose Logical; show progress messages. Default TRUE.
 #' @param standardize Logical; convert Seurat metadata names to scanpy conventions.
 #'   Default FALSE.
-#' @param ... Additional arguments passed to scSaveH5Seurat and Convert.
+#' @param ... Additional arguments passed to writeH5Seurat and Convert.
 #'
 #' @return Invisibly returns the path to the created H5AD file.
 #'
@@ -4500,18 +4500,18 @@ readH5AD_obsm <- function(file) {
 #' pbmc <- pbmc_small
 #'
 #' # Convert directly to H5AD
-#' SeuratToH5AD(pbmc, filename = "pbmc.h5ad")
+#' writeH5AD(pbmc, filename = "pbmc.h5ad")
 #'
 #' # The file can now be loaded in Python:
 #' # import scanpy as sc
 #' # adata = sc.read_h5ad("pbmc.h5ad")
 #' }
 #'
-#' @seealso \code{\link{scSaveH5Seurat}}, \code{\link{scConvert}}, \code{\link{LoadH5AD}}
+#' @seealso \code{\link{writeH5Seurat}}, \code{\link{scConvert}}, \code{\link{readH5AD}}
 #'
 #' @export
 #'
-SeuratToH5AD <- function(
+writeH5AD <- function(
   object,
   filename = NULL,
   assay = DefaultAssay(object = object),
@@ -4739,7 +4739,7 @@ DirectSeuratToH5AD <- function(
     # Delegate spatial data
     if (length(images) > 0) {
       tryCatch({
-        ConvertSeuratSpatialToH5AD(object, dfile, verbose = verbose)
+        SeuratSpatialToH5AD(object, dfile, verbose = verbose)
       }, error = function(e) {
         if (verbose) message("Spatial data conversion failed: ", e$message)
       })
@@ -4797,13 +4797,13 @@ H5MUToH5Seurat <- function(
   }
 
   # Load h5mu file as Seurat object
-  seurat_obj <- LoadH5MU(
+  seurat_obj <- readH5MU(
     file = source$filename,
     verbose = verbose
   )
 
   # Save as h5Seurat
-  h5seurat_file <- scSaveH5Seurat(
+  h5seurat_file <- writeH5Seurat(
     object = seurat_obj,
     filename = dest,
     overwrite = overwrite,
@@ -4836,13 +4836,13 @@ H5SeuratToH5MU <- function(
   }
 
   # Load h5Seurat as Seurat object
-  seurat_obj <- scLoadH5Seurat(
+  seurat_obj <- readH5Seurat(
     file = source$filename,
     verbose = verbose
   )
 
   # Save as h5mu
-  h5mu_file <- SaveH5MU(
+  h5mu_file <- writeH5MU(
     object = seurat_obj,
     filename = dest,
     overwrite = overwrite,
@@ -4876,7 +4876,7 @@ H5MUToH5AD <- function(
   }
 
   # Load h5mu file
-  seurat_obj <- LoadH5MU(
+  seurat_obj <- readH5MU(
     file = source$filename,
     modalities = modality,
     verbose = verbose
@@ -4895,7 +4895,7 @@ H5MUToH5AD <- function(
   temp_h5seurat <- tempfile(fileext = ".h5seurat")
   on.exit(file.remove(temp_h5seurat), add = TRUE)
 
-  scSaveH5Seurat(
+  writeH5Seurat(
     object = seurat_obj,
     filename = temp_h5seurat,
     overwrite = TRUE,
@@ -4922,12 +4922,11 @@ H5MUToH5AD <- function(
 # Seurat-to-h5mu Pipeline (native, no MuDataSeurat dependency)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Convert a Seurat object to h5mu format
+#' Write a Seurat object to h5mu format
 #'
 #' Writes a multi-assay Seurat object to an h5mu file, with each
 #' assay becoming a separate modality under \code{/mod/{modality}/}.
-#' Uses scConvert's native writer (no MuDataSeurat dependency required).
-#' Works with Seurat V5 Assay5 objects.
+#' Works with Seurat V5 Assay5 objects. No external dependencies required.
 #'
 #' @param object A Seurat object with one or more assays
 #' @param filename Output h5mu file path. If NULL, derived from project name.
@@ -4937,20 +4936,41 @@ H5MUToH5AD <- function(
 #'
 #' @return Invisibly returns the output filename
 #'
+#' @details
+#' The h5mu format is designed for multimodal data and stores each Seurat assay
+#' as a separate modality under \code{/mod/{modality_name}}. This function:
+#' \itemize{
+#'   \item Extracts each specified assay from the Seurat object
+#'   \item Converts assays to modality structure
+#'   \item Writes counts and data layers for each modality
+#'   \item Preserves cell metadata in global /obs and per-modality obs
+#'   \item Maintains dimensional reductions and graphs
+#' }
+#'
+#' @section Assay Mapping:
+#' By default, Seurat assay names are mapped to standard MuData modality names:
+#' \itemize{
+#'   \item RNA -> rna
+#'   \item ADT -> prot
+#'   \item ATAC -> atac
+#'   \item Spatial -> spatial
+#'   \item Other names are converted to lowercase
+#' }
+#'
 #' @examples
 #' \dontrun{
 #' # Write a multi-assay Seurat object (e.g. CITE-seq with RNA + ADT)
-#' SeuratToH5MU(seurat_obj, filename = "multimodal.h5mu")
+#' writeH5MU(seurat_obj, filename = "multimodal.h5mu")
 #'
 #' # Write specific assays only
-#' SeuratToH5MU(seurat_obj, filename = "rna_only.h5mu", assays = "RNA")
+#' writeH5MU(seurat_obj, filename = "rna_only.h5mu", assays = "RNA")
 #' }
 #'
-#' @seealso \code{\link{SaveH5MU}}, \code{\link{scConvert}}, \code{\link{LoadH5MU}}
+#' @seealso \code{\link{readH5MU}}, \code{\link{scConvert}}, \code{\link{as.h5mu}}
 #'
 #' @export
 #'
-SeuratToH5MU <- function(
+writeH5MU <- function(
   object,
   filename = NULL,
   assays = NULL,
@@ -5232,8 +5252,8 @@ H5ADToZarr <- function(source, dest, overwrite = FALSE, gzip = 4L,
   if (stream) {
     .stream_h5ad_to_zarr(source, dest, gzip = gzip, verbose = verbose)
   } else {
-    obj <- LoadH5AD(source, verbose = verbose)
-    SaveZarr(obj, dest, overwrite = FALSE, verbose = verbose)
+    obj <- readH5AD(source, verbose = verbose)
+    writeZarr(obj, dest, overwrite = FALSE, verbose = verbose)
   }
   invisible(dest)
 }
@@ -5643,8 +5663,8 @@ ZarrToH5AD <- function(source, dest, overwrite = FALSE, gzip = 4L,
   if (stream) {
     .stream_zarr_to_h5ad(source, dest, gzip = gzip, verbose = verbose)
   } else {
-    obj <- LoadZarr(source, verbose = verbose)
-    SeuratToH5AD(obj, dest, overwrite = FALSE, verbose = verbose)
+    obj <- readZarr(source, verbose = verbose)
+    writeH5AD(obj, dest, overwrite = FALSE, verbose = verbose)
   }
   invisible(dest)
 }
@@ -5937,8 +5957,8 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     .stream_h5seurat_to_zarr(source, dest, assay = assay, gzip = gzip,
                               verbose = verbose)
   } else {
-    obj <- scLoadH5Seurat(source, verbose = verbose)
-    SaveZarr(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
+    obj <- readH5Seurat(source, verbose = verbose)
+    writeZarr(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
   }
   invisible(dest)
 }
@@ -6398,8 +6418,8 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
     .stream_zarr_to_h5seurat(source, dest, assay = assay, gzip = gzip,
                               verbose = verbose)
   } else {
-    obj <- LoadZarr(source, verbose = verbose)
-    scSaveH5Seurat(obj, dest, overwrite = FALSE, verbose = verbose)
+    obj <- readZarr(source, verbose = verbose)
+    writeH5Seurat(obj, dest, overwrite = FALSE, verbose = verbose)
   }
   invisible(dest)
 }
@@ -6568,7 +6588,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
           emb <- .zarr_read_numeric(zarr_path, file.path("obsm", rn))
           # zarr stores [n_cells, n_comp] in C order.
           # hdf5r writes R matrices in Fortran order, so writing [n_cells, n_comp]
-          # from R produces the same HDF5 layout as scSaveH5Seurat (which writes
+          # from R produces the same HDF5 layout as writeH5Seurat (which writes
           # Embeddings() directly — also [n_cells, n_comp] in R).
           # No transpose needed.
           if (is.matrix(emb) && nrow(emb) != n_cells && ncol(emb) == n_cells) {

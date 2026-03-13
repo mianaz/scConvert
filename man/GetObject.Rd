@@ -87,6 +87,6 @@ assay in \code{assays}
 Figure out which objects to load from an h5Seurat file
 }
 \seealso{
-\code{\link{scLoadH5Seurat}}
+\code{\link{readH5Seurat}}
 }
 \keyword{internal}

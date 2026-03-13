@@ -1,4 +1,4 @@
-# Test scConvert.Seurat method and exported SeuratToH5AD
+# Test scConvert.Seurat method and exported writeH5AD
 
 library(scConvert)
 
@@ -119,26 +119,26 @@ test_that("scConvert(Seurat) errors on unsupported format", {
 })
 
 # -----------------------------------------------------------------------------
-# SeuratToH5AD exported convenience function
+# writeH5AD exported convenience function
 # -----------------------------------------------------------------------------
 
-test_that("SeuratToH5AD() creates valid h5ad file", {
+test_that("writeH5AD() creates valid h5ad file", {
   srt <- create_test_seurat()
   dest <- tempfile(fileext = ".h5ad")
-  result <- SeuratToH5AD(srt, filename = dest, overwrite = TRUE, verbose = FALSE)
+  result <- writeH5AD(srt, filename = dest, overwrite = TRUE, verbose = FALSE)
   expect_true(file.exists(dest))
   expect_true(hdf5r::is_hdf5(dest))
   expect_equal(result, dest)
 })
 
-test_that("SeuratToH5AD() adds .h5ad extension if missing", {
+test_that("writeH5AD() adds .h5ad extension if missing", {
   srt <- create_test_seurat()
   dest <- tempfile()
-  result <- SeuratToH5AD(srt, filename = dest, overwrite = TRUE, verbose = FALSE)
+  result <- writeH5AD(srt, filename = dest, overwrite = TRUE, verbose = FALSE)
   expect_true(grepl("\\.h5ad$", result))
   expect_true(file.exists(result))
 })
 
-test_that("SeuratToH5AD() errors on non-Seurat input", {
-  expect_error(SeuratToH5AD("not_a_seurat"), "must be a Seurat object")
+test_that("writeH5AD() errors on non-Seurat input", {
+  expect_error(writeH5AD("not_a_seurat"), "must be a Seurat object")
 })

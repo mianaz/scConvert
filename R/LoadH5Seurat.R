@@ -141,7 +141,7 @@ ReadLibraryIds <- function(file, library_col) {
 #' skipping raw counts and scaled data.
 #'
 #' @seealso
-#' \code{\link{scSaveH5Seurat}} to save a Seurat object to h5Seurat format
+#' \code{\link{writeH5Seurat}} to save a Seurat object to h5Seurat format
 #' \code{\link{scConvert}} to convert to other formats
 #'
 #' @examples
@@ -149,45 +149,45 @@ ReadLibraryIds <- function(file, library_col) {
 #' library(scConvert)
 #'
 #' # Load entire h5Seurat file
-#' seurat_obj <- scLoadH5Seurat("data.h5seurat")
+#' seurat_obj <- readH5Seurat("data.h5seurat")
 #'
 #' # Load only specific assays
-#' seurat_obj <- scLoadH5Seurat("data.h5seurat", assays = c("RNA", "ADT"))
+#' seurat_obj <- readH5Seurat("data.h5seurat", assays = c("RNA", "ADT"))
 #'
 #' # Load only specific data layers (memory-efficient for large files)
-#' seurat_obj <- scLoadH5Seurat("data.h5seurat", assays = c("data"))  # Only normalized expression
+#' seurat_obj <- readH5Seurat("data.h5seurat", assays = c("data"))  # Only normalized expression
 #'
 #' # Load specific assays with different layers
-#' seurat_obj <- scLoadH5Seurat(
+#' seurat_obj <- readH5Seurat(
 #'   "data.h5seurat",
 #'   assays = list(RNA = c("data", "scale.data"), ADT = "data")
 #' )
 #'
 #' # Load without reductions (faster)
-#' seurat_obj <- scLoadH5Seurat("data.h5seurat", reductions = FALSE)
+#' seurat_obj <- readH5Seurat("data.h5seurat", reductions = FALSE)
 #'
 #' # Load UMAP and PCA reductions only
-#' seurat_obj <- scLoadH5Seurat("data.h5seurat", reductions = c("umap", "pca"))
+#' seurat_obj <- readH5Seurat("data.h5seurat", reductions = c("umap", "pca"))
 #'
 #' # Load spatial data without graphs (for Visium experiments)
-#' seurat_obj <- scLoadH5Seurat("visium.h5seurat", images = TRUE, graphs = FALSE)
+#' seurat_obj <- readH5Seurat("visium.h5seurat", images = TRUE, graphs = FALSE)
 #' }
 #'
 #' @export
 #'
-scLoadH5Seurat <- function(file, ...) {
-  UseMethod(generic = 'scLoadH5Seurat', object = file)
+readH5Seurat <- function(file, ...) {
+  UseMethod(generic = 'readH5Seurat', object = file)
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Methods
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' @rdname scLoadH5Seurat
-#' @method scLoadH5Seurat character
+#' @rdname readH5Seurat
+#' @method readH5Seurat character
 #' @export
 #'
-scLoadH5Seurat.character <- function(
+readH5Seurat.character <- function(
   file,
   assays = NULL,
   reductions = NULL,
@@ -203,7 +203,7 @@ scLoadH5Seurat.character <- function(
 ) {
   hfile <- h5Seurat$new(filename = file, mode = 'r')
   on.exit(expr = hfile$close_all())
-  return(scLoadH5Seurat(
+  return(readH5Seurat(
     file = hfile,
     assays = assays,
     reductions = reductions,
@@ -219,11 +219,11 @@ scLoadH5Seurat.character <- function(
   ))
 }
 
-#' @rdname scLoadH5Seurat
-#' @method scLoadH5Seurat H5File
+#' @rdname readH5Seurat
+#' @method readH5Seurat H5File
 #' @export
 #'
-scLoadH5Seurat.H5File <- function(
+readH5Seurat.H5File <- function(
   file,
   assays = NULL,
   reductions = NULL,
@@ -237,7 +237,7 @@ scLoadH5Seurat.H5File <- function(
   verbose = TRUE,
   ...
 ) {
-  return(scLoadH5Seurat(
+  return(readH5Seurat(
     file = as.h5Seurat(x = file),
     assays = assays,
     reductions = reductions,
@@ -255,11 +255,11 @@ scLoadH5Seurat.H5File <- function(
 
 #' @importFrom Seurat as.Seurat
 #'
-#' @rdname scLoadH5Seurat
-#' @method scLoadH5Seurat h5Seurat
+#' @rdname readH5Seurat
+#' @method readH5Seurat h5Seurat
 #' @export
 #'
-scLoadH5Seurat.h5Seurat <- function(
+readH5Seurat.h5Seurat <- function(
   file,
   assays = NULL,
   reductions = NULL,
@@ -382,7 +382,7 @@ scLoadH5Seurat.h5Seurat <- function(
 #'
 #' @aliases as.Seurat
 #'
-#' @rdname scLoadH5Seurat
+#' @rdname readH5Seurat
 #' @method as.Seurat h5Seurat
 #' @export
 #'

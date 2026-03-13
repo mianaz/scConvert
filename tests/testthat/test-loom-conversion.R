@@ -34,14 +34,14 @@ create_test_seurat <- function(n_cells = 100, n_features = 200) {
 }
 
 # -----------------------------------------------------------------------------
-# Test scSaveLoom
+# Test writeLoom
 # -----------------------------------------------------------------------------
 
-test_that("scSaveLoom creates a valid loom file from Seurat object", {
+test_that("writeLoom creates a valid loom file from Seurat object", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  expect_no_error(scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE))
+  expect_no_error(writeLoom(seurat_obj, filename = loom_file, verbose = FALSE))
   expect_true(file.exists(loom_file))
 
   # Verify it's a valid HDF5 file
@@ -70,11 +70,11 @@ test_that("scSaveLoom creates a valid loom file from Seurat object", {
   unlink(loom_file)
 })
 
-test_that("scSaveLoom preserves cell metadata", {
+test_that("writeLoom preserves cell metadata", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
 
   h5 <- hdf5r::H5File$new(loom_file, mode = "r")
   on.exit(h5$close_all(), add = TRUE)
@@ -90,32 +90,32 @@ test_that("scSaveLoom preserves cell metadata", {
   unlink(loom_file)
 })
 
-test_that("scSaveLoom handles overwrite parameter correctly", {
+test_that("writeLoom handles overwrite parameter correctly", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
   # First save
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
 
   # Second save without overwrite should fail
   expect_error(
-    scSaveLoom(seurat_obj, filename = loom_file, overwrite = FALSE, verbose = FALSE),
+    writeLoom(seurat_obj, filename = loom_file, overwrite = FALSE, verbose = FALSE),
     "already exists"
   )
 
   # With overwrite should succeed
   expect_no_error(
-    scSaveLoom(seurat_obj, filename = loom_file, overwrite = TRUE, verbose = FALSE)
+    writeLoom(seurat_obj, filename = loom_file, overwrite = TRUE, verbose = FALSE)
   )
 
   unlink(loom_file)
 })
 
-test_that("scSaveLoom adds .loom extension if missing", {
+test_that("writeLoom adds .loom extension if missing", {
   seurat_obj <- create_test_seurat()
   base_path <- tempfile()
 
-  result <- scSaveLoom(seurat_obj, filename = base_path, verbose = FALSE)
+  result <- writeLoom(seurat_obj, filename = base_path, verbose = FALSE)
 
   expect_true(grepl("\\.loom$", result))
   expect_true(file.exists(result))
@@ -124,15 +124,15 @@ test_that("scSaveLoom adds .loom extension if missing", {
 })
 
 # -----------------------------------------------------------------------------
-# Test scLoadLoom
+# Test readLoom
 # -----------------------------------------------------------------------------
 
-test_that("scLoadLoom reads a loom file as Seurat object", {
+test_that("readLoom reads a loom file as Seurat object", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
-  loaded_obj <- scLoadLoom(loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, verbose = FALSE)
 
   expect_s4_class(loaded_obj, "Seurat")
   expect_equal(ncol(loaded_obj), ncol(seurat_obj))
@@ -141,12 +141,12 @@ test_that("scLoadLoom reads a loom file as Seurat object", {
   unlink(loom_file)
 })
 
-test_that("scLoadLoom preserves cell and gene names", {
+test_that("readLoom preserves cell and gene names", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
-  loaded_obj <- scLoadLoom(loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, verbose = FALSE)
 
   expect_equal(colnames(loaded_obj), colnames(seurat_obj))
   expect_equal(rownames(loaded_obj), rownames(seurat_obj))
@@ -154,12 +154,12 @@ test_that("scLoadLoom preserves cell and gene names", {
   unlink(loom_file)
 })
 
-test_that("scLoadLoom preserves cell metadata", {
+test_that("readLoom preserves cell metadata", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
-  loaded_obj <- scLoadLoom(loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, verbose = FALSE)
 
   # Check metadata columns exist
   expect_true("cluster" %in% colnames(loaded_obj[[]]))
@@ -179,12 +179,12 @@ test_that("scLoadLoom preserves cell metadata", {
   unlink(loom_file)
 })
 
-test_that("scLoadLoom handles custom assay name", {
+test_that("readLoom handles custom assay name", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
-  loaded_obj <- scLoadLoom(loom_file, assay = "MyAssay", verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, assay = "MyAssay", verbose = FALSE)
 
   expect_true("MyAssay" %in% Seurat::Assays(loaded_obj))
   expect_equal(Seurat::DefaultAssay(loaded_obj), "MyAssay")
@@ -200,8 +200,8 @@ test_that("Round-trip Seurat -> Loom -> Seurat preserves expression data", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
-  loaded_obj <- scLoadLoom(loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, verbose = FALSE)
 
   # Compare expression matrices
   original_data <- Seurat::GetAssayData(seurat_obj, layer = "data")
@@ -224,15 +224,15 @@ test_that("Round-trip preserves main matrix (data layer saved, loaded as counts)
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
-  loaded_obj <- scLoadLoom(loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, verbose = FALSE)
 
-  # scSaveLoom saves "data" layer as /matrix
-  # scLoadLoom loads /matrix as "counts" (since loom format doesn't distinguish)
+  # writeLoom saves "data" layer as /matrix
+  # readLoom loads /matrix as "counts" (since loom format doesn't distinguish)
   # So we compare original "data" with loaded "counts"
   original_data <- Seurat::GetAssayData(seurat_obj, layer = "data")
 
-  # scLoadLoom stores the main matrix in counts layer
+  # readLoom stores the main matrix in counts layer
   loaded_counts <- Seurat::GetAssayData(loaded_obj, layer = "counts")
 
   # Ensure same order
@@ -252,7 +252,7 @@ test_that("Round-trip preserves main matrix (data layer saved, loaded as counts)
 # Test with real loom file (if available)
 # -----------------------------------------------------------------------------
 
-test_that("scLoadLoom works with SummarizedExperiment example.loom", {
+test_that("readLoom works with SummarizedExperiment example.loom", {
   skip_if_not_installed("SummarizedExperiment")
 
   example_loom <- system.file(
@@ -262,9 +262,9 @@ test_that("scLoadLoom works with SummarizedExperiment example.loom", {
   skip_if(!file.exists(example_loom), "Example loom file not found")
 
   # The SummarizedExperiment example uses different attribute names
-  # so scLoadLoom may error - verify it either loads or errors gracefully
+  # so readLoom may error - verify it either loads or errors gracefully
   result <- tryCatch(
-    scLoadLoom(example_loom, verbose = FALSE),
+    readLoom(example_loom, verbose = FALSE),
     error = function(e) e
   )
 
@@ -300,8 +300,8 @@ test_that("Round-trip preserves dimensional reductions", {
   )
 
   loom_file <- tempfile(fileext = ".loom")
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
-  loaded_obj <- scLoadLoom(loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, verbose = FALSE)
 
   # Check if PCA was preserved
   if ("pca" %in% Seurat::Reductions(loaded_obj)) {
@@ -323,7 +323,7 @@ test_that("Round-trip preserves dimensional reductions", {
 # Test edge cases
 # -----------------------------------------------------------------------------
 
-test_that("scSaveLoom handles special characters in gene names", {
+test_that("writeLoom handles special characters in gene names", {
   # Create test data with special gene names directly
   # Note: Some characters like underscores may be converted during HDF5 round-trip
   set.seed(42)
@@ -343,22 +343,22 @@ test_that("scSaveLoom handles special characters in gene names", {
 
   loom_file <- tempfile(fileext = ".loom")
 
-  expect_no_error(scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE))
+  expect_no_error(writeLoom(seurat_obj, filename = loom_file, verbose = FALSE))
 
-  loaded_obj <- scLoadLoom(loom_file, verbose = FALSE)
+  loaded_obj <- readLoom(loom_file, verbose = FALSE)
   expect_equal(rownames(loaded_obj), new_names)
 
   unlink(loom_file)
 })
 
-test_that("scLoadLoom handles missing optional attributes gracefully", {
+test_that("readLoom handles missing optional attributes gracefully", {
   seurat_obj <- create_test_seurat()
   loom_file <- tempfile(fileext = ".loom")
 
-  scSaveLoom(seurat_obj, filename = loom_file, verbose = FALSE)
+  writeLoom(seurat_obj, filename = loom_file, verbose = FALSE)
 
   # Try loading with non-existent layers
-  loaded_obj <- scLoadLoom(
+  loaded_obj <- readLoom(
     loom_file,
     normalized = "nonexistent_layer",
     scaled = "another_nonexistent",

@@ -5,10 +5,10 @@ NULL
 
 #' Figure out which objects to load from an h5Seurat file
 #'
-#' @inheritParams scLoadH5Seurat
+#' @inheritParams readH5Seurat
 #' @param index An h5Seurat index (\code{\link{h5SI}}) object
 #'
-#' @seealso \code{\link{scLoadH5Seurat}}
+#' @seealso \code{\link{readH5Seurat}}
 #'
 #' @rdname GetObject
 #' @name GetObject

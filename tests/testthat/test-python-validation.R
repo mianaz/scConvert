@@ -76,17 +76,17 @@ pbmc <- FindNeighbors(pbmc, dims = 1:10, verbose = FALSE)
 
 # Direct h5ad
 h5ad_direct <- file.path(tmpdir, "test_pbmc_direct.h5ad")
-SeuratToH5AD(pbmc, h5ad_direct, overwrite = TRUE)
+writeH5AD(pbmc, h5ad_direct, overwrite = TRUE)
 
 # Via h5Seurat
 h5s_path <- file.path(tmpdir, "test_pbmc.h5Seurat")
-scSaveH5Seurat(pbmc, h5s_path, overwrite = TRUE, verbose = FALSE)
+writeH5Seurat(pbmc, h5s_path, overwrite = TRUE, verbose = FALSE)
 h5ad_via <- file.path(tmpdir, "test_pbmc.h5ad")
 scConvert(h5s_path, dest = "h5ad", overwrite = TRUE, verbose = FALSE)
 
 # Loom
 loom_path <- file.path(tmpdir, "test_pbmc.loom")
-scSaveLoom(pbmc, loom_path, overwrite = TRUE, verbose = FALSE)
+writeLoom(pbmc, loom_path, overwrite = TRUE, verbose = FALSE)
 
 # ── Helper to read h5ad and inspect via Python ──────────────────────────────
 
@@ -306,14 +306,14 @@ _syn_nvars = _adata_syn.n_vars
   expect_true(file.exists(native_path))
 
   # Load in scConvert
-  obj <- LoadH5AD(native_path, verbose = FALSE)
+  obj <- readH5AD(native_path, verbose = FALSE)
   expect_equal(ncol(obj), 200L)
   expect_equal(nrow(obj), 500L)
   expect_true(length(Reductions(obj)) > 0)
 
   # Write back to h5ad
   rt_path <- file.path(tmpdir, "scanpy_roundtrip.h5ad")
-  SeuratToH5AD(obj, rt_path, overwrite = TRUE)
+  writeH5AD(obj, rt_path, overwrite = TRUE)
 
   # Read back in Python and run scanpy
   py_exec(sprintf("
@@ -346,7 +346,7 @@ if (has_stxBrain) {
   brain <- UpdateSeuratObject(LoadData("stxBrain", type = "anterior1"))
   brain <- NormalizeData(brain, verbose = FALSE)
   spatial_h5ad <- file.path(tmpdir, "test_brain_spatial.h5ad")
-  SeuratToH5AD(brain, spatial_h5ad, overwrite = TRUE)
+  writeH5AD(brain, spatial_h5ad, overwrite = TRUE)
 }
 
 test_that("anndata reads spatial h5ad with correct obsm/spatial shape", {
@@ -448,7 +448,7 @@ if (has_cbmc) {
     cbmc[["ADT"]] <- subset(cbmc[["ADT"]], features = adt_keep)
   }
   h5mu_path <- file.path(tmpdir, "test_cbmc.h5mu")
-  SaveH5MU(cbmc, h5mu_path, overwrite = TRUE)
+  writeH5MU(cbmc, h5mu_path, overwrite = TRUE)
 }
 
 test_that("mudata reads scConvert h5mu with both modalities", {

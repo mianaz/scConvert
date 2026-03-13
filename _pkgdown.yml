@@ -26,8 +26,8 @@ reference:
   - title: "h5Seurat Format"
     desc: "Working with h5Seurat files - the native HDF5-based R/Seurat format"
     contents:
-      - scSaveH5Seurat
-      - scLoadH5Seurat
+      - writeH5Seurat
+      - readH5Seurat
       - h5Seurat-class
       - h5Seurat-bindings
       - scConnect
@@ -38,23 +38,23 @@ reference:
     contents:
       - H5ADToH5Seurat
       - H5SeuratToH5AD
-      - SeuratToH5AD
-      - LoadH5AD
+      - writeH5AD
+      - readH5AD
       - readH5AD_obs
       - readH5AD_obsm
 
   - title: "MuData (h5mu) Format"
     desc: "Working with MuData multimodal HDF5 files"
     contents:
-      - LoadH5MU
-      - SaveH5MU
-      - SeuratToH5MU
+      - readH5MU
+      - writeH5MU
+      - as.h5mu
 
   - title: "Loom Format"
     desc: "Loading and saving Loom files for interoperability with loompy"
     contents:
-      - scLoadLoom
-      - scSaveLoom
+      - readLoom
+      - writeLoom
       - loom-class
       - loom-bindings
       - LoomLoading
@@ -63,14 +63,14 @@ reference:
   - title: "Spatial Data Conversion"
     desc: "Converting spatial data between Seurat and AnnData formats"
     contents:
-      - ConvertH5ADSpatialToSeurat
-      - ConvertSeuratSpatialToH5AD
+      - H5ADSpatialToSeurat
+      - SeuratSpatialToH5AD
 
   - title: "Zarr Format"
     desc: "Loading, saving, and converting Zarr-based AnnData stores"
     contents:
-      - LoadZarr
-      - SaveZarr
+      - readZarr
+      - writeZarr
       - H5ADToZarr
       - ZarrToH5AD
       - H5SeuratToZarr

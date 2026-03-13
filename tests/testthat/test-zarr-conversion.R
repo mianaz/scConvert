@@ -1,4 +1,4 @@
-# Tests for Zarr-based AnnData conversion (LoadZarr / SaveZarr)
+# Tests for Zarr-based AnnData conversion (readZarr / writeZarr)
 
 library(scConvert)
 
@@ -314,26 +314,26 @@ test_that("zarr_node_type identifies groups and arrays", {
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# LoadZarr tests
+# readZarr tests
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-test_that("LoadZarr function exists and is exported", {
-  expect_true(exists("LoadZarr"))
-  expect_true(is.function(LoadZarr))
+test_that("readZarr function exists and is exported", {
+  expect_true(exists("readZarr"))
+  expect_true(is.function(readZarr))
 })
 
-test_that("LoadZarr validates directory existence", {
-  expect_error(LoadZarr("nonexistent_dir.zarr"), "not found")
+test_that("readZarr validates directory existence", {
+  expect_error(readZarr("nonexistent_dir.zarr"), "not found")
 })
 
-test_that("LoadZarr creates Seurat object from dense zarr store", {
+test_that("readZarr creates Seurat object from dense zarr store", {
   skip_if_not_installed("Seurat")
 
   tmp <- tempfile(fileext = ".zarr")
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
   ref <- create_test_zarr_dense(tmp, n_cells = 20, n_genes = 10)
 
-  result <- LoadZarr(tmp, verbose = FALSE)
+  result <- readZarr(tmp, verbose = FALSE)
 
   expect_s4_class(result, "Seurat")
   expect_equal(ncol(result), 20)
@@ -342,7 +342,7 @@ test_that("LoadZarr creates Seurat object from dense zarr store", {
   expect_equal(length(rownames(result)), length(ref$gene_names))
 })
 
-test_that("LoadZarr reads sparse CSR zarr correctly", {
+test_that("readZarr reads sparse CSR zarr correctly", {
   skip_if_not_installed("Seurat")
   skip_if_not_installed("Matrix")
 
@@ -350,7 +350,7 @@ test_that("LoadZarr reads sparse CSR zarr correctly", {
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
   ref <- create_test_zarr_sparse(tmp)
 
-  result <- LoadZarr(tmp, verbose = FALSE)
+  result <- readZarr(tmp, verbose = FALSE)
 
   expect_s4_class(result, "Seurat")
   expect_equal(ncol(result), 15)
@@ -358,7 +358,7 @@ test_that("LoadZarr reads sparse CSR zarr correctly", {
   expect_identical(colnames(result), ref$cell_names)
 })
 
-test_that("LoadZarr preserves categorical metadata", {
+test_that("readZarr preserves categorical metadata", {
   skip_if_not_installed("Seurat")
 
   tmp <- tempfile(fileext = ".zarr")
@@ -391,7 +391,7 @@ test_that("LoadZarr preserves categorical metadata", {
     `column-order` = list("cluster")
   ))
 
-  result <- LoadZarr(tmp, verbose = FALSE)
+  result <- readZarr(tmp, verbose = FALSE)
 
   expect_true("cluster" %in% colnames(result@meta.data))
   expect_s3_class(result$cluster, "factor")
@@ -399,7 +399,7 @@ test_that("LoadZarr preserves categorical metadata", {
   expect_equal(as.character(result$cluster), categories[codes + 1])
 })
 
-test_that("LoadZarr preserves dimensional reductions", {
+test_that("readZarr preserves dimensional reductions", {
   skip_if_not_installed("Seurat")
 
   tmp <- tempfile(fileext = ".zarr")
@@ -421,7 +421,7 @@ test_that("LoadZarr preserves dimensional reductions", {
                                  data = umap_embed, dtype = "<f8",
                                  compressor = compressor)
 
-  result <- LoadZarr(tmp, verbose = FALSE)
+  result <- readZarr(tmp, verbose = FALSE)
 
   expect_true("pca" %in% names(result@reductions))
   expect_true("umap" %in% names(result@reductions))
@@ -436,19 +436,19 @@ test_that("LoadZarr preserves dimensional reductions", {
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# SaveZarr tests
+# writeZarr tests
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-test_that("SaveZarr function exists and is exported", {
-  expect_true(exists("SaveZarr"))
-  expect_true(is.function(SaveZarr))
+test_that("writeZarr function exists and is exported", {
+  expect_true(exists("writeZarr"))
+  expect_true(is.function(writeZarr))
 })
 
-test_that("SaveZarr validates inputs", {
-  expect_error(SaveZarr("not_a_seurat", "out.zarr"), "must be a Seurat")
+test_that("writeZarr validates inputs", {
+  expect_error(writeZarr("not_a_seurat", "out.zarr"), "must be a Seurat")
 })
 
-test_that("SaveZarr creates valid zarr v2 store", {
+test_that("writeZarr creates valid zarr v2 store", {
   skip_if_not_installed("Seurat")
 
   tmp <- tempfile(fileext = ".zarr")
@@ -459,7 +459,7 @@ test_that("SaveZarr creates valid zarr v2 store", {
                 dimnames = list(paste0("Gene", 1:10), paste0("Cell", 1:10)))
   obj <- Seurat::CreateSeuratObject(counts = mat, min.cells = 0, min.features = 0)
 
-  SaveZarr(obj, tmp, verbose = FALSE)
+  writeZarr(obj, tmp, verbose = FALSE)
 
   expect_true(dir.exists(tmp))
   expect_true(file.exists(file.path(tmp, ".zgroup")))
@@ -469,7 +469,7 @@ test_that("SaveZarr creates valid zarr v2 store", {
   expect_true(dir.exists(file.path(tmp, "var")))
 })
 
-test_that("SaveZarr respects overwrite parameter", {
+test_that("writeZarr respects overwrite parameter", {
   skip_if_not_installed("Seurat")
 
   tmp <- tempfile(fileext = ".zarr")
@@ -479,16 +479,16 @@ test_that("SaveZarr respects overwrite parameter", {
                 dimnames = list(paste0("G", 1:3), paste0("C", 1:3)))
   obj <- Seurat::CreateSeuratObject(counts = mat, min.cells = 0, min.features = 0)
 
-  SaveZarr(obj, tmp, verbose = FALSE)
-  expect_error(SaveZarr(obj, tmp, verbose = FALSE), "exists")
-  expect_silent(SaveZarr(obj, tmp, overwrite = TRUE, verbose = FALSE))
+  writeZarr(obj, tmp, verbose = FALSE)
+  expect_error(writeZarr(obj, tmp, verbose = FALSE), "exists")
+  expect_silent(writeZarr(obj, tmp, overwrite = TRUE, verbose = FALSE))
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Roundtrip tests
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-test_that("Seurat -> SaveZarr -> LoadZarr roundtrip preserves data", {
+test_that("Seurat -> writeZarr -> readZarr roundtrip preserves data", {
   skip_if_not_installed("Seurat")
 
   tmp <- tempfile(fileext = ".zarr")
@@ -505,8 +505,8 @@ test_that("Seurat -> SaveZarr -> LoadZarr roundtrip preserves data", {
   original$cell_type <- factor(sample(c("A", "B", "C"), n_cells, replace = TRUE))
   original$score <- runif(n_cells)
 
-  SaveZarr(original, tmp, verbose = FALSE)
-  loaded <- LoadZarr(tmp, verbose = FALSE)
+  writeZarr(original, tmp, verbose = FALSE)
+  loaded <- readZarr(tmp, verbose = FALSE)
 
   expect_equal(ncol(loaded), ncol(original))
   expect_equal(nrow(loaded), nrow(original))
@@ -537,8 +537,8 @@ test_that("Roundtrip preserves sparse matrix values", {
 
   original <- Seurat::CreateSeuratObject(counts = mat, min.cells = 0, min.features = 0)
 
-  SaveZarr(original, tmp, verbose = FALSE)
-  loaded <- LoadZarr(tmp, verbose = FALSE)
+  writeZarr(original, tmp, verbose = FALSE)
+  loaded <- readZarr(tmp, verbose = FALSE)
 
   # Compare matrix values
   orig_counts <- Seurat::GetAssayData(original, layer = "counts")
@@ -568,8 +568,8 @@ test_that("Roundtrip preserves dimensional reductions", {
     embeddings = pca_embed, key = "PC_", assay = "RNA"
   )
 
-  SaveZarr(original, tmp, verbose = FALSE)
-  loaded <- LoadZarr(tmp, verbose = FALSE)
+  writeZarr(original, tmp, verbose = FALSE)
+  loaded <- readZarr(tmp, verbose = FALSE)
 
   expect_true("pca" %in% names(loaded@reductions))
   loaded_pca <- Seurat::Embeddings(loaded, "pca")
@@ -602,7 +602,7 @@ test_that("scConvert Seurat -> zarr works via hub", {
   expect_true(dir.exists(tmp))
 
   # Verify we can load it back
-  loaded <- LoadZarr(tmp, verbose = FALSE)
+  loaded <- readZarr(tmp, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   expect_equal(ncol(loaded), 10)
 })

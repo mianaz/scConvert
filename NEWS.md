@@ -12,17 +12,17 @@ Initial public release of scConvert — a universal single-cell format converter
 - Direct HDF5 paths for h5ad/h5Seurat without intermediate loading
 
 ### Direct h5ad Loading
-- `LoadH5AD()` for native h5ad-to-Seurat conversion without intermediate files
+- `readH5AD()` for native h5ad-to-Seurat conversion without intermediate files
 - Sparse (CSR/CSC) and dense matrix support
 - Categorical metadata, dimensional reductions, neighbor graphs, and spatial data
 
 ### MuData (h5mu) Multimodal Support
-- `LoadH5MU()` / `SaveH5MU()` for multimodal single-cell data
+- `readH5MU()` / `writeH5MU()` for multimodal single-cell data
 - Automatic modality-to-assay name mapping (rna->RNA, prot->ADT, atac->ATAC)
 - No MuDataSeurat or Python dependency required
 
 ### Zarr AnnData Support
-- `LoadZarr()` and `SaveZarr()` for Zarr-based AnnData stores (v2 format)
+- `readZarr()` and `writeZarr()` for Zarr-based AnnData stores (v2 format)
 - Sparse CSR/CSC and dense matrix support
 - Categorical metadata and dimensional reduction preservation
 
@@ -37,7 +37,7 @@ Initial public release of scConvert — a universal single-cell format converter
 - Options: `--assay`, `--gzip`, `--overwrite`, `--quiet`
 
 ### BPCells On-Disk Loading
-- `LoadH5AD(..., use.bpcells = TRUE)` for memory-efficient atlas-scale analysis
+- `readH5AD(..., use.bpcells = TRUE)` for memory-efficient atlas-scale analysis
 - Compatible with all Seurat analysis functions
 
 ### Seurat v5 Compatibility

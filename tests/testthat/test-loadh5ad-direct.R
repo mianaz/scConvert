@@ -1,20 +1,20 @@
-# Tests for direct LoadH5AD functionality
+# Tests for direct readH5AD functionality
 
 library(scConvert)
 
-test_that("LoadH5AD function exists and is exported", {
-  expect_true(exists("LoadH5AD"))
-  expect_true(is.function(LoadH5AD))
+test_that("readH5AD function exists and is exported", {
+  expect_true(exists("readH5AD"))
+  expect_true(is.function(readH5AD))
 })
 
-test_that("LoadH5AD validates file existence", {
+test_that("readH5AD validates file existence", {
   expect_error(
-    LoadH5AD("nonexistent_file.h5ad"),
+    readH5AD("nonexistent_file.h5ad"),
     "File not found"
   )
 })
 
-test_that("LoadH5AD creates Seurat object from synthetic dense h5ad", {
+test_that("readH5AD creates Seurat object from synthetic dense h5ad", {
   skip_if_not_installed("hdf5r")
   skip_if_not_installed("Seurat")
 
@@ -62,8 +62,8 @@ test_that("LoadH5AD creates Seurat object from synthetic dense h5ad", {
 
   h5$close_all()
 
-  # Load with LoadH5AD
-  result <- LoadH5AD(tmp, verbose = FALSE)
+  # Load with readH5AD
+  result <- readH5AD(tmp, verbose = FALSE)
 
   expect_s4_class(result, "Seurat")
   expect_equal(ncol(result), n_cells)
@@ -73,7 +73,7 @@ test_that("LoadH5AD creates Seurat object from synthetic dense h5ad", {
   expect_equal(length(rownames(result)), length(gene_names))
 })
 
-test_that("LoadH5AD reads sparse h5ad correctly", {
+test_that("readH5AD reads sparse h5ad correctly", {
   skip_if_not_installed("hdf5r")
   skip_if_not_installed("Seurat")
   skip_if_not_installed("Matrix")
@@ -125,7 +125,7 @@ test_that("LoadH5AD reads sparse h5ad correctly", {
 
   h5$close_all()
 
-  result <- LoadH5AD(tmp, verbose = FALSE)
+  result <- readH5AD(tmp, verbose = FALSE)
 
   expect_s4_class(result, "Seurat")
   expect_equal(ncol(result), n_cells)
@@ -135,7 +135,7 @@ test_that("LoadH5AD reads sparse h5ad correctly", {
   expect_equal(length(rownames(result)), length(gene_names))
 })
 
-test_that("LoadH5AD preserves categorical metadata", {
+test_that("readH5AD preserves categorical metadata", {
   skip_if_not_installed("hdf5r")
   skip_if_not_installed("Seurat")
 
@@ -177,7 +177,7 @@ test_that("LoadH5AD preserves categorical metadata", {
 
   h5$close_all()
 
-  result <- LoadH5AD(tmp, verbose = FALSE)
+  result <- readH5AD(tmp, verbose = FALSE)
 
   # Check categorical was preserved as factor
   expect_true("cluster" %in% colnames(result@meta.data))
@@ -186,7 +186,7 @@ test_that("LoadH5AD preserves categorical metadata", {
   expect_equal(as.character(result$cluster), categories[codes + 1])
 })
 
-test_that("LoadH5AD preserves dimensional reductions", {
+test_that("readH5AD preserves dimensional reductions", {
   skip_if_not_installed("hdf5r")
   skip_if_not_installed("Seurat")
 
@@ -228,7 +228,7 @@ test_that("LoadH5AD preserves dimensional reductions", {
 
   h5$close_all()
 
-  result <- LoadH5AD(tmp, verbose = FALSE)
+  result <- readH5AD(tmp, verbose = FALSE)
 
   # Check reductions
   expect_true("pca" %in% names(result@reductions))
@@ -245,7 +245,7 @@ test_that("LoadH5AD preserves dimensional reductions", {
   expect_equal(ncol(umap), 2)
 })
 
-test_that("LoadH5AD preserves both counts and data layers when raw/X exists", {
+test_that("readH5AD preserves both counts and data layers when raw/X exists", {
   skip_if_not_installed("hdf5r")
   skip_if_not_installed("Seurat")
 
@@ -298,7 +298,7 @@ test_that("LoadH5AD preserves both counts and data layers when raw/X exists", {
 
   h5$close_all()
 
-  result <- LoadH5AD(tmp, verbose = FALSE)
+  result <- readH5AD(tmp, verbose = FALSE)
 
   expect_s4_class(result, "Seurat")
   expect_equal(ncol(result), n_cells)
@@ -316,7 +316,7 @@ test_that("LoadH5AD preserves both counts and data layers when raw/X exists", {
   expect_false(identical(as.matrix(counts_layer), as.matrix(data_layer)))
 })
 
-test_that("LoadH5AD handles missing X matrix gracefully", {
+test_that("readH5AD handles missing X matrix gracefully", {
   skip_if_not_installed("hdf5r")
 
   tmp <- tempfile(fileext = ".h5ad")
@@ -328,5 +328,5 @@ test_that("LoadH5AD handles missing X matrix gracefully", {
   h5$close_all()
 
   # Should error because there's no X matrix (may fail at different points)
-  expect_error(LoadH5AD(tmp, verbose = FALSE))
+  expect_error(readH5AD(tmp, verbose = FALSE))
 })

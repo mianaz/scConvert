@@ -97,7 +97,7 @@ scConvert writes Visium spatial data to h5ad using scanpy/squidpy conventions:
 
 ```{r export_h5ad, eval = can_run}
 h5ad_path <- tempfile(fileext = ".h5ad")
-SeuratToH5AD(brain, h5ad_path, overwrite = TRUE)
+writeH5AD(brain, h5ad_path, overwrite = TRUE)
 cat("File size:", round(file.size(h5ad_path) / 1024^2, 1), "MB\n")
 ```
 
@@ -178,7 +178,7 @@ print(adata.uns["moranI"].head())
 ## Load h5ad back into Seurat
 
 ```{r load_h5ad, eval = can_run}
-brain_rt <- LoadH5AD(h5ad_path, verbose = FALSE)
+brain_rt <- readH5AD(h5ad_path, verbose = FALSE)
 
 cat("Dimensions:", ncol(brain_rt), "cells x", nrow(brain_rt), "genes\n")
 cat("Images:", paste(Images(brain_rt), collapse = ", "), "\n")

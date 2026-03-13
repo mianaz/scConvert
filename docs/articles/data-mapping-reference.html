@@ -202,7 +202,7 @@ in <code>var</code>, not as a separate list</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="h5ad---seurat-loadh5ad">h5ad -&gt; Seurat (LoadH5AD)<a class="anchor" aria-label="anchor" href="#h5ad---seurat-loadh5ad"></a>
+<h3 id="h5ad---seurat-readh5ad">h5ad -&gt; Seurat (readH5AD)<a class="anchor" aria-label="anchor" href="#h5ad---seurat-readh5ad"></a>
 </h3>
 <table class="table">
 <colgroup>
@@ -271,7 +271,7 @@ in <code>var</code>, not as a separate list</li>
 <tr class="odd">
 <td><code>obsm/spatial</code></td>
 <td>Spatial coordinates</td>
-<td>Via <code><a href="../reference/ConvertH5ADSpatialToSeurat.html">ConvertH5ADSpatialToSeurat()</a></code>
+<td>Via <code><a href="../reference/H5ADSpatialToSeurat.html">H5ADSpatialToSeurat()</a></code>
 </td>
 </tr>
 <tr class="even">
@@ -377,7 +377,7 @@ SeuratDisk handles this incorrectly (level corruption).</p>
 <h2 id="h5mu-mudata-mapping">h5mu (MuData) Mapping<a class="anchor" aria-label="anchor" href="#h5mu-mudata-mapping"></a>
 </h2>
 <div class="section level3">
-<h3 id="seurat---h5mu-saveh5mu">Seurat -&gt; h5mu (SaveH5MU)<a class="anchor" aria-label="anchor" href="#seurat---h5mu-saveh5mu"></a>
+<h3 id="seurat---h5mu-writeh5mu">Seurat -&gt; h5mu (writeH5MU)<a class="anchor" aria-label="anchor" href="#seurat---h5mu-writeh5mu"></a>
 </h3>
 <table class="table">
 <thead><tr class="header">
@@ -444,7 +444,7 @@ SeuratDisk handles this incorrectly (level corruption).</p>
 </table>
 </div>
 <div class="section level3">
-<h3 id="h5mu---seurat-loadh5mu">h5mu -&gt; Seurat (LoadH5MU)<a class="anchor" aria-label="anchor" href="#h5mu---seurat-loadh5mu"></a>
+<h3 id="h5mu---seurat-readh5mu">h5mu -&gt; Seurat (readH5MU)<a class="anchor" aria-label="anchor" href="#h5mu---seurat-readh5mu"></a>
 </h3>
 <p>Reverse mapping with automatic name conversion:</p>
 <table class="table">
@@ -481,7 +481,7 @@ SeuratDisk handles this incorrectly (level corruption).</p>
 <h2 id="loom-mapping">Loom Mapping<a class="anchor" aria-label="anchor" href="#loom-mapping"></a>
 </h2>
 <div class="section level3">
-<h3 id="seurat---loom-scsaveloom">Seurat -&gt; Loom (scSaveLoom)<a class="anchor" aria-label="anchor" href="#seurat---loom-scsaveloom"></a>
+<h3 id="seurat---loom-writeloom">Seurat -&gt; Loom (writeLoom)<a class="anchor" aria-label="anchor" href="#seurat---loom-writeloom"></a>
 </h3>
 <table class="table">
 <thead><tr class="header">
@@ -531,7 +531,7 @@ SeuratDisk handles this incorrectly (level corruption).</p>
 </table>
 </div>
 <div class="section level3">
-<h3 id="loom---seurat-scloadloom">Loom -&gt; Seurat (scLoadLoom)<a class="anchor" aria-label="anchor" href="#loom---seurat-scloadloom"></a>
+<h3 id="loom---seurat-readloom">Loom -&gt; Seurat (readLoom)<a class="anchor" aria-label="anchor" href="#loom---seurat-readloom"></a>
 </h3>
 <table class="table">
 <thead><tr class="header">
@@ -732,10 +732,10 @@ automatic name translation.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mianaz/scConvert" class="external-link">scConvert</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load original and roundtripped</span></span>
-<span><span class="va">orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"original.h5ad"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/scSaveH5Seurat.html">scSaveH5Seurat</a></span><span class="op">(</span><span class="va">orig</span>, <span class="st">"temp.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"original.h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">orig</span>, <span class="st">"temp.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/scConvert/man/scConvert-package.html" class="external-link">scConvert</a></span><span class="op">(</span><span class="st">"temp.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5AD.html">LoadH5AD</a></span><span class="op">(</span><span class="st">"temp.h5ad"</span><span class="op">)</span></span>
+<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"temp.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Check dimensions</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">orig</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span><span class="op">)</span></span>

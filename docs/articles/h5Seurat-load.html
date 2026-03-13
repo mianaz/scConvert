@@ -132,12 +132,12 @@ dimensional reductions, and nearest-neighbor graphs.</p>
 <span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
 <p>As seen, we have a dataset with multiple components to it. Saving an
-object is as simple as calling <code><a href="../reference/scSaveH5Seurat.html">scSaveH5Seurat()</a></code>; minimally,
+object is as simple as calling <code><a href="../reference/writeH5Seurat.html">writeH5Seurat()</a></code>; minimally,
 this function takes a <code>Seurat</code> object and nothing else.
 Optional arguments are present for specifying a filename and whether or
 not you want to overwrite a preexisting file.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/scSaveH5Seurat.html">scSaveH5Seurat</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>This process is quick and results in a compact on-disk file.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">size</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span><span class="op">)</span></span>
@@ -283,10 +283,10 @@ close the h5Seurat file when done working with it.</p>
 <h2 id="loading-datasets">Loading datasets<a class="anchor" aria-label="anchor" href="#loading-datasets"></a>
 </h2>
 <p>Reading data from an h5Seurat file is as simple as calling
-<code><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat()</a></code>; by default, it loads the entire object
-into memory.</p>
+<code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code>; by default, it loads the entire object into
+memory.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span><span class="op">)</span></span>
 <span><span class="va">pbmc2</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -305,7 +305,7 @@ and expression data:</p>
 <p>However, there are situations in which loading an entire
 <code>Seurat</code> object is not desirable. As such, we can leverage
 the HDF5 format and load only parts of a dataset at a time.
-<code>scLoadH5Seurat</code> makes use of assay association to limit the
+<code>readH5Seurat</code> makes use of assay association to limit the
 data loaded. In <code>Seurat</code> objects, all dimensional reduction
 information, nearest-neighbor graphs, and spatial image data have an
 assay they “belong” to (see <code><a href="../reference/h5Seurat-bindings.html">DefaultAssay()</a></code> in the Seurat
@@ -318,7 +318,7 @@ simplest level of control is specifying the assays to load. For our
 dataset, passing an assay name will load the entire assay object for the
 assay specified.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="st">"RNA"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="st">"RNA"</span><span class="op">)</span></span>
 <span><span class="va">pbmc2</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -334,7 +334,7 @@ either “counts” or “data” <strong>must</strong> be specified as the
 <code>Seurat</code> object uses these slots to control dataset
 dimensionality information.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span><span class="va">pbmc2</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -345,7 +345,7 @@ dimensionality information.</p>
 also take a named list or vector, where the names are the names of the
 assays to load and the values are the slots to load.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"scale.data"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"scale.data"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">pbmc2</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -360,7 +360,7 @@ loaded. As dimensional reductions are tied to assays, the data request
 needs to be either associated to a loaded assay or marked as global to
 be loaded (see details below).</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="st">"RNA"</span>, reductions <span class="op">=</span> <span class="st">"pca"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="st">"RNA"</span>, reductions <span class="op">=</span> <span class="st">"pca"</span><span class="op">)</span></span>
 <span><span class="va">pbmc2</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -394,7 +394,7 @@ the following will load the “data” and “scale.data” slots from the “RN
 assay, <em>global</em> dimensional reductions, none of the nearest
 neighbor graphs, and no spatial images.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"scale.data"</span><span class="op">)</span><span class="op">)</span>, reductions <span class="op">=</span> <span class="cn">NA</span>, graphs <span class="op">=</span> <span class="cn">FALSE</span>, images <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"data"</span>, <span class="st">"scale.data"</span><span class="op">)</span><span class="op">)</span>, reductions <span class="op">=</span> <span class="cn">NA</span>, graphs <span class="op">=</span> <span class="cn">FALSE</span>, images <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pbmc2</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -402,7 +402,7 @@ neighbor graphs, and no spatial images.</p>
 <span><span class="co">#&gt;  3 layers present: counts, data, scale.data</span></span>
 <span><span class="co">#&gt;  1 dimensional reduction calculated: umap</span></span></code></pre></div>
 <p>In addition, there are four secondary parameters to
-<code>scLoadH5Seurat</code>: <code>meta.data</code>,
+<code>readH5Seurat</code>: <code>meta.data</code>,
 <code>commands</code>, <code>misc</code>, and <code>tools</code>; these
 all take simple <code>TRUE</code>/<code>FALSE</code> values to control
 the loading of cell-level metadata, command logs, miscellaneous
@@ -436,18 +436,18 @@ to add additional objects from an h5Seurat file to an already-loaded
 loading just the “data” slot from the “RNA” assay, but not load any
 dimensional reduction information or nearest-neighbor graphs.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span>, reductions <span class="op">=</span> <span class="cn">FALSE</span>, graphs <span class="op">=</span> <span class="cn">FALSE</span>, images <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span>, reductions <span class="op">=</span> <span class="cn">FALSE</span>, graphs <span class="op">=</span> <span class="cn">FALSE</span>, images <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pbmc2</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (13714 features, 2000 variable features)</span></span>
 <span><span class="co">#&gt;  2 layers present: counts, data</span></span></code></pre></div>
 <p><code>scAppendData</code> takes the h5Seurat file, the
-<code>Seurat</code> object generated from <code>scLoadH5Seurat</code>
-and uses the four main paramters from <code>scLoadH5Seurat</code>
+<code>Seurat</code> object generated from <code>readH5Seurat</code> and
+uses the four main paramters from <code>readH5Seurat</code>
 (<code>assays</code>, <code>reductions</code>, <code>graphs</code>, and
 <code>images</code>). These parameters are used in the same way as
-<code>scLoadH5Seurat</code> with one exception: <code>assays</code> can
+<code>readH5Seurat</code> with one exception: <code>assays</code> can
 now take <code>FALSE</code> as a value. By passing <code>FALSE</code>,
 we prevent other assay information from being loaded; this is useful if
 we only want to add other bits of data to our <code>Seurat</code>
@@ -514,10 +514,10 @@ from SeuratData:</p>
 <p>Save and reload to demonstrate h5Seurat with spatial data:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">brain</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/scSaveH5Seurat.html">scSaveH5Seurat</a></span><span class="op">(</span><span class="va">brain</span>, filename <span class="op">=</span> <span class="st">"stxBrain.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">brain</span>, filename <span class="op">=</span> <span class="st">"stxBrain.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Reload</span></span>
-<span><span class="va">brain2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadH5Seurat.html">scLoadH5Seurat</a></span><span class="op">(</span><span class="st">"stxBrain.h5Seurat"</span><span class="op">)</span></span>
+<span><span class="va">brain2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"stxBrain.h5Seurat"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify spatial images are preserved</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Original images:"</span>, <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Images.html" class="external-link">Images</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>

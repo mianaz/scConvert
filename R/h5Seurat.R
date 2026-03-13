@@ -345,7 +345,7 @@ h5Seurat <- R6Class(
         stop(private$errors(type = 'mode'), call. = FALSE)
       }
       version <- ClosestVersion(query = version, targets = private$versions)
-      # Version message is now handled in scSaveH5Seurat to show object version
+      # Version message is now handled in writeH5Seurat to show object version
       self$set.version(version = version)
       if (numeric_version(x = version) >= numeric_version(x = '3.1.2')) {
         for (group in c('assays', 'commands', 'neighbors', 'graphs', 'misc', 'reductions', 'tools')) {

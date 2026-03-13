@@ -56,8 +56,8 @@ The [MuData](https://muon.readthedocs.io/en/latest/io/mudata.html) format (`.h5m
 
 scConvert provides native h5mu read/write with no external dependencies (no MuDataSeurat or Python required):
 
-- **`SaveH5MU()`**: Export a multi-assay Seurat object to h5mu, with automatic assay-to-modality name mapping. Works with Seurat V5 Assay5.
-- **`LoadH5MU()`**: Load an h5mu file as a Seurat object, with automatic modality-to-assay name mapping
+- **`writeH5MU()`**: Export a multi-assay Seurat object to h5mu, with automatic assay-to-modality name mapping. Works with Seurat V5 Assay5.
+- **`readH5MU()`**: Load an h5mu file as a Seurat object, with automatic modality-to-assay name mapping
 
 ### When to use h5mu vs h5ad
 
@@ -125,9 +125,9 @@ DefaultAssay(cbmc) <- "RNA"
 p1 + p2
 ```
 
-## Save with SaveH5MU / SeuratToH5MU
+## Save with writeH5MU
 
-`SaveH5MU()` and `SeuratToH5MU()` export all assays to a single h5mu file using scConvert's native writer (no MuDataSeurat required). Assay names are automatically mapped to standard MuData modality names:
+`writeH5MU()` exports all assays to a single h5mu file. Assay names are automatically mapped to standard MuData modality names:
 
 | Seurat Assay | h5mu Modality |
 |-------------|---------------|
@@ -138,7 +138,7 @@ p1 + p2
 | Other | lowercase name |
 
 ```{r save_h5mu, eval = can_run, purl = FALSE}
-SaveH5MU(cbmc, "cbmc_multimodal.h5mu", overwrite = TRUE)
+writeH5MU(cbmc, "cbmc_multimodal.h5mu", overwrite = TRUE)
 ```
 
 ### Inspect in Python
@@ -173,9 +173,9 @@ sc.tl.leiden(rna, flavor="igraph")
 sc.pl.umap(rna, color="leiden", title="CBMC RNA (from h5mu) — Leiden clusters")
 ```
 
-## Load with LoadH5MU
+## Load with readH5MU
 
-`LoadH5MU()` reads the h5mu file back into a Seurat object, reversing the modality name mapping:
+`readH5MU()` reads the h5mu file back into a Seurat object, reversing the modality name mapping:
 
 | h5mu Modality | Seurat Assay |
 |---------------|-------------|
@@ -186,11 +186,11 @@ sc.pl.umap(rna, color="leiden", title="CBMC RNA (from h5mu) — Leiden clusters"
 | Other | preserved |
 
 ```{r load_h5mu, eval = can_load, purl = FALSE}
-cbmc_loaded <- LoadH5MU("cbmc_multimodal.h5mu")
+cbmc_loaded <- readH5MU("cbmc_multimodal.h5mu")
 cbmc_loaded
 ```
 
-`LoadH5MU()` uses scConvert's native reader — no MuDataSeurat or Python required.
+`readH5MU()` uses scConvert's native reader — no MuDataSeurat or Python required.
 
 ## Verify round-trip preservation
 
@@ -233,14 +233,14 @@ if (length(adt_genes) > 0) {
 
 ## Custom modality name mapping
 
-You can override the default mapping with `assays` (for `SaveH5MU()` / `SeuratToH5MU()`) or `assay.names` (for `LoadH5MU()`):
+You can override the default mapping with `assays` (for `writeH5MU()`) or `assay.names` (for `readH5MU()`):
 
 ```{r custom_mapping, eval = can_load, purl = FALSE}
 # Save with custom modality names (native writer)
-SeuratToH5MU(cbmc, filename = "cbmc_roundtrip.h5mu", overwrite = TRUE)
+writeH5MU(cbmc, filename = "cbmc_roundtrip.h5mu", overwrite = TRUE)
 
 # Load with custom assay names
-cbmc_custom <- LoadH5MU(
+cbmc_custom <- readH5MU(
   "cbmc_roundtrip.h5mu",
   assay.names = c(rna = "RNA", prot = "Protein")
 )
@@ -250,7 +250,7 @@ cat("Assays:", paste(Assays(cbmc_custom), collapse = ", "), "\n")
 
 ## Conflict resolution
 
-When a Seurat object has multiple assays that would map to the same modality name, `SaveH5MU()` automatically resolves the conflict. For example, if you have both RNA and SCT assays (both map to "rna" by default), SCT is remapped to "sct":
+When a Seurat object has multiple assays that would map to the same modality name, `writeH5MU()` automatically resolves the conflict. For example, if you have both RNA and SCT assays (both map to "rna" by default), SCT is remapped to "sct":
 
 | Seurat Assays | Modality Mapping |
 |--------------|-----------------|
@@ -261,7 +261,7 @@ This ensures each modality has a unique name in the h5mu file.
 
 ## Data mapping reference
 
-### SaveH5MU: Seurat to h5mu
+### writeH5MU: Seurat to h5mu
 
 | Seurat Component | h5mu Location | Notes |
 |-----------------|--------------|-------|
@@ -272,7 +272,7 @@ This ensures each modality has a unique name in the h5mu file.
 | Reductions | `/mod/{modality}/obsm/X_{name}` | Per-modality |
 | Graphs | `/mod/{modality}/obsp/{name}` | Per-modality |
 
-### LoadH5MU: h5mu to Seurat
+### readH5MU: h5mu to Seurat
 
 | h5mu Location | Seurat Component | Notes |
 |--------------|-----------------|-------|

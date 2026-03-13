@@ -11,7 +11,7 @@ Atlas](https://data.humancellatlas.org/).
 scConvert reads and writes Zarr v2 stores following the [AnnData on-disk
 specification](https://anndata.readthedocs.io/en/latest/fileformat-prose.html),
 with no Python dependency. Zarr stores produced by
-[`SaveZarr()`](https://mianaz.github.io/scConvert/reference/SaveZarr.md)
+[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
 are directly readable by Python `anndata.read_zarr()` and scanpy.
 
 ``` r
@@ -27,7 +27,7 @@ library(patchwork)
 ### Basic conversion
 
 To save a Seurat object as a Zarr store, use
-[`SaveZarr()`](https://mianaz.github.io/scConvert/reference/SaveZarr.md)
+[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
 directly or
 [`scConvert()`](https://rdrr.io/pkg/scConvert/man/scConvert-package.html)
 with the `.zarr` extension:
@@ -52,13 +52,13 @@ cat("Layers:", paste(Layers(pbmc), collapse = ", "), "\n")
 ``` r
 
 # Direct API
-SaveZarr(pbmc, "pbmc3k.zarr", overwrite = TRUE)
+writeZarr(pbmc, "pbmc3k.zarr", overwrite = TRUE)
 
 # Or via scConvert()
 # scConvert(pbmc, dest = "pbmc3k.zarr", overwrite = TRUE)
 ```
 
-[`SaveZarr()`](https://mianaz.github.io/scConvert/reference/SaveZarr.md)
+[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
 writes the following components:
 
 | Seurat Source | Zarr Destination | Description |
@@ -105,12 +105,12 @@ The Zarr store is a directory tree following AnnData v0.1.0 conventions:
 ### Loading a Zarr store
 
 Use
-[`LoadZarr()`](https://mianaz.github.io/scConvert/reference/LoadZarr.md)
+[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
 to read a Zarr store into a Seurat object:
 
 ``` r
 
-obj <- LoadZarr("pbmc3k.zarr", verbose = TRUE)
+obj <- readZarr("pbmc3k.zarr", verbose = TRUE)
 cat("Loaded:", ncol(obj), "cells x", nrow(obj), "genes\n")
 #> Loaded: 2638 cells x 13714 genes
 cat("Reductions:", paste(Reductions(obj), collapse = ", "), "\n")
@@ -119,7 +119,7 @@ cat("Metadata columns:", paste(colnames(obj[[]]), collapse = ", "), "\n")
 #> Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, seurat_annotations, percent.mt, RNA_snn_res.0.5, seurat_clusters
 ```
 
-[`LoadZarr()`](https://mianaz.github.io/scConvert/reference/LoadZarr.md)
+[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
 maps AnnData fields to Seurat:
 
 | Zarr Source | Seurat Destination | Notes |
@@ -234,7 +234,7 @@ p1 + p2
 ## Python interoperability
 
 Zarr stores written by
-[`SaveZarr()`](https://mianaz.github.io/scConvert/reference/SaveZarr.md)
+[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
 are directly readable by Python’s `anndata.read_zarr()` and scanpy. No
 intermediate conversion needed.
 
@@ -249,11 +249,11 @@ print(adata)
 #> AnnData object with n_obs × n_vars = 2638 × 13714
 #>     obs: 'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'seurat_annotations', 'percent.mt', 'RNA_snn_res.0.5', 'seurat_clusters'
 #>     var: 'vst.mean', 'vst.variance', 'vst.variance.expected', 'vst.variance.standardized', 'vst.variable'
-#>     obsm: 'X_pca', 'X_umap'
-#>     layers: 'scaled', 'data'
+#>     obsm: 'X_umap', 'X_pca'
+#>     layers: 'data', 'scaled'
 #>     obsp: 'connectivities', 'distances'
 print(f"Embeddings: {list(adata.obsm.keys())}")
-#> Embeddings: ['X_pca', 'X_umap']
+#> Embeddings: ['X_umap', 'X_pca']
 print(f"Graphs: {list(adata.obsp.keys())}")
 #> Graphs: ['connectivities', 'distances']
 ```
@@ -287,7 +287,7 @@ plt.close()
 ### Reading Python-generated Zarr in R
 
 Zarr stores created by scanpy or anndata are readable by
-[`LoadZarr()`](https://mianaz.github.io/scConvert/reference/LoadZarr.md).
+[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md).
 Note that Python’s default compressor is blosc (not zlib), so reading
 Python-generated zarr stores requires the
 [blosc](https://CRAN.R-project.org/package=blosc) R package:
@@ -310,7 +310,7 @@ print(f"Wrote zarr with leiden clusters: {adata.obs['leiden'].nunique()} cluster
 ``` r
 
 # Load the scanpy-generated zarr store in R
-obj_scanpy <- LoadZarr("from_scanpy.zarr", verbose = TRUE)
+obj_scanpy <- readZarr("from_scanpy.zarr", verbose = TRUE)
 
 cat("Cells:", ncol(obj_scanpy), "| Genes:", nrow(obj_scanpy), "\n")
 #> Cells: 2638 | Genes: 13714
@@ -321,7 +321,7 @@ cat("Leiden clusters:", nlevels(obj_scanpy[["leiden", drop = TRUE]]), "\n")
 
 DimPlot(obj_scanpy, reduction = "umap", group.by = "leiden",
         label = TRUE, pt.size = 0.5) +
-  ggtitle("scanpy-computed leiden clusters loaded via LoadZarr()") +
+  ggtitle("scanpy-computed leiden clusters loaded via readZarr()") +
   NoLegend()
 ```
 
@@ -347,7 +347,7 @@ library(Seurat)
 
 # Load from h5ad
 h5ad_path <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
-pbmc_wf <- LoadH5AD(h5ad_path, verbose = FALSE)
+pbmc_wf <- readH5AD(h5ad_path, verbose = FALSE)
 
 cat("Loaded:", ncol(pbmc_wf), "cells x", nrow(pbmc_wf), "genes\n")
 #> Loaded: 214 cells x 2000 genes
@@ -391,7 +391,7 @@ clusters, and neighbor graphs — to a Zarr store:
 
 ``` r
 
-SaveZarr(pbmc_wf, "analysis_checkpoint.zarr", overwrite = TRUE, verbose = FALSE)
+writeZarr(pbmc_wf, "analysis_checkpoint.zarr", overwrite = TRUE, verbose = FALSE)
 
 # Verify the store is valid
 cat("Zarr store size:", sum(file.info(
@@ -406,7 +406,7 @@ Load the checkpoint and verify the full analysis state is preserved:
 
 ``` r
 
-resumed <- LoadZarr("analysis_checkpoint.zarr", verbose = FALSE)
+resumed <- readZarr("analysis_checkpoint.zarr", verbose = FALSE)
 
 cat("Cells:", ncol(resumed), "| Genes:", nrow(resumed), "\n")
 #> Cells: 214 | Genes: 2000
@@ -477,7 +477,7 @@ print(head(markers_c0[order(markers_c0$p_val_adj), ], 5))
 
 # Save updated object with marker results
 resumed[["has_markers"]] <- TRUE
-SaveZarr(resumed, "analysis_with_markers.zarr", overwrite = TRUE, verbose = FALSE)
+writeZarr(resumed, "analysis_with_markers.zarr", overwrite = TRUE, verbose = FALSE)
 cat("\nSaved updated analysis to Zarr\n")
 #> 
 #> Saved updated analysis to Zarr
@@ -503,7 +503,7 @@ in Seurat for downstream analysis (or vice versa):
 ``` r
 
 # Step 1: Load scanpy-processed zarr from a collaborator
-obj <- LoadZarr("scanpy_analysis.zarr")
+obj <- readZarr("scanpy_analysis.zarr")
 
 # Step 2: Continue analysis in Seurat
 obj <- FindVariableFeatures(obj, verbose = FALSE)
@@ -513,7 +513,7 @@ obj <- FindNeighbors(obj, dims = 1:30, verbose = FALSE)
 obj <- FindClusters(obj, resolution = 0.8, verbose = FALSE)
 
 # Step 3: Save back to zarr for the Python side
-SaveZarr(obj, "seurat_analysis.zarr", overwrite = TRUE)
+writeZarr(obj, "seurat_analysis.zarr", overwrite = TRUE)
 
 # Or convert to h5ad for scanpy
 scConvert("seurat_analysis.zarr", dest = "seurat_analysis.h5ad", overwrite = TRUE)
@@ -655,13 +655,13 @@ for (g in names(pbmc@graphs)) {
 
 # Start from the shipped test h5ad
 h5ad_src <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
-ref <- LoadH5AD(h5ad_src, verbose = FALSE)
+ref <- readH5AD(h5ad_src, verbose = FALSE)
 
 # h5ad -> Seurat -> Zarr
-SaveZarr(ref, "roundtrip.zarr", overwrite = TRUE, verbose = FALSE)
+writeZarr(ref, "roundtrip.zarr", overwrite = TRUE, verbose = FALSE)
 
 # Zarr -> Seurat
-rt <- LoadZarr("roundtrip.zarr", verbose = FALSE)
+rt <- readZarr("roundtrip.zarr", verbose = FALSE)
 
 # Verify
 stopifnot(ncol(rt) == ncol(ref))
@@ -688,7 +688,7 @@ cat("  Reductions:", paste(Reductions(rt), collapse = ", "), "\n")
 
 # Zarr -> h5ad via scConvert()
 scConvert("roundtrip.zarr", dest = "roundtrip_from_zarr.h5ad", overwrite = TRUE)
-rt_h5ad <- LoadH5AD("roundtrip_from_zarr.h5ad", verbose = FALSE)
+rt_h5ad <- readH5AD("roundtrip_from_zarr.h5ad", verbose = FALSE)
 
 stopifnot(ncol(rt_h5ad) == ncol(ref))
 stopifnot(nrow(rt_h5ad) == nrow(ref))
@@ -711,7 +711,7 @@ p1 <- DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
 
 p2 <- DimPlot(obj, reduction = "umap", group.by = "seurat_annotations",
               pt.size = 0.5) +
-  ggtitle("After SaveZarr + LoadZarr") +
+  ggtitle("After writeZarr + readZarr") +
   theme(legend.position = "none")
 
 # Overlay: compute per-cell UMAP difference
@@ -798,7 +798,7 @@ print("\nAll Python validations passed")
 
 ### Compression
 
-[`SaveZarr()`](https://mianaz.github.io/scConvert/reference/SaveZarr.md)
+[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
 uses zlib compression by default (level 4). Compression is applied
 per-chunk and stored in each array’s `.zarray` metadata. This matches
 the scanpy/anndata default compressor:
@@ -806,11 +806,11 @@ the scanpy/anndata default compressor:
 ``` r
 
 # Default (zlib level 4)
-SaveZarr(obj, "data.zarr")
+writeZarr(obj, "data.zarr")
 
 # The compression level can be set globally
 options(scConvert.compression_level = 6)
-SaveZarr(obj, "data_compressed.zarr")
+writeZarr(obj, "data_compressed.zarr")
 ```
 
 ### Supported data types
@@ -827,11 +827,11 @@ SaveZarr(obj, "data_compressed.zarr")
 ### Chunking
 
 Zarr stores data in chunks.
-[`SaveZarr()`](https://mianaz.github.io/scConvert/reference/SaveZarr.md)
+[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
 writes single-chunk arrays by default (the entire array is one chunk).
 For multi-chunk zarr stores produced by other tools (e.g., cloud-hosted
 CELLxGENE Census data),
-[`LoadZarr()`](https://mianaz.github.io/scConvert/reference/LoadZarr.md)
+[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
 automatically assembles chunks following the grid layout.
 
 ### Zarr v2 vs v3
@@ -858,8 +858,8 @@ Both Zarr and h5ad store AnnData objects, but with different trade-offs:
 | Parallel writes | Yes (separate chunks) | No (single file lock) |
 | Tool support | anndata, scanpy, CELLxGENE | anndata, scanpy, squidpy |
 | R dependency | jsonlite only | hdf5r |
-| scConvert read | [`LoadZarr()`](https://mianaz.github.io/scConvert/reference/LoadZarr.md) | [`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md) |
-| scConvert write | [`SaveZarr()`](https://mianaz.github.io/scConvert/reference/SaveZarr.md) | [`SeuratToH5AD()`](https://mianaz.github.io/scConvert/reference/SeuratToH5AD.md) |
+| scConvert read | [`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md) | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
+| scConvert write | [`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md) | [`writeH5AD()`](https://mianaz.github.io/scConvert/reference/writeH5AD.md) |
 | CLI (C binary) | No | Yes (fastest) |
 
 Use Zarr when working with cloud storage or tools that expect

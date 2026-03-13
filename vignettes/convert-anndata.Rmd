@@ -76,7 +76,7 @@ directly from [CZ CellxGene Discover](https://cellxgene.cziscience.com/collectio
 # Alternative: download from CellxGene (Tabula Microcebus lung, ~1.7K cells)
 cxg_url <- "https://datasets.cellxgene.cziscience.com/582ffa61-1c54-4492-8763-2ecfa9efa070.h5ad"
 download.file(cxg_url, destfile = "cxg_demo.h5ad", mode = "wb")
-pbmc <- LoadH5AD("cxg_demo.h5ad")
+pbmc <- readH5AD("cxg_demo.h5ad")
 ```
 
 ```{r get_data, message=FALSE, warning=FALSE, eval = has_SeuratData, purl = FALSE}
@@ -102,12 +102,12 @@ FeaturePlot(pbmc, features = "CD14", pt.size = 0.5)
 
 Converting the `Seurat` object to an AnnData file is a two-step process:
 
-1. Save the `Seurat` object as an h5Seurat file using `scSaveH5Seurat()`
+1. Save the `Seurat` object as an h5Seurat file using `writeH5Seurat()`
 2. Convert to AnnData using `scConvert()`
 
 ```{r convert_seurat, eval = has_SeuratData, purl = FALSE}
 cat("Seurat layers:", paste(Layers(pbmc), collapse = ", "), "\n")
-scSaveH5Seurat(pbmc, filename = "pbmc3k.h5Seurat", overwrite = TRUE)
+writeH5Seurat(pbmc, filename = "pbmc3k.h5Seurat", overwrite = TRUE)
 scConvert("pbmc3k.h5Seurat", dest = "h5ad", overwrite = TRUE)
 ```
 
@@ -131,20 +131,20 @@ sc.pl.umap(adata, color='CD14', use_raw=False)
 
 The conversion preserves expression patterns - CD14 shows consistent distribution in both tools.
 
-## Direct Loading with LoadH5AD
+## Direct Loading with readH5AD
 
-In addition to the two-step `scConvert()` + `scLoadH5Seurat()` workflow shown above, scConvert provides `LoadH5AD()` for loading h5ad files directly into Seurat objects without creating an intermediate h5Seurat file.
+In addition to the two-step `scConvert()` + `readH5Seurat()` workflow shown above, scConvert provides `readH5AD()` for loading h5ad files directly into Seurat objects without creating an intermediate h5Seurat file.
 
 ```{r direct_load, eval = has_SeuratData, purl = FALSE}
 # One-step: load h5ad directly into a Seurat object
-pbmc_direct <- LoadH5AD("pbmc3k.h5ad", verbose = TRUE)
+pbmc_direct <- readH5AD("pbmc3k.h5ad", verbose = TRUE)
 
 # Compare with the two-step approach
 cat("Direct cells:", ncol(pbmc_direct), "| Two-step cells:", ncol(pbmc), "\n")
 cat("Direct reductions:", paste(names(pbmc_direct@reductions), collapse = ", "), "\n")
 ```
 
-`LoadH5AD()` reads the following from h5ad files:
+`readH5AD()` reads the following from h5ad files:
 
 | h5ad Location | Seurat Destination | Description |
 |--------------|-------------------|-------------|
@@ -157,7 +157,7 @@ cat("Direct reductions:", paste(names(pbmc_direct@reductions), collapse = ", "),
 | `obsm/X_umap` | `reductions$umap` | UMAP coordinates |
 | `obsm/X_pca` | `reductions$pca` | PCA embeddings |
 | `obsm/X_tsne` | `reductions$tsne` | tSNE coordinates |
-| `obsm/spatial` | Spatial coordinates | Via `ConvertH5ADSpatialToSeurat()` |
+| `obsm/spatial` | Spatial coordinates | Via `H5ADSpatialToSeurat()` |
 | `obsp/connectivities` | `graphs$RNA_snn` | SNN graph |
 | `obsp/distances` | `graphs$RNA_nn` | Distance graph |
 | `uns/*` | `misc` | Unstructured annotations |
@@ -166,11 +166,11 @@ cat("Direct reductions:", paste(names(pbmc_direct@reductions), collapse = ", "),
 
 | Scenario | Recommended |
 |----------|------------|
-| Quick exploration of an h5ad file | `LoadH5AD()` |
-| Round-trip editing (load, modify, re-export) | `scConvert()` + `scLoadH5Seurat()` |
+| Quick exploration of an h5ad file | `readH5AD()` |
+| Round-trip editing (load, modify, re-export) | `scConvert()` + `readH5Seurat()` |
 | Need h5Seurat for other tools | `scConvert()` |
-| Loading scanpy-processed data for Seurat analysis | `LoadH5AD()` |
-| Working with spatial h5ad from CellxGene | `LoadH5AD()` |
+| Loading scanpy-processed data for Seurat analysis | `readH5AD()` |
+| Working with spatial h5ad from CellxGene | `readH5AD()` |
 
 ## Converting from AnnData to Seurat via h5Seurat
 
@@ -225,7 +225,7 @@ Convert to Seurat:
 
 ```{r convert_crc, eval = has_scanpy, purl = FALSE}
 scConvert("crc_normalized.h5ad", dest = "h5seurat", overwrite = TRUE)
-crc <- scLoadH5Seurat("crc_normalized.h5seurat")
+crc <- readH5Seurat("crc_normalized.h5seurat")
 
 # Verify layer mapping: X -> data (log-normalized), raw/X -> counts (if exists)
 cat("Layers:", paste(Layers(crc), collapse = ", "), "\n")
@@ -267,7 +267,7 @@ SpatialFeaturePlot(brain, features = "Hpca")
 Convert to h5ad using the direct pipeline:
 
 ```{r convert_stxBrain, eval = has_SeuratData, purl = FALSE}
-SeuratToH5AD(brain, "stxBrain.h5ad", overwrite = TRUE)
+writeH5AD(brain, "stxBrain.h5ad", overwrite = TRUE)
 ```
 
 View in Python with Squidpy:
@@ -331,7 +331,7 @@ Convert RNA assay to h5ad:
 
 ```{r cite_seq_convert, eval = has_SeuratData, purl = FALSE}
 DefaultAssay(cbmc) <- "RNA"
-scSaveH5Seurat(cbmc, "cbmc_rna.h5seurat", overwrite = TRUE)
+writeH5Seurat(cbmc, "cbmc_rna.h5seurat", overwrite = TRUE)
 scConvert("cbmc_rna.h5seurat", dest = "h5ad", overwrite = TRUE)
 ```
 
@@ -352,7 +352,7 @@ Convert the ADT assay separately:
 ```{r cite_seq_adt, eval = has_SeuratData, purl = FALSE}
 # Convert ADT assay
 DefaultAssay(cbmc) <- "ADT"
-scSaveH5Seurat(cbmc, "cbmc_adt.h5seurat", overwrite = TRUE)
+writeH5Seurat(cbmc, "cbmc_adt.h5seurat", overwrite = TRUE)
 scConvert("cbmc_adt.h5seurat", dest = "h5ad", overwrite = TRUE)
 ```
 
@@ -365,7 +365,7 @@ print("ADT features:", list(adata_adt.var_names)[:10])
 
 Each assay produces a separate h5ad file with the same cell metadata but different features.
 
-> **Note on multi-modal formats**: For true multi-modal interoperability, consider the [MuData/h5mu format](https://muon.scverse.org/) from the scverse ecosystem. scConvert provides native `SaveH5MU()` and `LoadH5MU()` functions for reading and writing h5mu files with no external dependencies. See `vignette("multimodal-h5mu")` for details.
+> **Note on multi-modal formats**: For true multi-modal interoperability, consider the [MuData/h5mu format](https://muon.scverse.org/) from the scverse ecosystem. scConvert provides native `writeH5MU()` and `readH5MU()` functions for reading and writing h5mu files with no external dependencies. See `vignette("multimodal-h5mu")` for details.
 
 ## Spatial h5ad to Seurat
 
@@ -429,7 +429,7 @@ Convert to Seurat:
 
 ```{r spatial_h5ad_to_seurat, eval = has_scanpy, purl = FALSE}
 scConvert("visium_normalized.h5ad", dest = "h5seurat", overwrite = TRUE)
-visium <- scLoadH5Seurat("visium_normalized.h5seurat")
+visium <- readH5Seurat("visium_normalized.h5seurat")
 
 # Verify layer mapping: X -> data (log-normalized)
 cat("Layers:", paste(Layers(visium), collapse = ", "), "\n")

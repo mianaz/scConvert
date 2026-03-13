@@ -151,7 +151,7 @@ ConvertBPCellsMatrix <- function(mat, verbose = FALSE) {
 #' @return An integer vector
 #'
 #' @seealso \link[base]{integer} \link[base]{logical} \code{\link[base]{NA}}
-#' \code{\link{scSaveH5Seurat}}
+#' \code{\link{writeH5Seurat}}
 #'
 #' @keywords internal
 #'
@@ -993,11 +993,11 @@ SafeSetLayerData <- function(object, layer, value) {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 .h5seurat_loader <- function(file, assay = 'RNA', verbose = TRUE, ...) {
-  scLoadH5Seurat(file = file, verbose = verbose, ...)
+  readH5Seurat(file = file, verbose = verbose, ...)
 }
 
 .h5seurat_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
-  scSaveH5Seurat(object = object, filename = filename,
+  writeH5Seurat(object = object, filename = filename,
                overwrite = overwrite, verbose = verbose, ...)
   invisible(filename)
 }
@@ -1010,7 +1010,7 @@ SafeSetLayerData <- function(object, layer, value) {
                          overwrite = TRUE, verbose = verbose)
   h5s$close_all()
   hfile$close_all()
-  scLoadH5Seurat(file = temp, verbose = verbose)
+  readH5Seurat(file = temp, verbose = verbose)
 }
 
 .h5ad_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
@@ -1050,7 +1050,7 @@ SafeSetLayerData <- function(object, layer, value) {
     # Standard pipeline with placeholders: Seurat -> h5seurat -> h5ad
     temp <- tempfile(fileext = '.h5Seurat')
     on.exit(unlink(temp), add = TRUE)
-    scSaveH5Seurat(object = obj_write, filename = temp, overwrite = TRUE, verbose = FALSE)
+    writeH5Seurat(object = obj_write, filename = temp, overwrite = TRUE, verbose = FALSE)
     h5s <- scConnect(filename = temp, force = TRUE)
     H5SeuratToH5AD(source = h5s, dest = filename, assay = assay_name,
                     overwrite = overwrite, verbose = verbose, ...)
@@ -1123,7 +1123,7 @@ SafeSetLayerData <- function(object, layer, value) {
       if (file.exists(filename)) try(file.remove(filename), silent = TRUE)
       temp <- tempfile(fileext = '.h5Seurat')
       on.exit(unlink(temp), add = TRUE)
-      scSaveH5Seurat(object = object, filename = temp, overwrite = TRUE, verbose = FALSE)
+      writeH5Seurat(object = object, filename = temp, overwrite = TRUE, verbose = FALSE)
       h5s <- scConnect(filename = temp, force = TRUE)
       H5SeuratToH5AD(source = h5s, dest = filename, assay = assay_name,
                       overwrite = overwrite, verbose = verbose, ...)
@@ -1134,25 +1134,25 @@ SafeSetLayerData <- function(object, layer, value) {
 }
 
 .loom_loader <- function(file, assay = 'RNA', verbose = TRUE, ...) {
-  scLoadLoom(file = file, verbose = verbose, ...)
+  readLoom(file = file, verbose = verbose, ...)
 }
 
 .loom_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
-  scSaveLoom(object = object, filename = filename,
+  writeLoom(object = object, filename = filename,
            overwrite = overwrite, verbose = verbose, ...)
   invisible(filename)
 }
 
 .h5mu_loader <- function(file, assay = 'RNA', verbose = TRUE, ...) {
-  LoadH5MU(file = file, verbose = verbose)
+  readH5MU(file = file, verbose = verbose)
 }
 
 .h5mu_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
   if (file.exists(filename) && !overwrite) {
     stop("File '", filename, "' already exists; set overwrite = TRUE", call. = FALSE)
   }
-  SeuratToH5MU(object = object, filename = filename,
-                      overwrite = overwrite, verbose = verbose)
+  writeH5MU(object = object, filename = filename,
+                   overwrite = overwrite, verbose = verbose)
   invisible(filename)
 }
 
@@ -1180,11 +1180,11 @@ SafeSetLayerData <- function(object, layer, value) {
 }
 
 .zarr_loader <- function(file, assay = 'RNA', verbose = TRUE, ...) {
-  LoadZarr(file = file, assay.name = assay, verbose = verbose, ...)
+  readZarr(file = file, assay.name = assay, verbose = verbose, ...)
 }
 
 .zarr_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
-  SaveZarr(object = object, filename = filename,
+  writeZarr(object = object, filename = filename,
            overwrite = overwrite, verbose = verbose, ...)
   invisible(filename)
 }

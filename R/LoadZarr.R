@@ -21,9 +21,9 @@ NULL
 #'
 #' @export
 #'
-LoadZarr <- function(file, assay.name = "RNA", verbose = TRUE, ...) {
+readZarr <- function(file, assay.name = "RNA", verbose = TRUE, ...) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
-    stop("jsonlite package required for LoadZarr. ",
+    stop("jsonlite package required for readZarr. ",
          "Install with: install.packages('jsonlite')", call. = FALSE)
   }
 

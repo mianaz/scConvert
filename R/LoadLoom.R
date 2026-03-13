@@ -43,9 +43,9 @@ NULL
 #' }
 #'
 #' @seealso
-#' \code{\link{scSaveLoom}} to save Seurat objects to Loom format
-#' \code{\link{scLoadH5Seurat}} to load h5Seurat files
-#' \code{\link{LoadH5AD}} to load h5ad files
+#' \code{\link{writeLoom}} to save Seurat objects to Loom format
+#' \code{\link{readH5Seurat}} to load h5Seurat files
+#' \code{\link{readH5AD}} to load h5ad files
 #' \href{http://linnarssonlab.org/loompy/}{Loom documentation}
 #' \href{http://linnarssonlab.org/loompy/conventions/index.html}{Loom file conventions}
 #'
@@ -54,24 +54,24 @@ NULL
 #' library(scConvert)
 #'
 #' # Load a basic Loom file
-#' seurat_obj <- scLoadLoom("data.loom")
+#' seurat_obj <- readLoom("data.loom")
 #'
 #' # Load with specific assay name
-#' seurat_obj <- scLoadLoom("data.loom", assay = "RNA")
+#' seurat_obj <- readLoom("data.loom", assay = "RNA")
 #'
 #' # Load and filter to valid cells/features only
-#' seurat_obj <- scLoadLoom("data.loom", filter = TRUE)
+#' seurat_obj <- readLoom("data.loom", filter = TRUE)
 #'
 #' # Load specific layers
-#' seurat_obj <- scLoadLoom(
+#' seurat_obj <- readLoom(
 #'   "data.loom",
 #'   normalized = "normalized",
 #'   scaled = "scaled"
 #' )
 #' }
 #'
-#' @name scLoadLoom
-#' @rdname scLoadLoom
+#' @name readLoom
+#' @rdname readLoom
 #'
 #' @inherit LoomLoading details
 #'
@@ -81,7 +81,7 @@ NULL
 #'
 #' @export
 #'
-scLoadLoom <- function(
+readLoom <- function(
   file,
   assay = NULL,
   cells = 'CellID',
@@ -92,45 +92,45 @@ scLoadLoom <- function(
   verbose = TRUE,
   ...
 ) {
-  UseMethod(generic = 'scLoadLoom', object = file)
+  UseMethod(generic = 'readLoom', object = file)
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Methods
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' @rdname scLoadLoom
-#' @method scLoadLoom character
+#' @rdname readLoom
+#' @method readLoom character
 #' @export
 #'
-scLoadLoom.character <- function(file, ...) {
+readLoom.character <- function(file, ...) {
   loom <- loom$new(filename = file, mode = 'r')
   on.exit(expr = loom$close_all())
-  return(scLoadLoom(file = loom, ...))
+  return(readLoom(file = loom, ...))
 }
 
-#' @rdname scLoadLoom
-#' @method scLoadLoom H5File
+#' @rdname readLoom
+#' @method readLoom H5File
 #' @export
 #'
-scLoadLoom.H5File <- function(file, ...) {
-  return(scLoadLoom(
+readLoom.H5File <- function(file, ...) {
+  return(readLoom(
     file = as.loom(x = file),
     ...
   ))
 }
 
-#' @rdname scLoadLoom
-#' @method scLoadLoom loom
+#' @rdname readLoom
+#' @method readLoom loom
 #' @export
 #'
-scLoadLoom.loom <- function(file, ...) {
+readLoom.loom <- function(file, ...) {
   return(as.Seurat(x = file, ...))
 }
 
 #' @importFrom stringi stri_count_fixed
 #'
-#' @rdname scLoadLoom
+#' @rdname readLoom
 #' @method as.Seurat loom
 #' @export
 #'
@@ -226,9 +226,9 @@ as.Seurat.loom <- function(
 #'
 #' Version-specific loom-file loading functions
 #'
-#' @inheritParams scLoadLoom
+#' @inheritParams readLoom
 #'
-#' @inherit scLoadLoom return
+#' @inherit readLoom return
 #'
 #' @name LoomLoading
 #' @rdname LoomLoading
@@ -237,7 +237,7 @@ as.Seurat.loom <- function(
 #' @importFrom methods slot
 #'
 #' @details
-#' \code{scLoadLoom} will try to automatically fill slots of a \code{Seurat}
+#' \code{readLoom} will try to automatically fill slots of a \code{Seurat}
 #' object based on data presence or absence in a given loom file. This method
 #' varies by loom specification version. For version-specific details, see
 #' sections below

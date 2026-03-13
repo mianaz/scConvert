@@ -19,7 +19,7 @@ NULL
 #'
 #' @return Modified Seurat object with spatial data
 #' @export
-ConvertH5ADSpatialToSeurat <- function(h5ad_file, seurat_obj = NULL,
+H5ADSpatialToSeurat <- function(h5ad_file, seurat_obj = NULL,
                                        assay_name = "Spatial", verbose = TRUE) {
 
   # Open h5ad file if path provided
@@ -229,7 +229,7 @@ ConvertH5ADSpatialToSeurat <- function(h5ad_file, seurat_obj = NULL,
 #' @param verbose Print progress messages
 #'
 #' @export
-ConvertSeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
+SeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
                                        library_id = "library_1",
                                        verbose = TRUE) {
 

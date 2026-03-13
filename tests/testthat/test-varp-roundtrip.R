@@ -43,7 +43,7 @@ test_that("varp roundtrip via h5ad preserves pairwise variable annotations", {
   # Write to h5ad
   h5ad_path <- tempfile(fileext = ".h5ad")
   on.exit(unlink(h5ad_path), add = TRUE)
-  SeuratToH5AD(obj, h5ad_path, overwrite = TRUE, verbose = FALSE)
+  writeH5AD(obj, h5ad_path, overwrite = TRUE, verbose = FALSE)
 
   # Verify varp group exists in h5ad file
   h5 <- hdf5r::H5File$new(h5ad_path, mode = "r")
@@ -52,7 +52,7 @@ test_that("varp roundtrip via h5ad preserves pairwise variable annotations", {
   h5$close_all()
 
   # Read back
-  obj_rt <- LoadH5AD(h5ad_path, verbose = FALSE)
+  obj_rt <- readH5AD(h5ad_path, verbose = FALSE)
 
   # Check varp is preserved
   expect_false(is.null(obj_rt@misc[["__varp__"]]))
@@ -83,7 +83,7 @@ test_that("varp is not written when not present", {
 
   h5ad_path <- tempfile(fileext = ".h5ad")
   on.exit(unlink(h5ad_path), add = TRUE)
-  SeuratToH5AD(obj, h5ad_path, overwrite = TRUE, verbose = FALSE)
+  writeH5AD(obj, h5ad_path, overwrite = TRUE, verbose = FALSE)
 
   # varp group should either not exist or be empty
   h5 <- hdf5r::H5File$new(h5ad_path, mode = "r")

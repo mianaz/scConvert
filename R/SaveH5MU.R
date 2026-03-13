@@ -1,103 +1,5 @@
-#' Save a Seurat object to an H5MU file
-#'
-#' Export multimodal Seurat objects to MuData (.h5mu) format. Uses scConvert's
-#' native writer by default, which works with Seurat V5 Assay5 objects and
-#' requires no external dependencies. Falls back to MuDataSeurat::WriteH5MU
-#' if \code{use.mudataseurat = TRUE} is set explicitly.
-#'
-#' @param object A \code{Seurat} object with one or more assays
-#' @param filename Path to output .h5mu file
-#' @param assays Character vector of assay names to export. If NULL (default),
-#'   exports all assays
-#' @param overwrite Overwrite existing file
-#' @param verbose Show progress messages
-#' @param use.mudataseurat Logical; if TRUE, use MuDataSeurat::WriteH5MU instead
-#'   of the native writer. Note: MuDataSeurat may not work with Seurat V5 Assay5.
-#'   Default: FALSE.
-#' @param ... Additional arguments (currently unused)
-#'
-#' @return Invisibly returns the filename
-#'
-#' @details
-#' The h5mu format is designed for multimodal data and stores each Seurat assay
-#' as a separate modality under \code{/mod/{modality_name}}. This function:
-#' \itemize{
-#'   \item Extracts each specified assay from the Seurat object
-#'   \item Converts assays to modality structure
-#'   \item Writes counts and data layers for each modality
-#'   \item Preserves cell metadata in global /obs and per-modality obs
-#'   \item Maintains dimensional reductions and graphs
-#' }
-#'
-#' @section Assay Mapping:
-#' By default, Seurat assay names are mapped to standard MuData modality names:
-#' \itemize{
-#'   \item RNA -> rna
-#'   \item ADT -> prot
-#'   \item ATAC -> atac
-#'   \item Spatial -> spatial
-#'   \item Other names are converted to lowercase
-#' }
-#'
-#' @examples
-#' \dontrun{
-#' # Save a multimodal Seurat object (CITE-seq)
-#' SaveH5MU(seurat_obj, "multimodal_data.h5mu")
-#'
-#' # Save specific assays only
-#' SaveH5MU(seurat_obj, "rna_and_protein.h5mu", assays = c("RNA", "ADT"))
-#'
-#' # Include spatial data
-#' SaveH5MU(visium_obj, "spatial_multimodal.h5mu")
-#' }
-#'
-#' @importFrom Seurat Assays Images DefaultAssay Project
-#' @importFrom SeuratObject Cells
-#'
-#' @export
-#'
-SaveH5MU <- function(object,
-                     filename,
-                     assays = NULL,
-                     overwrite = FALSE,
-                     verbose = TRUE,
-                     use.mudataseurat = FALSE,
-                     ...) {
-
-  if (!inherits(object, "Seurat")) {
-    stop("'object' must be a Seurat object", call. = FALSE)
-  }
-
-  if (use.mudataseurat) {
-    # Legacy path: delegate to MuDataSeurat
-    if (!requireNamespace("MuDataSeurat", quietly = TRUE)) {
-      stop(
-        "Package 'MuDataSeurat' is required when use.mudataseurat = TRUE.\n",
-        "Install it with: remotes::install_github('PMBio/MuDataSeurat')\n",
-        "Or use the default native writer (use.mudataseurat = FALSE).",
-        call. = FALSE
-      )
-    }
-    if (file.exists(filename) && !overwrite) {
-      stop("File already exists: ", filename,
-           "\nSet overwrite = TRUE to replace it.", call. = FALSE)
-    }
-    if (file.exists(filename) && overwrite) {
-      file.remove(filename)
-    }
-    get("WriteH5MU", envir = asNamespace("MuDataSeurat"))(object, filename, ...)
-    return(invisible(filename))
-  }
-
-  # Native path: use SeuratToH5MU (no external dependencies, V5 compatible)
-  SeuratToH5MU(
-    object = object,
-    filename = filename,
-    assays = assays,
-    overwrite = overwrite,
-    verbose = verbose
-  )
-}
+#' @include Convert.R
+NULL
 
 
 #' Get default assay to modality name mapping
@@ -245,7 +147,7 @@ PrepareSpatialForH5MU <- function(object, assays, modality.names, verbose = FALS
     return(object)
   }
 
-  # Store spatial data in misc for MuDataSeurat to pick up
+  # Store spatial data in misc for later processing
   for (img_name in images) {
     img_obj <- object[[img_name]]
 
@@ -274,17 +176,17 @@ PrepareSpatialForH5MU <- function(object, assays, modality.names, verbose = FALS
 }
 
 
-#' Save a Seurat object to h5mu format (alias for SaveH5MU)
+#' Save a Seurat object to h5mu format
 #'
 #' @param object A Seurat object
 #' @param filename Output filename
-#' @param ... Additional arguments passed to SaveH5MU
+#' @param ... Additional arguments passed to \code{\link{writeH5MU}}
 #'
 #' @return Invisibly returns the filename
 #'
-#' @rdname SaveH5MU
+#' @seealso \code{\link{writeH5MU}}
 #' @export
 #'
 as.h5mu <- function(object, filename, ...) {
-  SaveH5MU(object = object, filename = filename, ...)
+  writeH5MU(object = object, filename = filename, ...)
 }

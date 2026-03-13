@@ -56,7 +56,7 @@ A \code{Seurat} object containing the expression matrix and metadata from the Lo
 Version-specific loom-file loading functions
 }
 \details{
-\code{scLoadLoom} will try to automatically fill slots of a \code{Seurat}
+\code{readLoom} will try to automatically fill slots of a \code{Seurat}
 object based on data presence or absence in a given loom file. This method
 varies by loom specification version. For version-specific details, see
 sections below

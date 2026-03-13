@@ -12,13 +12,13 @@ test_that("Basic save and load works", {
   tmp <- tempfile(fileext = ".h5seurat")
   on.exit(unlink(tmp), add = TRUE)
 
-  scConvert::scSaveH5Seurat(obj, tmp, overwrite = TRUE, verbose = FALSE)
+  scConvert::writeH5Seurat(obj, tmp, overwrite = TRUE, verbose = FALSE)
 
   loaded <- tryCatch(
-    scConvert::scLoadH5Seurat(tmp, verbose = FALSE),
+    scConvert::readH5Seurat(tmp, verbose = FALSE),
     error = function(e) {
       if (grepl("slots", e$message, fixed = TRUE)) {
-        skip("scLoadH5Seurat V5 slot assembly issue with minimal objects")
+        skip("readH5Seurat V5 slot assembly issue with minimal objects")
       }
       stop(e)
     }
@@ -45,13 +45,13 @@ test_that("Multi-assay objects work correctly", {
   tmp <- tempfile(fileext = ".h5seurat")
   on.exit(unlink(tmp), add = TRUE)
 
-  scConvert::scSaveH5Seurat(obj, tmp, overwrite = TRUE, verbose = FALSE)
+  scConvert::writeH5Seurat(obj, tmp, overwrite = TRUE, verbose = FALSE)
 
   loaded <- tryCatch(
-    scConvert::scLoadH5Seurat(tmp, verbose = FALSE),
+    scConvert::readH5Seurat(tmp, verbose = FALSE),
     error = function(e) {
       if (grepl("slots", e$message, fixed = TRUE)) {
-        skip("scLoadH5Seurat V5 slot assembly issue with minimal objects")
+        skip("readH5Seurat V5 slot assembly issue with minimal objects")
       }
       stop(e)
     }
@@ -75,13 +75,13 @@ test_that("V5 objects are handled correctly", {
     tmp <- tempfile(fileext = ".h5seurat")
     on.exit(unlink(tmp), add = TRUE)
 
-    scConvert::scSaveH5Seurat(obj, tmp, overwrite = TRUE, verbose = FALSE)
+    scConvert::writeH5Seurat(obj, tmp, overwrite = TRUE, verbose = FALSE)
 
     loaded <- tryCatch(
-      scConvert::scLoadH5Seurat(tmp, verbose = FALSE),
+      scConvert::readH5Seurat(tmp, verbose = FALSE),
       error = function(e) {
         if (grepl("slots", e$message, fixed = TRUE)) {
-          skip("scLoadH5Seurat V5 slot assembly issue with minimal objects")
+          skip("readH5Seurat V5 slot assembly issue with minimal objects")
         }
         stop(e)
       }
@@ -138,7 +138,7 @@ test_that("Visium spatial coordinates align with metadata", {
     dtype = hdf5r::h5types$H5T_NATIVE_DOUBLE
   )
 
-  converted <- scConvert:::ConvertH5ADSpatialToSeurat(
+  converted <- scConvert:::H5ADSpatialToSeurat(
     h5ad_file = h5,
     seurat_obj = obj,
     assay_name = "Spatial",
@@ -160,13 +160,13 @@ test_that("pbmc_small roundtrip through h5Seurat succeeds", {
   on.exit(unlink(temp_h5seurat), add = TRUE)
 
   expect_no_error(
-    scSaveH5Seurat(pbmc_small, filename = temp_h5seurat, overwrite = TRUE, verbose = FALSE)
+    writeH5Seurat(pbmc_small, filename = temp_h5seurat, overwrite = TRUE, verbose = FALSE)
   )
 
   expect_true(file.exists(temp_h5seurat))
   expect_gt(file.size(temp_h5seurat), 0)
 
-  reloaded <- scLoadH5Seurat(temp_h5seurat, verbose = FALSE)
+  reloaded <- readH5Seurat(temp_h5seurat, verbose = FALSE)
 
   expect_s4_class(reloaded, "Seurat")
   expect_equal(ncol(reloaded), ncol(pbmc_small))

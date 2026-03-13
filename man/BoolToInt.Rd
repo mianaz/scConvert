@@ -36,6 +36,6 @@ scConvert:::BoolToInt(x = c(TRUE, FALSE, NA))
 }
 \seealso{
 \link[base]{integer} \link[base]{logical} \code{\link[base]{NA}}
-\code{\link{scSaveH5Seurat}}
+\code{\link{writeH5Seurat}}
 }
 \keyword{internal}

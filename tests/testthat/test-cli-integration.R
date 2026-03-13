@@ -29,7 +29,7 @@ skip_if(
 # Load reference objects once for comparison across all tests
 # ---------------------------------------------------------------------------
 
-ref_h5ad <- LoadH5AD(h5ad_path, verbose = FALSE)
+ref_h5ad <- readH5AD(h5ad_path, verbose = FALSE)
 ref_rds  <- readRDS(rds_path)
 
 expected_ncol <- 214L
@@ -97,7 +97,7 @@ test_that("scConvert_cli: h5ad -> h5seurat", {
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 0)
 
-  loaded <- scLoadH5Seurat(out, verbose = FALSE)
+  loaded <- readH5Seurat(out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   compare_to_ref(loaded, ref_h5ad, "h5ad->h5seurat")
 })
@@ -126,7 +126,7 @@ test_that("scConvert_cli: h5seurat -> h5ad", {
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 0)
 
-  loaded <- LoadH5AD(out, verbose = FALSE)
+  loaded <- readH5AD(out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   compare_to_ref(loaded, ref_h5ad, "h5seurat->h5ad")
 })
@@ -147,7 +147,7 @@ test_that("scConvert_cli: h5ad -> loom", {
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 0)
 
-  loaded <- scLoadLoom(out, verbose = FALSE)
+  loaded <- readLoom(out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
 
   # Loom may not preserve all metadata columns, so relax meta check
@@ -195,7 +195,7 @@ test_that("scConvert_cli: h5ad -> zarr", {
   expect_true(result)
   expect_true(dir.exists(out))
 
-  loaded <- LoadZarr(out, verbose = FALSE)
+  loaded <- readZarr(out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
 
   expect_equal(ncol(loaded), expected_ncol)
@@ -220,7 +220,7 @@ test_that("scConvert_cli: rds -> h5ad", {
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 0)
 
-  loaded <- LoadH5AD(out, verbose = FALSE)
+  loaded <- readH5AD(out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   compare_to_ref(loaded, ref_rds, "rds->h5ad")
 })
@@ -250,7 +250,7 @@ test_that("scConvert_cli: loom -> h5ad", {
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 0)
 
-  loaded <- LoadH5AD(out, verbose = FALSE)
+  loaded <- readH5AD(out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
 
   expect_equal(ncol(loaded), expected_ncol)
@@ -286,7 +286,7 @@ test_that("scConvert_cli: zarr -> h5ad", {
   expect_true(file.exists(out))
   expect_gt(file.info(out)$size, 0)
 
-  loaded <- LoadH5AD(out, verbose = FALSE)
+  loaded <- readH5AD(out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
 
   expect_equal(ncol(loaded), expected_ncol)
@@ -403,7 +403,7 @@ test_that("full roundtrip h5ad -> rds -> h5ad preserves data", {
     assay = "RNA", overwrite = TRUE, verbose = FALSE
   )
 
-  loaded <- LoadH5AD(h5ad_out, verbose = FALSE)
+  loaded <- readH5AD(h5ad_out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   expect_equal(ncol(loaded), expected_ncol)
   expect_equal(nrow(loaded), expected_nrow)
@@ -429,7 +429,7 @@ test_that("full roundtrip h5ad -> h5seurat -> h5ad preserves data", {
     assay = "RNA", overwrite = TRUE, verbose = FALSE
   )
 
-  loaded <- LoadH5AD(h5ad_out, verbose = FALSE)
+  loaded <- readH5AD(h5ad_out, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   expect_equal(ncol(loaded), expected_ncol)
   expect_equal(nrow(loaded), expected_nrow)

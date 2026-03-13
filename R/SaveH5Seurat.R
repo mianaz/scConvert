@@ -22,7 +22,7 @@ NULL
 #' @param verbose Show progress updates during save. Default is \code{TRUE}.
 #' @param ... Arguments passed to other methods
 #'
-#' @return \code{scSaveH5Seurat}: Invisibly returns the filename of the saved file
+#' @return \code{writeH5Seurat}: Invisibly returns the filename of the saved file
 #'
 #' @details
 #' The h5Seurat format stores:
@@ -47,10 +47,10 @@ NULL
 #'
 #' @section Seurat V5 Layer Support:
 #' When saving Seurat V5 objects with multiple layers (e.g., counts, data, scale.data),
-#' all layers are preserved and can be selectively loaded using \code{\link{scLoadH5Seurat}}.
+#' all layers are preserved and can be selectively loaded using \code{\link{readH5Seurat}}.
 #'
 #' @seealso
-#' \code{\link{scLoadH5Seurat}} to load a saved h5Seurat file
+#' \code{\link{readH5Seurat}} to load a saved h5Seurat file
 #' \code{\link{as.h5Seurat}} for direct conversion without object assignment
 #' \code{\link{scConvert}} for converting to other formats (h5ad, h5mu)
 #'
@@ -63,40 +63,40 @@ NULL
 #' seurat_obj <- CreateSeuratObject(counts = GetAssayData(pbmc_small))
 #'
 #' # Save to h5Seurat format
-#' scSaveH5Seurat(seurat_obj, filename = "my_data.h5seurat")
+#' writeH5Seurat(seurat_obj, filename = "my_data.h5seurat")
 #'
 #' # Save with overwrite if file already exists
-#' scSaveH5Seurat(seurat_obj, filename = "my_data.h5seurat", overwrite = TRUE)
+#' writeH5Seurat(seurat_obj, filename = "my_data.h5seurat", overwrite = TRUE)
 #'
 #' # Load the saved file back
-#' seurat_obj <- scLoadH5Seurat("my_data.h5seurat")
+#' seurat_obj <- readH5Seurat("my_data.h5seurat")
 #'
 #' # For multimodal data (e.g., CITE-seq)
-#' # scSaveH5Seurat automatically saves all assays
-#' scSaveH5Seurat(citeseq_obj, filename = "multimodal_data.h5seurat")
+#' # writeH5Seurat automatically saves all assays
+#' writeH5Seurat(citeseq_obj, filename = "multimodal_data.h5seurat")
 #'
 #' # For spatial data (e.g., Visium)
-#' scSaveH5Seurat(visium_obj, filename = "spatial_visium.h5seurat")
+#' writeH5Seurat(visium_obj, filename = "spatial_visium.h5seurat")
 #' }
 #'
-#' @name scSaveH5Seurat
-#' @rdname scSaveH5Seurat
+#' @name writeH5Seurat
+#' @rdname writeH5Seurat
 #'
 #' @export
 #'
-scSaveH5Seurat <- function(
+writeH5Seurat <- function(
   object,
   filename,
   overwrite = FALSE,
   verbose = TRUE,
   ...
 ) {
-  UseMethod(generic = 'scSaveH5Seurat', object = object)
+  UseMethod(generic = 'writeH5Seurat', object = object)
 }
 
 #' @return \code{as.h5Seurat}: An \code{\link{h5Seurat}} object
 #'
-#' @rdname scSaveH5Seurat
+#' @rdname writeH5Seurat
 #'
 #' @export
 #'
@@ -110,11 +110,11 @@ as.h5Seurat <- function(x, ...) {
 
 #' @importFrom Seurat as.Seurat Project
 #'
-#' @rdname scSaveH5Seurat
-#' @method scSaveH5Seurat default
+#' @rdname writeH5Seurat
+#' @method writeH5Seurat default
 #' @export
 #'
-scSaveH5Seurat.default <- function(
+writeH5Seurat.default <- function(
   object,
   filename,
   overwrite = FALSE,
@@ -135,7 +135,7 @@ scSaveH5Seurat.default <- function(
   if (missing(x = filename)) {
     filename <- paste0(Project(object = object), '.h5Seurat')
   }
-  return(invisible(x = scSaveH5Seurat(
+  return(invisible(x = writeH5Seurat(
     object = object,
     filename = filename,
     overwrite = overwrite,
@@ -146,11 +146,11 @@ scSaveH5Seurat.default <- function(
 
 #' @importFrom Seurat Project
 #'
-#' @rdname scSaveH5Seurat
-#' @method scSaveH5Seurat Seurat
+#' @rdname writeH5Seurat
+#' @method writeH5Seurat Seurat
 #' @export
 #'
-scSaveH5Seurat.Seurat <- function(
+writeH5Seurat.Seurat <- function(
   object,
   filename = paste0(Project(object = object), '.h5Seurat'),
   overwrite = FALSE,
@@ -170,7 +170,7 @@ scSaveH5Seurat.Seurat <- function(
 
 #' @importFrom Seurat as.Seurat Project
 #'
-#' @rdname scSaveH5Seurat
+#' @rdname writeH5Seurat
 #' @method as.h5Seurat default
 #' @export
 #'
@@ -195,7 +195,7 @@ as.h5Seurat.default <- function(
   if (missing(x = filename)) {
     filename <- paste0(Project(object = x), '.h5Seurat')
   }
-  return(scSaveH5Seurat(
+  return(writeH5Seurat(
     object = x,
     filename = filename,
     overwrite = overwrite,
@@ -204,7 +204,7 @@ as.h5Seurat.default <- function(
   ))
 }
 
-#' @rdname scSaveH5Seurat
+#' @rdname writeH5Seurat
 #' @method as.h5Seurat H5File
 #' @export
 #'
@@ -219,7 +219,7 @@ as.h5Seurat.H5File <- function(x, ...) {
 #' @importFrom Seurat Project Assays Reductions DefaultAssay<- DefaultAssay
 #' Idents Command Misc Tool
 #'
-#' @rdname scSaveH5Seurat
+#' @rdname writeH5Seurat
 #' @method as.h5Seurat Seurat
 #' @export
 #'

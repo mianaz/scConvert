@@ -10,7 +10,7 @@ NULL
 #' Append data from an h5Seurat file to a preexisting
 #' \code{\link[Seurat]{Seurat}} object
 #'
-#' @inheritParams scLoadH5Seurat
+#' @inheritParams readH5Seurat
 #' @param file Name of an h5Seurat file path (character) or connected h5Seurat file
 #' @param object A \code{\link[Seurat]{Seurat}} object to append data to
 #' @param assays One of:

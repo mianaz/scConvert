@@ -2,31 +2,31 @@
 
 library(scConvert)
 
-test_that("LoadH5MU function exists and is exported", {
-  expect_true(exists("LoadH5MU"))
-  expect_true(is.function(LoadH5MU))
+test_that("readH5MU function exists and is exported", {
+  expect_true(exists("readH5MU"))
+  expect_true(is.function(readH5MU))
 })
 
-test_that("SaveH5MU function exists and is exported", {
-  expect_true(exists("SaveH5MU"))
-  expect_true(is.function(SaveH5MU))
+test_that("writeH5MU function exists and is exported", {
+  expect_true(exists("writeH5MU"))
+  expect_true(is.function(writeH5MU))
 })
 
-test_that("LoadH5MU validates file existence", {
+test_that("readH5MU validates file existence", {
   expect_error(
-    LoadH5MU("nonexistent_file.h5mu"),
+    readH5MU("nonexistent_file.h5mu"),
     "File not found"
   )
 })
 
-test_that("SaveH5MU validates input object", {
+test_that("writeH5MU validates input object", {
   expect_error(
-    SaveH5MU("not_a_seurat", "output.h5mu"),
+    writeH5MU("not_a_seurat", "output.h5mu"),
     "must be a Seurat object"
   )
 })
 
-test_that("SaveH5MU works natively without MuDataSeurat", {
+test_that("writeH5MU works natively without MuDataSeurat", {
   counts <- matrix(rpois(12, 5), nrow = 3)
   rownames(counts) <- paste0("Gene", 1:3)
   colnames(counts) <- paste0("Cell", 1:4)
@@ -35,11 +35,11 @@ test_that("SaveH5MU works natively without MuDataSeurat", {
   tmp <- tempfile(fileext = ".h5mu")
   on.exit(unlink(tmp), add = TRUE)
 
-  expect_no_error(SaveH5MU(obj, tmp, verbose = FALSE))
+  expect_no_error(writeH5MU(obj, tmp, verbose = FALSE))
   expect_true(file.exists(tmp))
 })
 
-test_that("LoadH5MU works natively without MuDataSeurat", {
+test_that("readH5MU works natively without MuDataSeurat", {
   counts <- matrix(rpois(12, 5), nrow = 3)
   rownames(counts) <- paste0("Gene", 1:3)
   colnames(counts) <- paste0("Cell", 1:4)
@@ -48,8 +48,8 @@ test_that("LoadH5MU works natively without MuDataSeurat", {
   tmp <- tempfile(fileext = ".h5mu")
   on.exit(unlink(tmp), add = TRUE)
 
-  SaveH5MU(obj, tmp, verbose = FALSE)
-  loaded <- LoadH5MU(tmp, verbose = FALSE)
+  writeH5MU(obj, tmp, verbose = FALSE)
+  loaded <- readH5MU(tmp, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   expect_equal(ncol(loaded), 4)
   expect_equal(nrow(loaded), 3)
@@ -100,7 +100,7 @@ test_that("ValidateMultimodalObject accepts valid objects", {
   expect_true(result$valid)
 })
 
-test_that("SaveH5MU rejects overwrite when file exists", {
+test_that("writeH5MU rejects overwrite when file exists", {
   skip_if_not_installed("Seurat")
 
   counts <- matrix(1:12, nrow = 3)
@@ -113,12 +113,12 @@ test_that("SaveH5MU rejects overwrite when file exists", {
   on.exit(unlink(tmp), add = TRUE)
 
   expect_error(
-    SaveH5MU(obj, tmp, overwrite = FALSE),
+    writeH5MU(obj, tmp, overwrite = FALSE),
     "already exists"
   )
 })
 
-test_that("Single assay works in SaveH5MU", {
+test_that("Single assay works in writeH5MU", {
   skip_if_not_installed("Seurat")
 
   counts <- matrix(rpois(12, 5), nrow = 3)
@@ -130,11 +130,11 @@ test_that("Single assay works in SaveH5MU", {
   on.exit(unlink(tmp), add = TRUE)
 
   # Should work fine with a single assay
-  expect_no_error(SaveH5MU(obj, tmp, verbose = FALSE))
+  expect_no_error(writeH5MU(obj, tmp, verbose = FALSE))
   expect_true(file.exists(tmp))
 })
 
-test_that("Multimodal round-trip via SaveH5MU/LoadH5MU preserves structure", {
+test_that("Multimodal round-trip via writeH5MU/readH5MU preserves structure", {
   skip_if_not_installed("Seurat")
 
   # Create multimodal object (RNA + ADT)
@@ -154,11 +154,11 @@ test_that("Multimodal round-trip via SaveH5MU/LoadH5MU preserves structure", {
   on.exit(unlink(tmp), add = TRUE)
 
   # Save (native writer)
-  SaveH5MU(obj, tmp, overwrite = TRUE, verbose = FALSE)
+  writeH5MU(obj, tmp, overwrite = TRUE, verbose = FALSE)
   expect_true(file.exists(tmp))
 
   # Load back (native reader)
-  loaded <- LoadH5MU(tmp, verbose = FALSE)
+  loaded <- readH5MU(tmp, verbose = FALSE)
   expect_s4_class(loaded, "Seurat")
   expect_equal(ncol(loaded), 10)
 

@@ -84,7 +84,7 @@ if (length(overlap) > 0) {
 #> Removed 4 overlapping features from ADT
 
 h5mu_path <- tempfile(fileext = ".h5mu")
-SaveH5MU(cbmc, h5mu_path, overwrite = TRUE)
+writeH5MU(cbmc, h5mu_path, overwrite = TRUE)
 cat("h5mu file size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
 #> h5mu file size: 44.9 MB
 ```
@@ -151,7 +151,7 @@ plt.show()
 
 ``` r
 
-cbmc_rt <- LoadH5MU(h5mu_path)
+cbmc_rt <- readH5MU(h5mu_path)
 
 cat("Cells:", ncol(cbmc_rt), "\n")
 #> Cells: 8617
@@ -276,11 +276,11 @@ ideal for multimodal data:
 ``` r
 
 h5mu_path <- tempfile(fileext = ".h5mu")
-SaveH5MU(combined, h5mu_path, overwrite = TRUE)
+writeH5MU(combined, h5mu_path, overwrite = TRUE)
 cat("h5mu file size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
 
 # Load back
-combined_rt <- LoadH5MU(h5mu_path)
+combined_rt <- readH5MU(h5mu_path)
 cat("Roundtrip assays:", paste(Assays(combined_rt), collapse = ", "), "\n")
 cat("Roundtrip RNA features:", nrow(combined_rt[["RNA"]]), "\n")
 cat("Roundtrip ATAC features:", nrow(combined_rt[["ATAC"]]), "\n")
@@ -321,11 +321,11 @@ The RNA component can also be exported independently via h5ad:
 h5ad_path <- tempfile(fileext = ".h5ad")
 h5s_path <- tempfile(fileext = ".h5Seurat")
 
-scSaveH5Seurat(pbmc.rna, h5s_path, overwrite = TRUE, verbose = FALSE)
+writeH5Seurat(pbmc.rna, h5s_path, overwrite = TRUE, verbose = FALSE)
 scConvert(h5s_path, dest = "h5ad", overwrite = TRUE, verbose = FALSE)
 h5ad_path <- sub("\\.h5Seurat$", ".h5ad", h5s_path)
 
-rna_rt <- LoadH5AD(h5ad_path, verbose = FALSE)
+rna_rt <- readH5AD(h5ad_path, verbose = FALSE)
 cat("h5ad roundtrip cells:", ncol(rna_rt), "/", ncol(pbmc.rna), "\n")
 ```
 
@@ -345,7 +345,7 @@ For standalone scATAC-seq data (not part of Multiome):
 
 # Convert ATAC peak matrix
 atac_obj <- CreateSeuratObject(counts = peak_matrix, assay = "ATAC")
-scSaveH5Seurat(atac_obj, "atac.h5Seurat")
+writeH5Seurat(atac_obj, "atac.h5Seurat")
 scConvert("atac.h5Seurat", dest = "h5ad")
 
 # Fragment files must be copied separately

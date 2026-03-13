@@ -94,11 +94,11 @@ cell annotations. This is the native format for <a href="https://muon-tutorials.
 dependencies (no MuDataSeurat or Python required):</p>
 <ul>
 <li>
-<strong><code><a href="../reference/SaveH5MU.html">SaveH5MU()</a></code></strong>: Export a multi-assay
+<strong><code><a href="../reference/writeH5MU.html">writeH5MU()</a></code></strong>: Export a multi-assay
 Seurat object to h5mu, with automatic assay-to-modality name mapping.
 Works with Seurat V5 Assay5.</li>
 <li>
-<strong><code><a href="../reference/LoadH5MU.html">LoadH5MU()</a></code></strong>: Load an h5mu file as a
+<strong><code><a href="../reference/readH5MU.html">readH5MU()</a></code></strong>: Load an h5mu file as a
 Seurat object, with automatic modality-to-assay name mapping</li>
 </ul>
 <div class="section level3">
@@ -187,12 +187,11 @@ with RNA genes (e.g., CD3D), remove duplicates before saving.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="save-with-saveh5mu-seurattoh5mu">Save with SaveH5MU / SeuratToH5MU<a class="anchor" aria-label="anchor" href="#save-with-saveh5mu-seurattoh5mu"></a>
+<h2 id="save-with-writeh5mu">Save with writeH5MU<a class="anchor" aria-label="anchor" href="#save-with-writeh5mu"></a>
 </h2>
-<p><code><a href="../reference/SaveH5MU.html">SaveH5MU()</a></code> and <code><a href="../reference/SeuratToH5MU.html">SeuratToH5MU()</a></code> export all
-assays to a single h5mu file using scConvert’s native writer (no
-MuDataSeurat required). Assay names are automatically mapped to standard
-MuData modality names:</p>
+<p><code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> exports all assays to a single h5mu file.
+Assay names are automatically mapped to standard MuData modality
+names:</p>
 <table class="table">
 <thead><tr class="header">
 <th>Seurat Assay</th>
@@ -222,7 +221,7 @@ MuData modality names:</p>
 </tbody>
 </table>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/SaveH5MU.html">SaveH5MU</a></span><span class="op">(</span><span class="va">cbmc</span>, <span class="st">"cbmc_multimodal.h5mu"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">cbmc</span>, <span class="st">"cbmc_multimodal.h5mu"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="inspect-in-python">Inspect in Python<a class="anchor" aria-label="anchor" href="#inspect-in-python"></a>
 </h3>
@@ -269,9 +268,9 @@ extracted from the h5mu file:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="load-with-loadh5mu">Load with LoadH5MU<a class="anchor" aria-label="anchor" href="#load-with-loadh5mu"></a>
+<h2 id="load-with-readh5mu">Load with readH5MU<a class="anchor" aria-label="anchor" href="#load-with-readh5mu"></a>
 </h2>
-<p><code><a href="../reference/LoadH5MU.html">LoadH5MU()</a></code> reads the h5mu file back into a Seurat
+<p><code><a href="../reference/readH5MU.html">readH5MU()</a></code> reads the h5mu file back into a Seurat
 object, reversing the modality name mapping:</p>
 <table class="table">
 <thead><tr class="header">
@@ -302,7 +301,7 @@ object, reversing the modality name mapping:</p>
 </tbody>
 </table>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cbmc_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5MU.html">LoadH5MU</a></span><span class="op">(</span><span class="st">"cbmc_multimodal.h5mu"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">cbmc_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="st">"cbmc_multimodal.h5mu"</span><span class="op">)</span></span>
 <span><span class="va">cbmc_loaded</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 20507 features across 8617 samples within 2 assays </span></span>
@@ -310,7 +309,7 @@ object, reversing the modality name mapping:</p>
 <span><span class="co">#&gt;  2 layers present: counts, data</span></span>
 <span><span class="co">#&gt;  1 other assay present: ADT</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
-<p><code><a href="../reference/LoadH5MU.html">LoadH5MU()</a></code> uses scConvert’s native reader — no
+<p><code><a href="../reference/readH5MU.html">readH5MU()</a></code> uses scConvert’s native reader — no
 MuDataSeurat or Python required.</p>
 </div>
 <div class="section level2">
@@ -369,14 +368,14 @@ MuDataSeurat or Python required.</p>
 <h2 id="custom-modality-name-mapping">Custom modality name mapping<a class="anchor" aria-label="anchor" href="#custom-modality-name-mapping"></a>
 </h2>
 <p>You can override the default mapping with <code>assays</code> (for
-<code><a href="../reference/SaveH5MU.html">SaveH5MU()</a></code> / <code><a href="../reference/SeuratToH5MU.html">SeuratToH5MU()</a></code>) or
-<code>assay.names</code> (for <code><a href="../reference/LoadH5MU.html">LoadH5MU()</a></code>):</p>
+<code><a href="../reference/writeH5MU.html">writeH5MU()</a></code>) or <code>assay.names</code> (for
+<code><a href="../reference/readH5MU.html">readH5MU()</a></code>):</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Save with custom modality names (native writer)</span></span>
-<span><span class="fu"><a href="../reference/SeuratToH5MU.html">SeuratToH5MU</a></span><span class="op">(</span><span class="va">cbmc</span>, filename <span class="op">=</span> <span class="st">"cbmc_roundtrip.h5mu"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">cbmc</span>, filename <span class="op">=</span> <span class="st">"cbmc_roundtrip.h5mu"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load with custom assay names</span></span>
-<span><span class="va">cbmc_custom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LoadH5MU.html">LoadH5MU</a></span><span class="op">(</span></span>
+<span><span class="va">cbmc_custom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span></span>
 <span>  <span class="st">"cbmc_roundtrip.h5mu"</span>,</span>
 <span>  assay.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rna <span class="op">=</span> <span class="st">"RNA"</span>, prot <span class="op">=</span> <span class="st">"Protein"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -388,7 +387,7 @@ MuDataSeurat or Python required.</p>
 <h2 id="conflict-resolution">Conflict resolution<a class="anchor" aria-label="anchor" href="#conflict-resolution"></a>
 </h2>
 <p>When a Seurat object has multiple assays that would map to the same
-modality name, <code><a href="../reference/SaveH5MU.html">SaveH5MU()</a></code> automatically resolves the
+modality name, <code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> automatically resolves the
 conflict. For example, if you have both RNA and SCT assays (both map to
 “rna” by default), SCT is remapped to “sct”:</p>
 <table class="table">
@@ -413,7 +412,7 @@ conflict. For example, if you have both RNA and SCT assays (both map to
 <h2 id="data-mapping-reference">Data mapping reference<a class="anchor" aria-label="anchor" href="#data-mapping-reference"></a>
 </h2>
 <div class="section level3">
-<h3 id="saveh5mu-seurat-to-h5mu">SaveH5MU: Seurat to h5mu<a class="anchor" aria-label="anchor" href="#saveh5mu-seurat-to-h5mu"></a>
+<h3 id="writeh5mu-seurat-to-h5mu">writeH5MU: Seurat to h5mu<a class="anchor" aria-label="anchor" href="#writeh5mu-seurat-to-h5mu"></a>
 </h3>
 <table class="table">
 <thead><tr class="header">
@@ -456,7 +455,7 @@ conflict. For example, if you have both RNA and SCT assays (both map to
 </table>
 </div>
 <div class="section level3">
-<h3 id="loadh5mu-h5mu-to-seurat">LoadH5MU: h5mu to Seurat<a class="anchor" aria-label="anchor" href="#loadh5mu-h5mu-to-seurat"></a>
+<h3 id="readh5mu-h5mu-to-seurat">readH5MU: h5mu to Seurat<a class="anchor" aria-label="anchor" href="#readh5mu-h5mu-to-seurat"></a>
 </h3>
 <table class="table">
 <colgroup>

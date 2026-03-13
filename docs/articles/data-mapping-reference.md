@@ -39,7 +39,7 @@ debugging unexpected behavior.
   [`ScaleData()`](https://satijalab.org/seurat/reference/ScaleData.html)
   after loading
 
-### h5ad -\> Seurat (LoadH5AD)
+### h5ad -\> Seurat (readH5AD)
 
 | h5ad Location | Seurat Destination | Condition |
 |----|----|----|
@@ -53,7 +53,7 @@ debugging unexpected behavior.
 | `obsm/X_pca` | `reductions$pca` | Auto-detected by prefix |
 | `obsm/X_tsne` | `reductions$tsne` | Auto-detected by prefix |
 | `obsm/X_draw_graph_*` | `reductions$draw_graph_*` | Force-directed layouts |
-| `obsm/spatial` | Spatial coordinates | Via [`ConvertH5ADSpatialToSeurat()`](https://mianaz.github.io/scConvert/reference/ConvertH5ADSpatialToSeurat.md) |
+| `obsm/spatial` | Spatial coordinates | Via [`H5ADSpatialToSeurat()`](https://mianaz.github.io/scConvert/reference/H5ADSpatialToSeurat.md) |
 | `obsp/connectivities` | `graphs$RNA_snn` | SNN graph |
 | `obsp/distances` | `graphs$RNA_nn` | Distance graph |
 | `uns/*` | `misc` | Unstructured annotations |
@@ -91,7 +91,7 @@ h5Seurat is a native Seurat format. The mapping is 1:1:
 
 ## h5mu (MuData) Mapping
 
-### Seurat -\> h5mu (SaveH5MU)
+### Seurat -\> h5mu (writeH5MU)
 
 | Seurat Component      | h5mu Location                                 |
 |-----------------------|-----------------------------------------------|
@@ -112,7 +112,7 @@ h5Seurat is a native Seurat format. The mapping is 1:1:
 | SCT          | sct            |
 | Other        | lowercase name |
 
-### h5mu -\> Seurat (LoadH5MU)
+### h5mu -\> Seurat (readH5MU)
 
 Reverse mapping with automatic name conversion:
 
@@ -126,7 +126,7 @@ Reverse mapping with automatic name conversion:
 
 ## Loom Mapping
 
-### Seurat -\> Loom (scSaveLoom)
+### Seurat -\> Loom (writeLoom)
 
 | Seurat Component    | Loom Location                         |
 |---------------------|---------------------------------------|
@@ -140,7 +140,7 @@ Reverse mapping with automatic name conversion:
 | Embeddings          | `/reductions/*/embeddings`            |
 | Graphs              | `/col_graphs/*`                       |
 
-### Loom -\> Seurat (scLoadLoom)
+### Loom -\> Seurat (readLoom)
 
 | Loom Location       | Seurat Destination                                 |
 |---------------------|----------------------------------------------------|
@@ -223,10 +223,10 @@ After any conversion, verify data integrity:
 library(scConvert)
 
 # Load original and roundtripped
-orig <- LoadH5AD("original.h5ad")
-scSaveH5Seurat(orig, "temp.h5Seurat", overwrite = TRUE)
+orig <- readH5AD("original.h5ad")
+writeH5Seurat(orig, "temp.h5Seurat", overwrite = TRUE)
 scConvert("temp.h5Seurat", dest = "h5ad", overwrite = TRUE)
-rt <- LoadH5AD("temp.h5ad")
+rt <- readH5AD("temp.h5ad")
 
 # Check dimensions
 stopifnot(ncol(orig) == ncol(rt))

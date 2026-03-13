@@ -70,7 +70,7 @@ conventions:
 ``` r
 
 h5ad_path <- tempfile(fileext = ".h5ad")
-SeuratToH5AD(brain, h5ad_path, overwrite = TRUE)
+writeH5AD(brain, h5ad_path, overwrite = TRUE)
 cat("File size:", round(file.size(h5ad_path) / 1024^2, 1), "MB\n")
 #> File size: 70 MB
 ```
@@ -153,7 +153,7 @@ expr = adata[:, "Hpca"].X.toarray().flatten() if hasattr(adata[:, "Hpca"].X, 'to
 fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 sc_plot = ax.scatter(coords[:, 0], -coords[:, 1], c=expr, s=8, cmap="viridis", alpha=0.8)
 plt.colorbar(sc_plot, ax=ax, label="Hpca expression")
-#> <matplotlib.colorbar.Colorbar object at 0x3ace9a930>
+#> <matplotlib.colorbar.Colorbar object at 0x3b10185c0>
 ax.set_title("Hpca — scanpy/matplotlib (from scConvert h5ad)")
 ax.set_aspect("equal")
 ax.axis("off")
@@ -188,7 +188,7 @@ print(adata.uns["moranI"].head())
 
 ``` r
 
-brain_rt <- LoadH5AD(h5ad_path, verbose = FALSE)
+brain_rt <- readH5AD(h5ad_path, verbose = FALSE)
 
 cat("Dimensions:", ncol(brain_rt), "cells x", nrow(brain_rt), "genes\n")
 #> Dimensions: 2696 cells x 31053 genes

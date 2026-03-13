@@ -64,14 +64,14 @@ scConvert("data.h5mu", dest = "rds")
 scConvert(seurat_obj, dest = "output.h5ad")
 
 # Direct h5ad loading with full metadata preservation
-obj <- LoadH5AD("data.h5ad")
+obj <- readH5AD("data.h5ad")
 
 # Memory-efficient atlas-scale loading via BPCells
-obj <- LoadH5AD("atlas_1M_cells.h5ad", use.bpcells = TRUE)
+obj <- readH5AD("atlas_1M_cells.h5ad", use.bpcells = TRUE)
 
 # Multimodal (CITE-seq, ATAC+RNA) support
-obj <- LoadH5MU("citeseq.h5mu")   # auto-maps rna->RNA, prot->ADT
-SaveH5MU(obj, "output.h5mu")
+obj <- readH5MU("citeseq.h5mu")   # auto-maps rna->RNA, prot->ADT
+writeH5MU(obj, "output.h5mu")
 ```
 
 ## Hub Architecture

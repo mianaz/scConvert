@@ -190,7 +190,7 @@ test_that("h5ad conversion handles special column names", {
   )
 
   # Load and verify the converted file
-  seurat_obj <- scLoadH5Seurat(temp_h5seurat, verbose = FALSE)
+  seurat_obj <- readH5Seurat(temp_h5seurat, verbose = FALSE)
   expect_s4_class(seurat_obj, "Seurat")
   expect_equal(ncol(seurat_obj), n_cells)
   expect_true("cell_type" %in% colnames(seurat_obj[[]]))
@@ -281,8 +281,8 @@ test_that("Conversion preserves metadata from real h5ad files", {
   test_h5ad <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
   skip_if(!file.exists(test_h5ad), "Test h5ad file not available")
 
-  # Load directly via LoadH5AD to verify metadata preservation
-  seurat_obj <- LoadH5AD(test_h5ad, verbose = FALSE)
+  # Load directly via readH5AD to verify metadata preservation
+  seurat_obj <- readH5AD(test_h5ad, verbose = FALSE)
 
   # Basic checks
   expect_s4_class(seurat_obj, "Seurat")
@@ -329,12 +329,12 @@ test_that("Round-trip conversion preserves sanitized column names", {
   }, add = TRUE)
 
   # Save -> scConvert to h5ad -> scConvert back
-  scSaveH5Seurat(seurat_obj, filename = temp_h5seurat1, verbose = FALSE)
+  writeH5Seurat(seurat_obj, filename = temp_h5seurat1, verbose = FALSE)
   scConvert(temp_h5seurat1, dest = temp_h5ad, verbose = FALSE, overwrite = TRUE)
   scConvert(temp_h5ad, dest = temp_h5seurat2, verbose = FALSE, overwrite = TRUE)
 
   # Load and compare
-  loaded_obj <- scLoadH5Seurat(temp_h5seurat2, verbose = FALSE)
+  loaded_obj <- readH5Seurat(temp_h5seurat2, verbose = FALSE)
 
   # Check metadata columns are preserved
   expect_true("cell_type" %in% colnames(loaded_obj@meta.data))

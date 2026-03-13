@@ -55,10 +55,10 @@ pbmc <- UpdateSeuratObject(pbmc3k.final)
 pbmc
 ```
 
-As seen, we have a dataset with multiple components to it. Saving an object is as simple as calling `scSaveH5Seurat()`; minimally, this function takes a `Seurat` object and nothing else. Optional arguments are present for specifying a filename and whether or not you want to overwrite a preexisting file.
+As seen, we have a dataset with multiple components to it. Saving an object is as simple as calling `writeH5Seurat()`; minimally, this function takes a `Seurat` object and nothing else. Optional arguments are present for specifying a filename and whether or not you want to overwrite a preexisting file.
 
 ```{r save_data, eval = has_SeuratData, purl = FALSE}
-scSaveH5Seurat(pbmc, filename = "pbmc3k.h5Seurat", overwrite = TRUE)
+writeH5Seurat(pbmc, filename = "pbmc3k.h5Seurat", overwrite = TRUE)
 ```
 
 This process is quick and results in a compact on-disk file.
@@ -117,10 +117,10 @@ hfile$close_all()
 
 ## Loading datasets
 
-Reading data from an h5Seurat file is as simple as calling `scLoadH5Seurat()`; by default, it loads the entire object into memory.
+Reading data from an h5Seurat file is as simple as calling `readH5Seurat()`; by default, it loads the entire object into memory.
 
 ```{r load_full_data, eval = has_SeuratData, purl = FALSE}
-pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat")
+pbmc2 <- readH5Seurat("pbmc3k.h5Seurat")
 pbmc2
 ```
 
@@ -134,26 +134,26 @@ p2 <- FeaturePlot(pbmc2, features = "CD14", pt.size = 0.5) + ggtitle("CD14 expre
 p1 + p2
 ```
 
-However, there are situations in which loading an entire `Seurat` object is not desirable. As such, we can leverage the HDF5 format and load only parts of a dataset at a time. `scLoadH5Seurat` makes use of assay association to limit the data loaded. In `Seurat` objects, all dimensional reduction information, nearest-neighbor graphs, and spatial image data have an assay they "belong" to (see `DefaultAssay()` in the Seurat package for more details). If only certain assays are requested, then only the object associated with those assays are loaded.
+However, there are situations in which loading an entire `Seurat` object is not desirable. As such, we can leverage the HDF5 format and load only parts of a dataset at a time. `readH5Seurat` makes use of assay association to limit the data loaded. In `Seurat` objects, all dimensional reduction information, nearest-neighbor graphs, and spatial image data have an assay they "belong" to (see `DefaultAssay()` in the Seurat package for more details). If only certain assays are requested, then only the object associated with those assays are loaded.
 
 There are four main parameters for controlling data loading. The first is the `assays` parameter; this parameter controls which assays are loaded and which slots of each assay are loaded. The simplest level of control is specifying the assays to load. For our dataset, passing an assay name will load the entire assay object for the assay specified.
 
 ```{r assay_load, eval = has_SeuratData, purl = FALSE}
-pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = "RNA")
+pbmc2 <- readH5Seurat("pbmc3k.h5Seurat", assays = "RNA")
 pbmc2
 ```
 
 We can also choose the slots to load; the slots available are "counts" for the raw expression data, "data" for the normalized expression data, or "scale.data" for the scaled expression data. Specifying slots instead of assays will load the desired slots from all assays that have the requested slots. When specifying slots, one of either "counts" or "data" **must** be specified as the `Seurat` object uses these slots to control dataset dimensionality information.
 
 ```{r slot_load, eval = has_SeuratData, purl = FALSE}
-pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = "data")
+pbmc2 <- readH5Seurat("pbmc3k.h5Seurat", assays = "data")
 pbmc2
 ```
 
 For more fine-tuned control, the `assays` parameter can also take a named list or vector, where the names are the names of the assays to load and the values are the slots to load.
 
 ```{r assay_slot_load, eval = has_SeuratData, purl = FALSE}
-pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = list("RNA" = c("data", "scale.data")))
+pbmc2 <- readH5Seurat("pbmc3k.h5Seurat", assays = list("RNA" = c("data", "scale.data")))
 pbmc2
 ```
 
@@ -162,7 +162,7 @@ Finally, passing `NULL` to `assays` (the default behavior) loads all assays and 
 The second of the main parameters is the `reductions` parameter; this parameter controls which dimensional reductions are loaded. As dimensional reductions are tied to assays, the data request needs to be either associated to a loaded assay or marked as global to be loaded (see details below).
 
 ```{r reduc_load, eval = has_SeuratData, purl = FALSE}
-pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = "RNA", reductions = "pca")
+pbmc2 <- readH5Seurat("pbmc3k.h5Seurat", assays = "RNA", reductions = "pca")
 pbmc2
 ```
 
@@ -175,11 +175,11 @@ The final main parameter is the `images` parameter; this parameter controls whic
 With these four parameters, there is a lot of customization for loading `Seurat` objects from h5Seurat files. For example, the following will load the "data" and "scale.data" slots from the "RNA" assay, _global_ dimensional reductions, none of the nearest neighbor graphs, and no spatial images.
 
 ```{r custom_load, eval = has_SeuratData, purl = FALSE}
-pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = list("RNA" = c("data", "scale.data")), reductions = NA, graphs = FALSE, images = FALSE)
+pbmc2 <- readH5Seurat("pbmc3k.h5Seurat", assays = list("RNA" = c("data", "scale.data")), reductions = NA, graphs = FALSE, images = FALSE)
 pbmc2
 ```
 
-In addition, there are four secondary parameters to `scLoadH5Seurat`: `meta.data`, `commands`, `misc`, and `tools`; these all take simple `TRUE`/`FALSE` values to control the loading of cell-level metadata, command logs, miscellaneous information, or tool-specific results, respectively.
+In addition, there are four secondary parameters to `readH5Seurat`: `meta.data`, `commands`, `misc`, and `tools`; these all take simple `TRUE`/`FALSE` values to control the loading of cell-level metadata, command logs, miscellaneous information, or tool-specific results, respectively.
 
 <details>
   <summary>Global objects</summary>
@@ -193,11 +193,11 @@ In addition, there are four secondary parameters to `scLoadH5Seurat`: `meta.data
 Partial loading of datasets is an excellent way to limit memory usage and prevent the loading of massive datasets into memory. However, there can be instances in which a partial dataset was loaded, but then needs to be expanded with additional data from the h5Seurat file. Instead of redoing the partial load, we can make use of `scAppendData()` to add additional objects from an h5Seurat file to an already-loaded `Seurat` object. To show how this works, we'll start off by loading just the "data" slot from the "RNA" assay, but not load any dimensional reduction information or nearest-neighbor graphs.
 
 ```{r load_partial, eval = has_SeuratData, purl = FALSE}
-pbmc2 <- scLoadH5Seurat("pbmc3k.h5Seurat", assays = c("RNA" = "data"), reductions = FALSE, graphs = FALSE, images = FALSE)
+pbmc2 <- readH5Seurat("pbmc3k.h5Seurat", assays = c("RNA" = "data"), reductions = FALSE, graphs = FALSE, images = FALSE)
 pbmc2
 ```
 
-`scAppendData` takes the h5Seurat file, the `Seurat` object generated from `scLoadH5Seurat` and uses the four main paramters from `scLoadH5Seurat` (`assays`, `reductions`, `graphs`, and `images`). These parameters are used in the same way as `scLoadH5Seurat` with one exception: `assays` can now take `FALSE` as a value. By passing `FALSE`, we prevent other assay information from being loaded; this is useful if we only want to add other bits of data to our `Seurat` object. For example, we can choose to add only _global_ dimensional reductions to the already existing `Seurat` object.
+`scAppendData` takes the h5Seurat file, the `Seurat` object generated from `readH5Seurat` and uses the four main paramters from `readH5Seurat` (`assays`, `reductions`, `graphs`, and `images`). These parameters are used in the same way as `readH5Seurat` with one exception: `assays` can now take `FALSE` as a value. By passing `FALSE`, we prevent other assay information from being loaded; this is useful if we only want to add other bits of data to our `Seurat` object. For example, we can choose to add only _global_ dimensional reductions to the already existing `Seurat` object.
 
 ```{r append_partial, eval = has_SeuratData, purl = FALSE}
 pbmc2 <- scAppendData("pbmc3k.h5Seurat", pbmc2, assays = FALSE, reductions = NA, graphs = FALSE, images = FALSE)
@@ -239,10 +239,10 @@ Save and reload to demonstrate h5Seurat with spatial data:
 
 ```{r save_spatial, eval = has_SeuratData, purl = FALSE}
 brain <- NormalizeData(brain, verbose = FALSE)
-scSaveH5Seurat(brain, filename = "stxBrain.h5Seurat", overwrite = TRUE)
+writeH5Seurat(brain, filename = "stxBrain.h5Seurat", overwrite = TRUE)
 
 # Reload
-brain2 <- scLoadH5Seurat("stxBrain.h5Seurat")
+brain2 <- readH5Seurat("stxBrain.h5Seurat")
 
 # Verify spatial images are preserved
 cat("Original images:", Images(brain), "\n")

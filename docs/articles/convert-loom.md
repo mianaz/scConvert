@@ -40,7 +40,7 @@ This format is particularly useful for:
 ### Basic Conversion
 
 To save a Seurat object as a Loom file, use
-[`scSaveLoom()`](https://mianaz.github.io/scConvert/reference/scSaveLoom.md):
+[`writeLoom()`](https://mianaz.github.io/scConvert/reference/writeLoom.md):
 
 ``` r
 
@@ -77,7 +77,7 @@ Now save to Loom format:
 
 ``` r
 
-scSaveLoom(pbmc, filename = "pbmc3k.loom", overwrite = TRUE, verbose = TRUE)
+writeLoom(pbmc, filename = "pbmc3k.loom", overwrite = TRUE, verbose = TRUE)
 ```
 
 ### What Gets Saved
@@ -140,13 +140,13 @@ print("\nColumn attributes:", list(adata.obs.columns)[:10])
 ### Loading Loom Files
 
 Use
-[`scLoadLoom()`](https://mianaz.github.io/scConvert/reference/scLoadLoom.md)
+[`readLoom()`](https://mianaz.github.io/scConvert/reference/readLoom.md)
 to read a Loom file as a Seurat object:
 
 ``` r
 
 # Load the loom file we just created
-loaded_pbmc <- scLoadLoom("pbmc3k.loom", verbose = TRUE)
+loaded_pbmc <- readLoom("pbmc3k.loom", verbose = TRUE)
 loaded_pbmc
 #> An object of class Seurat 
 #> 13714 features across 2638 samples within 1 assay 
@@ -183,14 +183,14 @@ FeaturePlot(loaded_pbmc, features = "CD14", pt.size = 0.5) + ggtitle("CD14 (from
 
 ![](convert-loom_files/figure-html/plot_loom_feature-1.png)
 
-### scLoadLoom Parameters
+### readLoom Parameters
 
-[`scLoadLoom()`](https://mianaz.github.io/scConvert/reference/scLoadLoom.md)
+[`readLoom()`](https://mianaz.github.io/scConvert/reference/readLoom.md)
 provides several options for customizing the import:
 
 ``` r
 
-scLoadLoom(
+readLoom(
   file,                    # Path to loom file
 
   assay = NULL,            # Name for the assay (default: "RNA" or from file)
@@ -210,7 +210,7 @@ If your Loom file has additional layers (e.g., from velocyto):
 ``` r
 
 # Load with specific layers
-seurat_obj <- scLoadLoom(
+seurat_obj <- readLoom(
   "velocity_data.loom",
   normalized = "spliced",      # Use spliced counts as normalized
   scaled = "ambiguous"         # Optional scaled layer
@@ -226,7 +226,7 @@ matrices:
 
 # Load velocyto loom file
 # The main matrix typically contains spliced counts
-velocity_obj <- scLoadLoom(
+velocity_obj <- readLoom(
   "sample.loom",
   cells = "CellID",
   features = "Gene"
@@ -252,8 +252,8 @@ test_obj$custom_cluster <- sample(c("A", "B", "C"), 50, replace = TRUE)
 test_obj$numeric_value <- rnorm(50)
 
 # Save and reload
-scSaveLoom(test_obj, "test_roundtrip.loom", overwrite = TRUE, verbose = FALSE)
-reloaded <- scLoadLoom("test_roundtrip.loom", verbose = FALSE)
+writeLoom(test_obj, "test_roundtrip.loom", overwrite = TRUE, verbose = FALSE)
+reloaded <- readLoom("test_roundtrip.loom", verbose = FALSE)
 
 # Compare
 cat("Cell names match:", all(colnames(test_obj) == colnames(reloaded)), "\n")
@@ -298,7 +298,7 @@ This creates a `.loom` file with spliced/unspliced counts.
 ``` r
 
 # Load velocyto output
-velocity_data <- scLoadLoom("sample.loom")
+velocity_data <- readLoom("sample.loom")
 
 # Perform standard Seurat QC and clustering
 velocity_data <- NormalizeData(velocity_data)
@@ -313,7 +313,7 @@ velocity_data <- RunUMAP(velocity_data, dims = 1:30)
 velocity_data$cell_type <- ...  # Your annotation method
 
 # Save back to loom with annotations
-scSaveLoom(velocity_data, "sample_annotated.loom", overwrite = TRUE)
+writeLoom(velocity_data, "sample_annotated.loom", overwrite = TRUE)
 ```
 
 ### 3. Continue Velocity Analysis in Python
@@ -411,7 +411,7 @@ print(names(h5[["row_attrs"]]))
 h5$close_all()
 
 # Use the correct attribute name
-obj <- scLoadLoom("data.loom", features = "gene_name")
+obj <- readLoom("data.loom", features = "gene_name")
 ```
 
 **“Cannot find cell names dataset”**
@@ -425,7 +425,7 @@ print(names(h5[["col_attrs"]]))
 h5$close_all()
 
 # Use the correct attribute name
-obj <- scLoadLoom("data.loom", cells = "obs_names")
+obj <- readLoom("data.loom", cells = "obs_names")
 ```
 
 **Duplicate feature names**
@@ -436,7 +436,7 @@ unique with a warning:
 ``` r
 
 # Warning: Duplicate feature names found, making unique
-obj <- scLoadLoom("data.loom")
+obj <- readLoom("data.loom")
 
 # The names will be Gene, Gene.1, Gene.2, etc.
 ```

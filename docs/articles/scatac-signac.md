@@ -120,14 +120,14 @@ DimPlot(pbmc_atac, label = TRUE, pt.size = 0.3) + NoLegend()
 ## Convert Signac to h5ad
 
 The
-[`SeuratToH5AD()`](https://mianaz.github.io/scConvert/reference/SeuratToH5AD.md)
+[`writeH5AD()`](https://mianaz.github.io/scConvert/reference/writeH5AD.md)
 function writes the peak matrix, cell metadata, and embeddings directly
 to h5ad format. The `ChromatinAssay` peak matrix is extracted as a
 standard sparse matrix during conversion.
 
 ``` r
 
-SeuratToH5AD(pbmc_atac, filename = "pbmc_atac.h5ad", overwrite = TRUE)
+writeH5AD(pbmc_atac, filename = "pbmc_atac.h5ad", overwrite = TRUE)
 cat("h5ad file size:", round(file.size("pbmc_atac.h5ad") / 1024^2, 1), "MB\n")
 ```
 
@@ -163,14 +163,14 @@ scconvert pbmc_atac.rds pbmc_atac_cli.h5ad
 ## Convert h5ad back to Seurat with Signac
 
 When loading an h5ad file that contains a peak matrix,
-[`LoadH5AD()`](https://mianaz.github.io/scConvert/reference/LoadH5AD.md)
+[`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
 returns a standard Seurat object. You can then upgrade the assay to a
 Signac `ChromatinAssay` if needed.
 
 ``` r
 
 # Load the h5ad as a standard Seurat object
-atac_loaded <- LoadH5AD("pbmc_atac.h5ad")
+atac_loaded <- readH5AD("pbmc_atac.h5ad")
 
 cat("Cells:", ncol(atac_loaded), "\n")
 cat("Peaks:", nrow(atac_loaded), "\n")
@@ -227,7 +227,7 @@ structures are preserved.
 ``` r
 
 # Reload from h5ad
-atac_rt <- LoadH5AD("pbmc_atac.h5ad")
+atac_rt <- readH5AD("pbmc_atac.h5ad")
 
 # --- Dimension check ---
 cat("=== Dimensions ===\n")
@@ -326,7 +326,7 @@ cat("ATAC peaks:", nrow(pbmc_atac[["ATAC"]]), "\n")
 cat("RNA genes:", nrow(pbmc_atac[["RNA"]]), "\n")
 
 # Export both modalities to h5mu
-SeuratToH5MU(pbmc_atac, filename = "pbmc_atac_multiome.h5mu", overwrite = TRUE)
+writeH5MU(pbmc_atac, filename = "pbmc_atac_multiome.h5mu", overwrite = TRUE)
 cat("h5mu file size:", round(file.size("pbmc_atac_multiome.h5mu") / 1024^2, 1), "MB\n")
 ```
 
@@ -334,7 +334,7 @@ cat("h5mu file size:", round(file.size("pbmc_atac_multiome.h5mu") / 1024^2, 1), 
 
 ``` r
 
-multiome_rt <- LoadH5MU("pbmc_atac_multiome.h5mu")
+multiome_rt <- readH5MU("pbmc_atac_multiome.h5mu")
 
 cat("Assays:", paste(Assays(multiome_rt), collapse = ", "), "\n")
 cat("ATAC peaks:", nrow(multiome_rt[["ATAC"]]), "\n")

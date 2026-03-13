@@ -131,7 +131,7 @@ annotations</li>
 <h3 id="basic-conversion">Basic Conversion<a class="anchor" aria-label="anchor" href="#basic-conversion"></a>
 </h3>
 <p>To save a Seurat object as a Loom file, use
-<code><a href="../reference/scSaveLoom.html">scSaveLoom()</a></code>:</p>
+<code><a href="../reference/writeLoom.html">writeLoom()</a></code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.satijalab.org/seurat" class="external-link">SeuratData</a></span><span class="op">)</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="st">"pbmc3k.final"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.org/seurat/reference/InstalledData.html" class="external-link">InstalledData</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -154,7 +154,7 @@ annotations</li>
 <p><img src="convert-loom_files/figure-html/plot_pbmc_cd14-1.png" class="r-plt" alt="" width="100%"></p>
 <p>Now save to Loom format:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/scSaveLoom.html">scSaveLoom</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeLoom.html">writeLoom</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="what-gets-saved">What Gets Saved<a class="anchor" aria-label="anchor" href="#what-gets-saved"></a>
@@ -262,11 +262,11 @@ Python:</p>
 <div class="section level3">
 <h3 id="loading-loom-files">Loading Loom Files<a class="anchor" aria-label="anchor" href="#loading-loom-files"></a>
 </h3>
-<p>Use <code><a href="../reference/scLoadLoom.html">scLoadLoom()</a></code> to read a Loom file as a Seurat
+<p>Use <code><a href="../reference/readLoom.html">readLoom()</a></code> to read a Loom file as a Seurat
 object:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load the loom file we just created</span></span>
-<span><span class="va">loaded_pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"pbmc3k.loom"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">loaded_pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="st">"pbmc3k.loom"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">loaded_pbmc</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 13714 features across 2638 samples within 1 assay </span></span>
@@ -298,12 +298,12 @@ object:</p>
 <p><img src="convert-loom_files/figure-html/plot_loom_feature-1.png" class="r-plt" alt="" width="100%"></p>
 </div>
 <div class="section level3">
-<h3 id="scloadloom-parameters">scLoadLoom Parameters<a class="anchor" aria-label="anchor" href="#scloadloom-parameters"></a>
+<h3 id="readloom-parameters">readLoom Parameters<a class="anchor" aria-label="anchor" href="#readloom-parameters"></a>
 </h3>
-<p><code><a href="../reference/scLoadLoom.html">scLoadLoom()</a></code> provides several options for customizing
-the import:</p>
+<p><code><a href="../reference/readLoom.html">readLoom()</a></code> provides several options for customizing the
+import:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span></span>
 <span>  <span class="va">file</span>,                    <span class="co"># Path to loom file</span></span>
 <span></span>
 <span>  assay <span class="op">=</span> <span class="cn">NULL</span>,            <span class="co"># Name for the assay (default: "RNA" or from file)</span></span>
@@ -321,7 +321,7 @@ the import:</p>
 <p>If your Loom file has additional layers (e.g., from velocyto):</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load with specific layers</span></span>
-<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span></span>
+<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span></span>
 <span>  <span class="st">"velocity_data.loom"</span>,</span>
 <span>  normalized <span class="op">=</span> <span class="st">"spliced"</span>,      <span class="co"># Use spliced counts as normalized</span></span>
 <span>  scaled <span class="op">=</span> <span class="st">"ambiguous"</span>         <span class="co"># Optional scaled layer</span></span>
@@ -335,7 +335,7 @@ count matrices:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load velocyto loom file</span></span>
 <span><span class="co"># The main matrix typically contains spliced counts</span></span>
-<span><span class="va">velocity_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span></span>
+<span><span class="va">velocity_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span></span>
 <span>  <span class="st">"sample.loom"</span>,</span>
 <span>  cells <span class="op">=</span> <span class="st">"CellID"</span>,</span>
 <span>  features <span class="op">=</span> <span class="st">"Gene"</span></span>
@@ -361,8 +361,8 @@ conversion:</p>
 <span><span class="va">test_obj</span><span class="op">$</span><span class="va">numeric_value</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">50</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save and reload</span></span>
-<span><span class="fu"><a href="../reference/scSaveLoom.html">scSaveLoom</a></span><span class="op">(</span><span class="va">test_obj</span>, <span class="st">"test_roundtrip.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">reloaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"test_roundtrip.loom"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeLoom.html">writeLoom</a></span><span class="op">(</span><span class="va">test_obj</span>, <span class="st">"test_roundtrip.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">reloaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="st">"test_roundtrip.loom"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Compare</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cell names match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">test_obj</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">reloaded</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -401,7 +401,7 @@ counts.</p>
 </h3>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load velocyto output</span></span>
-<span><span class="va">velocity_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"sample.loom"</span><span class="op">)</span></span>
+<span><span class="va">velocity_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="st">"sample.loom"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Perform standard Seurat QC and clustering</span></span>
 <span><span class="va">velocity_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">velocity_data</span><span class="op">)</span></span>
@@ -416,7 +416,7 @@ counts.</p>
 <span><span class="va">velocity_data</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="va">...</span>  <span class="co"># Your annotation method</span></span>
 <span></span>
 <span><span class="co"># Save back to loom with annotations</span></span>
-<span><span class="fu"><a href="../reference/scSaveLoom.html">scSaveLoom</a></span><span class="op">(</span><span class="va">velocity_data</span>, <span class="st">"sample_annotated.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/writeLoom.html">writeLoom</a></span><span class="op">(</span><span class="va">velocity_data</span>, <span class="st">"sample_annotated.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="continue-velocity-analysis-in-python">3. Continue Velocity Analysis in Python<a class="anchor" aria-label="anchor" href="#continue-velocity-analysis-in-python"></a>
@@ -658,7 +658,7 @@ explicitly:</p>
 <span><span class="va">h5</span><span class="op">$</span><span class="fu">close_all</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Use the correct attribute name</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, features <span class="op">=</span> <span class="st">"gene_name"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, features <span class="op">=</span> <span class="st">"gene_name"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>“Cannot find cell names dataset”</strong></p>
 <p>Similar to above, check column attributes:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
@@ -667,13 +667,13 @@ explicitly:</p>
 <span><span class="va">h5</span><span class="op">$</span><span class="fu">close_all</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Use the correct attribute name</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, cells <span class="op">=</span> <span class="st">"obs_names"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span>, cells <span class="op">=</span> <span class="st">"obs_names"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Duplicate feature names</strong></p>
 <p>Loom files sometimes have duplicate gene names. scConvert will make
 them unique with a warning:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Warning: Duplicate feature names found, making unique</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scLoadLoom.html">scLoadLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="st">"data.loom"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># The names will be Gene, Gene.1, Gene.2, etc.</span></span></code></pre></div>
 </div>

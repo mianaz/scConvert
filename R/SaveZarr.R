@@ -22,10 +22,10 @@ NULL
 #'
 #' @export
 #'
-SaveZarr <- function(object, filename, assay = DefaultAssay(object),
+writeZarr <- function(object, filename, assay = DefaultAssay(object),
                      overwrite = FALSE, verbose = TRUE, ...) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
-    stop("jsonlite package required for SaveZarr. ",
+    stop("jsonlite package required for writeZarr. ",
          "Install with: install.packages('jsonlite')", call. = FALSE)
   }
 

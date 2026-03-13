@@ -20,7 +20,7 @@ NULL
 #' @param verbose Logical; if \code{TRUE} (default), show progress updates
 #' @param ... Arguments passed to other methods
 #'
-#' @return \code{scSaveLoom}: Invisibly returns the filename of the saved file
+#' @return \code{writeLoom}: Invisibly returns the filename of the saved file
 #'
 #' @details
 #' The Loom format organizes data as follows:
@@ -40,8 +40,8 @@ NULL
 #' }
 #'
 #' @seealso
-#' \code{\link{scLoadLoom}} to load Loom files back as Seurat objects
-#' \code{\link{scSaveH5Seurat}} to save in h5Seurat format
+#' \code{\link{readLoom}} to load Loom files back as Seurat objects
+#' \code{\link{writeH5Seurat}} to save in h5Seurat format
 #' \code{\link{scConvert}} for converting between formats
 #' \href{http://linnarssonlab.org/loompy/}{Loom documentation}
 #'
@@ -54,34 +54,34 @@ NULL
 #' seurat_obj <- CreateSeuratObject(counts = pbmc_small$RNA@counts)
 #'
 #' # Save to Loom format
-#' scSaveLoom(seurat_obj, filename = "my_data.loom")
+#' writeLoom(seurat_obj, filename = "my_data.loom")
 #'
 #' # Save with overwrite if needed
-#' scSaveLoom(seurat_obj, filename = "my_data.loom", overwrite = TRUE)
+#' writeLoom(seurat_obj, filename = "my_data.loom", overwrite = TRUE)
 #'
 #' # Load it back
-#' loaded_obj <- scLoadLoom("my_data.loom")
+#' loaded_obj <- readLoom("my_data.loom")
 #'
 #' # For sharing with Python tools
-#' scSaveLoom(seurat_obj, filename = "data_for_python.loom")
+#' writeLoom(seurat_obj, filename = "data_for_python.loom")
 #' # Use in Python with: adata = loompy.connect("data_for_python.loom")
 #' }
 #'
-#' @name scSaveLoom
-#' @rdname scSaveLoom
+#' @name writeLoom
+#' @rdname writeLoom
 #'
 #' @export
 #'
-scSaveLoom <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
-  UseMethod(generic = 'scSaveLoom', object = object)
+writeLoom <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
+  UseMethod(generic = 'writeLoom', object = object)
 }
 
 #' @param x A Seurat object to convert
 #'
 #' @return \code{as.loom}: A \code{\link{loom}} object
 #'
-#' @name scSaveLoom
-#' @rdname scSaveLoom
+#' @name writeLoom
+#' @rdname writeLoom
 #'
 #' @export
 #'
@@ -108,11 +108,11 @@ setGeneric(
 # Methods
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' @rdname scSaveLoom
-#' @method scSaveLoom default
+#' @rdname writeLoom
+#' @method writeLoom default
 #' @export
 #'
-scSaveLoom.default <- function(
+writeLoom.default <- function(
   object,
   filename,
   overwrite = FALSE,
@@ -133,7 +133,7 @@ scSaveLoom.default <- function(
   if (missing(x = filename)) {
     filename <- paste0(Project(object = object), '.loom')
   }
-  return(invisible(x = scSaveLoom(
+  return(invisible(x = writeLoom(
     object = object,
     filename = filename,
     overwrite = overwrite,
@@ -142,11 +142,11 @@ scSaveLoom.default <- function(
   )))
 }
 
-#' @rdname scSaveLoom
-#' @method scSaveLoom Seurat
+#' @rdname writeLoom
+#' @method writeLoom Seurat
 #' @export
 #'
-scSaveLoom.Seurat <- function(
+writeLoom.Seurat <- function(
   object,
   filename = paste0(Project(object = object), '.loom'),
   overwrite = FALSE,
@@ -164,7 +164,7 @@ scSaveLoom.Seurat <- function(
   return(invisible(x = loom$filename))
 }
 
-#' @rdname scSaveLoom
+#' @rdname writeLoom
 #' @method as.loom default
 #' @export
 #'
@@ -192,7 +192,7 @@ as.loom.default <- function(x, filename, overwrite = FALSE, verbose = TRUE, ...)
   ))
 }
 
-#' @rdname scSaveLoom
+#' @rdname writeLoom
 #' @method as.loom H5File
 #' @export
 #'
@@ -223,7 +223,7 @@ as.loom.H5File <- function(x, ...) {
 #' @importFrom Seurat Assays DefaultAssay GetAssayData Reductions Embeddings Loadings Stdev
 #' @importFrom methods slotNames slot
 #'
-#' @rdname scSaveLoom
+#' @rdname writeLoom
 #' @method as.loom Seurat
 #' @export
 #'

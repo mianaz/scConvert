@@ -312,10 +312,10 @@ sce <- scConvert(seurat_obj, dest = "sce")            # Seurat -> SCE
 
 }
 \seealso{
-\code{\link{SeuratToH5AD}} for direct Seurat to h5ad convenience function
-\code{\link{scSaveH5Seurat}} to save Seurat objects
-\code{\link{scLoadH5Seurat}} to load h5Seurat files
-\code{\link{LoadH5AD}} to directly load h5ad files
-\code{\link{LoadH5MU}} to load h5mu files
+\code{\link{writeH5AD}} for direct Seurat to h5ad convenience function
+\code{\link{writeH5Seurat}} to save Seurat objects
+\code{\link{readH5Seurat}} to load h5Seurat files
+\code{\link{readH5AD}} to directly load h5ad files
+\code{\link{readH5MU}} to load h5mu files
 \code{\link{scConnect}} to establish file connections
 }
