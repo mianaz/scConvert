@@ -3,6 +3,8 @@
  *
  * Streaming on-disk conversion between h5ad, h5seurat, and h5mu formats.
  * No full dataset materialization in RAM — reads and writes in chunks.
+ *
+ * All malloc calls must be NULL-checked. SC_ERR is returned on failure.
  */
 
 #ifndef SC_CONVERT_H

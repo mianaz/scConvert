@@ -149,11 +149,20 @@ static int stream_1d_dataset_direct(hid_t src_dset, hid_t dst_dset,
         void *buf = malloc(chunk_nbytes);
         if (!buf) return SC_ERR;
 
-        /* Read compressed chunk directly (no decompression)
-         * H5Dread_chunk2 (HDF5 2.0+) takes buf_size as in/out param */
+        /* Read compressed chunk directly (no decompression).
+         * HDF5 2.0+ renamed to H5Dread_chunk2 and added a buf_size in/out
+         * param; the 1.x API takes exactly 5 arguments without it. */
         size_t buf_size = (size_t)chunk_nbytes;
+#ifndef H5_VERSION_GE
+#define H5_VERSION_GE(a,b,c) 0
+#endif
+#if H5_VERSION_GE(2,0,0)
         if (H5Dread_chunk(src_dset, H5P_DEFAULT, &offset,
                            &filter_mask, buf, &buf_size) < 0) {
+#else
+        if (H5Dread_chunk(src_dset, H5P_DEFAULT, &offset,
+                           &filter_mask, buf) < 0) {
+#endif
             free(buf);
             return SC_ERR_HDF;
         }
@@ -398,6 +407,14 @@ int sc_copy_2d_transposed(hid_t src_dset, hid_t dst_grp,
     hsize_t M = src_dims[0], N = src_dims[1];
     hsize_t total = M * N;
 
+    /* Overflow guard: total * elem_size must fit in size_t */
+    if (elem_size > 0 && total > (hsize_t)(SIZE_MAX / elem_size)) {
+        fprintf(stderr, "Error: matrix too large for transpose (%llu x %llu)\n",
+                (unsigned long long)M, (unsigned long long)N);
+        H5Tclose(mem_type); H5Tclose(src_type); H5Sclose(src_space);
+        return SC_ERR;
+    }
+
     /* Read source */
     void *src_buf = malloc(total * elem_size);
     if (!src_buf) {
@@ -463,6 +480,13 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
         hid_t dst_dset = H5Dcreate2(dst_grp, name, src_type, dst_space_s,
                                      H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         void *buf = malloc(sz);
+        if (!buf) {
+            H5Dclose(dst_dset);
+            H5Sclose(dst_space_s);
+            H5Tclose(src_type);
+            H5Sclose(src_space);
+            return SC_ERR;
+        }
         H5Dread(src_dset, src_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
         H5Dwrite(dst_dset, src_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
         free(buf);
@@ -485,6 +509,11 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
             /* String dataset — read all at once (strings are typically small) */
             hid_t memtype = sc_create_vlen_str_type();
             char **strs = (char **)calloc(dims, sizeof(char *));
+            if (!strs) {
+                H5Tclose(memtype);
+                H5Tclose(src_type);
+                return SC_ERR;
+            }
             H5Dread(src_dset, memtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, strs);
 
             /* Write */
@@ -530,7 +559,22 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
     size_t elem_size = H5Tget_size(mem_type);
 
     hsize_t total = dims2[0] * dims2[1];
+
+    /* Overflow guard: total * elem_size must fit in size_t */
+    if (elem_size > 0 && total > (hsize_t)(SIZE_MAX / elem_size)) {
+        fprintf(stderr, "Error: 2D dataset too large for copy (%llu x %llu)\n",
+                (unsigned long long)dims2[0], (unsigned long long)dims2[1]);
+        H5Tclose(mem_type); H5Tclose(src_type); H5Sclose(src_space);
+        return SC_ERR;
+    }
+
     void *buf = malloc(total * elem_size);
+    if (!buf) {
+        H5Tclose(mem_type);
+        H5Tclose(src_type);
+        H5Sclose(src_space);
+        return SC_ERR;
+    }
 
     H5Dread(src_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
 

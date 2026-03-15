@@ -255,6 +255,7 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
             H5Dclose(cn);
 
             int *vals = (int *)malloc(n_cells * sizeof(int));
+            if (!vals) { H5Gclose(ai); goto cleanup; }
             for (hsize_t c = 0; c < n_cells; c++)
                 vals[c] = 1;
 

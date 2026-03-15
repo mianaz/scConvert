@@ -272,6 +272,13 @@ int sc_json_get_str_array(const char *json, const char *key,
         }
         size_t slen = (size_t)(p - start);
         arr[i] = (char *)malloc(slen + 1);
+        if (!arr[i]) {
+            for (int j = 0; j < i; j++) free(arr[j]);
+            free(arr);
+            *out_arr = NULL;
+            *out_n = 0;
+            return -1;
+        }
         memcpy(arr[i], start, slen);
         arr[i][slen] = '\0';
         if (*p == '"') p++;

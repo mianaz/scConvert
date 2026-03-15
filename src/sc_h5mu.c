@@ -86,6 +86,9 @@ static int sc_stream_modality_to_assay(
         key_buf[len + 1] = '\0';
         sc_set_str_attr(assay_grp, "key", key_buf);
     }
+    /* V5 s4class attribute — required for LoadH5Seurat to use the
+     * V5 code path that looks for layers/ subdirectory */
+    sc_set_str_attr(assay_grp, "s4class", "SeuratObject::Assay5");
 
     /* X → assays/{assay}/data */
     if (sc_has_group(mod_grp, "X")) {
@@ -107,10 +110,12 @@ static int sc_stream_modality_to_assay(
         if (rc != SC_OK) goto done;
     } else if (sc_has_dataset(mod_grp, "X")) {
         if (verbose)
-            fprintf(stderr, "    X (dense) → assays/%s/scale.data\n", assay_name);
+            fprintf(stderr, "    X (dense) → assays/%s/layers/data\n", assay_name);
+        hid_t layers_grp = sc_create_or_open_group(assay_grp, "layers");
         hid_t src_x = H5Dopen2(mod_grp, "X", H5P_DEFAULT);
-        rc = sc_copy_dataset_chunked(src_x, assay_grp, "scale.data", gzip);
+        rc = sc_copy_dataset_chunked(src_x, layers_grp, "data", gzip);
         H5Dclose(src_x);
+        H5Gclose(layers_grp);
         if (rc != SC_OK) goto done;
     }
 
@@ -614,20 +619,22 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts) {
             H5Dclose(cn);
 
             int *vals = (int *)calloc(n_cells, sizeof(int));
-            for (hsize_t c = 0; c < n_cells; c++)
-                vals[c] = 1;
+            if (vals) {
+                for (hsize_t c = 0; c < n_cells; c++)
+                    vals[c] = 1;
 
-            hid_t vs = H5Screate_simple(1, &n_cells, NULL);
-            hid_t vdcpl = H5Pcreate(H5P_DATASET_CREATE);
-            hsize_t chunk = n_cells;
-            H5Pset_chunk(vdcpl, 1, &chunk);
-            hid_t vds = H5Dcreate2(ai, "values", H5T_NATIVE_INT, vs,
-                                    H5P_DEFAULT, vdcpl, H5P_DEFAULT);
-            H5Dwrite(vds, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, vals);
-            H5Dclose(vds);
-            H5Pclose(vdcpl);
-            H5Sclose(vs);
-            free(vals);
+                hid_t vs = H5Screate_simple(1, &n_cells, NULL);
+                hid_t vdcpl = H5Pcreate(H5P_DATASET_CREATE);
+                hsize_t chunk = n_cells;
+                H5Pset_chunk(vdcpl, 1, &chunk);
+                hid_t vds = H5Dcreate2(ai, "values", H5T_NATIVE_INT, vs,
+                                        H5P_DEFAULT, vdcpl, H5P_DEFAULT);
+                H5Dwrite(vds, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, vals);
+                H5Dclose(vds);
+                H5Pclose(vdcpl);
+                H5Sclose(vs);
+                free(vals);
+            }
         }
 
         H5Gclose(ai);

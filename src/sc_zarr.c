@@ -57,6 +57,7 @@ static int zarr_list_children(const char *dir, char ***out_names, int *out_n) {
 
     int cap = 64, n = 0;
     char **names = (char **)calloc((size_t)cap, sizeof(char *));
+    if (!names) { closedir(d); *out_names = NULL; *out_n = 0; return SC_ERR; }
 
     struct dirent *ent;
     while ((ent = readdir(d))) {
@@ -70,7 +71,16 @@ static int zarr_list_children(const char *dir, char ***out_names, int *out_n) {
         if (!S_ISDIR(st.st_mode)) continue;
         if (n >= cap) {
             cap *= 2;
-            names = (char **)realloc(names, (size_t)cap * sizeof(char *));
+            char **tmp = (char **)realloc(names, (size_t)cap * sizeof(char *));
+            if (!tmp) {
+                for (int i = 0; i < n; i++) free(names[i]);
+                free(names);
+                closedir(d);
+                *out_names = NULL;
+                *out_n = 0;
+                return SC_ERR;
+            }
+            names = tmp;
         }
         names[n++] = strdup(ent->d_name);
     }
@@ -122,6 +132,7 @@ static void *zarr_read_chunk(const char *chunk_path, const sc_zarr_meta_t *meta,
     if (clen <= 0) { fclose(f); return NULL; }
 
     void *cbuf = malloc((size_t)clen);
+    if (!cbuf) { fclose(f); return NULL; }
     fread(cbuf, 1, (size_t)clen, f);
     fclose(f);
 
@@ -138,6 +149,7 @@ static void *zarr_read_chunk(const char *chunk_path, const sc_zarr_meta_t *meta,
     size_t dbuf_sz = (size_t)clen * 4;
     if (dbuf_sz < 4096) dbuf_sz = 4096;
     void *dbuf = malloc(dbuf_sz);
+    if (!dbuf) { free(cbuf); return NULL; }
 
     z_stream zs;
     memset(&zs, 0, sizeof(zs));
@@ -186,6 +198,7 @@ static int zarr_write_chunk(const char *chunk_path, const void *data,
     /* Compress with zlib (deflate, not gzip wrapper) */
     uLongf clen = compressBound((uLong)data_size);
     void *cbuf = malloc(clen);
+    if (!cbuf) return SC_ERR;
     if (compress2((Bytef *)cbuf, &clen, (const Bytef *)data,
                    (uLong)data_size, gzip_level) != Z_OK) {
         free(cbuf);
@@ -280,8 +293,46 @@ static void *zarr_read_numeric(const char *arr_dir, int64_t *out_n) {
             memcpy((char *)full + offset * elem_sz, cdata, (size_t)elems * elem_sz);
             free(cdata);
         }
+    } else if (meta.ndim == 2) {
+        /* 2D multi-chunk: iterate over (ci, cj) in row-major order */
+        int64_t nchunks_0 = (meta.shape[0] + meta.chunks[0] - 1) / meta.chunks[0];
+        int64_t nchunks_1 = (meta.shape[1] + meta.chunks[1] - 1) / meta.chunks[1];
+        for (int64_t ci = 0; ci < nchunks_0; ci++) {
+            for (int64_t cj = 0; cj < nchunks_1; cj++) {
+                snprintf(chunk_path, sizeof(chunk_path), "%s/%lld.%lld",
+                         arr_dir, (long long)ci, (long long)cj);
+                size_t out_sz;
+                void *cdata = zarr_read_chunk(chunk_path, &meta, &out_sz);
+                if (!cdata) continue;
+
+                /* Row range covered by this chunk */
+                int64_t row_start = ci * meta.chunks[0];
+                int64_t row_end   = row_start + meta.chunks[0];
+                if (row_end > meta.shape[0]) row_end = meta.shape[0];
+
+                /* Col range covered by this chunk */
+                int64_t col_start = cj * meta.chunks[1];
+                int64_t col_end   = col_start + meta.chunks[1];
+                if (col_end > meta.shape[1]) col_end = meta.shape[1];
+
+                int64_t chunk_cols = meta.chunks[1]; /* full chunk width (stride) */
+                int64_t out_cols   = meta.shape[1];  /* full output width */
+
+                for (int64_t r = row_start; r < row_end; r++) {
+                    int64_t src_row   = r - row_start;
+                    int64_t col_count = col_end - col_start;
+                    memcpy((char *)full + (r * out_cols + col_start) * elem_sz,
+                           (char *)cdata + src_row * chunk_cols * elem_sz,
+                           (size_t)col_count * (size_t)elem_sz);
+                }
+                free(cdata);
+            }
+        }
+    } else {
+        /* ndim > 2: not expected in AnnData; return what we have (zeros) */
+        fprintf(stderr, "Warning: zarr_read_numeric: ndim=%d not fully supported\n",
+                meta.ndim);
     }
-    /* 2D multi-chunk not implemented (rare for AnnData single-chunk convention) */
 
     return full;
 }
@@ -295,38 +346,59 @@ static char **zarr_read_strings(const char *arr_dir, int64_t *out_n) {
     *out_n = meta.shape[0];
     if (meta.shape[0] == 0) return NULL;
 
-    char chunk_path[2048];
-    snprintf(chunk_path, sizeof(chunk_path), "%s/0", arr_dir);
-    size_t raw_sz;
-    void *raw = zarr_read_chunk(chunk_path, &meta, &raw_sz);
-    if (!raw) return NULL;
+    int64_t n           = meta.shape[0];
+    int64_t chunk_size  = meta.chunks[0];
+    int64_t n_chunks    = (n + chunk_size - 1) / chunk_size;
 
-    int64_t n = meta.shape[0];
     char **strs = (char **)calloc((size_t)n, sizeof(char *));
-    const uint8_t *p = (const uint8_t *)raw;
-    const uint8_t *end = p + raw_sz;
+    if (!strs) return NULL;
 
-    /* Check for numcodecs header: first uint32 == n means header present */
-    if (raw_sz >= 4) {
-        uint32_t first;
-        memcpy(&first, p, 4);
-        if ((int64_t)first == n) {
-            p += 4; /* skip item count header */
+    char chunk_path[2048];
+    int64_t global_idx = 0; /* next string slot to fill */
+
+    for (int64_t ci = 0; ci < n_chunks; ci++) {
+        snprintf(chunk_path, sizeof(chunk_path), "%s/%lld", arr_dir, (long long)ci);
+
+        size_t raw_sz;
+        void *raw = zarr_read_chunk(chunk_path, &meta, &raw_sz);
+        if (!raw) continue; /* chunk missing — leave NULLs for these entries */
+
+        /* Number of strings in this chunk */
+        int64_t chunk_n = chunk_size;
+        if (global_idx + chunk_n > n) chunk_n = n - global_idx;
+
+        const uint8_t *p   = (const uint8_t *)raw;
+        const uint8_t *end = p + raw_sz;
+
+        /* Check for numcodecs header: first uint32 == chunk_n means header present */
+        if (raw_sz >= 4) {
+            uint32_t first;
+            memcpy(&first, p, 4);
+            if ((int64_t)first == chunk_n || (int64_t)first == chunk_size) {
+                p += 4; /* skip item count header */
+            }
         }
+
+        for (int64_t i = 0; i < chunk_n && p + 4 <= end; i++) {
+            uint32_t slen;
+            memcpy(&slen, p, 4);
+            p += 4;
+            if (p + slen > end) break;
+            strs[(size_t)(global_idx + i)] = (char *)malloc(slen + 1);
+            if (!strs[(size_t)(global_idx + i)]) {
+                free(raw);
+                /* Return partial result — caller handles NULL entries */
+                break;
+            }
+            memcpy(strs[(size_t)(global_idx + i)], p, slen);
+            strs[(size_t)(global_idx + i)][slen] = '\0';
+            p += slen;
+        }
+
+        free(raw);
+        global_idx += chunk_n;
     }
 
-    for (int64_t i = 0; i < n && p + 4 <= end; i++) {
-        uint32_t slen;
-        memcpy(&slen, p, 4);
-        p += 4;
-        if (p + slen > end) break;
-        strs[(size_t)i] = (char *)malloc(slen + 1);
-        memcpy(strs[(size_t)i], p, slen);
-        strs[(size_t)i][slen] = '\0';
-        p += slen;
-    }
-
-    free(raw);
     return strs;
 }
 
@@ -420,6 +492,7 @@ static int zarr_write_strings(const char *dir, const char **strings,
         total += 4 + (strings[(size_t)i] ? strlen(strings[(size_t)i]) : 0);
 
     uint8_t *buf = (uint8_t *)malloc(total);
+    if (!buf) return SC_ERR;
     uint8_t *p = buf;
     uint32_t count = (uint32_t)n;
     memcpy(p, &count, 4); p += 4;
@@ -502,10 +575,12 @@ static int zarr_sparse_to_h5seurat(const char *zarr_dir, hid_t h5_grp,
         if (strcmp(data_meta.dtype, "<f4") == 0) {
             /* float32 -> float64 conversion */
             double *d64 = (double *)malloc(nnz * sizeof(double));
-            float *f32 = (float *)data_buf;
-            for (hsize_t i = 0; i < nnz; i++) d64[i] = (double)f32[i];
-            H5Dwrite(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, d64);
-            free(d64);
+            if (d64) {
+                float *f32 = (float *)data_buf;
+                for (hsize_t i = 0; i < nnz; i++) d64[i] = (double)f32[i];
+                H5Dwrite(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, d64);
+                free(d64);
+            }
         } else {
             H5Dwrite(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_buf);
         }
@@ -524,10 +599,12 @@ static int zarr_sparse_to_h5seurat(const char *zarr_dir, hid_t h5_grp,
                                H5P_DEFAULT, dcpl, H5P_DEFAULT);
         if (dtype_size(idx_meta.dtype) == 8) {
             int32_t *i32 = (int32_t *)malloc(n_idx * sizeof(int32_t));
-            int64_t *i64 = (int64_t *)idx_buf;
-            for (int64_t k = 0; k < n_idx; k++) i32[k] = (int32_t)i64[k];
-            H5Dwrite(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, i32);
-            free(i32);
+            if (i32) {
+                int64_t *i64 = (int64_t *)idx_buf;
+                for (int64_t k = 0; k < n_idx; k++) i32[k] = (int32_t)i64[k];
+                H5Dwrite(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, i32);
+                free(i32);
+            }
         } else {
             H5Dwrite(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, idx_buf);
         }
@@ -546,10 +623,12 @@ static int zarr_sparse_to_h5seurat(const char *zarr_dir, hid_t h5_grp,
                                H5P_DEFAULT, dcpl, H5P_DEFAULT);
         if (dtype_size(ptr_meta.dtype) == 4) {
             int64_t *i64 = (int64_t *)malloc(n_ptr * sizeof(int64_t));
-            int32_t *i32 = (int32_t *)ptr_buf;
-            for (int64_t k = 0; k < n_ptr; k++) i64[k] = (int64_t)i32[k];
-            H5Dwrite(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, i64);
-            free(i64);
+            if (i64) {
+                int32_t *i32 = (int32_t *)ptr_buf;
+                for (int64_t k = 0; k < n_ptr; k++) i64[k] = (int64_t)i32[k];
+                H5Dwrite(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, i64);
+                free(i64);
+            }
         } else {
             H5Dwrite(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, ptr_buf);
         }
@@ -627,6 +706,7 @@ static int zarr_categorical_to_h5seurat(const char *cat_dir, hid_t h5_grp,
     /* Write values (int32 array, 1-based) */
     {
         int32_t *vals = (int32_t *)malloc((size_t)n_codes * sizeof(int32_t));
+        if (!vals) { free_strings(cats, n_cats); free(codes_raw); return SC_ERR; }
         for (int64_t i = 0; i < n_codes; i++) {
             int32_t code;
             if (codes_elem == 1)
@@ -721,6 +801,7 @@ static int zarr_df_to_h5seurat_md(const char *zarr_df_dir, hid_t h5_md_grp,
             void *raw = zarr_read_numeric(col_dir, &nn);
             if (raw) {
                 int32_t *ivals = (int32_t *)malloc((size_t)nn * sizeof(int32_t));
+                if (!ivals) { free(raw); sc_json_free_str_array(col_order, n_cols); return SC_ERR; }
                 int8_t *b = (int8_t *)raw;
                 for (int64_t k = 0; k < nn; k++) ivals[k] = (int32_t)b[k];
                 hsize_t dim = (hsize_t)nn;
@@ -954,6 +1035,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
                 /* Transpose: zarr C [n_cells, n_comp] → h5seurat [n_comp, n_cells] */
                 int64_t nr = emb_meta.shape[0], nc_e = emb_meta.shape[1];
                 double *transposed = (double *)malloc((size_t)(nr * nc_e) * sizeof(double));
+                if (!transposed) { free(flat); continue; }
                 double *src = (double *)flat;
                 for (int64_t r = 0; r < nr; r++)
                     for (int64_t c = 0; c < nc_e; c++)
@@ -1070,6 +1152,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
 
             hsize_t nc_dim = (hsize_t)n_cells;
             int32_t *ones = (int32_t *)calloc((size_t)n_cells, sizeof(int32_t));
+            if (!ones) { H5Tclose(str_type); H5Gclose(ident_grp); H5Fclose(dst); return SC_ERR; }
             for (int64_t i = 0; i < n_cells; i++) ones[i] = 1;
             sp2 = H5Screate_simple(1, &nc_dim, NULL);
             ds = H5Dcreate2(ident_grp, "values", H5T_NATIVE_INT32, sp2,
@@ -1115,6 +1198,7 @@ static int h5seurat_sparse_to_zarr(hid_t h5_grp, const char *zarr_dir,
         H5Sclose(sp);
 
         double *buf = (double *)malloc(nnz * sizeof(double));
+        if (!buf) { H5Dclose(ds); return SC_ERR; }
         H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
         H5Dclose(ds);
 
@@ -1133,6 +1217,7 @@ static int h5seurat_sparse_to_zarr(hid_t h5_grp, const char *zarr_dir,
         H5Sclose(sp);
 
         int32_t *buf = (int32_t *)malloc(n * sizeof(int32_t));
+        if (!buf) { H5Dclose(ds); return SC_ERR; }
         H5Dread(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
         H5Dclose(ds);
 
@@ -1151,6 +1236,7 @@ static int h5seurat_sparse_to_zarr(hid_t h5_grp, const char *zarr_dir,
         H5Sclose(sp);
 
         int64_t *buf = (int64_t *)malloc(n * sizeof(int64_t));
+        if (!buf) { H5Dclose(ds); return SC_ERR; }
         H5Dread(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
         H5Dclose(ds);
 
@@ -1191,6 +1277,7 @@ static int h5seurat_factor_to_zarr(hid_t h5_grp, const char *cat_dir, int gzip) 
 
     hid_t str_type = sc_create_vlen_str_type();
     char **levels = (char **)calloc(n_lev, sizeof(char *));
+    if (!levels) { H5Tclose(str_type); H5Dclose(lev_ds); return SC_ERR; }
     H5Dread(lev_ds, str_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, levels);
     H5Dclose(lev_ds);
 
@@ -1207,11 +1294,25 @@ static int h5seurat_factor_to_zarr(hid_t h5_grp, const char *cat_dir, int gzip) 
     H5Sclose(val_sp);
 
     int32_t *vals = (int32_t *)malloc(n_val * sizeof(int32_t));
+    if (!vals) {
+        for (hsize_t i = 0; i < n_lev; i++) free(levels[i]);
+        free(levels);
+        H5Tclose(str_type);
+        H5Dclose(val_ds);
+        return SC_ERR;
+    }
     H5Dread(val_ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, vals);
     H5Dclose(val_ds);
 
     /* Convert 1-based → 0-based int8 */
     int8_t *codes = (int8_t *)malloc(n_val * sizeof(int8_t));
+    if (!codes) {
+        for (hsize_t i = 0; i < n_lev; i++) free(levels[i]);
+        free(levels);
+        H5Tclose(str_type);
+        free(vals);
+        return SC_ERR;
+    }
     for (hsize_t i = 0; i < n_val; i++)
         codes[i] = (vals[i] <= 0) ? -1 : (int8_t)(vals[i] - 1);
 
@@ -1255,6 +1356,7 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
         H5Sclose(sp);
         hid_t stype = sc_create_vlen_str_type();
         col_names = (char **)calloc(n_cols, sizeof(char *));
+        if (!col_names) { H5Aclose(attr); H5Tclose(stype); return SC_ERR; }
         H5Aread(attr, stype, col_names);
         H5Aclose(attr);
         H5Tclose(stype);
@@ -1286,21 +1388,27 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
             if (H5Tget_class(dt) == H5T_STRING) {
                 hid_t stype = sc_create_vlen_str_type();
                 char **strs = (char **)calloc(nn, sizeof(char *));
-                H5Dread(ds, stype, H5S_ALL, H5S_ALL, H5P_DEFAULT, strs);
-                zarr_write_strings(col_dir, (const char **)strs, (int64_t)nn, gzip);
-                for (hsize_t k = 0; k < nn; k++) free(strs[k]);
-                free(strs);
+                if (strs) {
+                    H5Dread(ds, stype, H5S_ALL, H5S_ALL, H5P_DEFAULT, strs);
+                    zarr_write_strings(col_dir, (const char **)strs, (int64_t)nn, gzip);
+                    for (hsize_t k = 0; k < nn; k++) free(strs[k]);
+                    free(strs);
+                }
                 H5Tclose(stype);
             } else if (H5Tget_class(dt) == H5T_FLOAT) {
                 double *buf = (double *)malloc(nn * sizeof(double));
-                H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
-                zarr_write_numeric_1d(col_dir, buf, (int64_t)nn, "<f8", gzip);
-                free(buf);
+                if (buf) {
+                    H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+                    zarr_write_numeric_1d(col_dir, buf, (int64_t)nn, "<f8", gzip);
+                    free(buf);
+                }
             } else {
                 int32_t *buf = (int32_t *)malloc(nn * sizeof(int32_t));
-                H5Dread(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
-                zarr_write_numeric_1d(col_dir, buf, (int64_t)nn, "<i4", gzip);
-                free(buf);
+                if (buf) {
+                    H5Dread(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+                    zarr_write_numeric_1d(col_dir, buf, (int64_t)nn, "<i4", gzip);
+                    free(buf);
+                }
             }
             H5Tclose(dt);
             H5Dclose(ds);
@@ -1313,6 +1421,11 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
     for (hsize_t i = 0; i < n_cols; i++)
         json_sz += strlen(col_names[i]) + 6;
     char *json = (char *)malloc(json_sz);
+    if (!json) {
+        for (hsize_t i = 0; i < n_cols; i++) free(col_names[i]);
+        free(col_names);
+        return SC_ERR;
+    }
     char *jp = json;
     jp += sprintf(jp, "{\"encoding-type\": \"dataframe\", "
                        "\"encoding-version\": \"0.2.0\", "
@@ -1538,12 +1651,14 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
                 /* h5seurat stores as HDF5 [n_comp, n_cells] */
                 int64_t n_comp = (int64_t)dims[0];
                 int64_t n_obs = (int64_t)dims[1];
-                double *flat = (double *)malloc(n_comp * n_obs * sizeof(double));
+                double *flat = (double *)malloc((size_t)(n_comp * n_obs) * sizeof(double));
+                if (!flat) { H5Dclose(ds); continue; }
                 H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, flat);
                 H5Dclose(ds);
 
                 /* Transpose [n_comp, n_obs] → [n_obs, n_comp] C-order */
-                double *transposed = (double *)malloc(n_comp * n_obs * sizeof(double));
+                double *transposed = (double *)malloc((size_t)(n_comp * n_obs) * sizeof(double));
+                if (!transposed) { free(flat); continue; }
                 for (int64_t r = 0; r < n_comp; r++)
                     for (int64_t c = 0; c < n_obs; c++)
                         transposed[c * n_comp + r] = flat[r * n_obs + c];

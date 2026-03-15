@@ -123,8 +123,10 @@ static int sc_dense_to_csc(hid_t src_dset, hid_t dst_grp,
             hid_t ds = H5Dcreate2(dst_grp, "indptr", H5T_NATIVE_INT64, sp,
                                    H5P_DEFAULT, dcpl, H5P_DEFAULT);
             int64_t *zeros = (int64_t *)calloc(ptr_len, sizeof(int64_t));
-            H5Dwrite(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, zeros);
-            free(zeros);
+            if (zeros) {
+                H5Dwrite(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, zeros);
+                free(zeros);
+            }
             H5Dclose(ds);
             H5Pclose(dcpl);
             H5Sclose(sp);
@@ -331,6 +333,7 @@ static int sc_csc_to_dense(hid_t src_grp, hid_t dst_loc,
     hid_t ptr_type = H5Dget_type(ptr_dset);
     if (H5Tget_size(ptr_type) <= 4) {
         int32_t *tmp32 = (int32_t *)malloc(ptr_len * sizeof(int32_t));
+        if (!tmp32) { H5Tclose(ptr_type); H5Dclose(ptr_dset); free(indptr); return SC_ERR; }
         H5Dread(ptr_dset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, tmp32);
         for (hsize_t i = 0; i < ptr_len; i++) indptr[i] = tmp32[i];
         free(tmp32);
@@ -484,25 +487,30 @@ static int sc_coo_to_csc(hid_t src_grp, hid_t dst_grp,
         hid_t psp = H5Screate_simple(1, &ptr_len, NULL);
         ds = H5Dcreate2(dst_grp, "indptr", H5T_NATIVE_INT64, psp,
                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        H5Dwrite(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, zeros);
+        if (zeros) {
+            H5Dwrite(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, zeros);
+            free(zeros);
+        }
         H5Dclose(ds);
         H5Sclose(psp);
-        free(zeros);
         return SC_OK;
     }
 
     int32_t *a_arr = (int32_t *)malloc(nnz * sizeof(int32_t));
+    if (!a_arr) { H5Dclose(a_dset); return SC_ERR; }
     H5Dread(a_dset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, a_arr);
     H5Dclose(a_dset);
 
     /* Read b (column indices) */
     hid_t b_dset = H5Dopen2(src_grp, "b", H5P_DEFAULT);
     int32_t *b_arr = (int32_t *)malloc(nnz * sizeof(int32_t));
+    if (!b_arr) { free(a_arr); H5Dclose(b_dset); return SC_ERR; }
     H5Dread(b_dset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, b_arr);
     H5Dclose(b_dset);
 
     /* Read w (weights) */
     double *w_arr = (double *)malloc(nnz * sizeof(double));
+    if (!w_arr) { free(a_arr); free(b_arr); return SC_ERR; }
     if (sc_has_dataset(src_grp, "w")) {
         hid_t w_dset = H5Dopen2(src_grp, "w", H5P_DEFAULT);
         H5Dread(w_dset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, w_arr);
@@ -532,8 +540,11 @@ static int sc_coo_to_csc(hid_t src_grp, hid_t dst_grp,
     /* Build CSC arrays */
     hsize_t ptr_len = n_dim + 1;
     int64_t *indptr = (int64_t *)calloc(ptr_len, sizeof(int64_t));
+    if (!indptr) { free(entries); return SC_ERR; }
     int32_t *indices = (int32_t *)malloc(nnz * sizeof(int32_t));
+    if (!indices) { free(entries); free(indptr); return SC_ERR; }
     double *data = (double *)malloc(nnz * sizeof(double));
+    if (!data) { free(entries); free(indptr); free(indices); return SC_ERR; }
 
     /* Count entries per column */
     for (hsize_t k = 0; k < nnz; k++) {
@@ -623,9 +634,11 @@ static int sc_csc_to_coo(hid_t src_grp, hid_t dst_grp, int gzip_level)
     H5Sclose(ptr_space);
 
     int64_t *indptr = (int64_t *)malloc(ptr_len * sizeof(int64_t));
+    if (!indptr) { H5Dclose(ptr_dset); return SC_ERR; }
     hid_t ptr_type = H5Dget_type(ptr_dset);
     if (H5Tget_size(ptr_type) <= 4) {
         int32_t *tmp32 = (int32_t *)malloc(ptr_len * sizeof(int32_t));
+        if (!tmp32) { H5Tclose(ptr_type); H5Dclose(ptr_dset); free(indptr); return SC_ERR; }
         H5Dread(ptr_dset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, tmp32);
         for (hsize_t i = 0; i < ptr_len; i++) indptr[i] = tmp32[i];
         free(tmp32);
@@ -660,18 +673,22 @@ static int sc_csc_to_coo(hid_t src_grp, hid_t dst_grp, int gzip_level)
     /* Read indices (row indices in CSC) */
     hid_t idx_dset = H5Dopen2(src_grp, "indices", H5P_DEFAULT);
     int32_t *indices = (int32_t *)malloc(nnz * sizeof(int32_t));
+    if (!indices) { free(indptr); H5Dclose(idx_dset); return SC_ERR; }
     H5Dread(idx_dset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, indices);
     H5Dclose(idx_dset);
 
     /* Read data (values) */
     hid_t dat_dset = H5Dopen2(src_grp, "data", H5P_DEFAULT);
     double *data = (double *)malloc(nnz * sizeof(double));
+    if (!data) { free(indptr); free(indices); H5Dclose(dat_dset); return SC_ERR; }
     H5Dread(dat_dset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
     H5Dclose(dat_dset);
 
     /* Expand CSC to COO */
     int32_t *a_arr = (int32_t *)malloc(nnz * sizeof(int32_t));  /* row indices */
+    if (!a_arr) { free(indptr); free(indices); free(data); return SC_ERR; }
     int32_t *b_arr = (int32_t *)malloc(nnz * sizeof(int32_t));  /* col indices */
+    if (!b_arr) { free(indptr); free(indices); free(data); free(a_arr); return SC_ERR; }
 
     for (hsize_t j = 0; j < n_cols; j++) {
         for (int64_t k = indptr[j]; k < indptr[j + 1]; k++) {
@@ -1135,6 +1152,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
         /* values: n_cells × 1 (all = 1, 1-based) */
         if (!sc_has_dataset(ai, "values") && n_cells > 0) {
             int *vals = (int *)malloc(n_cells * sizeof(int));
+            if (!vals) { H5Gclose(ai); goto cleanup; }
             for (hsize_t c = 0; c < n_cells; c++) vals[c] = 1;
 
             hid_t space = H5Screate_simple(1, &n_cells, NULL);
@@ -1281,17 +1299,19 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
                                        H5P_DEFAULT, dcpl, H5P_DEFAULT);
                 /* Zero-fill */
                 double *zeros = (double *)calloc(n_cells, sizeof(double));
-                for (hsize_t i = 0; i < n_genes; i++) {
-                    hsize_t start[2] = {i, 0};
-                    hsize_t count[2] = {1, n_cells};
-                    hid_t fsp = H5Dget_space(ds);
-                    H5Sselect_hyperslab(fsp, H5S_SELECT_SET, start, NULL, count, NULL);
-                    hid_t msp = H5Screate_simple(1, &n_cells, NULL);
-                    H5Dwrite(ds, H5T_NATIVE_DOUBLE, msp, fsp, H5P_DEFAULT, zeros);
-                    H5Sclose(msp);
-                    H5Sclose(fsp);
+                if (zeros) {
+                    for (hsize_t i = 0; i < n_genes; i++) {
+                        hsize_t start[2] = {i, 0};
+                        hsize_t count[2] = {1, n_cells};
+                        hid_t fsp = H5Dget_space(ds);
+                        H5Sselect_hyperslab(fsp, H5S_SELECT_SET, start, NULL, count, NULL);
+                        hid_t msp = H5Screate_simple(1, &n_cells, NULL);
+                        H5Dwrite(ds, H5T_NATIVE_DOUBLE, msp, fsp, H5P_DEFAULT, zeros);
+                        H5Sclose(msp);
+                        H5Sclose(fsp);
+                    }
+                    free(zeros);
                 }
-                free(zeros);
                 H5Dclose(ds);
                 H5Pclose(dcpl);
                 H5Sclose(sp);
@@ -1369,6 +1389,10 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
 
                     hid_t str_type = sc_create_vlen_str_type();
                     char **levels = (char **)calloc(n_levels, sizeof(char *));
+                    if (!levels) {
+                        H5Tclose(str_type); H5Dclose(lev_dset); H5Gclose(fac);
+                        continue;
+                    }
                     H5Dread(lev_dset, str_type, H5S_ALL, H5S_ALL,
                              H5P_DEFAULT, levels);
                     H5Dclose(lev_dset);
@@ -1381,12 +1405,28 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
                     H5Sclose(val_space);
 
                     int *vals = (int *)malloc(n_vals * sizeof(int));
+                    if (!vals) {
+                        hid_t rs = H5Screate_simple(1, &n_levels, NULL);
+                        H5Treclaim(str_type, rs, H5P_DEFAULT, levels);
+                        H5Sclose(rs);
+                        free(levels); H5Tclose(str_type);
+                        H5Dclose(val_dset); H5Gclose(fac);
+                        continue;
+                    }
                     H5Dread(val_dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
                              H5P_DEFAULT, vals);
                     H5Dclose(val_dset);
 
                     /* Expand to string array */
                     char **str_arr = (char **)calloc(n_vals, sizeof(char *));
+                    if (!str_arr) {
+                        free(vals);
+                        hid_t rs = H5Screate_simple(1, &n_levels, NULL);
+                        H5Treclaim(str_type, rs, H5P_DEFAULT, levels);
+                        H5Sclose(rs);
+                        free(levels); H5Tclose(str_type); H5Gclose(fac);
+                        continue;
+                    }
                     for (hsize_t j = 0; j < n_vals; j++) {
                         int idx = vals[j] - 1;  /* 1-based → 0-based */
                         if (idx >= 0 && (hsize_t)idx < n_levels && levels[idx])

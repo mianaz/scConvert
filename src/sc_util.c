@@ -65,6 +65,7 @@ int sc_set_int_array_attr(hid_t loc, const char *name,
 
     /* Write as int32 — matches R/Python AnnData convention */
     int32_t *vals32 = (int32_t *)malloc(n * sizeof(int32_t));
+    if (!vals32) { H5Sclose(space); return SC_ERR; }
     for (hsize_t i = 0; i < n; i++)
         vals32[i] = (int32_t)values[i];
 
@@ -140,10 +141,25 @@ int sc_get_str_array_attr(hid_t loc, const char *name,
 
     hid_t memtype = sc_create_vlen_str_type();
     char **raw = (char **)calloc(dims, sizeof(char *));
+    if (!raw) {
+        H5Tclose(memtype);
+        H5Sclose(space);
+        H5Aclose(attr);
+        return SC_ERR;
+    }
     H5Aread(attr, memtype, raw);
 
     /* Deep copy so we can free HDF5's memory */
     *values = (char **)calloc(dims, sizeof(char *));
+    if (!*values) {
+        for (hsize_t i = 0; i < dims; i++)
+            if (raw[i]) H5free_memory(raw[i]);
+        free(raw);
+        H5Tclose(memtype);
+        H5Sclose(space);
+        H5Aclose(attr);
+        return SC_ERR;
+    }
     for (hsize_t i = 0; i < dims; i++) {
         if (raw[i]) {
             (*values)[i] = strdup(raw[i]);
@@ -240,9 +256,11 @@ int sc_copy_group_attrs(hid_t src, hid_t dst) {
             size_t sz = H5Aget_storage_size(attr);
             if (sz > 0) {
                 void *buf = malloc(sz);
-                H5Aread(attr, type, buf);
-                H5Awrite(dst_attr, type, buf);
-                free(buf);
+                if (buf) {
+                    H5Aread(attr, type, buf);
+                    H5Awrite(dst_attr, type, buf);
+                    free(buf);
+                }
             }
         }
 

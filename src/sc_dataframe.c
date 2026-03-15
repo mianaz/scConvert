@@ -39,6 +39,13 @@ static herr_t copy_attr_cb(hid_t src_loc, const char *name,
 
     size_t sz = H5Aget_storage_size(attr);
     void *buf = malloc(sz > 0 ? sz : 1);
+    if (!buf) {
+        H5Aclose(dst_attr);
+        H5Tclose(type);
+        H5Sclose(space);
+        H5Aclose(attr);
+        return SC_ERR_HDF;
+    }
 
     /* For variable-length strings, need special handling */
     if (H5Tget_class(type) == H5T_STRING && H5Tis_variable_str(type) > 0) {
@@ -55,11 +62,13 @@ static herr_t copy_attr_cb(hid_t src_loc, const char *name,
             hsize_t dims;
             H5Sget_simple_extent_dims(space, &dims, NULL);
             char **strs = (char **)calloc(dims, sizeof(char *));
-            H5Aread(attr, memtype, strs);
-            H5Awrite(dst_attr, memtype, strs);
-            for (hsize_t i = 0; i < dims; i++)
-                if (strs[i]) H5free_memory(strs[i]);
-            free(strs);
+            if (strs) {
+                H5Aread(attr, memtype, strs);
+                H5Awrite(dst_attr, memtype, strs);
+                for (hsize_t i = 0; i < dims; i++)
+                    if (strs[i]) H5free_memory(strs[i]);
+                free(strs);
+            }
         }
         H5Tclose(memtype);
     } else {
@@ -256,6 +265,13 @@ static int convert_factors_in_group(hid_t obs_grp) {
 
         hid_t str_type = sc_create_vlen_str_type();
         char **levels = (char **)calloc(n_levels, sizeof(char *));
+        if (!levels) {
+            H5Tclose(str_type);
+            H5Sclose(lev_space);
+            H5Dclose(lev_dset);
+            H5Gclose(child);
+            continue;
+        }
         H5Dread(lev_dset, str_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, levels);
         H5Sclose(lev_space);
         H5Dclose(lev_dset);
@@ -267,6 +283,16 @@ static int convert_factors_in_group(hid_t obs_grp) {
         H5Sget_simple_extent_dims(val_space, &n_vals, NULL);
 
         int *vals = (int *)malloc(n_vals * sizeof(int));
+        if (!vals) {
+            for (hsize_t j = 0; j < n_levels; j++)
+                if (levels[j]) H5free_memory(levels[j]);
+            free(levels);
+            H5Tclose(str_type);
+            H5Sclose(val_space);
+            H5Dclose(val_dset);
+            H5Gclose(child);
+            continue;
+        }
         H5Dread(val_dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, vals);
         H5Sclose(val_space);
         H5Dclose(val_dset);
@@ -362,6 +388,13 @@ static int convert_categoricals_to_factors(hid_t meta_grp) {
 
         hid_t str_type = sc_create_vlen_str_type();
         char **cats = (char **)calloc(n_cats, sizeof(char *));
+        if (!cats) {
+            H5Tclose(str_type);
+            H5Sclose(cat_space);
+            H5Dclose(cat_dset);
+            H5Gclose(child);
+            continue;
+        }
         H5Dread(cat_dset, str_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, cats);
         H5Sclose(cat_space);
         H5Dclose(cat_dset);
@@ -373,6 +406,16 @@ static int convert_categoricals_to_factors(hid_t meta_grp) {
         H5Sget_simple_extent_dims(code_space, &n_codes, NULL);
 
         int *codes = (int *)malloc(n_codes * sizeof(int));
+        if (!codes) {
+            for (hsize_t j = 0; j < n_cats; j++)
+                if (cats[j]) H5free_memory(cats[j]);
+            free(cats);
+            H5Tclose(str_type);
+            H5Sclose(code_space);
+            H5Dclose(code_dset);
+            H5Gclose(child);
+            continue;
+        }
         H5Dread(code_dset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, codes);
         H5Sclose(code_space);
         H5Dclose(code_dset);

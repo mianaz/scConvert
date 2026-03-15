@@ -58,20 +58,24 @@ int sc_copy_group_recursive(hid_t src, hid_t dst, int gzip_level) {
                 hsize_t dims;
                 H5Sget_simple_extent_dims(space, &dims, NULL);
                 char **strs = (char **)calloc(dims, sizeof(char *));
-                H5Aread(attr, memtype, strs);
-                H5Awrite(dst_attr, memtype, strs);
-                for (hsize_t j = 0; j < dims; j++)
-                    if (strs[j]) H5free_memory(strs[j]);
-                free(strs);
+                if (strs) {
+                    H5Aread(attr, memtype, strs);
+                    H5Awrite(dst_attr, memtype, strs);
+                    for (hsize_t j = 0; j < dims; j++)
+                        if (strs[j]) H5free_memory(strs[j]);
+                    free(strs);
+                }
             }
             H5Tclose(memtype);
         } else {
             size_t sz = H5Aget_storage_size(attr);
             if (sz > 0) {
                 void *buf = malloc(sz);
-                H5Aread(attr, type, buf);
-                H5Awrite(dst_attr, type, buf);
-                free(buf);
+                if (buf) {
+                    H5Aread(attr, type, buf);
+                    H5Awrite(dst_attr, type, buf);
+                    free(buf);
+                }
             }
         }
 
@@ -124,20 +128,24 @@ int sc_copy_group_recursive(hid_t src, hid_t dst, int gzip_level) {
                             hsize_t d;
                             H5Sget_simple_extent_dims(as, &d, NULL);
                             char **ss = calloc(d, sizeof(char*));
-                            H5Aread(sa, mt, ss);
-                            H5Awrite(da, mt, ss);
-                            for (hsize_t j = 0; j < d; j++)
-                                if (ss[j]) H5free_memory(ss[j]);
-                            free(ss);
+                            if (ss) {
+                                H5Aread(sa, mt, ss);
+                                H5Awrite(da, mt, ss);
+                                for (hsize_t j = 0; j < d; j++)
+                                    if (ss[j]) H5free_memory(ss[j]);
+                                free(ss);
+                            }
                         }
                         H5Tclose(mt);
                     } else {
                         size_t asz = H5Aget_storage_size(sa);
                         if (asz > 0) {
                             void *ab = malloc(asz);
-                            H5Aread(sa, at, ab);
-                            H5Awrite(da, at, ab);
-                            free(ab);
+                            if (ab) {
+                                H5Aread(sa, at, ab);
+                                H5Awrite(da, at, ab);
+                                free(ab);
+                            }
                         }
                     }
 
