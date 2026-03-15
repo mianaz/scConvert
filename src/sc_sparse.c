@@ -312,22 +312,32 @@ int sc_stream_csr_copy(hid_t src_grp, hid_t dst_grp, int gzip_level) {
     H5Dclose(src_data);
     if (rc != SC_OK) return rc;
 
-    /* Stream indices (int32) */
+    /* Stream indices — detect native type to handle int32 or int64 */
     hid_t src_idx = H5Dopen2(src_grp, "indices", H5P_DEFAULT);
-    rc = stream_1d_dataset(src_idx, dst_grp, "indices", H5T_NATIVE_INT32,
-                           info.nnz, gzip_level);
+    {
+        hid_t idx_type = H5Dget_type(src_idx);
+        hid_t idx_mem = H5Tget_native_type(idx_type, H5T_DIR_ASCEND);
+        rc = stream_1d_dataset(src_idx, dst_grp, "indices", idx_mem,
+                               info.nnz, gzip_level);
+        H5Tclose(idx_mem); H5Tclose(idx_type);
+    }
     H5Dclose(src_idx);
     if (rc != SC_OK) return rc;
 
-    /* Stream indptr (int32) */
+    /* Stream indptr — detect native type to handle int32 or int64 */
     hid_t src_ptr = H5Dopen2(src_grp, "indptr", H5P_DEFAULT);
     hid_t ptr_space = H5Dget_space(src_ptr);
     hsize_t ptr_len;
     H5Sget_simple_extent_dims(ptr_space, &ptr_len, NULL);
     H5Sclose(ptr_space);
 
-    rc = stream_1d_dataset(src_ptr, dst_grp, "indptr", H5T_NATIVE_INT32,
-                           ptr_len, gzip_level);
+    {
+        hid_t ptr_type = H5Dget_type(src_ptr);
+        hid_t ptr_mem = H5Tget_native_type(ptr_type, H5T_DIR_ASCEND);
+        rc = stream_1d_dataset(src_ptr, dst_grp, "indptr", ptr_mem,
+                               ptr_len, gzip_level);
+        H5Tclose(ptr_mem); H5Tclose(ptr_type);
+    }
     H5Dclose(src_ptr);
     return rc;
 }
@@ -365,22 +375,32 @@ int sc_stream_csr_transpose(hid_t src_grp, hid_t dst_grp, int gzip_level) {
     H5Dclose(src_data);
     if (rc != SC_OK) return rc;
 
-    /* Stream indices (row indices in CSC = column indices in CSR of transpose) */
+    /* Stream indices — detect native type to handle int32 or int64 */
     hid_t src_idx = H5Dopen2(src_grp, "indices", H5P_DEFAULT);
-    rc = stream_1d_dataset(src_idx, dst_grp, "indices", H5T_NATIVE_INT32,
-                           info.nnz, gzip_level);
+    {
+        hid_t idx_type = H5Dget_type(src_idx);
+        hid_t idx_mem = H5Tget_native_type(idx_type, H5T_DIR_ASCEND);
+        rc = stream_1d_dataset(src_idx, dst_grp, "indices", idx_mem,
+                               info.nnz, gzip_level);
+        H5Tclose(idx_mem); H5Tclose(idx_type);
+    }
     H5Dclose(src_idx);
     if (rc != SC_OK) return rc;
 
-    /* Stream indptr (column pointers in CSC = row pointers in CSR of transpose) */
+    /* Stream indptr — detect native type to handle int32 or int64 */
     hid_t src_ptr = H5Dopen2(src_grp, "indptr", H5P_DEFAULT);
     hid_t ptr_space = H5Dget_space(src_ptr);
     hsize_t ptr_len;
     H5Sget_simple_extent_dims(ptr_space, &ptr_len, NULL);
     H5Sclose(ptr_space);
 
-    rc = stream_1d_dataset(src_ptr, dst_grp, "indptr", H5T_NATIVE_INT32,
-                           ptr_len, gzip_level);
+    {
+        hid_t ptr_type = H5Dget_type(src_ptr);
+        hid_t ptr_mem = H5Tget_native_type(ptr_type, H5T_DIR_ASCEND);
+        rc = stream_1d_dataset(src_ptr, dst_grp, "indptr", ptr_mem,
+                               ptr_len, gzip_level);
+        H5Tclose(ptr_mem); H5Tclose(ptr_type);
+    }
     H5Dclose(src_ptr);
     return rc;
 }

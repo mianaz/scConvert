@@ -80,7 +80,8 @@ static int sc_stream_modality_to_assay(
     {
         char key_buf[SC_MAX_NAME_LEN];
         size_t len = strlen(assay_name);
-        for (size_t k = 0; k < len && k < sizeof(key_buf) - 2; k++)
+        if (len > sizeof(key_buf) - 2) len = sizeof(key_buf) - 2;
+        for (size_t k = 0; k < len; k++)
             key_buf[k] = (char)tolower((unsigned char)assay_name[k]);
         key_buf[len] = '_';
         key_buf[len + 1] = '\0';

@@ -51,7 +51,8 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
         {
             char key_buf[SC_MAX_NAME_LEN];
             size_t len = strlen(assay);
-            for (size_t k = 0; k < len && k < sizeof(key_buf) - 2; k++)
+            if (len > sizeof(key_buf) - 2) len = sizeof(key_buf) - 2;
+            for (size_t k = 0; k < len; k++)
                 key_buf[k] = (char)tolower((unsigned char)assay[k]);
             key_buf[len] = '_';
             key_buf[len + 1] = '\0';
@@ -111,7 +112,8 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
         {
             char key_buf[SC_MAX_NAME_LEN];
             size_t len = strlen(assay);
-            for (size_t k = 0; k < len && k < sizeof(key_buf) - 2; k++)
+            if (len > sizeof(key_buf) - 2) len = sizeof(key_buf) - 2;
+            for (size_t k = 0; k < len; k++)
                 key_buf[k] = (char)tolower((unsigned char)assay[k]);
             key_buf[len] = '_';
             key_buf[len + 1] = '\0';

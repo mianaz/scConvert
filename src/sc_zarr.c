@@ -168,7 +168,13 @@ static void *zarr_read_chunk(const char *chunk_path, const sc_zarr_meta_t *meta,
         if (ret == Z_BUF_ERROR || ret == Z_OK) {
             size_t done = dbuf_sz - zs.avail_out;
             dbuf_sz *= 2;
-            dbuf = realloc(dbuf, dbuf_sz);
+            void *tmp = realloc(dbuf, dbuf_sz);
+            if (!tmp) {
+                inflateEnd(&zs);
+                free(cbuf); free(dbuf);
+                return NULL;
+            }
+            dbuf = tmp;
             zs.next_out = (Bytef *)dbuf + done;
             zs.avail_out = (uInt)(dbuf_sz - done);
         } else {
@@ -1055,7 +1061,8 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
                     H5Awrite(attr, H5T_NATIVE_INT32, &global);
                     H5Aclose(attr); H5Sclose(sp);
                 }
-                H5Gcreate2(r_grp, "misc", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                { hid_t g = H5Gcreate2(r_grp, "misc", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                  if (g >= 0) H5Gclose(g); }
 
                 /* Write cell.embeddings [n_comp, n_cells] */
                 hsize_t dims[2] = {(hsize_t)nc_e, (hsize_t)nr};
@@ -1130,12 +1137,16 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
         /* Required empty groups */
         const char *empty_grps[] = {"tools", "commands", "images", "neighbors"};
         for (int i = 0; i < 4; i++) {
-            if (!sc_has_group(dst, empty_grps[i]))
-                H5Gcreate2(dst, empty_grps[i], H5P_DEFAULT, H5P_DEFAULT,
+            if (!sc_has_group(dst, empty_grps[i])) {
+                hid_t g = H5Gcreate2(dst, empty_grps[i], H5P_DEFAULT, H5P_DEFAULT,
                             H5P_DEFAULT);
+                if (g >= 0) H5Gclose(g);
+            }
         }
-        if (!sc_has_group(dst, "misc"))
-            H5Gcreate2(dst, "misc", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        if (!sc_has_group(dst, "misc")) {
+            hid_t g = H5Gcreate2(dst, "misc", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            if (g >= 0) H5Gclose(g);
+        }
 
         /* active.ident */
         if (n_cells > 0) {
