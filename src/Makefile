@@ -1,7 +1,8 @@
 # Makefile for scConvert CLI
 #
 # Builds standalone scconvert binary for streaming h5ad ↔ h5seurat conversion.
-# Requires HDF5 C library (brew install hdf5, or system package).
+# Requires HDF5 C library >= 1.10.0 (brew install hdf5, or system package).
+# Uses H5Oget_info3/H5Aopen_by_idx (HDF5 1.12+ native; 1.10.x with compat macros).
 
 CC       ?= cc
 CFLAGS   ?= -O2 -Wall -Wextra -Wpedantic -std=c11
@@ -41,5 +42,7 @@ $(TARGET): $(OBJS)
 clean:
 	rm -f $(OBJS) $(TARGET)
 
+PREFIX  ?= /usr/local
+
 install: $(TARGET)
-	install -m 755 $(TARGET) /usr/local/bin/
+	install -m 755 $(TARGET) $(DESTDIR)$(PREFIX)/bin/

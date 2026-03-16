@@ -218,9 +218,11 @@ int sc_get_encoding_type(hid_t loc, char *buf, size_t buflen) {
 /* ── Copy all attributes from one HDF5 object to another ────────────────────── */
 
 int sc_copy_group_attrs(hid_t src, hid_t dst) {
-    int num_attrs = H5Aget_num_attrs(src);
+    H5O_info2_t oinfo;
+    H5Oget_info3(src, &oinfo, H5O_INFO_NUM_ATTRS);
+    int num_attrs = (int)oinfo.num_attrs;
     for (int i = 0; i < num_attrs; i++) {
-        hid_t attr = H5Aopen_idx(src, (unsigned)i);
+        hid_t attr = H5Aopen_by_idx(src, ".", H5_INDEX_CRT_ORDER, H5_ITER_NATIVE, (hsize_t)i, H5P_DEFAULT, H5P_DEFAULT);
         char name[SC_MAX_NAME_LEN];
         H5Aget_name(attr, sizeof(name), name);
 

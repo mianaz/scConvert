@@ -31,9 +31,11 @@ int sc_copy_group_h5ocopy(hid_t src_loc, const char *src_name,
 
 int sc_copy_group_recursive(hid_t src, hid_t dst, int gzip_level) {
     /* Copy group attributes */
-    int num_attrs = H5Aget_num_attrs(src);
+    H5O_info2_t oinfo;
+    H5Oget_info3(src, &oinfo, H5O_INFO_NUM_ATTRS);
+    int num_attrs = (int)oinfo.num_attrs;
     for (int i = 0; i < num_attrs; i++) {
-        hid_t attr = H5Aopen_idx(src, (unsigned)i);
+        hid_t attr = H5Aopen_by_idx(src, ".", H5_INDEX_CRT_ORDER, H5_ITER_NATIVE, (hsize_t)i, H5P_DEFAULT, H5P_DEFAULT);
         char name[SC_MAX_NAME_LEN];
         H5Aget_name(attr, sizeof(name), name);
 
@@ -100,9 +102,11 @@ int sc_copy_group_recursive(hid_t src, hid_t dst, int gzip_level) {
             if (rc == SC_OK) {
                 /* Copy dataset attributes */
                 hid_t dst_dset = H5Dopen2(dst, name, H5P_DEFAULT);
-                int na = H5Aget_num_attrs(src_dset);
+                H5O_info2_t dinfo;
+                H5Oget_info3(src_dset, &dinfo, H5O_INFO_NUM_ATTRS);
+                int na = (int)dinfo.num_attrs;
                 for (int a = 0; a < na; a++) {
-                    hid_t sa = H5Aopen_idx(src_dset, (unsigned)a);
+                    hid_t sa = H5Aopen_by_idx(src_dset, ".", H5_INDEX_CRT_ORDER, H5_ITER_NATIVE, (hsize_t)a, H5P_DEFAULT, H5P_DEFAULT);
                     char aname[SC_MAX_NAME_LEN];
                     H5Aget_name(sa, sizeof(aname), aname);
 

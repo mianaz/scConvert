@@ -60,29 +60,62 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL, verbose = TRU
           n_cols <- if (length(indices) > 0) max(indices) + 1L else 0L
         }
 
+        # Helper: sort row indices within each column for valid dgCMatrix
+        # dgCMatrix requires @i to be increasing within each column (defined by @p).
+        # scipy CSR/CSC matrices may have unsorted indices (e.g. scanpy pbmc3k raw/X).
+        .sort_dgc_indices <- function(i, p, x) {
+          needs_sort <- FALSE
+          n_col <- length(p) - 1L
+          for (ci in seq_len(n_col)) {
+            start <- p[ci] + 1L
+            end <- p[ci + 1L]
+            if (end > start && is.unsorted(i[start:end])) {
+              needs_sort <- TRUE
+              break
+            }
+          }
+          if (!needs_sort) return(list(i = i, x = x))
+          # Sort indices within each column
+          for (ci in seq_len(n_col)) {
+            start <- p[ci] + 1L
+            end <- p[ci + 1L]
+            if (end > start) {
+              seg <- start:end
+              ord <- order(i[seg])
+              i[seg] <- i[seg][ord]
+              x[seg] <- x[seg][ord]
+            }
+          }
+          list(i = i, x = x)
+        }
+
         if (is_csc) {
           # CSC format: indptr = column pointers, indices = row indices
           # dgCMatrix is natively CSC, so construct directly
+          sorted <- .sort_dgc_indices(as.integer(indices), as.integer(indptr),
+                                       as.numeric(data_vals))
           mat <- new("dgCMatrix",
-            i = as.integer(indices),
+            i = sorted$i,
             p = as.integer(indptr),
-            x = as.numeric(data_vals),
+            x = sorted$x,
             Dim = c(as.integer(n_rows), as.integer(n_cols))
           )
           if (transpose) {
             mat <- Matrix::t(mat)
           }
         } else if (transpose) {
-          # Zero-copy CSR→CSC: CSR of (n_rows × n_cols) == CSC of (n_cols × n_rows)
-          # h5ad CSR arrays map directly to dgCMatrix CSC slots:
-          #   indices (0-based col indices in CSR) → @i (0-based row indices in CSC)
-          #   indptr (row pointers in CSR) → @p (column pointers in CSC)
-          # AnnData/scipy CSR stores sorted column indices within each row,
-          # so the CSC reinterpretation has sorted row indices — no sorting needed.
+          # CSR→CSC reinterpretation: CSR of (n_rows × n_cols) == CSC of (n_cols × n_rows)
+          # h5ad CSR indices become dgCMatrix @i (row indices in transposed view).
+          # scipy CSR may have unsorted column indices within rows, so we must
+          # sort after reinterpretation to produce a valid dgCMatrix.
+          i_int <- as.integer(indices)
+          p_int <- as.integer(indptr)
+          x_num <- as.numeric(data_vals)
+          sorted <- .sort_dgc_indices(i_int, p_int, x_num)
           mat <- new("dgCMatrix",
-            i = as.integer(indices),
-            p = as.integer(indptr),
-            x = as.numeric(data_vals),
+            i = sorted$i,
+            p = p_int,
+            x = sorted$x,
             Dim = c(as.integer(n_cols), as.integer(n_rows))
           )
         } else {
@@ -260,11 +293,17 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL, verbose = TRU
   }
 
   if (nrow(expr_matrix) != n_features) {
-    if (verbose) message("Adjusting feature names to match matrix dimensions")
+    warning(sprintf(
+      "Feature count mismatch: matrix has %d rows but %d feature names found. Truncating feature names to match matrix.",
+      nrow(expr_matrix), n_features
+    ))
     feature.names <- feature.names[seq_len(nrow(expr_matrix))]
   }
   if (ncol(expr_matrix) != n_cells) {
-    if (verbose) message("Adjusting cell names to match matrix dimensions")
+    warning(sprintf(
+      "Cell count mismatch: matrix has %d columns but %d cell names found. Truncating cell names to match matrix.",
+      ncol(expr_matrix), n_cells
+    ))
     cell.names <- cell.names[seq_len(ncol(expr_matrix))]
   }
 

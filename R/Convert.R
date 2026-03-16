@@ -4447,7 +4447,13 @@ readH5AD_obsm <- function(file) {
   cells.name <- hfile[['obs']][['_index']][]
   n_cells <- length(cells.name)
   obsm.list <- lapply(obsm_set, function(x) {
-    emb <- hfile_obsm[[x]][,]
+    h5d <- hfile_obsm[[x]]
+    ndims_h5d <- length(h5d$dims)
+    emb <- if (ndims_h5d == 1L) {
+      matrix(h5d[], ncol = 1L)
+    } else {
+      h5d[,]
+    }
     # hdf5r may return transposed (n_dims x n_cells) due to row/column major difference
     if (nrow(emb) != n_cells && ncol(emb) == n_cells) {
       emb <- t(emb)
@@ -5472,8 +5478,13 @@ H5ADToZarr <- function(source, dest, overwrite = FALSE, gzip = 4L,
         compressor = compressor
       )
     } else if (inherits(h5_obj, "H5D")) {
-      # Dense
-      mat <- h5_obj[,]
+      # Dense — check dimensionality: 1D datasets need [] not [,]
+      ndims <- length(h5_obj$dims)
+      mat <- if (ndims == 1L) {
+        matrix(h5_obj[], ncol = 1L)
+      } else {
+        h5_obj[,]
+      }
       if (transpose) mat <- t(mat)
       .zarr_write_numeric(
         dir = zarr_mat_path, data = mat, dtype = "<f8",
@@ -5537,9 +5548,14 @@ H5ADToZarr <- function(source, dest, overwrite = FALSE, gzip = 4L,
                                      transpose = FALSE)
         } else {
           # Dense: read and write as-is (already cells × dims in h5ad)
-          emb <- item[,]
+          ndims_item <- length(item$dims)
+          emb <- if (ndims_item == 1L) {
+            matrix(item[], ncol = 1L)
+          } else {
+            item[,]
+          }
           # h5ad stores (n_obs, n_dims) but hdf5r may return transposed
-          if (ncol(emb) > nrow(emb) && item$dims[1] > item$dims[2]) {
+          if (ndims_item > 1L && ncol(emb) > nrow(emb) && item$dims[1] > item$dims[2]) {
             emb <- t(emb)
           }
           .zarr_write_numeric(
@@ -6231,7 +6247,12 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
         if (r_obj$exists("cell.embeddings")) {
           emb <- r_obj[["cell.embeddings"]]
           if (inherits(emb, "H5D")) {
-            mat <- emb[,]
+            ndims_emb <- length(emb$dims)
+            mat <- if (ndims_emb == 1L) {
+              matrix(emb[], ncol = 1L)
+            } else {
+              emb[,]
+            }
             # hdf5r reads h5seurat cell.embeddings as [n_cells, n_comp]
             # zarr AnnData also needs [n_cells, n_comp] — no transpose needed
             # Only fix if dimensions are unexpectedly swapped
@@ -6374,7 +6395,13 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
       compressor = compressor
     )
   } else if (inherits(h5_obj, "H5D")) {
-    mat <- h5_obj[,]
+    # Check dimensionality: 1D datasets need [] not [,]
+    ndims <- length(h5_obj$dims)
+    mat <- if (ndims == 1L) {
+      matrix(h5_obj[], ncol = 1L)
+    } else {
+      h5_obj[,]
+    }
     if (transpose) mat <- t(mat)
     .zarr_write_numeric(
       dir = zarr_mat_path, data = mat, dtype = "<f8",

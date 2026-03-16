@@ -17,6 +17,15 @@ NULL
 #'
 DecodeCategorical <- function(codes, categories) {
   codes[codes == -1L] <- NA_integer_
+  valid <- !is.na(codes) & codes >= 0L & codes < length(categories)
+  if (!all(valid[!is.na(codes)])) {
+    n_bad <- sum(!valid[!is.na(codes)])
+    warning(sprintf(
+      "Categorical decoding: %d code(s) out of bounds [0, %d). Setting to NA.",
+      n_bad, length(categories)
+    ))
+    codes[!is.na(codes) & !valid] <- NA_integer_
+  }
   factor(categories[codes + 1L], levels = categories)
 }
 

@@ -181,15 +181,56 @@ ConvertFOVToH5AD <- function(fov_obj, verbose = TRUE) {
 #' @note This is a placeholder - full FOV reconstruction requires SeuratObject functions
 H5ADToFOV <- function(spatial_data, key = "fov") {
 
-  # This would require CreateFOV(), CreateCentroids(), CreateSegmentation()
-  # from SeuratObject, which may not be available in all versions
+  # Attempt FOV reconstruction using SeuratObject >= 5.0 functions
+  if (!requireNamespace("SeuratObject", quietly = TRUE) ||
+      !exists("CreateFOV", where = asNamespace("SeuratObject"), inherits = FALSE)) {
+    warning(
+      "FOV reconstruction requires SeuratObject >= 5.0. ",
+      "Spatial data will be stored in @misc slot instead.",
+      call. = FALSE
+    )
+    return(NULL)
+  }
 
-  # For now, return NULL and store data in misc
-  warning(
-    "Full FOV object reconstruction not yet implemented. ",
-    "Spatial data will be stored in @misc slot instead.",
-    call. = FALSE
-  )
+  # Extract centroid coordinates
+  centroids <- NULL
+  if (!is.null(spatial_data$centroids) && is.matrix(spatial_data$centroids)) {
+    coords <- spatial_data$centroids
+    if (ncol(coords) >= 2) {
+      tryCatch({
+        centroids <- SeuratObject::CreateCentroids(
+          coords = data.frame(
+            x = coords[, 1],
+            y = coords[, 2],
+            cell = rownames(coords) %||% paste0("cell_", seq_len(nrow(coords)))
+          )
+        )
+      }, error = function(e) {
+        warning("Failed to create Centroids object: ", e$message, call. = FALSE)
+      })
+    }
+  }
 
-  return(NULL)
+  if (is.null(centroids)) {
+    warning(
+      "No valid centroid coordinates found for FOV reconstruction. ",
+      "Spatial data will be stored in @misc slot instead.",
+      call. = FALSE
+    )
+    return(NULL)
+  }
+
+  # Create FOV object
+  fov <- tryCatch({
+    SeuratObject::CreateFOV(
+      coords = centroids,
+      type = "centroids",
+      key = key
+    )
+  }, error = function(e) {
+    warning("Failed to create FOV object: ", e$message, call. = FALSE)
+    NULL
+  })
+
+  return(fov)
 }
