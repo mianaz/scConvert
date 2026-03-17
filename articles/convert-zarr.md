@@ -246,11 +246,11 @@ print(adata)
 #> AnnData object with n_obs × n_vars = 2638 × 13714
 #>     obs: 'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'seurat_annotations', 'percent.mt', 'RNA_snn_res.0.5', 'seurat_clusters'
 #>     var: 'vst.mean', 'vst.variance', 'vst.variance.expected', 'vst.variance.standardized', 'vst.variable'
-#>     obsm: 'X_umap', 'X_pca'
+#>     obsm: 'X_pca', 'X_umap'
 #>     layers: 'scaled', 'data'
 #>     obsp: 'connectivities', 'distances'
 print(f"Embeddings: {list(adata.obsm.keys())}")
-#> Embeddings: ['X_umap', 'X_pca']
+#> Embeddings: ['X_pca', 'X_umap']
 print(f"Graphs: {list(adata.obsp.keys())}")
 #> Graphs: ['connectivities', 'distances']
 ```

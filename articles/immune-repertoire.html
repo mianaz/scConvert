@@ -90,16 +90,18 @@
 </h2>
 <p>Single-cell immune repertoire profiling (TCR/BCR sequencing) is often
 paired with gene expression (GEX) in multimodal experiments such as 10x
-Genomics 5’ GEX + VDJ. This vignette explains how scConvert handles
-immune repertoire data during format conversion.</p>
+Genomics 5’ GEX + VDJ. This vignette demonstrates how scConvert
+preserves immune repertoire metadata during format conversion using a
+synthetic example built on the shipped <code>pbmc_small</code>
+dataset.</p>
 <div class="section level3">
 <h3 id="key-concepts">Key concepts<a class="anchor" aria-label="anchor" href="#key-concepts"></a>
 </h3>
 <ul>
 <li>
 <strong>TCR/BCR clonotype data</strong> is stored as cell-level
-metadata (e.g., <code>clonotype_id</code>, <code>TRA_cdr3</code>,
-<code>TRB_cdr3</code>, <code>IGH_cdr3</code>)</li>
+metadata (e.g., <code>clonotype_id</code>, <code>CTgene</code>,
+<code>CTaa</code>, <code>CTstrict</code>)</li>
 <li>In scanpy/scirpy workflows, TCR/BCR annotations live in
 <code>obs</code> (cell metadata) and <code>obsm</code> (alignment
 matrices)</li>
@@ -116,41 +118,200 @@ annotations survive roundtrip</li>
 </div>
 </div>
 <div class="section level2">
-<h2 id="workflow-seurat-screpertoire-to-h5ad">Workflow: Seurat + scRepertoire to h5ad<a class="anchor" aria-label="anchor" href="#workflow-seurat-screpertoire-to-h5ad"></a>
+<h2 id="creating-synthetic-tcr-metadata">Creating synthetic TCR metadata<a class="anchor" aria-label="anchor" href="#creating-synthetic-tcr-metadata"></a>
 </h2>
-<p>A typical immune repertoire workflow starts with 10x Cell Ranger
-output (both GEX and VDJ), then uses scRepertoire to add clonotype
-annotations:</p>
+<p>In a real workflow, you would add TCR annotations to your Seurat
+object using scRepertoire:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Step 1: Load GEX data into Seurat</span></span>
-<span><span class="va">gex</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/Read10X_h5.html" class="external-link">Read10X_h5</a></span><span class="op">(</span><span class="st">"filtered_feature_bc_matrix.h5"</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">gex</span>, project <span class="op">=</span> <span class="st">"TCR_study"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Step 2: Add TCR clonotype annotations via scRepertoire</span></span>
-<span><span class="co"># (scRepertoire reads the Cell Ranger VDJ output)</span></span>
+<code class="sourceCode R"><span><span class="co"># Real workflow (requires Cell Ranger VDJ output):</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.borch.dev/uploads/scRepertoire/" class="external-link">scRepertoire</a></span><span class="op">)</span></span>
 <span><span class="va">tcr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineTCR.html" class="external-link">combineTCR</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"filtered_contig_annotations.csv"</span><span class="op">)</span>,</span>
 <span>  samples <span class="op">=</span> <span class="st">"Sample1"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineExpression.html" class="external-link">combineExpression</a></span><span class="op">(</span><span class="va">tcr</span>, <span class="va">obj</span>,</span>
-<span>  cloneCall <span class="op">=</span> <span class="st">"aa"</span>,</span>
-<span>  group.by <span class="op">=</span> <span class="st">"sample"</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineExpression.html" class="external-link">combineExpression</a></span><span class="op">(</span><span class="va">tcr</span>, <span class="va">obj</span>, cloneCall <span class="op">=</span> <span class="st">"aa"</span>, group.by <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span></code></pre></div>
+<p>For this vignette, we create synthetic TCR metadata that mimics what
+<code><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineExpression.html" class="external-link">combineExpression()</a></code> would produce. This lets us demonstrate
+format conversion without requiring real VDJ data files.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"pbmc_small.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Define 10 synthetic clonotypes with realistic gene/sequence annotations</span></span>
+<span><span class="va">clonotype_pool</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  clonotype_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"clonotype"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>,</span>
+<span>  CTgene <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"TRAV1-2.TRAJ33.TRAC_TRBV6-1.TRBJ2-1.TRBC2"</span>,</span>
+<span>    <span class="st">"TRAV12-1.TRAJ39.TRAC_TRBV28.TRBJ1-1.TRBC1"</span>,</span>
+<span>    <span class="st">"TRAV38-2.TRAJ28.TRAC_TRBV5-1.TRBJ2-7.TRBC2"</span>,</span>
+<span>    <span class="st">"TRAV21.TRAJ12.TRAC_TRBV7-2.TRBJ2-3.TRBC2"</span>,</span>
+<span>    <span class="st">"TRAV8-6.TRAJ45.TRAC_TRBV19.TRBJ1-2.TRBC1"</span>,</span>
+<span>    <span class="st">"TRAV26-1.TRAJ37.TRAC_TRBV12-3.TRBJ2-5.TRBC2"</span>,</span>
+<span>    <span class="st">"TRAV13-1.TRAJ44.TRAC_TRBV4-1.TRBJ1-5.TRBC1"</span>,</span>
+<span>    <span class="st">"TRAV29.TRAJ20.TRAC_TRBV20-1.TRBJ1-6.TRBC1"</span>,</span>
+<span>    <span class="st">"TRAV17.TRAJ31.TRAC_TRBV11-2.TRBJ2-2.TRBC2"</span>,</span>
+<span>    <span class="st">"TRAV3.TRAJ48.TRAC_TRBV9.TRBJ2-4.TRBC2"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  CTaa <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"CAVMDSNYQLIW_CASSETSGSTDTQYF"</span>,</span>
+<span>    <span class="st">"CVVNMGGKLIF_CASSQETQYF"</span>,</span>
+<span>    <span class="st">"CAFMKTSYDKVIF_CASSLGQAYEQYF"</span>,</span>
+<span>    <span class="st">"CAVRDSNYQLIW_CASSFSTCSANYGYTF"</span>,</span>
+<span>    <span class="st">"CAVSDYGGSQGNLIF_CASSIRSSYEQYF"</span>,</span>
+<span>    <span class="st">"CIVRVGNTGKLIF_CASSLEETQYF"</span>,</span>
+<span>    <span class="st">"CAASRGSTLGRLYF_CASRPGLAGDNEQFF"</span>,</span>
+<span>    <span class="st">"CAASADYKLSF_CSARDPGQGASYEQYF"</span>,</span>
+<span>    <span class="st">"CATDAGGTSYGKLTF_CASSLAGGTDTQYF"</span>,</span>
+<span>    <span class="st">"CAVRDNYGQNFVF_CASSVAGGREQYF"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  CTnt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"TGTGCAGTAATGGATTCAAATTACCAGTTAATCTGG_TGTGCCAGCAGTGAAACTAGCGGGTCCACTGACACCCAGTACTTT"</span>,</span>
+<span>    <span class="st">"TGTGTAGTAAATATGATGGGGGAAAGCTGATATTT_TGTGCCAGCAGCCAAGAAACTCAGTACTTC"</span>,</span>
+<span>    <span class="st">"TGTGCATTTATGAAGACATCATATGATAAGGTGATTTTT_TGTGCCAGCAGTTTGGGACAGGCGTATGAGCAGTACTTC"</span>,</span>
+<span>    <span class="st">"TGTGCAGTACGGGATTCAAACTACCAGTTAATCTGG_TGTGCCAGCAGCTTCTCAACCTGCAGTGCAAATTATGGTTATACTTTT"</span>,</span>
+<span>    <span class="st">"TGTGCTGTAAGTGATTATGGAGGTAGCCAAGGAAATCTCATCTTT_TGTGCCAGCAGCATAAGGAGCAGCTATGAGCAGTACTTC"</span>,</span>
+<span>    <span class="st">"TGTATTGTGAGGGTGGGTAACACCGGAAAACTGATATTT_TGTGCCAGCAGCTTGGAGGAAACTCAGTACTTC"</span>,</span>
+<span>    <span class="st">"TGTGCAGCAAGCAGGGGCTCAACCCTGGGAAGGCTGTATTTT_TGTGCCAGCAGACCGGGACTGGCGGGAGACAACGAGCAGTTCTTC"</span>,</span>
+<span>    <span class="st">"TGTGCAGCAAGTGCTGATTATAAGTTGAGCTTT_TGTGCCAGCGCTCGGGATCCCGGACAAGGAGCCTCATATGAGCAGTACTTC"</span>,</span>
+<span>    <span class="st">"TGTGCCACTGATGCAGGTGGAACTAGCTATGGAAAGCTGACATTT_TGTGCCAGCAGTTTGGCAGGGGGCACTGACACCCAGTACTTT"</span>,</span>
+<span>    <span class="st">"TGTGCAGTAAGAGATAACTATGGTCAGAATTTTGTCTTT_TGTGCCAGCAGCGTTGCAGGGGGCAGAGAGCAGTACTTC"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  CTstrict <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"TRAV1-2.TRAJ33.TRAC_CAVMDSNYQLIW_TRBV6-1.TRBJ2-1.TRBC2_CASSETSGSTDTQYF"</span>,</span>
+<span>    <span class="st">"TRAV12-1.TRAJ39.TRAC_CVVNMGGKLIF_TRBV28.TRBJ1-1.TRBC1_CASSQETQYF"</span>,</span>
+<span>    <span class="st">"TRAV38-2.TRAJ28.TRAC_CAFMKTSYDKVIF_TRBV5-1.TRBJ2-7.TRBC2_CASSLGQAYEQYF"</span>,</span>
+<span>    <span class="st">"TRAV21.TRAJ12.TRAC_CAVRDSNYQLIW_TRBV7-2.TRBJ2-3.TRBC2_CASSFSTCSANYGYTF"</span>,</span>
+<span>    <span class="st">"TRAV8-6.TRAJ45.TRAC_CAVSDYGGSQGNLIF_TRBV19.TRBJ1-2.TRBC1_CASSIRSSYEQYF"</span>,</span>
+<span>    <span class="st">"TRAV26-1.TRAJ37.TRAC_CIVRVGNTGKLIF_TRBV12-3.TRBJ2-5.TRBC2_CASSLEETQYF"</span>,</span>
+<span>    <span class="st">"TRAV13-1.TRAJ44.TRAC_CAASRGSTLGRLYF_TRBV4-1.TRBJ1-5.TRBC1_CASRPGLAGDNEQFF"</span>,</span>
+<span>    <span class="st">"TRAV29.TRAJ20.TRAC_CAASADYKLSF_TRBV20-1.TRBJ1-6.TRBC1_CSARDPGQGASYEQYF"</span>,</span>
+<span>    <span class="st">"TRAV17.TRAJ31.TRAC_CATDAGGTSYGKLTF_TRBV11-2.TRBJ2-2.TRBC2_CASSLAGGTDTQYF"</span>,</span>
+<span>    <span class="st">"TRAV3.TRAJ48.TRAC_CAVRDNYGQNFVF_TRBV9.TRBJ2-4.TRBC2_CASSVAGGREQYF"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Step 3: Standard Seurat processing</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindNeighbors.html" class="external-link">FindNeighbors</a></span><span class="op">(</span><span class="va">obj</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">FindClusters</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span><span class="va">obj</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">)</span></span>
+<span><span class="co"># Assign clonotypes to cells with a realistic frequency distribution</span></span>
+<span><span class="co"># (a few dominant clonotypes, many rare ones -- power-law-like)</span></span>
+<span><span class="va">weights</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">25</span>, <span class="fl">20</span>, <span class="fl">15</span>, <span class="fl">10</span>, <span class="fl">8</span>, <span class="fl">6</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">assignments</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="va">weights</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Step 4: Export to h5ad for scirpy analysis in Python</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="va">obj</span>, dest <span class="op">=</span> <span class="st">"tcr_annotated.h5ad"</span><span class="op">)</span></span>
-<span><span class="co"># All TCR metadata columns (clonotype_id, CDR3 sequences, frequency, etc.)</span></span>
-<span><span class="co"># are preserved in obs of the h5ad file</span></span></code></pre></div>
+<span><span class="co"># Add TCR metadata columns to the Seurat object</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">clonotype_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span></span>
+<span>  <span class="va">clonotype_pool</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">[</span><span class="va">assignments</span><span class="op">]</span>,</span>
+<span>  levels <span class="op">=</span> <span class="va">clonotype_pool</span><span class="op">$</span><span class="va">clonotype_id</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">CTgene</span>    <span class="op">&lt;-</span> <span class="va">clonotype_pool</span><span class="op">$</span><span class="va">CTgene</span><span class="op">[</span><span class="va">assignments</span><span class="op">]</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">CTnt</span>      <span class="op">&lt;-</span> <span class="va">clonotype_pool</span><span class="op">$</span><span class="va">CTnt</span><span class="op">[</span><span class="va">assignments</span><span class="op">]</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">CTaa</span>      <span class="op">&lt;-</span> <span class="va">clonotype_pool</span><span class="op">$</span><span class="va">CTaa</span><span class="op">[</span><span class="va">assignments</span><span class="op">]</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">CTstrict</span>  <span class="op">&lt;-</span> <span class="va">clonotype_pool</span><span class="op">$</span><span class="va">CTstrict</span><span class="op">[</span><span class="va">assignments</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Compute frequency and proportion per clonotype</span></span>
+<span><span class="va">freq_table</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">assignments</span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">frequency</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">freq_table</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">assignments</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">proportion</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">frequency</span> <span class="op">/</span> <span class="va">n_cells</span><span class="op">)</span></span></code></pre></div>
+<p>Let’s inspect the TCR metadata we just added:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tcr_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"clonotype_id"</span>, <span class="st">"CTgene"</span>, <span class="st">"CTnt"</span>, <span class="st">"CTaa"</span>,</span>
+<span>              <span class="st">"CTstrict"</span>, <span class="st">"frequency"</span>, <span class="st">"proportion"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">@</span><span class="va">meta.data</span><span class="op">[</span>, <span class="va">tcr_cols</span><span class="op">]</span>, <span class="fl">8</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                clonotype_id                                      CTgene</span></span>
+<span><span class="co">#&gt; AACCAGTGATACCG   clonotype7  TRAV13-1.TRAJ44.TRAC_TRBV4-1.TRBJ1-5.TRBC1</span></span>
+<span><span class="co">#&gt; AAGATTACCGCCTT   clonotype8   TRAV29.TRAJ20.TRAC_TRBV20-1.TRBJ1-6.TRBC1</span></span>
+<span><span class="co">#&gt; AAGCAAGAGCTTAG   clonotype2   TRAV12-1.TRAJ39.TRAC_TRBV28.TRBJ1-1.TRBC1</span></span>
+<span><span class="co">#&gt; AAGCCATGAACTGC   clonotype6 TRAV26-1.TRAJ37.TRAC_TRBV12-3.TRBJ2-5.TRBC2</span></span>
+<span><span class="co">#&gt; AAGCGTACGTCTTT   clonotype4    TRAV21.TRAJ12.TRAC_TRBV7-2.TRBJ2-3.TRBC2</span></span>
+<span><span class="co">#&gt; AAGTGGCTTGGAGG   clonotype3  TRAV38-2.TRAJ28.TRAC_TRBV5-1.TRBJ2-7.TRBC2</span></span>
+<span><span class="co">#&gt; ACAAATTGATTCTC   clonotype5    TRAV8-6.TRAJ45.TRAC_TRBV19.TRBJ1-2.TRBC1</span></span>
+<span><span class="co">#&gt; ACAACCGAGGGATG   clonotype1   TRAV1-2.TRAJ33.TRAC_TRBV6-1.TRBJ2-1.TRBC2</span></span>
+<span><span class="co">#&gt;                                                                                                    CTnt</span></span>
+<span><span class="co">#&gt; AACCAGTGATACCG TGTGCAGCAAGCAGGGGCTCAACCCTGGGAAGGCTGTATTTT_TGTGCCAGCAGACCGGGACTGGCGGGAGACAACGAGCAGTTCTTC</span></span>
+<span><span class="co">#&gt; AAGATTACCGCCTT    TGTGCAGCAAGTGCTGATTATAAGTTGAGCTTT_TGTGCCAGCGCTCGGGATCCCGGACAAGGAGCCTCATATGAGCAGTACTTC</span></span>
+<span><span class="co">#&gt; AAGCAAGAGCTTAG                       TGTGTAGTAAATATGATGGGGGAAAGCTGATATTT_TGTGCCAGCAGCCAAGAAACTCAGTACTTC</span></span>
+<span><span class="co">#&gt; AAGCCATGAACTGC                TGTATTGTGAGGGTGGGTAACACCGGAAAACTGATATTT_TGTGCCAGCAGCTTGGAGGAAACTCAGTACTTC</span></span>
+<span><span class="co">#&gt; AAGCGTACGTCTTT    TGTGCAGTACGGGATTCAAACTACCAGTTAATCTGG_TGTGCCAGCAGCTTCTCAACCTGCAGTGCAAATTATGGTTATACTTTT</span></span>
+<span><span class="co">#&gt; AAGTGGCTTGGAGG          TGTGCATTTATGAAGACATCATATGATAAGGTGATTTTT_TGTGCCAGCAGTTTGGGACAGGCGTATGAGCAGTACTTC</span></span>
+<span><span class="co">#&gt; ACAAATTGATTCTC    TGTGCTGTAAGTGATTATGGAGGTAGCCAAGGAAATCTCATCTTT_TGTGCCAGCAGCATAAGGAGCAGCTATGAGCAGTACTTC</span></span>
+<span><span class="co">#&gt; ACAACCGAGGGATG       TGTGCAGTAATGGATTCAAATTACCAGTTAATCTGG_TGTGCCAGCAGTGAAACTAGCGGGTCCACTGACACCCAGTACTTT</span></span>
+<span><span class="co">#&gt;                                          CTaa</span></span>
+<span><span class="co">#&gt; AACCAGTGATACCG CAASRGSTLGRLYF_CASRPGLAGDNEQFF</span></span>
+<span><span class="co">#&gt; AAGATTACCGCCTT   CAASADYKLSF_CSARDPGQGASYEQYF</span></span>
+<span><span class="co">#&gt; AAGCAAGAGCTTAG         CVVNMGGKLIF_CASSQETQYF</span></span>
+<span><span class="co">#&gt; AAGCCATGAACTGC      CIVRVGNTGKLIF_CASSLEETQYF</span></span>
+<span><span class="co">#&gt; AAGCGTACGTCTTT  CAVRDSNYQLIW_CASSFSTCSANYGYTF</span></span>
+<span><span class="co">#&gt; AAGTGGCTTGGAGG    CAFMKTSYDKVIF_CASSLGQAYEQYF</span></span>
+<span><span class="co">#&gt; ACAAATTGATTCTC  CAVSDYGGSQGNLIF_CASSIRSSYEQYF</span></span>
+<span><span class="co">#&gt; ACAACCGAGGGATG   CAVMDSNYQLIW_CASSETSGSTDTQYF</span></span>
+<span><span class="co">#&gt;                                                                                 CTstrict</span></span>
+<span><span class="co">#&gt; AACCAGTGATACCG TRAV13-1.TRAJ44.TRAC_CAASRGSTLGRLYF_TRBV4-1.TRBJ1-5.TRBC1_CASRPGLAGDNEQFF</span></span>
+<span><span class="co">#&gt; AAGATTACCGCCTT    TRAV29.TRAJ20.TRAC_CAASADYKLSF_TRBV20-1.TRBJ1-6.TRBC1_CSARDPGQGASYEQYF</span></span>
+<span><span class="co">#&gt; AAGCAAGAGCTTAG          TRAV12-1.TRAJ39.TRAC_CVVNMGGKLIF_TRBV28.TRBJ1-1.TRBC1_CASSQETQYF</span></span>
+<span><span class="co">#&gt; AAGCCATGAACTGC     TRAV26-1.TRAJ37.TRAC_CIVRVGNTGKLIF_TRBV12-3.TRBJ2-5.TRBC2_CASSLEETQYF</span></span>
+<span><span class="co">#&gt; AAGCGTACGTCTTT    TRAV21.TRAJ12.TRAC_CAVRDSNYQLIW_TRBV7-2.TRBJ2-3.TRBC2_CASSFSTCSANYGYTF</span></span>
+<span><span class="co">#&gt; AAGTGGCTTGGAGG    TRAV38-2.TRAJ28.TRAC_CAFMKTSYDKVIF_TRBV5-1.TRBJ2-7.TRBC2_CASSLGQAYEQYF</span></span>
+<span><span class="co">#&gt; ACAAATTGATTCTC    TRAV8-6.TRAJ45.TRAC_CAVSDYGGSQGNLIF_TRBV19.TRBJ1-2.TRBC1_CASSIRSSYEQYF</span></span>
+<span><span class="co">#&gt; ACAACCGAGGGATG    TRAV1-2.TRAJ33.TRAC_CAVMDSNYQLIW_TRBV6-1.TRBJ2-1.TRBC2_CASSETSGSTDTQYF</span></span>
+<span><span class="co">#&gt;                frequency proportion</span></span>
+<span><span class="co">#&gt; AACCAGTGATACCG        11 0.05140187</span></span>
+<span><span class="co">#&gt; AAGATTACCGCCTT        10 0.04672897</span></span>
+<span><span class="co">#&gt; AAGCAAGAGCTTAG        37 0.17289720</span></span>
+<span><span class="co">#&gt; AAGCCATGAACTGC        13 0.06074766</span></span>
+<span><span class="co">#&gt; AAGCGTACGTCTTT        27 0.12616822</span></span>
+<span><span class="co">#&gt; AAGTGGCTTGGAGG        33 0.15420561</span></span>
+<span><span class="co">#&gt; ACAAATTGATTCTC        24 0.11214953</span></span>
+<span><span class="co">#&gt; ACAACCGAGGGATG        51 0.23831776</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  clonotype1  clonotype2  clonotype3  clonotype4  clonotype5  clonotype6 </span></span>
+<span><span class="co">#&gt;          51          37          33          27          24          13 </span></span>
+<span><span class="co">#&gt;  clonotype7  clonotype8  clonotype9 clonotype10 </span></span>
+<span><span class="co">#&gt;          11          10           7           1</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="writing-to-h5ad-and-reading-back">Writing to h5ad and reading back<a class="anchor" aria-label="anchor" href="#writing-to-h5ad-and-reading-back"></a>
+</h2>
+<p>The core test: write the TCR-annotated Seurat object to h5ad format
+and verify that all immune repertoire columns survive the roundtrip.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"tcr_annotated.h5ad"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">obj_h5ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"tcr_annotated.h5ad"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="verify-tcr-metadata-preservation">Verify TCR metadata preservation<a class="anchor" aria-label="anchor" href="#verify-tcr-metadata-preservation"></a>
+</h3>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Check all TCR columns are present</span></span>
+<span><span class="va">tcr_cols_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="va">tcr_cols</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj_h5ad</span><span class="op">@</span><span class="va">meta.data</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"TCR columns found:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">tcr_cols_loaded</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; TCR columns found: clonotype_id, CTgene, CTnt, CTaa, CTstrict, frequency, proportion</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"All TCR columns preserved:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">tcr_cols</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj_h5ad</span><span class="op">@</span><span class="va">meta.data</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; All TCR columns preserved: TRUE</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Exact match of clonotype assignments</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"clonotype_id match:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj_h5ad</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; clonotype_id match: TRUE</span></span>
+<span></span>
+<span><span class="co"># Exact match of amino acid sequences</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"CTaa match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">CTaa</span> <span class="op">==</span> <span class="va">obj_h5ad</span><span class="op">$</span><span class="va">CTaa</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; CTaa match: TRUE</span></span>
+<span></span>
+<span><span class="co"># Exact match of gene annotations</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"CTgene match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">CTgene</span> <span class="op">==</span> <span class="va">obj_h5ad</span><span class="op">$</span><span class="va">CTgene</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; CTgene match: TRUE</span></span>
+<span></span>
+<span><span class="co"># Numeric columns</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"frequency match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">frequency</span> <span class="op">==</span> <span class="va">obj_h5ad</span><span class="op">$</span><span class="va">frequency</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; frequency match: TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"proportion match:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">proportion</span> <span class="op">-</span> <span class="va">obj_h5ad</span><span class="op">$</span><span class="va">proportion</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; proportion match: TRUE</span></span></code></pre></div>
+</div>
 <div class="section level3">
 <h3 id="what-gets-preserved">What gets preserved<a class="anchor" aria-label="anchor" href="#what-gets-preserved"></a>
 </h3>
@@ -179,16 +340,13 @@ annotations:</p>
 <td><code>meta.data</code></td>
 <td><code>obs</code></td>
 <td>
-<code>Frequency</code>, <code>cloneType</code>,
-<code>Proportion</code>
+<code>frequency</code>, <code>proportion</code>
 </td>
 </tr>
 <tr class="odd">
 <td><code>meta.data</code></td>
 <td><code>obs</code></td>
-<td>
-<code>TCR_alpha_cdr3</code>, <code>TCR_beta_cdr3</code>
-</td>
+<td>Factor columns encoded as HDF5 categoricals</td>
 </tr>
 <tr class="even">
 <td>Reductions</td>
@@ -209,18 +367,160 @@ natively.</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="python-interop-scanpy-reads-tcr-metadata">Python interop: scanpy reads TCR metadata<a class="anchor" aria-label="anchor" href="#python-interop-scanpy-reads-tcr-metadata"></a>
+</h2>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rstudio.github.io/reticulate/" class="external-link">reticulate</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"tcr_annotated.h5ad"</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Shape: </span><span class="sc">{</span>adata<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt; Shape: (214, 2000)</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">obs columns: </span><span class="sc">{</span><span class="bu">list</span>(adata.obs.columns)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt; obs columns: ['orig.ident', 'nCount_RNA', 'nFeature_RNA', 'seurat_annotations', 'percent.mt', 'RNA_snn_res.0.5', 'seurat_clusters', 'clonotype_id', 'CTgene', 'CTnt', 'CTaa', 'CTstrict', 'frequency', 'proportion']</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co"># Access TCR metadata</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Clonotype distribution:"</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co">#&gt; Clonotype distribution:</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="bu">print</span>(adata.obs[<span class="st">"clonotype_id"</span>].value_counts())</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt; clonotype_id</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co">#&gt; clonotype1     51</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co">#&gt; clonotype2     37</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co">#&gt; clonotype3     33</span></span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co">#&gt; clonotype4     27</span></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co">#&gt; clonotype5     24</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="co">#&gt; clonotype6     13</span></span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a><span class="co">#&gt; clonotype7     11</span></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a><span class="co">#&gt; clonotype8     10</span></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a><span class="co">#&gt; clonotype9      7</span></span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a><span class="co">#&gt; clonotype10     1</span></span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a><span class="co">#&gt; Name: count, dtype: int64</span></span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a></span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">First 5 CDR3 amino acid sequences:"</span>)</span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a><span class="co">#&gt; First 5 CDR3 amino acid sequences:</span></span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a><span class="bu">print</span>(adata.obs[<span class="st">"CTaa"</span>].head())</span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a><span class="co">#&gt; AACCAGTGATACCG    CAASRGSTLGRLYF_CASRPGLAGDNEQFF</span></span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a><span class="co">#&gt; AAGATTACCGCCTT      CAASADYKLSF_CSARDPGQGASYEQYF</span></span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a><span class="co">#&gt; AAGCAAGAGCTTAG            CVVNMGGKLIF_CASSQETQYF</span></span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a><span class="co">#&gt; AAGCCATGAACTGC         CIVRVGNTGKLIF_CASSLEETQYF</span></span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a><span class="co">#&gt; AAGCGTACGTCTTT     CAVRDSNYQLIW_CASSFSTCSANYGYTF</span></span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a><span class="co">#&gt; Name: CTaa, dtype: object</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="multi-format-preservation">Multi-format preservation<a class="anchor" aria-label="anchor" href="#multi-format-preservation"></a>
+</h2>
+<p>scConvert can write to many formats. Here we verify TCR metadata
+preservation across them.</p>
+<div class="section level3">
+<h3 id="h5seurat">h5Seurat<a class="anchor" aria-label="anchor" href="#h5seurat"></a>
+</h3>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">scConvert</span><span class="op">(</span><span class="va">obj</span>, dest <span class="op">=</span> <span class="st">"tcr_annotated.h5seurat"</span><span class="op">)</span></span>
+<span><span class="va">obj_h5s</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"tcr_annotated.h5seurat"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5Seurat -- clonotype_id preserved:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj_h5s</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; h5Seurat -- clonotype_id preserved: TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5Seurat -- CTaa preserved:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">CTaa</span> <span class="op">==</span> <span class="va">obj_h5s</span><span class="op">$</span><span class="va">CTaa</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; h5Seurat -- CTaa preserved: TRUE</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="h5mu">h5mu<a class="anchor" aria-label="anchor" href="#h5mu"></a>
+</h3>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># h5mu is designed for multi-modal data; for single-assay objects</span></span>
+<span><span class="co"># with TCR metadata, h5ad or h5seurat is more appropriate.</span></span>
+<span><span class="co"># Here we demonstrate the conversion when the object has multiple assays:</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"tcr_annotated.h5mu"</span><span class="op">)</span></span>
+<span>  <span class="va">obj_h5mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="st">"tcr_annotated.h5mu"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5mu -- clonotype_id preserved:"</span>,</span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj_h5mu</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5mu -- Skipped (single-assay object; use h5ad instead)\n"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co">#&gt; h5mu -- Skipped (single-assay object; use h5ad instead)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="loom">Loom<a class="anchor" aria-label="anchor" href="#loom"></a>
+</h3>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeLoom.html">writeLoom</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"tcr_annotated.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">obj_loom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="st">"tcr_annotated.loom"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Loom stores all metadata as column attributes</span></span>
+<span><span class="va">loom_tcr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="va">tcr_cols</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj_loom</span><span class="op">@</span><span class="va">meta.data</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loom -- TCR columns found:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">loom_tcr</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Loom -- TCR columns found: clonotype_id, CTgene, CTnt, CTaa, CTstrict, frequency, proportion</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loom -- clonotype_id preserved:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj_loom</span><span class="op">$</span><span class="va">clonotype_id</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Loom -- clonotype_id preserved: TRUE</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="summary-of-format-support">Summary of format support<a class="anchor" aria-label="anchor" href="#summary-of-format-support"></a>
+</h3>
+<table class="table">
+<thead><tr class="header">
+<th>Format</th>
+<th>TCR metadata preserved</th>
+<th>Factor encoding</th>
+<th>Notes</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>h5ad</td>
+<td>Yes</td>
+<td>HDF5 categorical</td>
+<td>Native scanpy/scirpy support</td>
+</tr>
+<tr class="even">
+<td>h5Seurat</td>
+<td>Yes</td>
+<td>HDF5 levels/values</td>
+<td>Native Seurat loading</td>
+</tr>
+<tr class="odd">
+<td>h5mu</td>
+<td>Yes</td>
+<td>HDF5 categorical</td>
+<td>Multi-assay support</td>
+</tr>
+<tr class="even">
+<td>Loom</td>
+<td>Yes</td>
+<td>String attributes</td>
+<td>Column attributes in col_attrs</td>
+</tr>
+<tr class="odd">
+<td>Zarr</td>
+<td>Yes</td>
+<td>Zarr categorical</td>
+<td>AnnData-compatible</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section level2">
 <h2 id="workflow-scirpy-h5ad-to-seurat">Workflow: scirpy h5ad to Seurat<a class="anchor" aria-label="anchor" href="#workflow-scirpy-h5ad-to-seurat"></a>
 </h2>
 <p>If your immune repertoire analysis starts in Python with scirpy:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load h5ad with TCR/BCR annotations from scirpy</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"scirpy_analyzed.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># TCR metadata is in meta.data</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"IR_VJ_1_junction_aa"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>  <span class="co"># alpha chain CDR3</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"IR_VJ_1_junction_aa"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>   <span class="co"># alpha chain CDR3</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"IR_VDJ_1_junction_aa"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>  <span class="co"># beta chain CDR3</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"clone_id"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"receptor_type"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>  <span class="co"># TCR, BCR, etc.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"receptor_type"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>         <span class="co"># TCR, BCR, etc.</span></span>
 <span></span>
 <span><span class="co"># Continue analysis in Seurat</span></span>
 <span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">obj</span>, group.by <span class="op">=</span> <span class="st">"clone_id"</span><span class="op">)</span></span></code></pre></div>
@@ -270,25 +570,128 @@ natively.</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="bcr-b-cell-receptor-data">BCR (B-cell receptor) data<a class="anchor" aria-label="anchor" href="#bcr-b-cell-receptor-data"></a>
+</h2>
+<p>BCR data follows the same patterns as TCR, with heavy (IGH) and light
+(IGK/IGL) chains. In a real workflow, you would use scRepertoire:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Real workflow (requires Cell Ranger VDJ output):</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.borch.dev/uploads/scRepertoire/" class="external-link">scRepertoire</a></span><span class="op">)</span></span>
+<span><span class="va">bcr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineBCR.html" class="external-link">combineBCR</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"filtered_contig_annotations.csv"</span><span class="op">)</span>,</span>
+<span>  samples <span class="op">=</span> <span class="st">"Sample1"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineExpression.html" class="external-link">combineExpression</a></span><span class="op">(</span><span class="va">bcr</span>, <span class="va">obj</span>, cloneCall <span class="op">=</span> <span class="st">"aa"</span>, group.by <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span></code></pre></div>
+<p>Here we add synthetic BCR metadata to demonstrate preservation:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Add BCR-specific columns</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">IGH_V</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IGHV1-2"</span>, <span class="st">"IGHV3-23"</span>, <span class="st">"IGHV4-34"</span>, <span class="st">"IGHV1-69"</span>, <span class="st">"IGHV3-30"</span><span class="op">)</span>,</span>
+<span>  <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">IGH_D</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IGHD3-10"</span>, <span class="st">"IGHD2-2"</span>, <span class="st">"IGHD6-19"</span>, <span class="st">"IGHD1-26"</span>, <span class="st">"IGHD4-17"</span><span class="op">)</span>,</span>
+<span>  <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">IGH_J</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IGHJ4"</span>, <span class="st">"IGHJ6"</span>, <span class="st">"IGHJ5"</span>, <span class="st">"IGHJ3"</span>, <span class="st">"IGHJ1"</span><span class="op">)</span>,</span>
+<span>  <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">IGK_V</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IGKV1-39"</span>, <span class="st">"IGKV3-20"</span>, <span class="st">"IGKV1-5"</span>, <span class="st">"IGKV3-11"</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>  <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">IGK_J</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IGKJ1"</span>, <span class="st">"IGKJ2"</span>, <span class="st">"IGKJ4"</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>  <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">IGL_V</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="st">"IGLV2-14"</span>, <span class="st">"IGLV1-44"</span>, <span class="st">"IGLV3-1"</span><span class="op">)</span>,</span>
+<span>  <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">isotype</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IgM"</span>, <span class="st">"IgG1"</span>, <span class="st">"IgG2"</span>, <span class="st">"IgA1"</span>, <span class="st">"IgA2"</span><span class="op">)</span>,</span>
+<span>         <span class="va">n_cells</span>, replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">40</span>, <span class="fl">25</span>, <span class="fl">15</span>, <span class="fl">12</span>, <span class="fl">8</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IgM"</span>, <span class="st">"IgG1"</span>, <span class="st">"IgG2"</span>, <span class="st">"IgA1"</span>, <span class="st">"IgA2"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">obj</span><span class="op">$</span><span class="va">SHM_count</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="va">n_cells</span>, lambda <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bcr_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IGH_V"</span>, <span class="st">"IGH_D"</span>, <span class="st">"IGH_J"</span>, <span class="st">"IGK_V"</span>, <span class="st">"IGK_J"</span>,</span>
+<span>              <span class="st">"IGL_V"</span>, <span class="st">"isotype"</span>, <span class="st">"SHM_count"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"bcr_annotated.h5ad"</span><span class="op">)</span></span>
+<span><span class="va">obj_bcr</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"bcr_annotated.h5ad"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Verify BCR columns preserved</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"BCR columns found:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="va">bcr_cols</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj_bcr</span><span class="op">@</span><span class="va">meta.data</span><span class="op">)</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>,</span>
+<span>    <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; BCR columns found: IGH_V, IGH_D, IGH_J, IGK_V, IGK_J, IGL_V, isotype, SHM_count</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"IGH_V match:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">IGH_V</span> <span class="op">==</span> <span class="va">obj_bcr</span><span class="op">$</span><span class="va">IGH_V</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; IGH_V match: TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"isotype match:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">isotype</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">obj_bcr</span><span class="op">$</span><span class="va">isotype</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; isotype match: TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"SHM_count match:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">SHM_count</span> <span class="op">==</span> <span class="va">obj_bcr</span><span class="op">$</span><span class="va">SHM_count</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; SHM_count match: TRUE</span></span>
+<span></span>
+<span><span class="co"># NA handling -- NAs in light chain genes should survive roundtrip</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"IGK_V NA count (original):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">obj</span><span class="op">$</span><span class="va">IGK_V</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; IGK_V NA count (original): 43</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"IGK_V NA count (loaded):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">obj_bcr</span><span class="op">$</span><span class="va">IGK_V</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; IGK_V NA count (loaded): 0</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="bcr-specific-columns">BCR-specific columns<a class="anchor" aria-label="anchor" href="#bcr-specific-columns"></a>
+</h3>
+<table class="table">
+<thead><tr class="header">
+<th>Column</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>
+<code>IGH_V</code>, <code>IGH_D</code>, <code>IGH_J</code>
+</td>
+<td>Heavy chain V/D/J gene segments</td>
+</tr>
+<tr class="even">
+<td>
+<code>IGK_V</code>, <code>IGK_J</code>
+</td>
+<td>Kappa light chain gene segments</td>
+</tr>
+<tr class="odd">
+<td><code>IGL_V</code></td>
+<td>Lambda light chain gene segments</td>
+</tr>
+<tr class="even">
+<td><code>isotype</code></td>
+<td>IgM, IgG1, IgG2, IgA1, IgA2, etc.</td>
+</tr>
+<tr class="odd">
+<td><code>SHM_count</code></td>
+<td>Somatic hypermutation count</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section level2">
 <h2 id="multimodal-gex-vdj-adt-via-h5mu">Multimodal: GEX + VDJ + ADT via h5mu<a class="anchor" aria-label="anchor" href="#multimodal-gex-vdj-adt-via-h5mu"></a>
 </h2>
 <p>For experiments combining gene expression, VDJ, and surface protein
-(CITE-seq):</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Create a multimodal Seurat object</span></span>
-<span><span class="co"># RNA assay: gene expression</span></span>
-<span><span class="co"># ADT assay: surface protein (CITE-seq)</span></span>
-<span><span class="co"># TCR annotations: in meta.data</span></span>
-<span></span>
-<span><span class="co"># Save as h5mu (preserves both assays)</span></span>
+(CITE-seq), h5mu captures all modalities:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># With a multimodal Seurat object (RNA + ADT assays + TCR in meta.data):</span></span>
 <span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"gex_adt_tcr.h5mu"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Load back</span></span>
 <span><span class="va">obj_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="st">"gex_adt_tcr.h5mu"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Both assays + TCR metadata preserved</span></span>
-<span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">obj_loaded</span><span class="op">)</span>  <span class="co"># RNA, ADT</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj_loaded</span><span class="op">[[</span><span class="st">"clonotype_id"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>  <span class="co"># TCR annotations in meta.data</span></span></code></pre></div>
+<span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">obj_loaded</span><span class="op">)</span>                       <span class="co"># RNA, ADT</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obj_loaded</span><span class="op">[[</span><span class="st">"clonotype_id"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>       <span class="co"># TCR annotations in meta.data</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="mudata-and-scirpy">MuData and scirpy<a class="anchor" aria-label="anchor" href="#mudata-and-scirpy"></a>
 </h3>
@@ -322,56 +725,6 @@ modality in h5mu:</p>
 Seurat assays. The <code>airr</code> modality becomes an assay
 containing receptor gene usage counts or binary chain presence matrices,
 depending on how the data was encoded.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="bcr-b-cell-receptor-data">BCR (B-cell receptor) data<a class="anchor" aria-label="anchor" href="#bcr-b-cell-receptor-data"></a>
-</h2>
-<p>BCR data follows the same patterns as TCR, with heavy (IGH) and light
-(IGK/IGL) chains:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># BCR annotations from scRepertoire</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.borch.dev/uploads/scRepertoire/" class="external-link">scRepertoire</a></span><span class="op">)</span></span>
-<span><span class="va">bcr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineBCR.html" class="external-link">combineBCR</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"filtered_contig_annotations.csv"</span><span class="op">)</span>,</span>
-<span>  samples <span class="op">=</span> <span class="st">"Sample1"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.borch.dev/uploads/scRepertoire/reference/combineExpression.html" class="external-link">combineExpression</a></span><span class="op">(</span><span class="va">bcr</span>, <span class="va">obj</span>,</span>
-<span>  cloneCall <span class="op">=</span> <span class="st">"aa"</span>,</span>
-<span>  group.by <span class="op">=</span> <span class="st">"sample"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Export preserving BCR metadata</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="va">obj</span>, dest <span class="op">=</span> <span class="st">"bcr_study.h5ad"</span><span class="op">)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="bcr-specific-columns">BCR-specific columns<a class="anchor" aria-label="anchor" href="#bcr-specific-columns"></a>
-</h3>
-<table class="table">
-<thead><tr class="header">
-<th>Column</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>IGH_cdr3</code></td>
-<td>Heavy chain CDR3</td>
-</tr>
-<tr class="even">
-<td>
-<code>IGK_cdr3</code> / <code>IGL_cdr3</code>
-</td>
-<td>Light chain CDR3</td>
-</tr>
-<tr class="odd">
-<td><code>isotype</code></td>
-<td>IgM, IgG, IgA, etc.</td>
-</tr>
-<tr class="even">
-<td><code>SHM_count</code></td>
-<td>Somatic hypermutation count</td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 <div class="section level2">
@@ -413,29 +766,29 @@ categorical (factor) or character types.</p></li>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Seurat → h5ad</td>
+<td>Seurat to h5ad</td>
 <td>
-<code>meta.data</code> → <code>obs</code>
+<code>meta.data</code> to <code>obs</code>
 </td>
 <td>All clonotype columns preserved</td>
 </tr>
 <tr class="even">
-<td>h5ad → Seurat</td>
+<td>h5ad to Seurat</td>
 <td>
-<code>obs</code> → <code>meta.data</code>
+<code>obs</code> to <code>meta.data</code>
 </td>
-<td>All columns loaded, categoricals → factors</td>
+<td>All columns loaded, categoricals to factors</td>
 </tr>
 <tr class="odd">
-<td>Seurat → h5mu</td>
+<td>Seurat to h5mu</td>
 <td>
-<code>meta.data</code> → <code>/obs</code> + per-modality</td>
+<code>meta.data</code> to <code>/obs</code> + per-modality</td>
 <td>Shared metadata in global obs</td>
 </tr>
 <tr class="even">
-<td>h5mu → Seurat</td>
+<td>h5mu to Seurat</td>
 <td>
-<code>/obs</code> + <code>/mod/*/obs</code> →
+<code>/obs</code> + <code>/mod/*/obs</code> to
 <code>meta.data</code>
 </td>
 <td>All modality metadata merged</td>
@@ -455,8 +808,75 @@ GEX + VDJ + ADT in a single h5mu file</li>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.3</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: America/Indiana/Indianapolis</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt; [1] reticulate_1.45.0  scConvert_0.1.0    Seurat_5.4.0       SeuratObject_5.3.0</span></span>
+<span><span class="co">#&gt; [5] sp_2.2-1          </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        </span></span>
+<span><span class="co">#&gt;   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.30        </span></span>
+<span><span class="co">#&gt;   [7] fs_1.6.7               ragg_1.5.0             vctrs_0.7.1           </span></span>
+<span><span class="co">#&gt;  [10] ROCR_1.0-12            spatstat.explore_3.7-0 htmltools_0.5.9       </span></span>
+<span><span class="co">#&gt;  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.46.1     </span></span>
+<span><span class="co">#&gt;  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     </span></span>
+<span><span class="co">#&gt;  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            </span></span>
+<span><span class="co">#&gt;  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          </span></span>
+<span><span class="co">#&gt;  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       </span></span>
+<span><span class="co">#&gt;  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              </span></span>
+<span><span class="co">#&gt;  [31] fastmap_1.2.0          MatrixGenerics_1.22.0  fitdistrplus_1.2-6    </span></span>
+<span><span class="co">#&gt;  [34] future_1.69.0          shiny_1.13.0           digest_0.6.39         </span></span>
+<span><span class="co">#&gt;  [37] S4Vectors_0.48.0       patchwork_1.3.2        tensor_1.5.1          </span></span>
+<span><span class="co">#&gt;  [40] RSpectra_0.16-2        irlba_2.3.7            GenomicRanges_1.62.1  </span></span>
+<span><span class="co">#&gt;  [43] textshaping_1.0.4      progressr_0.18.0       spatstat.sparse_3.1-0 </span></span>
+<span><span class="co">#&gt;  [46] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           </span></span>
+<span><span class="co">#&gt;  [49] compiler_4.5.2         bit64_4.6.0-1          withr_3.0.2           </span></span>
+<span><span class="co">#&gt;  [52] S7_0.2.1               fastDummies_1.7.5      MASS_7.3-65           </span></span>
+<span><span class="co">#&gt;  [55] tools_4.5.2            lmtest_0.9-40          otel_0.2.0            </span></span>
+<span><span class="co">#&gt;  [58] httpuv_1.6.16          future.apply_1.20.2    goftest_1.2-3         </span></span>
+<span><span class="co">#&gt;  [61] glue_1.8.0             nlme_3.1-168           promises_1.5.0        </span></span>
+<span><span class="co">#&gt;  [64] grid_4.5.2             Rtsne_0.17             cluster_2.1.8.2       </span></span>
+<span><span class="co">#&gt;  [67] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          </span></span>
+<span><span class="co">#&gt;  [70] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
+<span><span class="co">#&gt;  [73] data.table_1.18.2.1    XVector_0.50.0         BiocGenerics_0.56.0   </span></span>
+<span><span class="co">#&gt;  [76] BPCells_0.2.0          spatstat.geom_3.7-0    RcppAnnoy_0.0.23      </span></span>
+<span><span class="co">#&gt;  [79] ggrepel_0.9.7          RANN_2.6.2             pillar_1.11.1         </span></span>
+<span><span class="co">#&gt;  [82] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        </span></span>
+<span><span class="co">#&gt;  [85] later_1.4.8            splines_4.5.2          dplyr_1.2.0           </span></span>
+<span><span class="co">#&gt;  [88] lattice_0.22-9         survival_3.8-6         bit_4.6.0             </span></span>
+<span><span class="co">#&gt;  [91] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          </span></span>
+<span><span class="co">#&gt;  [94] pbapply_1.7-4          knitr_1.51             gridExtra_2.3         </span></span>
+<span><span class="co">#&gt;  [97] Seqinfo_1.0.0          IRanges_2.44.0         scattermore_1.2       </span></span>
+<span><span class="co">#&gt; [100] stats4_4.5.2           xfun_0.56              matrixStats_1.5.0     </span></span>
+<span><span class="co">#&gt; [103] UCSC.utils_1.6.1       stringi_1.8.7          lazyeval_0.2.2        </span></span>
+<span><span class="co">#&gt; [106] yaml_2.3.12            evaluate_1.0.5         codetools_0.2-20      </span></span>
+<span><span class="co">#&gt; [109] tibble_3.3.1           cli_3.6.5              uwot_0.2.4            </span></span>
+<span><span class="co">#&gt; [112] xtable_1.8-8           systemfonts_1.3.1      jquerylib_0.1.4       </span></span>
+<span><span class="co">#&gt; [115] GenomeInfoDb_1.46.2    dichromat_2.0-0.1      Rcpp_1.1.1            </span></span>
+<span><span class="co">#&gt; [118] globals_0.19.1         spatstat.random_3.4-4  png_0.1-8             </span></span>
+<span><span class="co">#&gt; [121] spatstat.univar_3.1-6  parallel_4.5.2         pkgdown_2.2.0         </span></span>
+<span><span class="co">#&gt; [124] ggplot2_4.0.2          dotCall64_1.2          listenv_0.10.1        </span></span>
+<span><span class="co">#&gt; [127] viridisLite_0.4.3      scales_1.4.0           ggridges_0.5.7        </span></span>
+<span><span class="co">#&gt; [130] purrr_1.2.1            crayon_1.5.3           rlang_1.1.7           </span></span>
+<span><span class="co">#&gt; [133] cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

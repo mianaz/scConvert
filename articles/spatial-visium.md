@@ -153,7 +153,7 @@ expr = adata[:, "Hpca"].X.toarray().flatten() if hasattr(adata[:, "Hpca"].X, 'to
 fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 sc_plot = ax.scatter(coords[:, 0], -coords[:, 1], c=expr, s=8, cmap="viridis", alpha=0.8)
 plt.colorbar(sc_plot, ax=ax, label="Hpca expression")
-#> <matplotlib.colorbar.Colorbar object at 0x34937efc0>
+#> <matplotlib.colorbar.Colorbar object at 0x3b69dbf20>
 ax.set_title("Hpca — scanpy/matplotlib (from scConvert h5ad)")
 ax.set_aspect("equal")
 ax.axis("off")
