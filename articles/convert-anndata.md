@@ -66,8 +66,7 @@ Converting the `Seurat` object to an AnnData file is a two-step process:
 
 1.  Save the `Seurat` object as an h5Seurat file using
     [`writeH5Seurat()`](https://mianaz.github.io/scConvert/reference/writeH5Seurat.md)
-2.  Convert to AnnData using
-    [`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html)
+2.  Convert to AnnData using `scConvert()`
 
 ``` r
 
@@ -111,8 +110,7 @@ distribution in both tools.
 
 ## Direct Loading with readH5AD
 
-In addition to the two-step
-[`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html) +
+In addition to the two-step `scConvert()` +
 [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md)
 workflow shown above, scConvert provides
 [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
@@ -155,8 +153,8 @@ reads the following from h5ad files:
 | Scenario | Recommended |
 |----|----|
 | Quick exploration of an h5ad file | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
-| Round-trip editing (load, modify, re-export) | [`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html) + [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md) |
-| Need h5Seurat for other tools | [`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html) |
+| Round-trip editing (load, modify, re-export) | `scConvert()` + [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md) |
+| Need h5Seurat for other tools | `scConvert()` |
 | Loading scanpy-processed data for Seurat analysis | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
 | Working with spatial h5ad from CellxGene | [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md) |
 
@@ -544,167 +542,87 @@ SpatialFeaturePlot(visium, features = "ACTC1", pt.size.factor = 3, alpha = 1)
 
 ## Data Mapping Reference
 
-This section provides comprehensive mapping tables showing how data is
-converted between Seurat and AnnData formats.
-
-### Core Data Slots
-
-**Layer mapping during Seurat -\> h5ad conversion (via h5Seurat):**
-
-| Seurat Slot | h5ad Destination | Notes |
-|----|----|----|
-| `data` (normalized) | `X` | All genes; used as primary matrix |
-| `counts` (raw) | `raw/X` | All genes; if available |
-| `scale.data` | *(skipped)* | Only ~2,000 variable features; recompute with `sc.pp.scale()` |
-| [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | `var['highly_variable']` | Boolean column in `var` |
-
-> **Note**: scConvert prioritizes `data` (all genes) over `scale.data`
-> (variable features only) when writing `X`. This ensures `var` contains
-> the full gene set. Variable features are preserved as a boolean
-> `highly_variable` column in `var`. `scale.data` is only used as a
-> fallback if neither `data` nor `counts` are available.
-
-**Layer mapping during h5ad -\> Seurat conversion:**
-
-| Seurat Slot | h5ad Source | Condition |
-|----|----|----|
-| `data` | `X` | Always mapped |
-| `counts` | `raw/X` | If `raw` group exists |
-| `counts` | `X` | Fallback if no `raw` group |
-| `scale.data` | N/A | Not stored in h5ad; recompute with [`ScaleData()`](https://satijalab.org/seurat/reference/ScaleData.html) |
-
-> **Note**: The `data` slot always receives `X` (which typically
-> contains log-normalized values in scanpy workflows). If the h5ad file
-> has a `raw` group, its `X` matrix becomes `counts`. This matches the
-> scanpy convention where `adata.X` holds processed data and
-> `adata.raw.X` holds raw counts. Scaled data (z-scores for ~2000
-> variable features) is not stored in standard h5ad files and should be
-> recomputed in Seurat using
-> [`ScaleData()`](https://satijalab.org/seurat/reference/ScaleData.html)
-> after conversion.
-
-**Other data structures:**
-
-| Data Type | Seurat Location | AnnData Location |
-|----|----|----|
-| Cell metadata | `meta.data` | `obs` |
-| Feature metadata | `meta.features` | `var` |
-| UMAP coords | `reductions$umap` | `obsm['X_umap']` |
-| PCA coords | `reductions$pca` | `obsm['X_pca']` |
-| Variable features | [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | `var['highly_variable']` |
-| Spatial coords | [`GetTissueCoordinates()`](https://satijalab.github.io/seurat-object/reference/GetTissueCoordinates.html) | `obsm['spatial']` |
-| Spatial images | [`Images()`](https://satijalab.github.io/seurat-object/reference/Images.html) | `uns['spatial'][lib]['images']` |
-| Neighbor graphs | [`Graphs()`](https://satijalab.github.io/seurat-object/reference/ObjectAccess.html) | `obsp['distances'/'connectivities']` |
-
-### Metadata Column Mapping
-
-Common column name conventions differ between Seurat and scanpy
-workflows:
-
-| Seurat (`meta.data`) | AnnData (`obs`) | Description |
-|----|----|----|
-| `seurat_clusters` | `leiden` / `louvain` | Cluster assignments |
-| `orig.ident` | `batch` / `sample` | Sample identifier |
-| `nCount_RNA` | `n_counts` / `total_counts` | Total UMI per cell |
-| `nFeature_RNA` | `n_genes` / `n_genes_by_counts` | Genes detected per cell |
-| `percent.mt` | `pct_counts_mt` / `percent_mito` | Mitochondrial fraction |
-| `cell_type` | `cell_type` / `celltype` | Cell type annotations |
-| `Phase` | `phase` / `cell_cycle_phase` | Cell cycle phase |
-
-### Column Name Standardization Option
-
-By default, column names are preserved exactly. Use `standardize = TRUE`
-for automatic name conversion to scanpy conventions:
-
-| Seurat Name       | scanpy Name (with `standardize=TRUE`) |
-|-------------------|---------------------------------------|
-| `seurat_clusters` | `clusters`                            |
-| `nCount_RNA`      | `n_counts`                            |
-| `nFeature_RNA`    | `n_genes`                             |
-| `percent.mt`      | `percent_mito`                        |
-
-``` r
-
-# Preserve original names (default)
-scConvert("data.h5Seurat", dest = "h5ad")
-
-# Convert to scanpy naming conventions
-scConvert("data.h5Seurat", dest = "h5ad", standardize = TRUE)
-```
-
-### Expression Scale Handling
-
-**Automatic Layer Detection**: scConvert maps layers based on h5ad
-structure:
-
-| h5ad Source | Seurat Destination | Condition             |
-|-------------|--------------------|-----------------------|
-| `X`         | `data`             | Always                |
-| `raw/X`     | `counts`           | If `raw` group exists |
-| `X`         | `counts`           | Fallback if no `raw`  |
-
-**When Scales Match**: If h5ad follows scanpy conventions (`X` =
-log-normalized, `raw.X` = counts), no additional processing needed after
-conversion.
-
-**When Scales Differ**: If `X` contains raw counts instead of normalized
-data:
-
-``` r
-
-# Normalize after conversion
-seurat_obj <- NormalizeData(seurat_obj)
-```
-
-> **Warning**: Do NOT normalize in both Python and R - this
-> double-normalizes data.
-
-### Indexing Conventions
-
-Python uses 0-based indexing; R uses 1-based. scConvert handles this
-automatically:
-
-| Data Type             | h5ad (Python)     | Seurat (R)          |
-|-----------------------|-------------------|---------------------|
-| Categorical codes     | 0-indexed         | 1-indexed factors   |
-| Cluster labels        | Unchanged         | Unchanged           |
-| Sparse matrix indices | 0-based (CSR/CSC) | 0-based (dgCMatrix) |
-
-**Example**: Cluster 0 in scanpy remains labeled “0” in Seurat, but
-internally stored as factor level 1.
-
-### Structure Verification
-
-After conversion, verify data integrity:
-
-**h5ad -\> Seurat:**
-
-``` r
-
-# Check layers and dimensions
-cat("Layers:", paste(Layers(seurat_obj), collapse = ", "), "\n")
-cat("Cells:", ncol(seurat_obj), "Genes:", nrow(seurat_obj), "\n")
-
-# Verify data ranges (log-normalized data typically 0-6)
-cat("Data range:", range(GetAssayData(seurat_obj, layer = "data")[1:100, 1:10]), "\n")
-
-# Check metadata preserved
-head(seurat_obj[[]])
-```
-
-**Seurat -\> h5ad:**
-
-``` python
-import scanpy as sc
-adata = sc.read_h5ad("converted.h5ad")
-print(adata)
-print("obs columns:", list(adata.obs.columns))
-print("X range:", adata.X.min(), "-", adata.X.max())
-```
+For complete data mapping tables covering all supported formats (h5ad,
+h5Seurat, h5mu, Loom, Zarr), including layer mapping, metadata
+conventions, indexing, and structure verification, see
+[`vignette("data-mapping-reference")`](https://mianaz.github.io/scConvert/articles/data-mapping-reference.md).
 
 ## Session Info
 
 ``` r
 
 sessionInfo()
+#> R version 4.5.2 (2025-10-31)
+#> Platform: aarch64-apple-darwin20
+#> Running under: macOS Tahoe 26.3
+#> 
+#> Matrix products: default
+#> BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
+#> LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> 
+#> locale:
+#> [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+#> 
+#> time zone: America/Indiana/Indianapolis
+#> tzcode source: internal
+#> 
+#> attached base packages:
+#> [1] stats     graphics  grDevices utils     datasets  methods   base     
+#> 
+#> other attached packages:
+#>  [1] patchwork_1.3.2               ggplot2_4.0.2                
+#>  [3] scConvert_0.1.0               Seurat_5.4.0                 
+#>  [5] SeuratObject_5.3.0            sp_2.2-1                     
+#>  [7] stxKidney.SeuratData_0.1.0    stxBrain.SeuratData_0.1.2    
+#>  [9] ssHippo.SeuratData_3.1.4      pbmcref.SeuratData_1.0.0     
+#> [11] pbmcMultiome.SeuratData_0.1.4 pbmc3k.SeuratData_3.1.4      
+#> [13] panc8.SeuratData_3.0.2        cbmc.SeuratData_3.1.4        
+#> [15] SeuratData_0.2.2.9002        
+#> 
+#> loaded via a namespace (and not attached):
+#>   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        
+#>   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.30        
+#>   [7] fs_1.6.7               ragg_1.5.0             vctrs_0.7.1           
+#>  [10] ROCR_1.0-12            spatstat.explore_3.7-0 htmltools_0.5.9       
+#>  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.46.1     
+#>  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     
+#>  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            
+#>  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          
+#>  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       
+#>  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              
+#>  [31] fastmap_1.2.0          MatrixGenerics_1.22.0  fitdistrplus_1.2-6    
+#>  [34] future_1.69.0          shiny_1.13.0           digest_0.6.39         
+#>  [37] S4Vectors_0.48.0       tensor_1.5.1           RSpectra_0.16-2       
+#>  [40] irlba_2.3.7            GenomicRanges_1.62.1   textshaping_1.0.4     
+#>  [43] labeling_0.4.3         progressr_0.18.0       spatstat.sparse_3.1-0 
+#>  [46] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           
+#>  [49] compiler_4.5.2         bit64_4.6.0-1          withr_3.0.2           
+#>  [52] S7_0.2.1               fastDummies_1.7.5      MASS_7.3-65           
+#>  [55] rappdirs_0.3.4         tools_4.5.2            lmtest_0.9-40         
+#>  [58] otel_0.2.0             httpuv_1.6.16          future.apply_1.20.2   
+#>  [61] goftest_1.2-3          glue_1.8.0             nlme_3.1-168          
+#>  [64] promises_1.5.0         grid_4.5.2             Rtsne_0.17            
+#>  [67] cluster_2.1.8.2        reshape2_1.4.5         generics_0.1.4        
+#>  [70] hdf5r_1.3.12           gtable_0.3.6           spatstat.data_3.1-9   
+#>  [73] tidyr_1.3.2            data.table_1.18.2.1    XVector_0.50.0        
+#>  [76] BiocGenerics_0.56.0    BPCells_0.2.0          spatstat.geom_3.7-0   
+#>  [79] RcppAnnoy_0.0.23       ggrepel_0.9.7          RANN_2.6.2            
+#>  [82] pillar_1.11.1          stringr_1.6.0          spam_2.11-3           
+#>  [85] RcppHNSW_0.6.0         later_1.4.8            splines_4.5.2         
+#>  [88] dplyr_1.2.0            lattice_0.22-9         bit_4.6.0             
+#>  [91] survival_3.8-6         deldir_2.0-4           tidyselect_1.2.1      
+#>  [94] miniUI_0.1.2           pbapply_1.7-4          knitr_1.51            
+#>  [97] gridExtra_2.3          Seqinfo_1.0.0          IRanges_2.44.0        
+#> [100] scattermore_1.2        stats4_4.5.2           xfun_0.56             
+#> [103] matrixStats_1.5.0      UCSC.utils_1.6.1       stringi_1.8.7         
+#> [106] lazyeval_0.2.2         yaml_2.3.12            evaluate_1.0.5        
+#> [109] codetools_0.2-20       tibble_3.3.1           cli_3.6.5             
+#> [112] uwot_0.2.4             xtable_1.8-8           reticulate_1.45.0     
+#> [115] systemfonts_1.3.1      jquerylib_0.1.4        GenomeInfoDb_1.46.2   
+#> [118] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.1        
+#> [121] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 
+#> [124] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         
+#> [127] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          
+#> [130] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          
+#> [133] rlang_1.1.7            cowplot_1.2.0
 ```
