@@ -424,7 +424,16 @@ DetectSpatialTechnology <- function(coords, metadata = NULL) {
   if (ncol(coords) != 2) return("Generic")
 
   n_unique <- sapply(1:2, function(i) length(unique(coords[, i])))
-  ifelse(all(n_unique < nrow(coords) / 2), "Visium", "SlideSeq")
+  n_cells <- nrow(coords)
+  # Visium: gridded spots with limited unique coordinate values
+  if (all(n_unique < n_cells / 2)) {
+    return("Visium")
+  }
+  # Classify by cell count and coordinate density
+  if (n_cells > 50000) {
+    return("HighDensitySpatial")  # Stereo-seq, MERFISH, Slide-seq V2
+  }
+  "Generic"  # IMC, CODEX, small Slide-seq, etc.
 }
 
 #' Read HDF5 image dataset with proper dimension handling

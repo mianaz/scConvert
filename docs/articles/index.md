@@ -15,6 +15,8 @@
   Loom](https://mianaz.github.io/scConvert/articles/convert-loom.md):
 - [Conversions: Seurat and
   Zarr](https://mianaz.github.io/scConvert/articles/convert-zarr.md):
+- [Converting Between Seurat and
+  TileDB-SOMA](https://mianaz.github.io/scConvert/articles/convert-soma.md):
 - [Multimodal Data with MuData
   (h5mu)](https://mianaz.github.io/scConvert/articles/multimodal-h5mu.md):
 - [h5Seurat File Format
@@ -32,5 +34,7 @@
   Visium](https://mianaz.github.io/scConvert/articles/spatial-visium.md):
 - [Spatial Technologies: Slide-seq, Visium HD, and
   Others](https://mianaz.github.io/scConvert/articles/spatial-technologies.md):
+- [Working with SpatialData
+  (.spatialdata.zarr)](https://mianaz.github.io/scConvert/articles/convert-spatialdata.md):
 - [Immune Repertoire (TCR/BCR) Data with
   scConvert](https://mianaz.github.io/scConvert/articles/immune-repertoire.md):

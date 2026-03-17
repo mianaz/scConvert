@@ -613,20 +613,32 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .encode_vlen_utf8 <- function(strings) {
-  con <- rawConnection(raw(0), "w")
-  on.exit(close(con))
-  # Write item count header (required by numcodecs VLenUTF8)
-  writeBin(length(strings), con, size = 4L, endian = "little")
-  for (s in strings) {
-    if (is.na(s)) {
-      writeBin(0L, con, size = 4L, endian = "little")
-    } else {
-      str_bytes <- charToRaw(s)
-      writeBin(length(str_bytes), con, size = 4L, endian = "little")
-      if (length(str_bytes) > 0) writeBin(str_bytes, con)
+  n <- length(strings)
+  is_na <- is.na(strings)
+  strings[is_na] <- ""
+  # Vectorized: convert all strings to raw bytes at once
+  byte_list <- lapply(strings, charToRaw)
+  lens <- vapply(byte_list, length, integer(1L))
+  lens[is_na] <- 0L
+  # Pre-allocate: 4 (header) + n*4 (length prefixes) + sum(lens) (string bytes)
+  total_size <- 4L + n * 4L + sum(lens)
+  buf <- raw(total_size)
+  # Write item count header
+  buf[1:4] <- writeBin(n, raw(), size = 4L, endian = "little")
+  # Pre-compute all length prefixes as raw
+  len_raw <- writeBin(lens, raw(), size = 4L, endian = "little")
+  # Interleave: [len1][bytes1][len2][bytes2]...
+  pos <- 5L
+  for (i in seq_len(n)) {
+    buf[pos:(pos + 3L)] <- len_raw[((i - 1L) * 4L + 1L):(i * 4L)]
+    pos <- pos + 4L
+    if (lens[i] > 0L) {
+      end_pos <- pos + lens[i] - 1L
+      buf[pos:end_pos] <- byte_list[[i]]
+      pos <- end_pos + 1L
     }
   }
-  rawConnectionValue(con)
+  buf
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -695,7 +707,13 @@ SeuratLayerToAnnData <- function(name) {
     flat_data <- data
     order <- "C"
   }
-  chunks <- shape  # single chunk
+  # Cap chunk size to avoid single-chunk arrays that prevent streaming reads
+  chunk_cap <- 65536L
+  if (is.matrix(data)) {
+    chunks <- c(min(shape[1], max(1L, chunk_cap %/% shape[2])), shape[2])
+  } else {
+    chunks <- min(shape, chunk_cap)
+  }
 
   # Write .zarray metadata
   meta <- list(

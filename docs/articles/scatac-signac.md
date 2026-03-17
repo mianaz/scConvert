@@ -151,13 +151,13 @@ if "X_umap" in adata.obsm:
 
 ``` r
 
-scConvert_cli("pbmc_atac.rds", "pbmc_atac_cli.h5ad")
+scConvert_cli("pbmc_atac.h5ad", "pbmc_atac_cli.h5ad")
 ```
 
 Or from the command line:
 
 ``` bash
-scconvert pbmc_atac.rds pbmc_atac_cli.h5ad
+scconvert pbmc_atac.h5ad pbmc_atac_cli.h5ad
 ```
 
 ## Convert h5ad back to Seurat with Signac
@@ -391,6 +391,12 @@ scConvert_cli("multiome.rds", "multiome.h5mu")
 4.  **For Multiome data, prefer h5mu.** It keeps RNA and ATAC in
     separate modalities within a single file, matching the muon/MuData
     convention in Python.
+
+## See Also
+
+- [Multimodal: CITE-seq and
+  Multiome](https://mianaz.github.io/scConvert/articles/multimodal-citeseq.md)
+  – combining RNA + ATAC or RNA + ADT in a single object
 
 ## Session Info
 

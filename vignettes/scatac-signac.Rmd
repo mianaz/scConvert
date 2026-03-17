@@ -170,13 +170,13 @@ if "X_umap" in adata.obsm:
 ### CLI equivalent
 
 ```{r signac_to_h5ad_cli}
-scConvert_cli("pbmc_atac.rds", "pbmc_atac_cli.h5ad")
+scConvert_cli("pbmc_atac.h5ad", "pbmc_atac_cli.h5ad")
 ```
 
 Or from the command line:
 
 ```bash
-scconvert pbmc_atac.rds pbmc_atac_cli.h5ad
+scconvert pbmc_atac.h5ad pbmc_atac_cli.h5ad
 ```
 
 ## Convert h5ad back to Seurat with Signac
@@ -387,6 +387,10 @@ scConvert_cli("multiome.rds", "multiome.h5mu")
 3. **Peak names encode genomic coordinates.** The `chr:start-end` format is preserved as `var_names` in h5ad, so peak identity survives round-trip without loss.
 
 4. **For Multiome data, prefer h5mu.** It keeps RNA and ATAC in separate modalities within a single file, matching the muon/MuData convention in Python.
+
+## See Also
+
+- [Multimodal: CITE-seq and Multiome](multimodal-citeseq.html) -- combining RNA + ATAC or RNA + ADT in a single object
 
 ## Session Info
 

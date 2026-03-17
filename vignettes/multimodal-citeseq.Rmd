@@ -24,7 +24,7 @@ has_multiome <- FALSE
 if (has_SeuratData) {
   library(SeuratData)
   has_cbmc <- tryCatch("cbmc.SeuratData" %in% rownames(InstalledData()), error = function(e) FALSE)
-  has_multiome <- FALSE
+  has_multiome <- file.exists("multiome_demo.h5mu")
 }
 has_muon <- FALSE
 has_scanpy <- FALSE
@@ -353,6 +353,11 @@ file.copy("fragments.tsv.gz.tbi", "output_dir/fragments.tsv.gz.tbi")
 | Feature metadata | Yes | Per-modality var |
 | Dimensional reductions | Partial | Stored in modality obsm |
 | Neighbor graphs | Partial | Stored in modality obsp |
+
+## See Also
+
+- [Multimodal: h5mu Format](multimodal-h5mu.html) -- native h5mu read/write without external dependencies
+- [scATAC-seq with Signac](scatac-signac.html) -- converting chromatin accessibility data
 
 ## Session Info
 

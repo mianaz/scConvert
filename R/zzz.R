@@ -1124,6 +1124,16 @@ SafeSetLayerData <- function(object, layer, value) {
       temp <- tempfile(fileext = '.h5Seurat')
       on.exit(unlink(temp), add = TRUE)
       writeH5Seurat(object = object, filename = temp, overwrite = TRUE, verbose = FALSE)
+      # Use CLI for the h5seurat→h5ad step if available (much faster)
+      if (isTRUE(getOption("scConvert.use_cli"))) {
+        cli_ok <- tryCatch(
+          scConvert_cli(input = temp, output = filename, assay = assay_name,
+                        overwrite = overwrite, verbose = verbose),
+          error = function(e2) FALSE
+        )
+        if (cli_ok) return(invisible(NULL))
+        if (verbose) message("CLI fallback failed, using R-level H5SeuratToH5AD")
+      }
       h5s <- scConnect(filename = temp, force = TRUE)
       H5SeuratToH5AD(source = h5s, dest = filename, assay = assay_name,
                       overwrite = overwrite, verbose = verbose, ...)
@@ -1193,11 +1203,21 @@ SafeSetLayerData <- function(object, layer, value) {
                                       overwrite = FALSE, verbose = TRUE, ...) {
   if (isTRUE(getOption("scConvert.use_cli"))) {
     source_file <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-    if (scConvert_cli(input = source_file, output = dest, assay = assay,
-                       overwrite = overwrite, verbose = verbose)) {
-      return(dest)
+    cli_ok <- scConvert_cli(input = source_file, output = dest, assay = assay,
+                             overwrite = overwrite, verbose = verbose)
+    if (cli_ok) {
+      # Quick validation: output exists and has expected structure
+      valid <- tryCatch({
+        h5 <- H5File$new(dest, mode = 'r')
+        ok <- h5$exists('assays') && h5$exists('cell.names')
+        h5$close_all()
+        ok
+      }, error = function(e) FALSE)
+      if (valid) return(dest)
+      if (verbose) message("CLI output validation failed, re-converting via R")
+      if (file.exists(dest)) try(file.remove(dest), silent = TRUE)
     }
-    if (verbose) message("CLI unavailable, using R-level conversion")
+    if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
   }
   H5ADToH5Seurat(source = source, dest = dest, assay = assay,
                  overwrite = overwrite, verbose = verbose)
@@ -1208,11 +1228,21 @@ SafeSetLayerData <- function(object, layer, value) {
                                       standardize = FALSE, ...) {
   if (isTRUE(getOption("scConvert.use_cli")) && !standardize) {
     source_file <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-    if (scConvert_cli(input = source_file, output = dest, assay = assay,
-                       overwrite = overwrite, verbose = verbose)) {
-      return(dest)
+    cli_ok <- scConvert_cli(input = source_file, output = dest, assay = assay,
+                             overwrite = overwrite, verbose = verbose)
+    if (cli_ok) {
+      # Validate h5ad output has X (required by anndata spec)
+      valid <- tryCatch({
+        h5 <- H5File$new(dest, mode = 'r')
+        ok <- h5$exists('X')
+        h5$close_all()
+        ok
+      }, error = function(e) FALSE)
+      if (valid) return(dest)
+      if (verbose) message("CLI h5ad output missing X, re-converting via R")
+      if (file.exists(dest)) try(file.remove(dest), silent = TRUE)
     }
-    if (verbose) message("CLI unavailable, using R-level conversion")
+    if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
   }
   H5SeuratToH5AD(source = source, dest = dest, assay = assay,
                  overwrite = overwrite, verbose = verbose,
@@ -1245,6 +1275,18 @@ SafeSetLayerData <- function(object, layer, value) {
     .h5_guessdtype_cache[[s]] <<- GuessDType(x = s)
   }
 
+  # Auto-detect CLI binary and notify user
+  cli_bin <- tryCatch(sc_find_cli(), error = function(e) NULL)
+  if (!is.null(cli_bin)) {
+    # CLI binary found — enable for scConvert_cli() and direct paths
+    options("scConvert.use_cli" = TRUE)
+  } else {
+    packageStartupMessage(
+      "scConvert: C binary not found. Run `cd ", system.file("src", package = pkgname),
+      " && make` for ~20x faster HDF5 file-to-file conversion."
+    )
+  }
+
   # Register file format loaders and savers
   RegisterFormat(ext = 'h5seurat', loader = .h5seurat_loader, saver = .h5seurat_saver)
   RegisterFormat(ext = 'h5ad', loader = .h5ad_loader, saver = .h5ad_saver)
@@ -1257,39 +1299,58 @@ SafeSetLayerData <- function(object, layer, value) {
   RegisterDirectPath('h5ad', 'h5seurat', .h5ad_to_h5seurat_direct)
   RegisterDirectPath('h5seurat', 'h5ad', .h5seurat_to_h5ad_direct)
 
+  # Helper: create CLI-first direct path with R streaming fallback
+  .make_cli_direct <- function(r_fallback_fn) {
+    function(source, dest, assay = 'RNA', overwrite = FALSE, verbose = TRUE, ...) {
+      if (isTRUE(getOption("scConvert.use_cli"))) {
+        src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
+        cli_ok <- tryCatch(
+          scConvert_cli(input = src_path, output = dest, assay = assay,
+                        overwrite = overwrite, verbose = verbose),
+          error = function(e) FALSE
+        )
+        if (isTRUE(cli_ok)) return(dest)
+        if (verbose) message("CLI unavailable, using R streaming")
+      }
+      r_fallback_fn(source, dest, assay = assay, overwrite = overwrite,
+                    verbose = verbose, ...)
+    }
+  }
+
   # Register streaming HDF5 paths (h5mu ↔ h5seurat, loom ↔ h5seurat)
-  RegisterDirectPath('h5mu', 'h5seurat', function(source, dest, ...) {
-    H5MUToH5Seurat(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('h5seurat', 'h5mu', function(source, dest, ...) {
-    H5SeuratToH5MU(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('loom', 'h5seurat', function(source, dest, ...) {
-    LoomToH5Seurat(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('h5seurat', 'loom', function(source, dest, ...) {
-    H5SeuratToLoom(source, dest, stream = TRUE, ...)
-  })
+  # CLI binary is tried first when available
+  RegisterDirectPath('h5mu', 'h5seurat', .make_cli_direct(
+    function(source, dest, ...) H5MUToH5Seurat(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('h5seurat', 'h5mu', .make_cli_direct(
+    function(source, dest, ...) H5SeuratToH5MU(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('loom', 'h5seurat', .make_cli_direct(
+    function(source, dest, ...) LoomToH5Seurat(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('h5seurat', 'loom', .make_cli_direct(
+    function(source, dest, ...) H5SeuratToLoom(source, dest, stream = TRUE, ...)
+  ))
 
   # Register streaming composite HDF5 paths (via h5seurat hub)
-  RegisterDirectPath('h5mu', 'h5ad', function(source, dest, ...) {
-    H5MUToH5AD(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('h5ad', 'h5mu', function(source, dest, ...) {
-    H5ADToH5MU(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('loom', 'h5ad', function(source, dest, ...) {
-    LoomToH5AD(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('h5ad', 'loom', function(source, dest, ...) {
-    H5ADToLoom(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('loom', 'h5mu', function(source, dest, ...) {
-    LoomToH5MU(source, dest, stream = TRUE, ...)
-  })
-  RegisterDirectPath('h5mu', 'loom', function(source, dest, ...) {
-    H5MUToLoom(source, dest, stream = TRUE, ...)
-  })
+  RegisterDirectPath('h5mu', 'h5ad', .make_cli_direct(
+    function(source, dest, ...) H5MUToH5AD(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('h5ad', 'h5mu', .make_cli_direct(
+    function(source, dest, ...) H5ADToH5MU(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('loom', 'h5ad', .make_cli_direct(
+    function(source, dest, ...) LoomToH5AD(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('h5ad', 'loom', .make_cli_direct(
+    function(source, dest, ...) H5ADToLoom(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('loom', 'h5mu', .make_cli_direct(
+    function(source, dest, ...) LoomToH5MU(source, dest, stream = TRUE, ...)
+  ))
+  RegisterDirectPath('h5mu', 'loom', .make_cli_direct(
+    function(source, dest, ...) H5MUToLoom(source, dest, stream = TRUE, ...)
+  ))
 
   # Register SOMA format
   RegisterFormat(ext = 'soma', loader = function(source, ...) {

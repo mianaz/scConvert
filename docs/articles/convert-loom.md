@@ -177,7 +177,9 @@ print(intersect(colnames(pbmc[[]]), colnames(loaded_pbmc[[]])))
 
 ``` r
 
-# Loom does not preserve UMAP embeddings, so we show expression data
+# Loom does not preserve UMAP embeddings, so FeaturePlot falls back to
+# plotting the first two dimensions available (e.g., PC_1 vs PC_2),
+# producing a PCA scatter rather than a UMAP.
 FeaturePlot(loaded_pbmc, features = "CD14", pt.size = 0.5) + ggtitle("CD14 (from Loom)")
 ```
 
@@ -477,9 +479,88 @@ scconvert data.h5ad data.loom
 scconvert data.loom data.h5seurat
 ```
 
+## See Also
+
+- [Command-Line
+  Interface](https://mianaz.github.io/scConvert/articles/cli-usage.md) –
+  convert Loom files from the shell or via
+  [`scConvert_cli()`](https://mianaz.github.io/scConvert/reference/scConvert_cli.md)
+- [Data Mapping
+  Reference](https://mianaz.github.io/scConvert/articles/data-mapping-reference.md)
+  – complete field-by-field mapping tables for all formats
+
 ## Session Info
 
 ``` r
 
 sessionInfo()
+#> R version 4.5.2 (2025-10-31)
+#> Platform: aarch64-apple-darwin20
+#> Running under: macOS Tahoe 26.3
+#> 
+#> Matrix products: default
+#> BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib 
+#> LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+#> 
+#> locale:
+#> [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+#> 
+#> time zone: America/Indiana/Indianapolis
+#> tzcode source: internal
+#> 
+#> attached base packages:
+#> [1] stats     graphics  grDevices utils     datasets  methods   base     
+#> 
+#> other attached packages:
+#>  [1] ggplot2_4.0.2                 scConvert_0.1.0              
+#>  [3] Seurat_5.4.0                  SeuratObject_5.3.0           
+#>  [5] sp_2.2-1                      stxKidney.SeuratData_0.1.0   
+#>  [7] stxBrain.SeuratData_0.1.2     ssHippo.SeuratData_3.1.4     
+#>  [9] pbmcref.SeuratData_1.0.0      pbmcMultiome.SeuratData_0.1.4
+#> [11] pbmc3k.SeuratData_3.1.4       panc8.SeuratData_3.0.2       
+#> [13] cbmc.SeuratData_3.1.4         SeuratData_0.2.2.9002        
+#> 
+#> loaded via a namespace (and not attached):
+#>   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        
+#>   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.30        
+#>   [7] fs_1.6.7               ragg_1.5.0             vctrs_0.7.1           
+#>  [10] ROCR_1.0-12            spatstat.explore_3.7-0 htmltools_0.5.9       
+#>  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.46.1     
+#>  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     
+#>  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            
+#>  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          
+#>  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       
+#>  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              
+#>  [31] fastmap_1.2.0          fitdistrplus_1.2-6     future_1.69.0         
+#>  [34] shiny_1.13.0           digest_0.6.39          patchwork_1.3.2       
+#>  [37] tensor_1.5.1           RSpectra_0.16-2        irlba_2.3.7           
+#>  [40] textshaping_1.0.4      labeling_0.4.3         progressr_0.18.0      
+#>  [43] spatstat.sparse_3.1-0  httr_1.4.8             polyclip_1.10-7       
+#>  [46] abind_1.4-8            compiler_4.5.2         bit64_4.6.0-1         
+#>  [49] withr_3.0.2            S7_0.2.1               fastDummies_1.7.5     
+#>  [52] MASS_7.3-65            rappdirs_0.3.4         tools_4.5.2           
+#>  [55] lmtest_0.9-40          otel_0.2.0             httpuv_1.6.16         
+#>  [58] future.apply_1.20.2    goftest_1.2-3          glue_1.8.0            
+#>  [61] nlme_3.1-168           promises_1.5.0         grid_4.5.2            
+#>  [64] Rtsne_0.17             cluster_2.1.8.2        reshape2_1.4.5        
+#>  [67] generics_0.1.4         hdf5r_1.3.12           gtable_0.3.6          
+#>  [70] spatstat.data_3.1-9    tidyr_1.3.2            data.table_1.18.2.1   
+#>  [73] spatstat.geom_3.7-0    RcppAnnoy_0.0.23       ggrepel_0.9.7         
+#>  [76] RANN_2.6.2             pillar_1.11.1          stringr_1.6.0         
+#>  [79] spam_2.11-3            RcppHNSW_0.6.0         later_1.4.8           
+#>  [82] splines_4.5.2          dplyr_1.2.0            lattice_0.22-9        
+#>  [85] bit_4.6.0              survival_3.8-6         deldir_2.0-4          
+#>  [88] tidyselect_1.2.1       miniUI_0.1.2           pbapply_1.7-4         
+#>  [91] knitr_1.51             gridExtra_2.3          scattermore_1.2       
+#>  [94] xfun_0.56              matrixStats_1.5.0      stringi_1.8.7         
+#>  [97] lazyeval_0.2.2         yaml_2.3.12            evaluate_1.0.5        
+#> [100] codetools_0.2-20       tibble_3.3.1           cli_3.6.5             
+#> [103] uwot_0.2.4             xtable_1.8-8           reticulate_1.45.0     
+#> [106] systemfonts_1.3.1      jquerylib_0.1.4        dichromat_2.0-0.1     
+#> [109] Rcpp_1.1.1             globals_0.19.1         spatstat.random_3.4-4 
+#> [112] png_0.1-8              spatstat.univar_3.1-6  parallel_4.5.2        
+#> [115] pkgdown_2.2.0          dotCall64_1.2          listenv_0.10.1        
+#> [118] viridisLite_0.4.3      scales_1.4.0           ggridges_0.5.7        
+#> [121] purrr_1.2.1            crayon_1.5.3           rlang_1.1.7           
+#> [124] cowplot_1.2.0
 ```

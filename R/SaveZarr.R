@@ -38,10 +38,16 @@ writeZarr <- function(object, filename, assay = DefaultAssay(object),
       stop("Destination exists: ", filename,
            ". Use overwrite = TRUE to replace.", call. = FALSE)
     }
-    unlink(filename, recursive = TRUE)
   }
 
-  if (verbose) message("Saving Seurat object to Zarr: ", filename)
+  # Atomic write: write to temp dir, rename on success
+  use_atomic <- dir.exists(filename) || file.exists(filename)
+  final_dest <- filename
+  if (use_atomic) {
+    filename <- tempfile(tmpdir = dirname(final_dest), fileext = ".zarr")
+  }
+
+  if (verbose) message("Saving Seurat object to Zarr: ", final_dest)
 
   cell.names <- Cells(object)
   assay_obj <- object[[assay]]
@@ -218,6 +224,13 @@ writeZarr <- function(object, filename, assay = DefaultAssay(object),
     }
   } else {
     .zarr_create_group(file.path(filename, "uns"))
+  }
+
+  # Atomic rename: replace original only after successful write
+  if (use_atomic) {
+    unlink(final_dest, recursive = TRUE)
+    file.rename(filename, final_dest)
+    filename <- final_dest
   }
 
   if (verbose) {

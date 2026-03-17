@@ -146,15 +146,18 @@ ImageWrite <- function(x, name, hgroup, verbose = TRUE) {
 SparseWrite <- function(x, name, hgroup, verbose = TRUE) {
   xgroup <- hgroup$create_group(name = name)
   gzip <- GetCompressionLevel()
+  chunk_cap <- 65536L
   datasets <- c('indices' = 'i', 'indptr' = 'p', 'data' = 'x')
   for (i in seq_along(along.with = datasets)) {
     ds.i <- slot(object = x, name = datasets[i])
-    if (gzip > 0L && length(ds.i) > 0L) {
+    ds.len <- length(ds.i)
+    if (gzip > 0L && ds.len > 0L) {
       xgroup$create_dataset(
         name = names(x = datasets)[i],
         robj = ds.i,
         dtype = GuessDType(x = ds.i),
-        gzip_level = gzip
+        gzip_level = gzip,
+        chunk_dims = min(ds.len, chunk_cap)
       )
     } else {
       xgroup$create_dataset(

@@ -734,16 +734,29 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL, verbose = TRU
     if (verbose) message("Adding unstructured data...")
     uns_group <- h5ad[["uns"]]
 
+    .read_uns_group <- function(grp) {
+      result <- list()
+      for (item in names(grp)) {
+        tryCatch({
+          if (inherits(grp[[item]], "H5D")) {
+            result[[item]] <- grp[[item]][]
+          } else if (inherits(grp[[item]], "H5Group")) {
+            result[[item]] <- .read_uns_group(grp[[item]])
+          }
+        }, error = function(e) {
+          if (verbose) message("Could not read uns item '", item, "': ", e$message)
+        })
+      }
+      result
+    }
+
     for (item in names(uns_group)) {
       tryCatch({
         if (inherits(uns_group[[item]], "H5D")) {
-          # Simple dataset
           seurat_obj@misc[[item]] <- uns_group[[item]][]
         } else if (inherits(uns_group[[item]], "H5Group")) {
-          # Complex group - store as list
-          if (verbose) message("  Storing complex uns item: ", item)
-          # For now, just note it exists
-          seurat_obj@misc[[paste0(item, "_present")]] <- TRUE
+          if (verbose) message("  Reading complex uns item: ", item)
+          seurat_obj@misc[[item]] <- .read_uns_group(uns_group[[item]])
         }
       }, error = function(e) {
         if (verbose) message("Could not add uns item ", item, ": ", e$message)

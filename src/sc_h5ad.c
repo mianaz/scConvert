@@ -318,11 +318,22 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
     if (opts->verbose) fprintf(stderr, "  [1/6] Transferring X...\n");
     {
         /* Seurat v5 stores layers under assays/{assay}/layers/{name},
-         * Seurat v4 stores directly under assays/{assay}/{name} */
+         * Seurat v4 stores directly under assays/{assay}/{name}.
+         * Priority: layers/data > data > layers/counts > counts
+         * When only counts exists (no data layer), counts becomes X. */
         char data_path[512];
+        int x_from_counts = 0;
         snprintf(data_path, sizeof(data_path), "assays/%s/layers/data", assay);
-        if (!sc_has_group(src, data_path))
+        if (!sc_has_group(src, data_path) && !sc_has_dataset(src, data_path)) {
             snprintf(data_path, sizeof(data_path), "assays/%s/data", assay);
+            if (!sc_has_group(src, data_path) && !sc_has_dataset(src, data_path)) {
+                /* No data layer at all — use counts as X */
+                snprintf(data_path, sizeof(data_path), "assays/%s/layers/counts", assay);
+                if (!sc_has_group(src, data_path) && !sc_has_dataset(src, data_path))
+                    snprintf(data_path, sizeof(data_path), "assays/%s/counts", assay);
+                x_from_counts = 1;
+            }
+        }
 
         if (sc_has_group(src, data_path)) {
             hid_t src_data = H5Gopen2(src, data_path, H5P_DEFAULT);
@@ -357,22 +368,26 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
             if (rc != SC_OK) goto cleanup;
         }
 
-        /* Transfer counts to raw/X if present */
+        /* Transfer counts to raw/X if present (skip if counts was already used as X) */
         char counts_path[512];
         int counts_is_sparse = 0;
-        snprintf(counts_path, sizeof(counts_path), "assays/%s/layers/counts", assay);
-        if (sc_has_group(src, counts_path)) {
-            counts_is_sparse = 1;
-        } else if (sc_has_dataset(src, counts_path)) {
-            counts_is_sparse = 0;
+        if (x_from_counts) {
+            counts_path[0] = '\0';  /* already used as X */
         } else {
-            snprintf(counts_path, sizeof(counts_path), "assays/%s/counts", assay);
-            if (sc_has_group(src, counts_path))
+            snprintf(counts_path, sizeof(counts_path), "assays/%s/layers/counts", assay);
+            if (sc_has_group(src, counts_path)) {
                 counts_is_sparse = 1;
-            else if (sc_has_dataset(src, counts_path))
+            } else if (sc_has_dataset(src, counts_path)) {
                 counts_is_sparse = 0;
-            else
-                counts_path[0] = '\0';  /* no counts found */
+            } else {
+                snprintf(counts_path, sizeof(counts_path), "assays/%s/counts", assay);
+                if (sc_has_group(src, counts_path))
+                    counts_is_sparse = 1;
+                else if (sc_has_dataset(src, counts_path))
+                    counts_is_sparse = 0;
+                else
+                    counts_path[0] = '\0';  /* no counts found */
+            }
         }
         if (counts_path[0] != '\0' && counts_is_sparse) {
             if (opts->verbose)

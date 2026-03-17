@@ -1,0 +1,221 @@
+---
+title: "Working with SpatialData (.spatialdata.zarr)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Working with SpatialData (.spatialdata.zarr)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  eval = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  out.width = "100%"
+)
+```
+
+## Overview
+
+[SpatialData](https://spatialdata.scverse.org/) is the scverse standard for
+representing spatial omics data. It uses a Zarr-based directory layout that
+combines OME-NGFF images, geometric shapes, transcript-level point
+annotations, segmentation labels, and anndata expression tables into a single
+hierarchical store. Technologies such as Visium, MERFISH, Xenium, Slide-seq,
+CODEX, and Stereo-seq all have SpatialData representations, making it a
+unifying format across the spatial omics ecosystem.
+
+scConvert provides native R support for reading and writing SpatialData stores
+with no Python dependency, and includes direct pair converters for moving data
+between SpatialData and other formats (h5ad, h5Seurat, Zarr).
+
+```{r packages}
+library(Seurat)
+library(scConvert)
+```
+
+## SpatialData store layout
+
+A `.spatialdata.zarr` directory follows this structure:
+
+```
+sample.spatialdata.zarr/
++-- .zattrs              # {"spatialdata_attrs": {"version": "0.2.0"}}
++-- .zgroup              # {"zarr_format": 2}
++-- images/              # OME-NGFF multiscale tissue images
++-- labels/              # Segmentation masks (cell/nucleus outlines)
++-- points/              # Point annotations (e.g., transcript coordinates)
++-- shapes/              # Geometric shapes (spot positions with radii)
++-- tables/              # AnnData expression tables (one or more)
+    +-- table/           # Default table (standard anndata zarr)
+```
+
+The `tables/table/` subdirectory is a standard anndata zarr store, so
+scConvert's existing Zarr infrastructure handles the expression data, metadata,
+embeddings, and graphs. The SpatialData-specific elements (shapes, points,
+images, labels) are handled by dedicated readers and writers.
+
+## Reading SpatialData
+
+Use `readSpatialData()` to load a SpatialData zarr store into a Seurat object:
+
+```{r read_basic}
+obj <- readSpatialData("visium.spatialdata.zarr")
+obj
+```
+
+The reader extracts the following components:
+
+| SpatialData Element | Seurat Destination | Notes |
+|--------------------|--------------------|-------|
+| `tables/table/` | Expression assay, metadata, reductions | Via `readZarr()` |
+| `shapes/{region}/` | Spatial coordinates (FOV/image) | x, y, radius columns |
+| `points/{region}/` | `misc$points_{name}` | Transcript-level data |
+| `images/{name}/` | Image object (if coords present) | OME-NGFF, normalized to [0,1] |
+| `labels/` | `misc$__spatialdata_labels__` | Names only (see Limitations) |
+
+SpatialData attributes (`region`, `region_key`, `instance_key`) are stored in
+`misc$__spatialdata_attrs__` and used during write-back to ensure round-trip
+fidelity.
+
+### Specifying a table
+
+SpatialData stores can contain multiple tables. Use the `table` argument to
+select which one to read:
+
+```{r read_table}
+# Read the default table
+obj <- readSpatialData("multi_table.spatialdata.zarr", table = "table")
+
+# Read a specific table
+obj <- readSpatialData("multi_table.spatialdata.zarr", table = "rna_counts")
+```
+
+### Skipping images
+
+For large stores where only the expression data and coordinates are needed,
+set `images = FALSE` to skip OME-NGFF image reading:
+
+```{r read_no_images}
+obj <- readSpatialData("large_sample.spatialdata.zarr", images = FALSE)
+```
+
+## Writing SpatialData
+
+Use `writeSpatialData()` to write a Seurat object as a SpatialData zarr store:
+
+```{r write_basic}
+writeSpatialData(obj, "output.spatialdata.zarr", overwrite = TRUE)
+```
+
+The writer creates the full SpatialData directory layout:
+
+| Seurat Source | SpatialData Destination | Notes |
+|--------------|------------------------|-------|
+| Expression, metadata, reductions | `tables/table/` | Via `writeZarr()` |
+| Tissue coordinates | `shapes/{region}/` | DataFrame with x, y, radius |
+| `misc$points_*` | `points/{name}/` | Preserved from read |
+| Image arrays | `images/{name}/` | OME-NGFF with multiscales metadata |
+
+The region name is auto-detected from the Seurat image name, or you can set it
+explicitly:
+
+```{r write_region}
+writeSpatialData(obj, "output.spatialdata.zarr",
+                 region = "spots", overwrite = TRUE)
+```
+
+If the object has metadata columns `spatial_x` and `spatial_y` but no Seurat
+image object, `writeSpatialData()` uses those as the shape coordinates.
+
+## Direct pair converters
+
+scConvert provides six direct conversion functions that combine reading and
+writing in a single call, without requiring you to manage intermediate Seurat
+objects:
+
+```{r direct_converters}
+# SpatialData <-> h5ad
+SpatialDataToH5AD("sample.spatialdata.zarr", "sample.h5ad")
+H5ADToSpatialData("sample.h5ad", "sample.spatialdata.zarr")
+
+# SpatialData <-> h5Seurat
+SpatialDataToH5Seurat("sample.spatialdata.zarr", "sample.h5seurat")
+H5SeuratToSpatialData("sample.h5seurat", "sample.spatialdata.zarr")
+
+# SpatialData <-> standard Zarr (anndata zarr without SpatialData wrapper)
+SpatialDataToZarr("sample.spatialdata.zarr", "sample.zarr")
+ZarrToSpatialData("sample.zarr", "sample.spatialdata.zarr")
+```
+
+All six functions accept `overwrite = TRUE` and `verbose = TRUE/FALSE`
+arguments. The `SpatialDataToH5AD`, `SpatialDataToH5Seurat`, and
+`SpatialDataToZarr` functions also accept a `table` argument to specify which
+table to extract from the store.
+
+These converters also work through the `scConvert()` dispatcher:
+
+```{r scconvert_dispatch}
+scConvert("sample.spatialdata.zarr", dest = "sample.h5ad", overwrite = TRUE)
+scConvert("sample.h5ad", dest = "output.spatialdata.zarr", overwrite = TRUE)
+```
+
+## Python interoperability
+
+SpatialData stores written by scConvert are readable by the Python
+[spatialdata](https://spatialdata.scverse.org/) library and its ecosystem
+(squidpy, napari-spatialdata):
+
+```python
+import spatialdata as sd
+
+sdata = sd.read_zarr("output.spatialdata.zarr")
+print(sdata)
+print(sdata.tables)    # Expression tables
+print(sdata.shapes)    # Spot/cell geometries
+
+# Visualize with spatialdata-plot
+sdata.pl.render_shapes().pl.show()
+```
+
+Conversely, SpatialData stores created by the Python `spatialdata` library
+(e.g., from `squidpy.datasets` or `spatialdata-io` readers) can be loaded
+directly with `readSpatialData()`.
+
+## Known limitations
+
+- **Labels/segmentation masks**: scConvert records the names of label layers
+  found in `labels/` but does not read the full mask arrays. These are
+  typically large (cell/nucleus segmentation at pixel resolution) and have no
+  natural representation in Seurat. Label names are preserved in
+  `misc$__spatialdata_labels__` for metadata purposes.
+
+- **Multiple tables**: Only one table is read per call. If your SpatialData
+  store contains multiple tables (e.g., separate RNA and protein assays), call
+  `readSpatialData()` once per table and merge the resulting Seurat objects.
+
+- **Large images**: OME-NGFF images larger than 100 million pixels are skipped
+  to avoid memory issues. Use `images = FALSE` and work with coordinates only,
+  or downsample the image externally before reading.
+
+- **Coordinate transforms**: SpatialData supports affine and sequence
+  coordinate transformations between elements. These are not currently applied
+  during reading; coordinates are used as-is from the zarr arrays.
+
+## See also
+
+- [Spatial Transcriptomics: Visium](spatial-visium.html) -- Visium-specific
+  workflows with tissue images and squidpy validation
+- [Spatial Technologies](spatial-technologies.html) -- support for MERFISH,
+  Slide-seq, Xenium, CODEX, and other platforms
+- [Conversions: Seurat and Zarr](convert-zarr.html) -- general Zarr format
+  details, streaming conversion, and Python interop
+
+## Session Info
+
+```{r session, eval = TRUE}
+sessionInfo()
+```

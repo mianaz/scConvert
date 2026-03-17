@@ -219,6 +219,12 @@ scConvert(obj, dest = "bcr_study.h5ad")
 | Seurat → h5mu | `meta.data` → `/obs` + per-modality | Shared metadata in global obs |
 | h5mu → Seurat | `/obs` + `/mod/*/obs` → `meta.data` | All modality metadata merged |
 
+## See Also
+
+- [Multimodal: h5mu
+  Format](https://mianaz.github.io/scConvert/articles/multimodal-h5mu.md)
+  – storing GEX + VDJ + ADT in a single h5mu file
+
 ## Session Info
 
 ``` r

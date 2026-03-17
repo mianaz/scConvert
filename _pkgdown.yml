@@ -197,6 +197,7 @@ articles:
     contents:
       - convert-loom
       - convert-zarr
+      - convert-soma
       - multimodal-h5mu
       - h5Seurat-spec
       - data-mapping-reference
@@ -208,5 +209,6 @@ articles:
       - scatac-signac
       - spatial-visium
       - spatial-technologies
+      - convert-spatialdata
       - immune-repertoire
 

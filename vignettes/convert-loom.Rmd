@@ -9,7 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(
-  eval = FALSE,
+  eval = TRUE,
   message = FALSE,
   warning = FALSE,
   collapse = TRUE,
@@ -171,7 +171,9 @@ print(intersect(colnames(pbmc[[]]), colnames(loaded_pbmc[[]])))
 ### Visualize loaded data
 
 ```{r plot_loom_feature, eval = has_SeuratData, purl = FALSE, fig.width = 8, fig.height = 6}
-# Loom does not preserve UMAP embeddings, so we show expression data
+# Loom does not preserve UMAP embeddings, so FeaturePlot falls back to
+# plotting the first two dimensions available (e.g., PC_1 vs PC_2),
+# producing a PCA scatter rather than a UMAP.
 FeaturePlot(loaded_pbmc, features = "CD14", pt.size = 0.5) + ggtitle("CD14 (from Loom)")
 ```
 
@@ -445,6 +447,11 @@ The C CLI binary also supports Loom for maximum speed:
 scconvert data.h5ad data.loom
 scconvert data.loom data.h5seurat
 ```
+
+## See Also
+
+- [Command-Line Interface](cli-usage.html) -- convert Loom files from the shell or via `scConvert_cli()`
+- [Data Mapping Reference](data-mapping-reference.html) -- complete field-by-field mapping tables for all formats
 
 ## Session Info
 

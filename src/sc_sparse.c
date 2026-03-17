@@ -526,8 +526,12 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
 
         /* Check if it's a string type */
         if (H5Tget_class(src_type) == H5T_STRING) {
-            /* String dataset — read all at once (strings are typically small) */
-            hid_t memtype = sc_create_vlen_str_type();
+            /* String dataset — read all at once (strings are typically small).
+             * Use a vlen read type matching the source charset to avoid
+             * HDF5 2.x read failures with charset mismatches. */
+            hid_t memtype = H5Tcopy(H5T_C_S1);
+            H5Tset_size(memtype, H5T_VARIABLE);
+            H5Tset_cset(memtype, H5Tget_cset(src_type));
             char **strs = (char **)calloc(dims, sizeof(char *));
             if (!strs) {
                 H5Tclose(memtype);
@@ -536,16 +540,17 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
             }
             H5Dread(src_dset, memtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, strs);
 
-            /* Write */
+            /* Write as UTF-8 vlen strings (anndata/h5seurat standard) */
+            hid_t write_type = sc_create_vlen_str_type();
             hsize_t chunk = dims;
             hid_t dst_space_d = H5Screate_simple(1, &dims, NULL);
             hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
             H5Pset_chunk(dcpl, 1, &chunk);
             if (gzip_level > 0) H5Pset_deflate(dcpl, (unsigned)gzip_level);
 
-            hid_t dst_dset = H5Dcreate2(dst_grp, name, memtype, dst_space_d,
+            hid_t dst_dset = H5Dcreate2(dst_grp, name, write_type, dst_space_d,
                                          H5P_DEFAULT, dcpl, H5P_DEFAULT);
-            H5Dwrite(dst_dset, memtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, strs);
+            H5Dwrite(dst_dset, write_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, strs);
 
             /* Cleanup */
             hid_t reclaim_space = H5Screate_simple(1, &dims, NULL);
@@ -556,6 +561,7 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
             H5Dclose(dst_dset);
             H5Pclose(dcpl);
             H5Sclose(dst_space_d);
+            H5Tclose(write_type);
             H5Tclose(memtype);
             H5Tclose(src_type);
             return SC_OK;

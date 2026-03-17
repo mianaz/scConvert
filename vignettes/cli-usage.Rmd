@@ -11,7 +11,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE,
+  eval = TRUE,
   purl = FALSE
 )
 can_bench <- requireNamespace("scConvert", quietly = TRUE) &&
@@ -142,7 +142,7 @@ Rscript -e 'scConvert::scConvert_cli("data.rds", "data.zarr")'
 
 ## Using `scConvert_cli()` from R
 
-```{r basic_usage, purl = FALSE}
+```{r basic_usage, eval = FALSE, purl = FALSE}
 library(scConvert)
 
 # Any-to-any conversion
@@ -170,7 +170,7 @@ scConvert_cli("data.h5ad", "output.h5seurat",
 
 ### Batch conversion
 
-```{r batch, purl = FALSE}
+```{r batch, eval = FALSE, purl = FALSE}
 # Convert all h5ad files in a directory to h5seurat
 h5ad_files <- list.files(".", pattern = "\\.h5ad$", full.names = TRUE)
 for (f in h5ad_files) {
@@ -392,7 +392,7 @@ ggplot(df, aes(x = cells, y = seconds, color = method, shape = method)) +
 For datasets exceeding available memory, `readH5AD()` supports on-disk
 loading via BPCells:
 
-```{r bpcells, purl = FALSE}
+```{r bpcells, eval = FALSE, purl = FALSE}
 obj <- readH5AD("large_dataset.h5ad", use.bpcells = TRUE)
 ```
 
@@ -407,6 +407,10 @@ obj <- readH5AD("large_dataset.h5ad", use.bpcells = TRUE)
 | Spatial | Yes | Yes | Limited | -- | Yes | Yes | Limited |
 | Cloud-native | -- | -- | -- | -- | Yes | -- | -- |
 | C binary | Yes | Yes | Yes | Yes | Yes | -- | -- |
+
+## See Also
+
+- [Converting Between Seurat and Zarr](convert-zarr.html) -- direct Zarr streaming converters and round-trip examples
 
 ## Session Info
 

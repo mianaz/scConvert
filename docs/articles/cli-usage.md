@@ -401,6 +401,12 @@ obj <- readH5AD("large_dataset.h5ad", use.bpcells = TRUE)
 | Cloud-native   |     –     |    –     |     –     |     –     |    Yes    |   –    |    –    |
 | C binary       |    Yes    |   Yes    |    Yes    |    Yes    |    Yes    |   –    |    –    |
 
+## See Also
+
+- [Converting Between Seurat and
+  Zarr](https://mianaz.github.io/scConvert/articles/convert-zarr.md) –
+  direct Zarr streaming converters and round-trip examples
+
 ## Session Info
 
 ``` r
@@ -429,8 +435,8 @@ sessionInfo()
 #> 
 #> loaded via a namespace (and not attached):
 #>   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        
-#>   [4] spatstat.utils_3.2-1   farver_2.1.2           rmarkdown_2.30        
-#>   [7] fs_1.6.6               ragg_1.5.0             vctrs_0.7.1           
+#>   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.30        
+#>   [7] fs_1.6.7               ragg_1.5.0             vctrs_0.7.1           
 #>  [10] ROCR_1.0-12            spatstat.explore_3.7-0 htmltools_0.5.9       
 #>  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.46.1     
 #>  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     
@@ -464,9 +470,9 @@ sessionInfo()
 #> [100] tibble_3.3.1           cli_3.6.5              uwot_0.2.4            
 #> [103] xtable_1.8-8           reticulate_1.45.0      systemfonts_1.3.1     
 #> [106] jquerylib_0.1.4        dichromat_2.0-0.1      Rcpp_1.1.1            
-#> [109] globals_0.19.0         spatstat.random_3.4-4  png_0.1-8             
+#> [109] globals_0.19.1         spatstat.random_3.4-4  png_0.1-8             
 #> [112] spatstat.univar_3.1-6  parallel_4.5.2         pkgdown_2.2.0         
-#> [115] dotCall64_1.2          listenv_0.10.0         viridisLite_0.4.3     
+#> [115] dotCall64_1.2          listenv_0.10.1         viridisLite_0.4.3     
 #> [118] scales_1.4.0           ggridges_0.5.7         purrr_1.2.1           
 #> [121] crayon_1.5.3           rlang_1.1.7            cowplot_1.2.0
 ```

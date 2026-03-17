@@ -3070,7 +3070,8 @@ H5SeuratToH5AD <- function(
     return(invisible(x = NULL))
   }
   # Because AnnData can't figure out that sparse matrices are stored as groups
-  AddEncoding <- function(dname) {
+  # known_ncols: pass the known number of columns to avoid reading all indices
+  AddEncoding <- function(dname, known_ncols = NULL) {
     encoding.info <- c('type' = 'csr_matrix', 'version' = '0.1.0')
     names(x = encoding.info) <- paste0('encoding-', names(x = encoding.info))
     if (inherits(x = dfile[[dname]], what = 'H5Group')) {
@@ -3097,11 +3098,16 @@ H5SeuratToH5AD <- function(
         indptr_len <- prod(dfile[[dname]][['indptr']]$dims)
         nrows <- as.integer(indptr_len - 1L)
 
-        all_indices <- dfile[[dname]][['indices']][]
-        ncols <- if (length(all_indices) > 0) {
-          as.integer(max(all_indices) + 1L)
+        # Use known_ncols if available; fall back to dims attr from source
+        ncols <- if (!is.null(known_ncols)) {
+          as.integer(known_ncols)
+        } else if (dfile[[dname]]$attr_exists(attr_name = 'dims')) {
+          dims <- h5attr(dfile[[dname]], 'dims')
+          as.integer(dims[1])  # dims[1] is nrow of original matrix = ncols after CSC->CSR
         } else {
-          0L
+          # Last resort: read indices (slow for large matrices)
+          all_indices <- dfile[[dname]][['indices']][]
+          if (length(all_indices) > 0) as.integer(max(all_indices) + 1L) else 0L
         }
 
         shape <- c(nrows, ncols)
@@ -4574,8 +4580,13 @@ DirectSeuratToH5AD <- function(
   if (file.exists(filename) && !overwrite) {
     stop("File '", filename, "' already exists; set overwrite = TRUE", call. = FALSE)
   }
-  if (file.exists(filename) && overwrite) {
-    file.remove(filename)
+
+  # Atomic write: write to temp file, rename on success to avoid data loss on failure
+  use_atomic <- file.exists(filename) && overwrite
+  write_target <- if (use_atomic) {
+    tempfile(tmpdir = dirname(filename), fileext = ".h5ad")
+  } else {
+    filename
   }
 
   gzip <- GetCompressionLevel()
@@ -4587,8 +4598,8 @@ DirectSeuratToH5AD <- function(
 
   if (verbose) message("Writing h5ad directly from Seurat object (", n_cells, " cells x ", n_genes, " genes)")
 
-  # Create h5ad file
-  dfile <- H5File$new(filename, mode = 'w')
+  # Create h5ad file (may be temp file for atomic write)
+  dfile <- H5File$new(write_target, mode = 'w')
   on.exit(tryCatch(dfile$close_all(), error = function(e) NULL), add = TRUE)
 
   # Local aliases for shared helpers (capture gzip from enclosing scope)
@@ -4698,7 +4709,12 @@ DirectSeuratToH5AD <- function(
   }
 
   # ========== varp (pairwise variable annotations) ==========
+  # Check both global __varp__ and per-assay __varp__.{assay} (from MuData roundtrips)
   varp_data <- tryCatch(Misc(object)[["__varp__"]], error = function(e) NULL)
+  if (is.null(varp_data) || !is.list(varp_data) || length(varp_data) == 0) {
+    varp_key <- paste0("__varp__.", assay)
+    varp_data <- tryCatch(Misc(object)[[varp_key]], error = function(e) NULL)
+  }
   if (!is.null(varp_data) && is.list(varp_data) && length(varp_data) > 0) {
     if (verbose) message("  Writing varp (", length(varp_data), " pairwise annotations)...")
     varp_grp <- dfile$create_group("varp")
@@ -4774,6 +4790,11 @@ DirectSeuratToH5AD <- function(
 
   dfile$flush()
   dfile$close_all()
+
+  # Atomic rename: replace original only after successful write
+  if (use_atomic) {
+    file.rename(write_target, filename)
+  }
 
   if (verbose) message("  Done: ", filename)
   invisible(filename)
@@ -6887,49 +6908,7 @@ scConvert_cli <- function(
   stype <- FileType(file = input)
   dtype <- FileType(file = output)
 
-  # Direct streaming converters (zarr pairs + h5mu/loom pairs)
-  streaming_converters <- list(
-    # zarr pairs
-    "h5ad|zarr"      = function() H5ADToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "zarr|h5ad"      = function() ZarrToH5AD(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "h5seurat|zarr"  = function() H5SeuratToZarr(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "zarr|h5seurat"  = function() ZarrToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # h5mu ↔ zarr
-    "h5mu|zarr"      = function() H5MUToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "zarr|h5mu"      = function() ZarrToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ zarr
-    "loom|zarr"      = function() LoomToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "zarr|loom"      = function() ZarrToLoom(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # h5mu ↔ h5seurat (R streaming)
-    "h5mu|h5seurat"  = function() H5MUToH5Seurat(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "h5seurat|h5mu"  = function() H5SeuratToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ h5seurat (R streaming)
-    "loom|h5seurat"  = function() LoomToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "h5seurat|loom"  = function() H5SeuratToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # h5mu ↔ h5ad (R streaming via h5seurat)
-    "h5mu|h5ad"      = function() H5MUToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "h5ad|h5mu"      = function() H5ADToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ h5ad (R streaming via h5seurat)
-    "loom|h5ad"      = function() LoomToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "h5ad|loom"      = function() H5ADToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ h5mu (R streaming via h5seurat)
-    "loom|h5mu"      = function() LoomToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "h5mu|loom"      = function() H5MUToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose)
-  )
-
-  pair_key <- paste0(stype, "|", dtype)
-  if (pair_key %in% names(streaming_converters)) {
-    result <- tryCatch({
-      streaming_converters[[pair_key]]()
-      TRUE
-    }, error = function(e) {
-      if (verbose) message("Direct conversion failed: ", e$message,
-                           " — falling back to R hub")
-      FALSE
-    })
-    if (result) return(TRUE)
-  }
-
+  # Tier 1: Try C binary first for all supported HDF5/loom/zarr format pairs
   cli_formats <- c("h5ad", "h5seurat", "h5mu", "loom", "zarr")
   use_c_cli <- stype %in% cli_formats && dtype %in% cli_formats
 
@@ -6969,8 +6948,51 @@ scConvert_cli <- function(
         try(file.remove(output), silent = TRUE)
       }
       if (result) return(TRUE)
-      if (verbose) message("C binary failed, falling back to R conversion")
+      if (verbose) message("C binary failed, falling back to R streaming")
     }
+  }
+
+  # Tier 2: R streaming converters (zarr pairs + h5mu/loom pairs)
+  streaming_converters <- list(
+    # zarr pairs
+    "h5ad|zarr"      = function() H5ADToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|h5ad"      = function() ZarrToH5AD(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5seurat|zarr"  = function() H5SeuratToZarr(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|h5seurat"  = function() ZarrToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # h5mu ↔ zarr
+    "h5mu|zarr"      = function() H5MUToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|h5mu"      = function() ZarrToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ zarr
+    "loom|zarr"      = function() LoomToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "zarr|loom"      = function() ZarrToLoom(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # h5mu ↔ h5seurat (R streaming)
+    "h5mu|h5seurat"  = function() H5MUToH5Seurat(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5seurat|h5mu"  = function() H5SeuratToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ h5seurat (R streaming)
+    "loom|h5seurat"  = function() LoomToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5seurat|loom"  = function() H5SeuratToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # h5mu ↔ h5ad (R streaming via h5seurat)
+    "h5mu|h5ad"      = function() H5MUToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5ad|h5mu"      = function() H5ADToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ h5ad (R streaming via h5seurat)
+    "loom|h5ad"      = function() LoomToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5ad|loom"      = function() H5ADToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom ↔ h5mu (R streaming via h5seurat)
+    "loom|h5mu"      = function() LoomToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    "h5mu|loom"      = function() H5MUToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose)
+  )
+
+  pair_key <- paste0(stype, "|", dtype)
+  if (pair_key %in% names(streaming_converters)) {
+    result <- tryCatch({
+      streaming_converters[[pair_key]]()
+      TRUE
+    }, error = function(e) {
+      if (verbose) message("R streaming failed: ", e$message,
+                           " — falling back to R hub")
+      FALSE
+    })
+    if (result) return(TRUE)
   }
 
   # R-level conversion: supports all format pairs

@@ -52,10 +52,28 @@ WriteV5Layer <- function(h5_group, layer_name, matrix_data, features = NULL, ver
 
     layer_group <- layers_group$create_group(layer_name)
 
-    # Write sparse matrix in CSC format (V5 standard)
-    layer_group[["data"]] <- matrix_data@x
-    layer_group[["indices"]] <- as.integer(matrix_data@i)
-    layer_group[["indptr"]] <- as.integer(matrix_data@p)
+    # Write sparse matrix in CSC format (V5 standard) with chunking + compression
+    gzip <- GetCompressionLevel()
+    chunk_cap <- 65536L
+    for (.ds_info in list(
+      list(name = "data",    vals = matrix_data@x),
+      list(name = "indices", vals = as.integer(matrix_data@i)),
+      list(name = "indptr",  vals = as.integer(matrix_data@p))
+    )) {
+      .n <- length(.ds_info$vals)
+      if (gzip > 0L && .n > 0L) {
+        layer_group$create_dataset(
+          name = .ds_info$name, robj = .ds_info$vals,
+          dtype = GuessDType(x = .ds_info$vals),
+          gzip_level = gzip, chunk_dims = min(.n, chunk_cap)
+        )
+      } else {
+        layer_group$create_dataset(
+          name = .ds_info$name, robj = .ds_info$vals,
+          dtype = GuessDType(x = .ds_info$vals)
+        )
+      }
+    }
 
     layer_group$create_attr("shape", c(nrow(matrix_data), ncol(matrix_data)))
     layer_group$create_attr("encoding-type", "csc_matrix")

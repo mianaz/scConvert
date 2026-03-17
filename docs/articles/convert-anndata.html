@@ -42,6 +42,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Conversions: Seurat and Loom</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Conversions: Seurat and Zarr</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-soma.html">Converting Between Seurat and TileDB-SOMA</a></li>
     <li><a class="dropdown-item" href="../articles/multimodal-h5mu.html">Multimodal Data with MuData (h5mu)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat File Format Specification</a></li>
     <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Data Mapping Reference</a></li>
@@ -51,6 +52,7 @@
     <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion with Signac</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-visium.html">Spatial Transcriptomics: Visium</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies: Slide-seq, Visium HD, and Others</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">Working with SpatialData (.spatialdata.zarr)</a></li>
     <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire (TCR/BCR) Data with scConvert</a></li>
   </ul>
 </li>
@@ -132,14 +134,14 @@ two-step process:</p>
 <li>Save the <code>Seurat</code> object as an h5Seurat file using
 <code><a href="../reference/writeH5Seurat.html">writeH5Seurat()</a></code>
 </li>
-<li>Convert to AnnData using <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code>
+<li>Convert to AnnData using <code>scConvert()</code>
 </li>
 </ol>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Seurat layers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Seurat layers: counts, data, scale.data</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="st">"pbmc3k.h5Seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"pbmc3k.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>We can view the AnnData file in Scanpy:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"pbmc3k.h5ad"</span>)</span>
@@ -162,7 +164,7 @@ distribution in both tools.</p>
 <div class="section level2">
 <h2 id="direct-loading-with-readh5ad">Direct Loading with readH5AD<a class="anchor" aria-label="anchor" href="#direct-loading-with-readh5ad"></a>
 </h2>
-<p>In addition to the two-step <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> +
+<p>In addition to the two-step <code>scConvert()</code> +
 <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code> workflow shown above, scConvert provides
 <code><a href="../reference/readH5AD.html">readH5AD()</a></code> for loading h5ad files directly into Seurat
 objects without creating an intermediate h5Seurat file.</p>
@@ -275,12 +277,12 @@ objects without creating an intermediate h5Seurat file.</p>
 <tr class="even">
 <td>Round-trip editing (load, modify, re-export)</td>
 <td>
-<code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> + <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code>
+<code>scConvert()</code> + <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code>
 </td>
 </tr>
 <tr class="odd">
 <td>Need h5Seurat for other tools</td>
-<td><code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code></td>
+<td><code>scConvert()</code></td>
 </tr>
 <tr class="even">
 <td>Loading scanpy-processed data for Seurat analysis</td>
@@ -346,7 +348,7 @@ During conversion, scConvert automatically uses gene symbols when
 <p><img src="convert-anndata_files/figure-html/normalize_crc-3.png" class="r-plt" alt="" width="100%"></p>
 <p>Convert to Seurat:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"crc_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"crc_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">crc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"crc_normalized.h5seurat"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify layer mapping: X -&gt; data (log-normalized), raw/X -&gt; counts (if exists)</span></span>
@@ -462,7 +464,7 @@ times, once per assay</li>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"RNA"</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">cbmc</span>, <span class="st">"cbmc_rna.h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"cbmc_rna.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"cbmc_rna.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Verify and visualize the converted file in scanpy:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>adata_rna <span class="op">=</span> sc.read_h5ad(<span class="st">"cbmc_rna.h5ad"</span>)</span>
@@ -483,7 +485,7 @@ cell metadata (obs), gene info (var), and UMAP coordinates.</p>
 <code class="sourceCode R"><span><span class="co"># Convert ADT assay</span></span>
 <span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"ADT"</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">cbmc</span>, <span class="st">"cbmc_adt.h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"cbmc_adt.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"cbmc_adt.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
 <span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>adata_adt <span class="op">=</span> sc.read_h5ad(<span class="st">"cbmc_adt.h5ad"</span>)</span>
 <span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="bu">print</span>(adata_adt)</span>
@@ -568,7 +570,7 @@ with scanpy/squidpy standard workflows:</p>
 <p><img src="convert-anndata_files/figure-html/squidpy_spatial_ACTC1-1.png" class="r-plt" alt="" width="100%"></p>
 <p>Convert to Seurat:</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"visium_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"visium_normalized.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">visium</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="st">"visium_normalized.h5seurat"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Verify layer mapping: X -&gt; data (log-normalized)</span></span>
@@ -595,369 +597,89 @@ in <code>obsp</code>) may need to be recomputed in Seurat using
 <div class="section level2">
 <h2 id="data-mapping-reference">Data Mapping Reference<a class="anchor" aria-label="anchor" href="#data-mapping-reference"></a>
 </h2>
-<p>This section provides comprehensive mapping tables showing how data
-is converted between Seurat and AnnData formats.</p>
-<div class="section level3">
-<h3 id="core-data-slots">Core Data Slots<a class="anchor" aria-label="anchor" href="#core-data-slots"></a>
-</h3>
-<p><strong>Layer mapping during Seurat -&gt; h5ad conversion (via
-h5Seurat):</strong></p>
-<table class="table">
-<colgroup>
-<col width="34%">
-<col width="47%">
-<col width="18%">
-</colgroup>
-<thead><tr class="header">
-<th>Seurat Slot</th>
-<th>h5ad Destination</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>
-<code>data</code> (normalized)</td>
-<td><code>X</code></td>
-<td>All genes; used as primary matrix</td>
-</tr>
-<tr class="even">
-<td>
-<code>counts</code> (raw)</td>
-<td><code>raw/X</code></td>
-<td>All genes; if available</td>
-</tr>
-<tr class="odd">
-<td><code>scale.data</code></td>
-<td><em>(skipped)</em></td>
-<td>Only ~2,000 variable features; recompute with
-<code>sc.pp.scale()</code>
-</td>
-</tr>
-<tr class="even">
-<td><code><a href="https://satijalab.github.io/seurat-object/reference/VariableFeatures.html" class="external-link">VariableFeatures()</a></code></td>
-<td><code>var['highly_variable']</code></td>
-<td>Boolean column in <code>var</code>
-</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p><strong>Note</strong>: scConvert prioritizes <code>data</code> (all
-genes) over <code>scale.data</code> (variable features only) when
-writing <code>X</code>. This ensures <code>var</code> contains the full
-gene set. Variable features are preserved as a boolean
-<code>highly_variable</code> column in <code>var</code>.
-<code>scale.data</code> is only used as a fallback if neither
-<code>data</code> nor <code>counts</code> are available.</p>
-</blockquote>
-<p><strong>Layer mapping during h5ad -&gt; Seurat
-conversion:</strong></p>
-<table class="table">
-<colgroup>
-<col width="35%">
-<col width="35%">
-<col width="29%">
-</colgroup>
-<thead><tr class="header">
-<th>Seurat Slot</th>
-<th>h5ad Source</th>
-<th>Condition</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>data</code></td>
-<td><code>X</code></td>
-<td>Always mapped</td>
-</tr>
-<tr class="even">
-<td><code>counts</code></td>
-<td><code>raw/X</code></td>
-<td>If <code>raw</code> group exists</td>
-</tr>
-<tr class="odd">
-<td><code>counts</code></td>
-<td><code>X</code></td>
-<td>Fallback if no <code>raw</code> group</td>
-</tr>
-<tr class="even">
-<td><code>scale.data</code></td>
-<td>N/A</td>
-<td>Not stored in h5ad; recompute with <code><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData()</a></code>
-</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p><strong>Note</strong>: The <code>data</code> slot always receives
-<code>X</code> (which typically contains log-normalized values in scanpy
-workflows). If the h5ad file has a <code>raw</code> group, its
-<code>X</code> matrix becomes <code>counts</code>. This matches the
-scanpy convention where <code>adata.X</code> holds processed data and
-<code>adata.raw.X</code> holds raw counts. Scaled data (z-scores for
-~2000 variable features) is not stored in standard h5ad files and should
-be recomputed in Seurat using <code><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData()</a></code> after
-conversion.</p>
-</blockquote>
-<p><strong>Other data structures:</strong></p>
-<table class="table">
-<thead><tr class="header">
-<th>Data Type</th>
-<th>Seurat Location</th>
-<th>AnnData Location</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Cell metadata</td>
-<td><code>meta.data</code></td>
-<td><code>obs</code></td>
-</tr>
-<tr class="even">
-<td>Feature metadata</td>
-<td><code>meta.features</code></td>
-<td><code>var</code></td>
-</tr>
-<tr class="odd">
-<td>UMAP coords</td>
-<td><code>reductions$umap</code></td>
-<td><code>obsm['X_umap']</code></td>
-</tr>
-<tr class="even">
-<td>PCA coords</td>
-<td><code>reductions$pca</code></td>
-<td><code>obsm['X_pca']</code></td>
-</tr>
-<tr class="odd">
-<td>Variable features</td>
-<td><code><a href="https://satijalab.github.io/seurat-object/reference/VariableFeatures.html" class="external-link">VariableFeatures()</a></code></td>
-<td><code>var['highly_variable']</code></td>
-</tr>
-<tr class="even">
-<td>Spatial coords</td>
-<td><code><a href="https://satijalab.github.io/seurat-object/reference/GetTissueCoordinates.html" class="external-link">GetTissueCoordinates()</a></code></td>
-<td><code>obsm['spatial']</code></td>
-</tr>
-<tr class="odd">
-<td>Spatial images</td>
-<td><code><a href="https://satijalab.github.io/seurat-object/reference/Images.html" class="external-link">Images()</a></code></td>
-<td><code>uns['spatial'][lib]['images']</code></td>
-</tr>
-<tr class="even">
-<td>Neighbor graphs</td>
-<td><code><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Graphs()</a></code></td>
-<td><code>obsp['distances'/'connectivities']</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="metadata-column-mapping">Metadata Column Mapping<a class="anchor" aria-label="anchor" href="#metadata-column-mapping"></a>
-</h3>
-<p>Common column name conventions differ between Seurat and scanpy
-workflows:</p>
-<table class="table">
-<colgroup>
-<col width="41%">
-<col width="33%">
-<col width="25%">
-</colgroup>
-<thead><tr class="header">
-<th>Seurat (<code>meta.data</code>)</th>
-<th>AnnData (<code>obs</code>)</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>seurat_clusters</code></td>
-<td>
-<code>leiden</code> / <code>louvain</code>
-</td>
-<td>Cluster assignments</td>
-</tr>
-<tr class="even">
-<td><code>orig.ident</code></td>
-<td>
-<code>batch</code> / <code>sample</code>
-</td>
-<td>Sample identifier</td>
-</tr>
-<tr class="odd">
-<td><code>nCount_RNA</code></td>
-<td>
-<code>n_counts</code> / <code>total_counts</code>
-</td>
-<td>Total UMI per cell</td>
-</tr>
-<tr class="even">
-<td><code>nFeature_RNA</code></td>
-<td>
-<code>n_genes</code> / <code>n_genes_by_counts</code>
-</td>
-<td>Genes detected per cell</td>
-</tr>
-<tr class="odd">
-<td><code>percent.mt</code></td>
-<td>
-<code>pct_counts_mt</code> / <code>percent_mito</code>
-</td>
-<td>Mitochondrial fraction</td>
-</tr>
-<tr class="even">
-<td><code>cell_type</code></td>
-<td>
-<code>cell_type</code> / <code>celltype</code>
-</td>
-<td>Cell type annotations</td>
-</tr>
-<tr class="odd">
-<td><code>Phase</code></td>
-<td>
-<code>phase</code> / <code>cell_cycle_phase</code>
-</td>
-<td>Cell cycle phase</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="column-name-standardization-option">Column Name Standardization Option<a class="anchor" aria-label="anchor" href="#column-name-standardization-option"></a>
-</h3>
-<p>By default, column names are preserved exactly. Use
-<code>standardize = TRUE</code> for automatic name conversion to scanpy
-conventions:</p>
-<table class="table">
-<thead><tr class="header">
-<th>Seurat Name</th>
-<th>scanpy Name (with <code>standardize=TRUE</code>)</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>seurat_clusters</code></td>
-<td><code>clusters</code></td>
-</tr>
-<tr class="even">
-<td><code>nCount_RNA</code></td>
-<td><code>n_counts</code></td>
-</tr>
-<tr class="odd">
-<td><code>nFeature_RNA</code></td>
-<td><code>n_genes</code></td>
-</tr>
-<tr class="even">
-<td><code>percent.mt</code></td>
-<td><code>percent_mito</code></td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Preserve original names (default)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Convert to scanpy naming conventions</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, standardize <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="expression-scale-handling">Expression Scale Handling<a class="anchor" aria-label="anchor" href="#expression-scale-handling"></a>
-</h3>
-<p><strong>Automatic Layer Detection</strong>: scConvert maps layers
-based on h5ad structure:</p>
-<table class="table">
-<thead><tr class="header">
-<th>h5ad Source</th>
-<th>Seurat Destination</th>
-<th>Condition</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>X</code></td>
-<td><code>data</code></td>
-<td>Always</td>
-</tr>
-<tr class="even">
-<td><code>raw/X</code></td>
-<td><code>counts</code></td>
-<td>If <code>raw</code> group exists</td>
-</tr>
-<tr class="odd">
-<td><code>X</code></td>
-<td><code>counts</code></td>
-<td>Fallback if no <code>raw</code>
-</td>
-</tr>
-</tbody>
-</table>
-<p><strong>When Scales Match</strong>: If h5ad follows scanpy
-conventions (<code>X</code> = log-normalized, <code>raw.X</code> =
-counts), no additional processing needed after conversion.</p>
-<p><strong>When Scales Differ</strong>: If <code>X</code> contains raw
-counts instead of normalized data:</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Normalize after conversion</span></span>
-<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span></span></code></pre></div>
-<blockquote>
-<p><strong>Warning</strong>: Do NOT normalize in both Python and R -
-this double-normalizes data.</p>
-</blockquote>
-</div>
-<div class="section level3">
-<h3 id="indexing-conventions">Indexing Conventions<a class="anchor" aria-label="anchor" href="#indexing-conventions"></a>
-</h3>
-<p>Python uses 0-based indexing; R uses 1-based. scConvert handles this
-automatically:</p>
-<table class="table">
-<thead><tr class="header">
-<th>Data Type</th>
-<th>h5ad (Python)</th>
-<th>Seurat (R)</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Categorical codes</td>
-<td>0-indexed</td>
-<td>1-indexed factors</td>
-</tr>
-<tr class="even">
-<td>Cluster labels</td>
-<td>Unchanged</td>
-<td>Unchanged</td>
-</tr>
-<tr class="odd">
-<td>Sparse matrix indices</td>
-<td>0-based (CSR/CSC)</td>
-<td>0-based (dgCMatrix)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example</strong>: Cluster 0 in scanpy remains labeled “0” in
-Seurat, but internally stored as factor level 1.</p>
-</div>
-<div class="section level3">
-<h3 id="structure-verification">Structure Verification<a class="anchor" aria-label="anchor" href="#structure-verification"></a>
-</h3>
-<p>After conversion, verify data integrity:</p>
-<p><strong>h5ad -&gt; Seurat:</strong></p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Check layers and dimensions</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Layers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span>, <span class="st">"Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Verify data ranges (log-normalized data typically 0-6)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Data range:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">seurat_obj</span>, layer <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">100</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Check metadata preserved</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Seurat -&gt; h5ad:</strong></p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"converted.h5ad"</span>)</span>
-<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
-<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"obs columns:"</span>, <span class="bu">list</span>(adata.obs.columns))</span>
-<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"X range:"</span>, adata.X.<span class="bu">min</span>(), <span class="st">"-"</span>, adata.X.<span class="bu">max</span>())</span></code></pre></div>
-</div>
+<p>For complete data mapping tables covering all supported formats
+(h5ad, h5Seurat, h5mu, Loom, Zarr), including layer mapping, metadata
+conventions, indexing, and structure verification, see
+<code><a href="../articles/data-mapping-reference.html">vignette("data-mapping-reference")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
+<span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>
+<span><span class="co">#&gt; Running under: macOS Tahoe 26.3</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Matrix products: default</span></span>
+<span><span class="co">#&gt; BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib </span></span>
+<span><span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; locale:</span></span>
+<span><span class="co">#&gt; [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; time zone: America/Indiana/Indianapolis</span></span>
+<span><span class="co">#&gt; tzcode source: internal</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; attached base packages:</span></span>
+<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; other attached packages:</span></span>
+<span><span class="co">#&gt;  [1] patchwork_1.3.2               ggplot2_4.0.2                </span></span>
+<span><span class="co">#&gt;  [3] scConvert_0.1.0               Seurat_5.4.0                 </span></span>
+<span><span class="co">#&gt;  [5] SeuratObject_5.3.0            sp_2.2-1                     </span></span>
+<span><span class="co">#&gt;  [7] stxKidney.SeuratData_0.1.0    stxBrain.SeuratData_0.1.2    </span></span>
+<span><span class="co">#&gt;  [9] ssHippo.SeuratData_3.1.4      pbmcref.SeuratData_1.0.0     </span></span>
+<span><span class="co">#&gt; [11] pbmcMultiome.SeuratData_0.1.4 pbmc3k.SeuratData_3.1.4      </span></span>
+<span><span class="co">#&gt; [13] panc8.SeuratData_3.0.2        cbmc.SeuratData_3.1.4        </span></span>
+<span><span class="co">#&gt; [15] SeuratData_0.2.2.9002        </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span><span class="co">#&gt;   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        </span></span>
+<span><span class="co">#&gt;   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.30        </span></span>
+<span><span class="co">#&gt;   [7] fs_1.6.7               ragg_1.5.0             vctrs_0.7.1           </span></span>
+<span><span class="co">#&gt;  [10] ROCR_1.0-12            spatstat.explore_3.7-0 htmltools_0.5.9       </span></span>
+<span><span class="co">#&gt;  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.46.1     </span></span>
+<span><span class="co">#&gt;  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     </span></span>
+<span><span class="co">#&gt;  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            </span></span>
+<span><span class="co">#&gt;  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          </span></span>
+<span><span class="co">#&gt;  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       </span></span>
+<span><span class="co">#&gt;  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              </span></span>
+<span><span class="co">#&gt;  [31] fastmap_1.2.0          MatrixGenerics_1.22.0  fitdistrplus_1.2-6    </span></span>
+<span><span class="co">#&gt;  [34] future_1.69.0          shiny_1.13.0           digest_0.6.39         </span></span>
+<span><span class="co">#&gt;  [37] S4Vectors_0.48.0       tensor_1.5.1           RSpectra_0.16-2       </span></span>
+<span><span class="co">#&gt;  [40] irlba_2.3.7            GenomicRanges_1.62.1   textshaping_1.0.4     </span></span>
+<span><span class="co">#&gt;  [43] labeling_0.4.3         progressr_0.18.0       spatstat.sparse_3.1-0 </span></span>
+<span><span class="co">#&gt;  [46] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           </span></span>
+<span><span class="co">#&gt;  [49] compiler_4.5.2         bit64_4.6.0-1          withr_3.0.2           </span></span>
+<span><span class="co">#&gt;  [52] S7_0.2.1               fastDummies_1.7.5      MASS_7.3-65           </span></span>
+<span><span class="co">#&gt;  [55] rappdirs_0.3.4         tools_4.5.2            lmtest_0.9-40         </span></span>
+<span><span class="co">#&gt;  [58] otel_0.2.0             httpuv_1.6.16          future.apply_1.20.2   </span></span>
+<span><span class="co">#&gt;  [61] goftest_1.2-3          glue_1.8.0             nlme_3.1-168          </span></span>
+<span><span class="co">#&gt;  [64] promises_1.5.0         grid_4.5.2             Rtsne_0.17            </span></span>
+<span><span class="co">#&gt;  [67] cluster_2.1.8.2        reshape2_1.4.5         generics_0.1.4        </span></span>
+<span><span class="co">#&gt;  [70] hdf5r_1.3.12           gtable_0.3.6           spatstat.data_3.1-9   </span></span>
+<span><span class="co">#&gt;  [73] tidyr_1.3.2            data.table_1.18.2.1    XVector_0.50.0        </span></span>
+<span><span class="co">#&gt;  [76] BiocGenerics_0.56.0    BPCells_0.2.0          spatstat.geom_3.7-0   </span></span>
+<span><span class="co">#&gt;  [79] RcppAnnoy_0.0.23       ggrepel_0.9.7          RANN_2.6.2            </span></span>
+<span><span class="co">#&gt;  [82] pillar_1.11.1          stringr_1.6.0          spam_2.11-3           </span></span>
+<span><span class="co">#&gt;  [85] RcppHNSW_0.6.0         later_1.4.8            splines_4.5.2         </span></span>
+<span><span class="co">#&gt;  [88] dplyr_1.2.0            lattice_0.22-9         bit_4.6.0             </span></span>
+<span><span class="co">#&gt;  [91] survival_3.8-6         deldir_2.0-4           tidyselect_1.2.1      </span></span>
+<span><span class="co">#&gt;  [94] miniUI_0.1.2           pbapply_1.7-4          knitr_1.51            </span></span>
+<span><span class="co">#&gt;  [97] gridExtra_2.3          Seqinfo_1.0.0          IRanges_2.44.0        </span></span>
+<span><span class="co">#&gt; [100] scattermore_1.2        stats4_4.5.2           xfun_0.56             </span></span>
+<span><span class="co">#&gt; [103] matrixStats_1.5.0      UCSC.utils_1.6.1       stringi_1.8.7         </span></span>
+<span><span class="co">#&gt; [106] lazyeval_0.2.2         yaml_2.3.12            evaluate_1.0.5        </span></span>
+<span><span class="co">#&gt; [109] codetools_0.2-20       tibble_3.3.1           cli_3.6.5             </span></span>
+<span><span class="co">#&gt; [112] uwot_0.2.4             xtable_1.8-8           reticulate_1.45.0     </span></span>
+<span><span class="co">#&gt; [115] systemfonts_1.3.1      jquerylib_0.1.4        GenomeInfoDb_1.46.2   </span></span>
+<span><span class="co">#&gt; [118] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.1        </span></span>
+<span><span class="co">#&gt; [121] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 </span></span>
+<span><span class="co">#&gt; [124] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         </span></span>
+<span><span class="co">#&gt; [127] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          </span></span>
+<span><span class="co">#&gt; [130] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
+<span><span class="co">#&gt; [133] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

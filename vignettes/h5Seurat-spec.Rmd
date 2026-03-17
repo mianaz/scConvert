@@ -9,23 +9,33 @@ vignette: >
 
 ```{r setup, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(
-  eval = FALSE,
+  eval = TRUE,
   message = FALSE,
   warning = FALSE,
   collapse = TRUE,
   comment = "#>",
   purl = FALSE
 )
+can_demo <- requireNamespace("hdf5r", quietly = TRUE) &&
+  requireNamespace("scConvert", quietly = TRUE) &&
+  requireNamespace("Matrix", quietly = TRUE)
+if (can_demo) {
+  library(hdf5r)
+  library(scConvert)
+  library(Matrix)
+}
+has_httr <- can_demo && requireNamespace("httr", quietly = TRUE)
+if (has_httr) library(httr)
 vlink <- function(x, ...) x
 hlink <- function(x, ...) x
 plink <- function(x, ...) x
 ```
 
-```{r hfile, echo=FALSE, purl = FALSE}
+```{r hfile, echo=FALSE, eval = can_demo, purl = FALSE}
 hfile <- H5File$new(filename = tempfile(fileext = ".h5"), mode = "a")
 ```
 
-```{r link_functions, echo=FALSE, purl = FALSE}
+```{r link_functions, echo=FALSE, eval = has_httr, purl = FALSE}
 arg.match <- function(arg, choices) {
   arg <- tryCatch(
     expr = match.arg(arg = arg, choices = choices),
@@ -179,7 +189,7 @@ Some data types are found commonly throughout `Seurat` objects
 
 All <a href=`r plink("character")`>character</a> values (strings in other languages) should be encoding as variable-length UTF-8 strings; this applies to HDF5 datasets (including standalone <a href=`r hlink("STRING")`>string</a> datasets as well as parts of <a href=`r hlink("COMPOUND")`>compound</a> datasets) and HDF5 attributes.
 
-```{r utf8, echo=FALSE, purl = FALSE}
+```{r utf8, echo=FALSE, eval = can_demo, purl = FALSE}
 scConvert:::StringType(stype = "utf8")
 ```
 
@@ -187,7 +197,7 @@ scConvert:::StringType(stype = "utf8")
 
 Dense matrices should be stored as a two-dimensional dataset of any type. Datasets should be written in a [column-major](https://en.wikipedia.org/wiki/Row-_and_column-major_order) order. For column-major implementations (eg. R, Fortran), dataset dimensions on-disk should be the same as dimensions in-memory (eg. $m_{diskrow} x n_{diskcol} \sim m_{memrow} x n_{memcol}$). For row-major implmentations (eg. C/C++, Python), dataset dimensions on-disk should appear _transposed_ to dimensions in-memory (eg. $m_{diskrow} x n_{diskcol} \sim n_{memrow} x m_{memcol}$); row-major implmemetnations transpose datasets prior to reading and writing data.
 
-```{r densemat, echo=FALSE, purl = FALSE}
+```{r densemat, echo=FALSE, eval = can_demo, purl = FALSE}
 vals <- c(0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0)
 mat <- matrix(data = vals, nrow = 3)
 WriteH5Group(x = mat, name = "densemat", hgroup = hfile, verbose = FALSE)
@@ -201,7 +211,7 @@ hfile[["densemat"]][,]
 
 Sparse matrices are stored as an HDF5 group with three datasets: "indices", "indptr", and "data"; the "indices" and "data" datasets must be the same length. "data" represents each non-zero element of the matrix. "indices" represents the $0$-based row numbers for each value in "data"
 
-```{r sparsemat, echo=FALSE, purl = FALSE}
+```{r sparsemat, echo=FALSE, eval = can_demo, purl = FALSE}
 mat <- Matrix(data = vals, nrow = 3, sparse = TRUE)
 WriteH5Group(x = mat, name = "sparsemat", hgroup = hfile, verbose = FALSE)
 mat
@@ -217,7 +227,7 @@ hfile[["sparsemat/data"]][]
 
 "indptr" represents the points in "data" at which a new column is started. This dataset is $0$-based and should be $n_{columns} + 1$ in length.
 
-```{r sparsemat_indptr, echo=FALSE, purl = FALSE}
+```{r sparsemat_indptr, echo=FALSE, eval = can_demo, purl = FALSE}
 cat("HDF5 Dataset: sparsemat/indptr\n")
 cat("  Length:", hfile[["sparsemat/indptr"]]$dims, "\n")
 hfile[["sparsemat/indptr"]][]
@@ -227,7 +237,7 @@ The "indices", "indptr", and "data" datasets correspond to the "i", "p", and "x"
 
 There may optionally be an HDF5 attribute called "dims"; this attribute should be a two <a href=`r hlink("INTEGER")`>integer</a> values corresponding to the number of rows and number of columns, in that order, in the sparse matrix.
 
-```{r sparsemat_dims, echo=FALSE, purl = FALSE}
+```{r sparsemat_dims, echo=FALSE, eval = can_demo, purl = FALSE}
 hfile[["sparsemat"]]$attr_open(attr_name = "dims")$read()
 ```
 
@@ -235,7 +245,7 @@ hfile[["sparsemat"]]$attr_open(attr_name = "dims")$read()
 
 <a href=`r plink("factor")`>Factors</a> should be stored as an HDF5 group with two datasets: "levels" and "values"
 
-```{r factor, echo=FALSE, purl = FALSE}
+```{r factor, echo=FALSE, eval = can_demo, purl = FALSE}
 fctr <- factor(x = c("g1", "g2", "g1", "g1", "g2"))
 WriteH5Group(x = fctr, name = "factor", hgroup = hfile, verbose = FALSE)
 fctr
@@ -245,7 +255,7 @@ cat("  Members:", paste(names(hfile[["factor"]]), collapse = ", "), "\n")
 
 The "levels" dataset should be a <a href=`r vlink("char")`>character</a> dataset with one entry per <a href=`r plink("levels")`>level</a>
 
-```{r factor_levels, echo=FALSE, purl = FALSE}
+```{r factor_levels, echo=FALSE, eval = can_demo, purl = FALSE}
 cat("HDF5 Dataset: factor/levels\n")
 cat("  Length:", hfile[["factor/levels"]]$dims, "\n")
 hfile[["factor/levels"]][]
@@ -253,7 +263,7 @@ hfile[["factor/levels"]][]
 
 The "values" dataset should be an integer dataset with one entry per value in the original factor. These integers should correspond to the factor level they had in R
 
-```{r factor_values, echo=FALSE, purl = FALSE}
+```{r factor_values, echo=FALSE, eval = can_demo, purl = FALSE}
 cat("HDF5 Dataset: factor/values\n")
 cat("  Length:", hfile[["factor/values"]]$dims, "\n")
 hfile[["factor/values"]][]
@@ -270,7 +280,7 @@ The number of unique entries in "values" should not exceed the number of unique 
 
 <a href=`r plink("logical")`>Logical</a> values (booleans in other languages) are encoded as integers in the following manner: `FALSE` is encoded as `0`, `TRUE` is encoded as `1`, and `NA` is encoded as `2`
 
-```{r logicals, echo=FALSE, purl = FALSE}
+```{r logicals, echo=FALSE, eval = can_demo, purl = FALSE}
 vals <- c(TRUE, FALSE, NA)
 WriteH5Group(x = vals, name = "logicals", hgroup = hfile, verbose = FALSE)
 vals
@@ -304,11 +314,11 @@ There are two ways of storing <a href=`r plink("data.frame")`>data frames</a> in
 
 Data frames stored as datasets should be a one-dimensional <a href=`r hlink("COMPOUND")`>compound dataset</a>. The single dimension should be equal to the number of observations (number of rows) in the data frame. Each data type in the compound dataset must adhere to the same requirements as standard datasets (eg. <a href=`r vlink("char")`>character encodings</a>, <a href=`r vlink("log")`>logical mapping</a>, etc). The compound labels should correspond to the data frame column names.
 
-```{r df_options, echo=FALSE, purl = FALSE}
+```{r df_options, echo=FALSE, eval = can_demo, purl = FALSE}
 op <- options(scConvert.dtypes.dataframe_as_group = FALSE)
 ```
 
-```{r dfdataset, echo=FALSE, purl = FALSE}
+```{r dfdataset, echo=FALSE, eval = can_demo, purl = FALSE}
 df <- data.frame(
   x = c("g1", "g1", "g2", "g1", "g2"),
   y = 1:5,
@@ -321,7 +331,7 @@ cat("  Length:", hfile[["dfdataset"]]$dims, "\n")
 hfile[["dfdataset"]][]
 ```
 
-```{r df_restore, echo=FALSE, purl = FALSE}
+```{r df_restore, echo=FALSE, eval = can_demo, purl = FALSE}
 options(op)
 ```
 
@@ -331,7 +341,7 @@ Row names are not stored with the dataset itself, but may be stored elsewhere in
 
 Data frames stored as groups are used when <a href=`r plink("factor")`>factors</a> are present in the data frame. Within the data frame group, there should be one dataset or group per column. Columns that are factors are <a href=`r vlink("factor")`>stored as groups</a> while all other columns are stored as one-dimensional datasets. Each dataset within the group must adhere to the same requirements as standard datasets (eg. <a href=`r vlink("char")`>character encodings</a>, <a href=`r vlink("log")`>logical mapping</a>, etc). The names of the datasets within the group correspond to the data frame column names
 
-```{r dfgroup, echo=FALSE, purl = FALSE}
+```{r dfgroup, echo=FALSE, eval = can_demo, purl = FALSE}
 df$x <- factor(x = df$x)
 WriteH5Group(x = df, name = "dfgroup", hgroup = hfile)
 cat("HDF5 Group: dfgroup\n")
@@ -346,7 +356,7 @@ The "logicals" attribute contains the names of <a href=`r plink("logical")`>logi
 
 <a href=`r plink("list")`>Lists</a> are stored as HDF5 groups. Each entry in a list must be named; the names serve as the names of datasets and groups within the list group. List values are stored as HDF5 datasets or groups, depending on their R object type. For example, a list within a list would be stored as a group within the first group.
 
-```{r list, echo=FALSE, purl = FALSE}
+```{r list, echo=FALSE, eval = can_demo, purl = FALSE}
 l <- list(a = 1:3, b = list(b1 = "hello", b2 = c("tomato", "potato")))
 l
 WriteH5Group(x = l, name = "list", hgroup = hfile)
@@ -360,7 +370,7 @@ Custom classes are stored as <a href=`r vlink("list")`>lists</a> with a special 
 
 Custom S4 classes are also stored as <a href=`r vlink("list")`>lists</a> where each entry is a slot in the S4 class. S4 class groups have an attribute named "s4class"; this attribute should be a single-length <a href=`r vlink("char")`>character</a> storing the name of the class and the package that defines the class in the form of `package:class` (eg. `Signac:ChromatinAssay`); custom S4 classes defined in the [Seurat](https://satijalab.org/seurat) package can be named with just the class of the object.
 
-```{r cleanup, echo=FALSE, results='hide', purl = FALSE}
+```{r cleanup, echo=FALSE, eval = can_demo, results='hide', purl = FALSE}
 hfile$close_all()
 file.remove(hfile$filename)
 ```
