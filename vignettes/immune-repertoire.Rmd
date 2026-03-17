@@ -9,7 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(
-  eval = FALSE,
+  eval = TRUE,
   message = FALSE,
   warning = FALSE,
   collapse = TRUE,
@@ -19,58 +19,196 @@ knitr::opts_chunk$set(
   dev = "png",
   purl = FALSE
 )
+# Python ecosystem detection via reticulate
+has_scanpy <- FALSE
+if (requireNamespace("reticulate", quietly = TRUE)) {
+  scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
+  if (dir.exists(scverse_path)) {
+    reticulate::use_condaenv("scverse", required = FALSE)
+    Sys.setenv(
+      OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
+      MKL_NUM_THREADS = "1", NUMBA_THREADING_LAYER = "tbb"
+    )
+    has_scanpy <- reticulate::py_module_available("scanpy")
+    if (has_scanpy) {
+      reticulate::py_run_string("import matplotlib; matplotlib.use('Agg')")
+    }
+  }
+}
+```
+
+```{r cleanup, echo=FALSE, results='hide', purl = FALSE}
+outs <- c(
+  "tcr_annotated.h5ad", "tcr_annotated.h5seurat", "tcr_annotated.h5mu",
+  "tcr_annotated.loom", "bcr_annotated.h5ad"
+)
+existing_files <- outs[file.exists(outs)]
+if (length(existing_files) > 0) file.remove(existing_files)
 ```
 
 ## Introduction
 
-Single-cell immune repertoire profiling (TCR/BCR sequencing) is often paired with gene expression (GEX) in multimodal experiments such as 10x Genomics 5' GEX + VDJ. This vignette explains how scConvert handles immune repertoire data during format conversion.
+Single-cell immune repertoire profiling (TCR/BCR sequencing) is often paired with gene expression (GEX) in multimodal experiments such as 10x Genomics 5' GEX + VDJ. This vignette demonstrates how scConvert preserves immune repertoire metadata during format conversion using a synthetic example built on the shipped `pbmc_small` dataset.
 
 ### Key concepts
 
-- **TCR/BCR clonotype data** is stored as cell-level metadata (e.g., `clonotype_id`, `TRA_cdr3`, `TRB_cdr3`, `IGH_cdr3`)
+- **TCR/BCR clonotype data** is stored as cell-level metadata (e.g., `clonotype_id`, `CTgene`, `CTaa`, `CTstrict`)
 - In scanpy/scirpy workflows, TCR/BCR annotations live in `obs` (cell metadata) and `obsm` (alignment matrices)
 - In Seurat, clonotype data lives in `meta.data` after tools like [scRepertoire](https://github.com/ncborcherding/scRepertoire) or [Immcantation](https://immcantation.readthedocs.io/)
 - scConvert preserves all cell metadata during conversion, so TCR/BCR annotations survive roundtrip
 
-```{r packages, purl = FALSE}
+```{r packages}
 library(Seurat)
 library(scConvert)
 ```
 
-## Workflow: Seurat + scRepertoire to h5ad
+## Creating synthetic TCR metadata
 
-A typical immune repertoire workflow starts with 10x Cell Ranger output (both GEX and VDJ), then uses scRepertoire to add clonotype annotations:
+In a real workflow, you would add TCR annotations to your Seurat object using scRepertoire:
 
-```{r screpertoire_workflow, eval = FALSE, purl = FALSE}
-# Step 1: Load GEX data into Seurat
-gex <- Read10X_h5("filtered_feature_bc_matrix.h5")
-obj <- CreateSeuratObject(counts = gex, project = "TCR_study")
-
-# Step 2: Add TCR clonotype annotations via scRepertoire
-# (scRepertoire reads the Cell Ranger VDJ output)
+```{r real_workflow, eval = FALSE}
+# Real workflow (requires Cell Ranger VDJ output):
 library(scRepertoire)
 tcr <- combineTCR(
   read.csv("filtered_contig_annotations.csv"),
   samples = "Sample1"
 )
-obj <- combineExpression(tcr, obj,
-  cloneCall = "aa",
-  group.by = "sample"
+obj <- combineExpression(tcr, obj, cloneCall = "aa", group.by = "sample")
+```
+
+For this vignette, we create synthetic TCR metadata that mimics what `combineExpression()` would produce. This lets us demonstrate format conversion without requiring real VDJ data files.
+
+```{r synthetic_tcr}
+obj <- readRDS(system.file("testdata", "pbmc_small.rds", package = "scConvert"))
+n_cells <- ncol(obj)
+
+set.seed(42)
+
+# Define 10 synthetic clonotypes with realistic gene/sequence annotations
+clonotype_pool <- data.frame(
+  clonotype_id = paste0("clonotype", 1:10),
+  CTgene = c(
+    "TRAV1-2.TRAJ33.TRAC_TRBV6-1.TRBJ2-1.TRBC2",
+    "TRAV12-1.TRAJ39.TRAC_TRBV28.TRBJ1-1.TRBC1",
+    "TRAV38-2.TRAJ28.TRAC_TRBV5-1.TRBJ2-7.TRBC2",
+    "TRAV21.TRAJ12.TRAC_TRBV7-2.TRBJ2-3.TRBC2",
+    "TRAV8-6.TRAJ45.TRAC_TRBV19.TRBJ1-2.TRBC1",
+    "TRAV26-1.TRAJ37.TRAC_TRBV12-3.TRBJ2-5.TRBC2",
+    "TRAV13-1.TRAJ44.TRAC_TRBV4-1.TRBJ1-5.TRBC1",
+    "TRAV29.TRAJ20.TRAC_TRBV20-1.TRBJ1-6.TRBC1",
+    "TRAV17.TRAJ31.TRAC_TRBV11-2.TRBJ2-2.TRBC2",
+    "TRAV3.TRAJ48.TRAC_TRBV9.TRBJ2-4.TRBC2"
+  ),
+  CTaa = c(
+    "CAVMDSNYQLIW_CASSETSGSTDTQYF",
+    "CVVNMGGKLIF_CASSQETQYF",
+    "CAFMKTSYDKVIF_CASSLGQAYEQYF",
+    "CAVRDSNYQLIW_CASSFSTCSANYGYTF",
+    "CAVSDYGGSQGNLIF_CASSIRSSYEQYF",
+    "CIVRVGNTGKLIF_CASSLEETQYF",
+    "CAASRGSTLGRLYF_CASRPGLAGDNEQFF",
+    "CAASADYKLSF_CSARDPGQGASYEQYF",
+    "CATDAGGTSYGKLTF_CASSLAGGTDTQYF",
+    "CAVRDNYGQNFVF_CASSVAGGREQYF"
+  ),
+  CTnt = c(
+    "TGTGCAGTAATGGATTCAAATTACCAGTTAATCTGG_TGTGCCAGCAGTGAAACTAGCGGGTCCACTGACACCCAGTACTTT",
+    "TGTGTAGTAAATATGATGGGGGAAAGCTGATATTT_TGTGCCAGCAGCCAAGAAACTCAGTACTTC",
+    "TGTGCATTTATGAAGACATCATATGATAAGGTGATTTTT_TGTGCCAGCAGTTTGGGACAGGCGTATGAGCAGTACTTC",
+    "TGTGCAGTACGGGATTCAAACTACCAGTTAATCTGG_TGTGCCAGCAGCTTCTCAACCTGCAGTGCAAATTATGGTTATACTTTT",
+    "TGTGCTGTAAGTGATTATGGAGGTAGCCAAGGAAATCTCATCTTT_TGTGCCAGCAGCATAAGGAGCAGCTATGAGCAGTACTTC",
+    "TGTATTGTGAGGGTGGGTAACACCGGAAAACTGATATTT_TGTGCCAGCAGCTTGGAGGAAACTCAGTACTTC",
+    "TGTGCAGCAAGCAGGGGCTCAACCCTGGGAAGGCTGTATTTT_TGTGCCAGCAGACCGGGACTGGCGGGAGACAACGAGCAGTTCTTC",
+    "TGTGCAGCAAGTGCTGATTATAAGTTGAGCTTT_TGTGCCAGCGCTCGGGATCCCGGACAAGGAGCCTCATATGAGCAGTACTTC",
+    "TGTGCCACTGATGCAGGTGGAACTAGCTATGGAAAGCTGACATTT_TGTGCCAGCAGTTTGGCAGGGGGCACTGACACCCAGTACTTT",
+    "TGTGCAGTAAGAGATAACTATGGTCAGAATTTTGTCTTT_TGTGCCAGCAGCGTTGCAGGGGGCAGAGAGCAGTACTTC"
+  ),
+  CTstrict = c(
+    "TRAV1-2.TRAJ33.TRAC_CAVMDSNYQLIW_TRBV6-1.TRBJ2-1.TRBC2_CASSETSGSTDTQYF",
+    "TRAV12-1.TRAJ39.TRAC_CVVNMGGKLIF_TRBV28.TRBJ1-1.TRBC1_CASSQETQYF",
+    "TRAV38-2.TRAJ28.TRAC_CAFMKTSYDKVIF_TRBV5-1.TRBJ2-7.TRBC2_CASSLGQAYEQYF",
+    "TRAV21.TRAJ12.TRAC_CAVRDSNYQLIW_TRBV7-2.TRBJ2-3.TRBC2_CASSFSTCSANYGYTF",
+    "TRAV8-6.TRAJ45.TRAC_CAVSDYGGSQGNLIF_TRBV19.TRBJ1-2.TRBC1_CASSIRSSYEQYF",
+    "TRAV26-1.TRAJ37.TRAC_CIVRVGNTGKLIF_TRBV12-3.TRBJ2-5.TRBC2_CASSLEETQYF",
+    "TRAV13-1.TRAJ44.TRAC_CAASRGSTLGRLYF_TRBV4-1.TRBJ1-5.TRBC1_CASRPGLAGDNEQFF",
+    "TRAV29.TRAJ20.TRAC_CAASADYKLSF_TRBV20-1.TRBJ1-6.TRBC1_CSARDPGQGASYEQYF",
+    "TRAV17.TRAJ31.TRAC_CATDAGGTSYGKLTF_TRBV11-2.TRBJ2-2.TRBC2_CASSLAGGTDTQYF",
+    "TRAV3.TRAJ48.TRAC_CAVRDNYGQNFVF_TRBV9.TRBJ2-4.TRBC2_CASSVAGGREQYF"
+  ),
+  stringsAsFactors = FALSE
 )
 
-# Step 3: Standard Seurat processing
-obj <- NormalizeData(obj)
-obj <- FindVariableFeatures(obj)
-obj <- ScaleData(obj)
-obj <- RunPCA(obj)
-obj <- FindNeighbors(obj, dims = 1:30)
-obj <- FindClusters(obj)
-obj <- RunUMAP(obj, dims = 1:30)
+# Assign clonotypes to cells with a realistic frequency distribution
+# (a few dominant clonotypes, many rare ones -- power-law-like)
+weights <- c(30, 25, 20, 15, 10, 8, 6, 4, 3, 2)
+assignments <- sample(1:10, n_cells, replace = TRUE, prob = weights)
 
-# Step 4: Export to h5ad for scirpy analysis in Python
-scConvert(obj, dest = "tcr_annotated.h5ad")
-# All TCR metadata columns (clonotype_id, CDR3 sequences, frequency, etc.)
-# are preserved in obs of the h5ad file
+# Add TCR metadata columns to the Seurat object
+obj$clonotype_id <- factor(
+  clonotype_pool$clonotype_id[assignments],
+  levels = clonotype_pool$clonotype_id
+)
+obj$CTgene    <- clonotype_pool$CTgene[assignments]
+obj$CTnt      <- clonotype_pool$CTnt[assignments]
+obj$CTaa      <- clonotype_pool$CTaa[assignments]
+obj$CTstrict  <- clonotype_pool$CTstrict[assignments]
+
+# Compute frequency and proportion per clonotype
+freq_table <- table(assignments)
+obj$frequency  <- as.integer(freq_table[as.character(assignments)])
+obj$proportion <- as.numeric(obj$frequency / n_cells)
+```
+
+Let's inspect the TCR metadata we just added:
+
+```{r inspect_tcr}
+tcr_cols <- c("clonotype_id", "CTgene", "CTnt", "CTaa",
+              "CTstrict", "frequency", "proportion")
+head(obj@meta.data[, tcr_cols], 8)
+```
+
+```{r clonotype_distribution}
+table(obj$clonotype_id)
+```
+
+## Writing to h5ad and reading back
+
+The core test: write the TCR-annotated Seurat object to h5ad format and verify that all immune repertoire columns survive the roundtrip.
+
+```{r write_h5ad}
+writeH5AD(obj, "tcr_annotated.h5ad")
+```
+
+```{r read_h5ad}
+obj_h5ad <- readH5AD("tcr_annotated.h5ad")
+```
+
+### Verify TCR metadata preservation
+
+```{r verify_h5ad}
+# Check all TCR columns are present
+tcr_cols_loaded <- intersect(tcr_cols, colnames(obj_h5ad@meta.data))
+cat("TCR columns found:", paste(tcr_cols_loaded, collapse = ", "), "\n")
+cat("All TCR columns preserved:",
+    all(tcr_cols %in% colnames(obj_h5ad@meta.data)), "\n")
+```
+
+```{r verify_values}
+# Exact match of clonotype assignments
+cat("clonotype_id match:",
+    all(as.character(obj$clonotype_id) == as.character(obj_h5ad$clonotype_id)),
+    "\n")
+
+# Exact match of amino acid sequences
+cat("CTaa match:", all(obj$CTaa == obj_h5ad$CTaa), "\n")
+
+# Exact match of gene annotations
+cat("CTgene match:", all(obj$CTgene == obj_h5ad$CTgene), "\n")
+
+# Numeric columns
+cat("frequency match:", all(obj$frequency == obj_h5ad$frequency), "\n")
+cat("proportion match:",
+    all(abs(obj$proportion - obj_h5ad$proportion) < 1e-10), "\n")
 ```
 
 ### What gets preserved
@@ -80,26 +218,105 @@ When converting a Seurat object with TCR/BCR annotations to h5ad:
 | Seurat Location | h5ad Location | Example Columns |
 |-----------------|---------------|-----------------|
 | `meta.data` | `obs` | `clonotype_id`, `CTgene`, `CTnt`, `CTaa`, `CTstrict` |
-| `meta.data` | `obs` | `Frequency`, `cloneType`, `Proportion` |
-| `meta.data` | `obs` | `TCR_alpha_cdr3`, `TCR_beta_cdr3` |
+| `meta.data` | `obs` | `frequency`, `proportion` |
+| `meta.data` | `obs` | Factor columns encoded as HDF5 categoricals |
 | Reductions | `obsm` | PCA, UMAP embeddings |
 | Graphs | `obsp` | SNN/KNN neighbor graphs |
 
 All string and numeric columns in `meta.data` are written to the h5ad `obs` dataframe. Factor columns are encoded as HDF5 categorical (enum) types, which scirpy and scanpy read natively.
 
+## Python interop: scanpy reads TCR metadata
+
+```{r python_scanpy, eval = has_scanpy}
+library(reticulate)
+```
+
+```{python scanpy_read, eval = has_scanpy}
+import scanpy as sc
+
+adata = sc.read_h5ad("tcr_annotated.h5ad")
+print(f"Shape: {adata.shape}")
+print(f"\nobs columns: {list(adata.obs.columns)}")
+
+# Access TCR metadata
+print(f"\nClonotype distribution:")
+print(adata.obs["clonotype_id"].value_counts())
+
+print(f"\nFirst 5 CDR3 amino acid sequences:")
+print(adata.obs["CTaa"].head())
+```
+
+## Multi-format preservation
+
+scConvert can write to many formats. Here we verify TCR metadata preservation across them.
+
+### h5Seurat
+
+```{r h5seurat}
+scConvert(obj, dest = "tcr_annotated.h5seurat")
+obj_h5s <- readH5Seurat("tcr_annotated.h5seurat")
+
+cat("h5Seurat -- clonotype_id preserved:",
+    all(as.character(obj$clonotype_id) == as.character(obj_h5s$clonotype_id)),
+    "\n")
+cat("h5Seurat -- CTaa preserved:",
+    all(obj$CTaa == obj_h5s$CTaa), "\n")
+```
+
+### h5mu
+
+```{r h5mu}
+# h5mu is designed for multi-modal data; for single-assay objects
+# with TCR metadata, h5ad or h5seurat is more appropriate.
+# Here we demonstrate the conversion when the object has multiple assays:
+if (length(Assays(obj)) > 1) {
+  writeH5MU(obj, "tcr_annotated.h5mu")
+  obj_h5mu <- readH5MU("tcr_annotated.h5mu")
+  cat("h5mu -- clonotype_id preserved:",
+      all(as.character(obj$clonotype_id) == as.character(obj_h5mu$clonotype_id)),
+      "\n")
+} else {
+  cat("h5mu -- Skipped (single-assay object; use h5ad instead)\n")
+}
+```
+
+### Loom
+
+```{r loom}
+writeLoom(obj, "tcr_annotated.loom", overwrite = TRUE)
+obj_loom <- readLoom("tcr_annotated.loom")
+
+# Loom stores all metadata as column attributes
+loom_tcr <- intersect(tcr_cols, colnames(obj_loom@meta.data))
+cat("Loom -- TCR columns found:", paste(loom_tcr, collapse = ", "), "\n")
+cat("Loom -- clonotype_id preserved:",
+    all(as.character(obj$clonotype_id) == as.character(obj_loom$clonotype_id)),
+    "\n")
+```
+
+### Summary of format support
+
+| Format | TCR metadata preserved | Factor encoding | Notes |
+|--------|----------------------|-----------------|-------|
+| h5ad | Yes | HDF5 categorical | Native scanpy/scirpy support |
+| h5Seurat | Yes | HDF5 levels/values | Native Seurat loading |
+| h5mu | Yes | HDF5 categorical | Multi-assay support |
+| Loom | Yes | String attributes | Column attributes in col_attrs |
+| Zarr | Yes | Zarr categorical | AnnData-compatible |
+
 ## Workflow: scirpy h5ad to Seurat
 
 If your immune repertoire analysis starts in Python with scirpy:
 
-```{r scirpy_to_seurat, eval = FALSE, purl = FALSE}
+```{r scirpy_to_seurat, eval = FALSE}
 # Load h5ad with TCR/BCR annotations from scirpy
 obj <- readH5AD("scirpy_analyzed.h5ad")
 
 # TCR metadata is in meta.data
-head(obj[["IR_VJ_1_junction_aa"]])  # alpha chain CDR3
+head(obj[["IR_VJ_1_junction_aa"]])   # alpha chain CDR3
 head(obj[["IR_VDJ_1_junction_aa"]])  # beta chain CDR3
 head(obj[["clone_id"]])
-head(obj[["receptor_type"]])  # TCR, BCR, etc.
+head(obj[["receptor_type"]])         # TCR, BCR, etc.
 
 # Continue analysis in Seurat
 DimPlot(obj, group.by = "clone_id")
@@ -121,25 +338,101 @@ scirpy stores TCR/BCR data using a standardized naming convention in `obs`:
 
 All these columns are loaded as `meta.data` columns by `readH5AD()`.
 
+## BCR (B-cell receptor) data
+
+BCR data follows the same patterns as TCR, with heavy (IGH) and light (IGK/IGL) chains. In a real workflow, you would use scRepertoire:
+
+```{r real_bcr_workflow, eval = FALSE}
+# Real workflow (requires Cell Ranger VDJ output):
+library(scRepertoire)
+bcr <- combineBCR(
+  read.csv("filtered_contig_annotations.csv"),
+  samples = "Sample1"
+)
+obj <- combineExpression(bcr, obj, cloneCall = "aa", group.by = "sample")
+```
+
+Here we add synthetic BCR metadata to demonstrate preservation:
+
+```{r synthetic_bcr}
+# Add BCR-specific columns
+obj$IGH_V  <- sample(
+  c("IGHV1-2", "IGHV3-23", "IGHV4-34", "IGHV1-69", "IGHV3-30"),
+  n_cells, replace = TRUE
+)
+obj$IGH_D  <- sample(
+  c("IGHD3-10", "IGHD2-2", "IGHD6-19", "IGHD1-26", "IGHD4-17"),
+  n_cells, replace = TRUE
+)
+obj$IGH_J  <- sample(
+  c("IGHJ4", "IGHJ6", "IGHJ5", "IGHJ3", "IGHJ1"),
+  n_cells, replace = TRUE
+)
+obj$IGK_V  <- sample(
+  c("IGKV1-39", "IGKV3-20", "IGKV1-5", "IGKV3-11", NA),
+  n_cells, replace = TRUE
+)
+obj$IGK_J  <- sample(
+  c("IGKJ1", "IGKJ2", "IGKJ4", NA, NA),
+  n_cells, replace = TRUE
+)
+obj$IGL_V  <- sample(
+  c(NA, NA, "IGLV2-14", "IGLV1-44", "IGLV3-1"),
+  n_cells, replace = TRUE
+)
+obj$isotype <- factor(
+  sample(c("IgM", "IgG1", "IgG2", "IgA1", "IgA2"),
+         n_cells, replace = TRUE, prob = c(40, 25, 15, 12, 8)),
+  levels = c("IgM", "IgG1", "IgG2", "IgA1", "IgA2")
+)
+obj$SHM_count <- rpois(n_cells, lambda = 8)
+```
+
+```{r bcr_roundtrip}
+bcr_cols <- c("IGH_V", "IGH_D", "IGH_J", "IGK_V", "IGK_J",
+              "IGL_V", "isotype", "SHM_count")
+
+writeH5AD(obj, "bcr_annotated.h5ad")
+obj_bcr <- readH5AD("bcr_annotated.h5ad")
+
+# Verify BCR columns preserved
+cat("BCR columns found:",
+    paste(intersect(bcr_cols, colnames(obj_bcr@meta.data)), collapse = ", "),
+    "\n")
+cat("IGH_V match:",
+    all(obj$IGH_V == obj_bcr$IGH_V, na.rm = TRUE), "\n")
+cat("isotype match:",
+    all(as.character(obj$isotype) == as.character(obj_bcr$isotype)), "\n")
+cat("SHM_count match:",
+    all(obj$SHM_count == obj_bcr$SHM_count), "\n")
+
+# NA handling -- NAs in light chain genes should survive roundtrip
+cat("IGK_V NA count (original):", sum(is.na(obj$IGK_V)), "\n")
+cat("IGK_V NA count (loaded):", sum(is.na(obj_bcr$IGK_V)), "\n")
+```
+
+### BCR-specific columns
+
+| Column | Description |
+|--------|-------------|
+| `IGH_V`, `IGH_D`, `IGH_J` | Heavy chain V/D/J gene segments |
+| `IGK_V`, `IGK_J` | Kappa light chain gene segments |
+| `IGL_V` | Lambda light chain gene segments |
+| `isotype` | IgM, IgG1, IgG2, IgA1, IgA2, etc. |
+| `SHM_count` | Somatic hypermutation count |
+
 ## Multimodal: GEX + VDJ + ADT via h5mu
 
-For experiments combining gene expression, VDJ, and surface protein (CITE-seq):
+For experiments combining gene expression, VDJ, and surface protein (CITE-seq), h5mu captures all modalities:
 
-```{r multimodal_vdj, eval = FALSE, purl = FALSE}
-# Create a multimodal Seurat object
-# RNA assay: gene expression
-# ADT assay: surface protein (CITE-seq)
-# TCR annotations: in meta.data
-
-# Save as h5mu (preserves both assays)
+```{r multimodal_vdj, eval = FALSE}
+# With a multimodal Seurat object (RNA + ADT assays + TCR in meta.data):
 writeH5MU(obj, "gex_adt_tcr.h5mu")
-
-# Load back
 obj_loaded <- readH5MU("gex_adt_tcr.h5mu")
 
 # Both assays + TCR metadata preserved
-Assays(obj_loaded)  # RNA, ADT
-head(obj_loaded[["clonotype_id"]])  # TCR annotations in meta.data
+Assays(obj_loaded)                       # RNA, ADT
+head(obj_loaded[["clonotype_id"]])       # TCR annotations in meta.data
 ```
 
 ### MuData and scirpy
@@ -155,35 +448,6 @@ In the muon/scirpy ecosystem, TCR data can be stored as a separate modality in h
 
 scConvert's `readH5MU()` reads all modalities as separate Seurat assays. The `airr` modality becomes an assay containing receptor gene usage counts or binary chain presence matrices, depending on how the data was encoded.
 
-## BCR (B-cell receptor) data
-
-BCR data follows the same patterns as TCR, with heavy (IGH) and light (IGK/IGL) chains:
-
-```{r bcr_example, eval = FALSE, purl = FALSE}
-# BCR annotations from scRepertoire
-library(scRepertoire)
-bcr <- combineBCR(
-  read.csv("filtered_contig_annotations.csv"),
-  samples = "Sample1"
-)
-obj <- combineExpression(bcr, obj,
-  cloneCall = "aa",
-  group.by = "sample"
-)
-
-# Export preserving BCR metadata
-scConvert(obj, dest = "bcr_study.h5ad")
-```
-
-### BCR-specific columns
-
-| Column | Description |
-|--------|-------------|
-| `IGH_cdr3` | Heavy chain CDR3 |
-| `IGK_cdr3` / `IGL_cdr3` | Light chain CDR3 |
-| `isotype` | IgM, IgG, IgA, etc. |
-| `SHM_count` | Somatic hypermutation count |
-
 ## Limitations and considerations
 
 1. **VDJ contigs are not stored in h5ad/h5mu**: Raw contig sequences and alignment information (BAM-level data) are not part of the h5ad/h5mu specification. Only summarized annotations (CDR3 sequences, gene calls, clonotype IDs) in cell metadata are preserved.
@@ -198,10 +462,10 @@ scConvert(obj, dest = "bcr_study.h5ad")
 
 | Source | Destination | TCR/BCR Data Path |
 |--------|-------------|-------------------|
-| Seurat → h5ad | `meta.data` → `obs` | All clonotype columns preserved |
-| h5ad → Seurat | `obs` → `meta.data` | All columns loaded, categoricals → factors |
-| Seurat → h5mu | `meta.data` → `/obs` + per-modality | Shared metadata in global obs |
-| h5mu → Seurat | `/obs` + `/mod/*/obs` → `meta.data` | All modality metadata merged |
+| Seurat to h5ad | `meta.data` to `obs` | All clonotype columns preserved |
+| h5ad to Seurat | `obs` to `meta.data` | All columns loaded, categoricals to factors |
+| Seurat to h5mu | `meta.data` to `/obs` + per-modality | Shared metadata in global obs |
+| h5mu to Seurat | `/obs` + `/mod/*/obs` to `meta.data` | All modality metadata merged |
 
 ## See Also
 
@@ -209,6 +473,15 @@ scConvert(obj, dest = "bcr_study.h5ad")
 
 ## Session Info
 
-```{r sessionInfo, purl = FALSE}
+```{r sessionInfo}
 sessionInfo()
+```
+
+```{r final_cleanup, echo=FALSE, results='hide', purl = FALSE}
+outs <- c(
+  "tcr_annotated.h5ad", "tcr_annotated.h5seurat", "tcr_annotated.h5mu",
+  "tcr_annotated.loom", "bcr_annotated.h5ad"
+)
+existing_files <- outs[file.exists(outs)]
+if (length(existing_files) > 0) file.remove(existing_files)
 ```

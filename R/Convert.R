@@ -5158,7 +5158,7 @@ writeH5MU <- function(
       graph_obj <- tryCatch(object[[gn]], error = function(e) NULL)
       if (!is.null(graph_obj) && inherits(graph_obj, "Graph")) {
         graph_assay <- tryCatch(DefaultAssay(graph_obj), error = function(e) "")
-        if (graph_assay == assay_name) {
+        if (length(graph_assay) == 1 && !is.null(graph_assay) && graph_assay == assay_name) {
           assay_graphs <- c(assay_graphs, gn)
         }
       }
