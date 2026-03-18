@@ -78,7 +78,7 @@
 <!-- badges: start -->
 
 <p><strong>Universal single-cell format conversion for R. No Python required.</strong></p>
-<p>scConvert converts between <strong>9 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>50+ conversion paths</strong> from a single <code>scConvert()</code> interface.</p>
+<p>scConvert converts between <strong>9 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>50+ conversion paths</strong> from a single <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> interface.</p>
 <div class="section level2">
 <h2 id="supported-formats">Supported Formats<a class="anchor" aria-label="anchor" href="#supported-formats"></a>
 </h2>
@@ -175,12 +175,12 @@
 <h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">scConvert</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># One-line conversion between any format pair</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.h5mu"</span>, dest <span class="op">=</span> <span class="st">"rds"</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="va">seurat_obj</span>, dest <span class="op">=</span> <span class="st">"output.h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5mu"</span>, dest <span class="op">=</span> <span class="st">"rds"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="va">seurat_obj</span>, dest <span class="op">=</span> <span class="st">"output.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Direct h5ad loading with full metadata preservation</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"data.h5ad"</span><span class="op">)</span></span>
@@ -285,7 +285,7 @@
 <div class="section level2">
 <h2 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a>
 </h2>
-<p>Benchmarked against 9 competing tools on datasets from 100 to 1,000,000 cells (Apple M4 Max, 48 GB RAM):</p>
+<p>Synthetic sparse h5ad (20K genes, 5% density), median of 3 runs:</p>
 <table class="table">
 <colgroup>
 <col width="30%">
@@ -302,31 +302,37 @@
 <tbody>
 <tr class="odd">
 <td>Read h5ad</td>
-<td>2.84 s</td>
-<td>9.69 s</td>
-<td>3–9x faster than alternatives</td>
+<td>2.56 s</td>
+<td>12.68 s</td>
+<td>Native C reader + Seurat</td>
 </tr>
 <tr class="even">
-<td>Write h5ad</td>
-<td>21.3 s</td>
-<td>–</td>
-<td>Comparable to anndataR</td>
+<td>Write h5ad (gzip=0)</td>
+<td>0.61 s</td>
+<td>3.29 s</td>
+<td>C writer, 17× faster</td>
 </tr>
 <tr class="odd">
-<td>BPCells load</td>
-<td>2.55 s</td>
-<td>6.24 s</td>
-<td>87% less memory</td>
+<td>Write h5ad (gzip=1)</td>
+<td>6.03 s</td>
+<td>30.66 s</td>
+<td>C writer, compressed</td>
 </tr>
 <tr class="even">
-<td>CLI (h5ad to h5seurat)</td>
-<td>0.12 s</td>
-<td>0.59 s</td>
+<td>Write h5ad (old R)</td>
+<td>10.49 s</td>
+<td>52.32 s</td>
+<td>R/hdf5r, gzip=4</td>
+</tr>
+<tr class="odd">
+<td>CLI (h5ad ↔︎ h5seurat)</td>
+<td>0.19 s</td>
+<td>0.63 s</td>
 <td>Streaming, constant memory</td>
 </tr>
 </tbody>
 </table>
-<p>Benchmarked on Apple M4 Max, 48 GB RAM.</p>
+<p>The C writer writes h5ad directly via <code><a href="https://rdrr.io/r/base/CallExternal.html" class="external-link">.Call()</a></code>, using the zero-copy CSC↔︎CSR reinterpretation (no sparse transpose needed). Use <code>gzip = 0</code> for local/temporary files (6× faster), <code>gzip = 1</code> for a good speed/size balance (252 MB vs 1.2 GB at 100K cells). BPCells on-disk loading (<code>use.bpcells</code>) reduces memory by ~87% at atlas scale. Benchmarked on Apple M4 Max, 128 GB RAM.</p>
 </div>
 <div class="section level2">
 <h2 id="command-line-interface">Command-Line Interface<a class="anchor" aria-label="anchor" href="#command-line-interface"></a>

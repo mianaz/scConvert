@@ -401,7 +401,6 @@ ecosystems.</p>
 <span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5s_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="va">h5s_path</span>, <span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Validating h5Seurat file</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span></span>
 <span><span class="co"># Load the CLI-produced h5ad</span></span>
@@ -463,8 +462,6 @@ through an h5ad → h5seurat → h5ad roundtrip.</p>
 <span><span class="co"># h5ad → h5seurat via CLI</span></span>
 <span><span class="va">h5s_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="va">h5ad_src</span>, <span class="va">h5s_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adding X_pca as cell embeddings for pca</span></span>
-<span><span class="co">#&gt; Adding X_umap as cell embeddings for umap</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5s_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating h5Seurat file</span></span>
@@ -521,8 +518,6 @@ through an h5ad → h5seurat → h5ad roundtrip.</p>
 <span></span>
 <span><span class="va">h5s_test</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="va">h5ad_src</span>, <span class="va">h5s_test</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adding X_pca as cell embeddings for pca</span></span>
-<span><span class="co">#&gt; Adding X_umap as cell embeddings for umap</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">obj_test</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5s_test</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating h5Seurat file</span></span>
