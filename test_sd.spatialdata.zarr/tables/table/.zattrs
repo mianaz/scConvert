@@ -1,9 +1,0 @@
-{
-  "encoding-type": "anndata",
-  "encoding-version": "0.1.0",
-  "spatialdata_attrs": {
-    "region": "spots",
-    "region_key": "region",
-    "instance_key": "instance_id"
-  }
-}

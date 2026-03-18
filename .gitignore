@@ -36,6 +36,7 @@ SCHOLAR_EVALUATION*.md
 /*.h5Seurat
 /*.rds
 /*.Rds
+/*.spatialdata.zarr/
 
 # Test data (keep shipped samples)
 inst/testdata/*
