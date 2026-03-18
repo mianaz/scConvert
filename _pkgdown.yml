@@ -191,6 +191,7 @@ articles:
       - convert-anndata
       - h5Seurat-load
       - cli-usage
+      - conversion-modes
 
   - title: "Format Guides"
     navbar: "Format Guides"
@@ -211,4 +212,5 @@ articles:
       - spatial-technologies
       - convert-spatialdata
       - immune-repertoire
+      - atlas-bpcells
 
