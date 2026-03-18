@@ -120,11 +120,11 @@ Synthetic sparse h5ad (20K genes, 5% density), median of 3 runs:
 
 | Operation              | 100K cells | 500K cells | Comparison                    |
 |------------------------|------------|------------|-------------------------------|
-| Read h5ad              | 2.48 s     | 12.44 s    | Native C reader + Seurat      |
-| Write h5ad (gzip=0)    | 1.62 s     | –          | C writer, 6× faster           |
-| Write h5ad (gzip=1)    | 6.10 s     | –          | C writer, compressed          |
-| Write h5ad (old R)     | 10.42 s    | –          | R/hdf5r, gzip=4              |
-| CLI (h5ad ↔ h5seurat)  | 0.12 s     | 0.63 s     | Streaming, constant memory    |
+| Read h5ad              | 2.56 s     | 12.68 s    | Native C reader + Seurat      |
+| Write h5ad (gzip=0)    | 0.61 s     | 3.29 s     | C writer, 17× faster          |
+| Write h5ad (gzip=1)    | 6.03 s     | 30.66 s    | C writer, compressed          |
+| Write h5ad (old R)     | 10.49 s    | 52.32 s    | R/hdf5r, gzip=4              |
+| CLI (h5ad ↔ h5seurat)  | 0.19 s     | 0.63 s     | Streaming, constant memory    |
 
 The C writer writes h5ad directly via `.Call()`, using the zero-copy
 CSC↔CSR reinterpretation (no sparse transpose needed). Use `gzip = 0` for
