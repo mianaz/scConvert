@@ -74,7 +74,7 @@ This process is quick and results in a compact on-disk file.
 
 size <- file.size("pbmc3k.h5Seurat")
 print(structure(size, class = "object_size"), units = "Mb")
-#> 52.1 Mb
+#> 51.5 Mb
 ```
 
 h5Seurat files are HDF5-based and can be read in other languages, such

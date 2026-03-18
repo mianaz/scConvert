@@ -248,11 +248,11 @@ print(adata)
 #>     var: 'vst.mean', 'vst.variance', 'vst.variance.expected', 'vst.variance.standardized', 'vst.variable'
 #>     obsm: 'X_pca', 'X_umap'
 #>     layers: 'scaled', 'data'
-#>     obsp: 'connectivities', 'distances'
+#>     obsp: 'distances', 'connectivities'
 print(f"Embeddings: {list(adata.obsm.keys())}")
 #> Embeddings: ['X_pca', 'X_umap']
 print(f"Graphs: {list(adata.obsp.keys())}")
-#> Graphs: ['connectivities', 'distances']
+#> Graphs: ['distances', 'connectivities']
 ```
 
 ### Visualizing in scanpy
