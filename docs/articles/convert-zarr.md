@@ -11,18 +11,20 @@ an independent file that can be read in parallel from object stores like
 S3 or GCS. scConvert reads and writes Zarr v2 stores following the
 AnnData on-disk specification, with no Python dependency.
 
-## Load demo data
+## Read a Zarr store
 
-We start with a 500-cell PBMC dataset that ships with scConvert. It has
-PCA, UMAP, cluster labels, and neighbor graphs already computed.
+We start by reading a 500-cell PBMC dataset shipped as a Zarr store with
+scConvert. This dataset has 2000 genes, PCA/UMAP embeddings, neighbor
+graphs, and 9 annotated cell types.
 
 ``` r
 
-pbmc <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
+zarr_path <- system.file("extdata", "pbmc_demo.zarr", package = "scConvert")
+pbmc <- readZarr(zarr_path, verbose = FALSE)
 pbmc
 #> An object of class Seurat 
 #> 2000 features across 500 samples within 1 assay 
-#> Active assay: RNA (2000 features, 2000 variable features)
+#> Active assay: RNA (2000 features, 0 variable features)
 #>  2 layers present: counts, data
 #>  2 dimensional reductions calculated: pca, umap
 ```
@@ -31,54 +33,48 @@ pbmc
 
 DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
         label = TRUE, pt.size = 0.8) +
-  ggtitle("Original PBMC data") + NoLegend()
+  ggtitle("PBMC data read from Zarr") + NoLegend()
 ```
 
-![](convert-zarr_files/figure-html/dimplot-original-1.png)
+![](convert-zarr_files/figure-html/dimplot-zarr-1.png)
 
-## Write to Zarr
-
-Save the Seurat object as a Zarr store with
-[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md).
-Expression data, metadata, embeddings, and graphs are all preserved.
+LYZ is a strong monocyte marker. We can verify that expression values
+were loaded correctly from the Zarr store.
 
 ``` r
 
-zarr_path <- file.path(tempdir(), "pbmc.zarr")
-writeZarr(pbmc, zarr_path, overwrite = TRUE, verbose = FALSE)
-cat("Zarr store written to:", zarr_path, "\n")
-#> Zarr store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpY170FZ/pbmc.zarr
+FeaturePlot(pbmc, features = "LYZ", pt.size = 0.8) +
+  ggtitle("LYZ expression (from Zarr)")
 ```
 
-## Read back from Zarr
+![](convert-zarr_files/figure-html/featureplot-lyz-1.png)
 
-Load the Zarr store back into a Seurat object with
-[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md).
+## Write to Zarr and read back
+
+Now we load the same dataset from its RDS representation, write it to
+Zarr, and read it back to verify round-trip fidelity.
 
 ``` r
 
-pbmc_rt <- readZarr(zarr_path, verbose = FALSE)
+pbmc_rds <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
+rt_path <- file.path(tempdir(), "pbmc_roundtrip.zarr")
+writeZarr(pbmc_rds, rt_path, overwrite = TRUE, verbose = FALSE)
+pbmc_rt <- readZarr(rt_path, verbose = FALSE)
 cat("Cells:", ncol(pbmc_rt), "| Genes:", nrow(pbmc_rt), "\n")
 #> Cells: 500 | Genes: 2000
 cat("Reductions:", paste(Reductions(pbmc_rt), collapse = ", "), "\n")
 #> Reductions: pca, umap
 ```
 
-## Compare original and round-trip
-
-The UMAP coordinates, cluster labels, and expression values are
-preserved exactly through the Zarr round-trip. We verify this with
-side-by-side visualizations.
-
-### Cluster labels
+### Compare original and round-trip
 
 ``` r
 
 library(patchwork)
 
-p1 <- DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
+p1 <- DimPlot(pbmc_rds, reduction = "umap", group.by = "seurat_annotations",
               label = TRUE, pt.size = 0.8) +
-  ggtitle("Original") + NoLegend()
+  ggtitle("Original (RDS)") + NoLegend()
 
 p2 <- DimPlot(pbmc_rt, reduction = "umap", group.by = "seurat_annotations",
               label = TRUE, pt.size = 0.8) +
@@ -89,37 +85,21 @@ p1 + p2
 
 ![](convert-zarr_files/figure-html/compare-dimplot-1.png)
 
-### Gene expression
-
-Expression patterns are also preserved – here we compare LYZ (a monocyte
-marker) across the original and round-tripped objects.
-
-``` r
-
-p1 <- FeaturePlot(pbmc, features = "LYZ", pt.size = 0.8) +
-  ggtitle("LYZ -- Original")
-p2 <- FeaturePlot(pbmc_rt, features = "LYZ", pt.size = 0.8) +
-  ggtitle("LYZ -- Zarr round-trip")
-p1 + p2
-```
-
-![](convert-zarr_files/figure-html/compare-featureplot-1.png)
-
-### Quick fidelity check
+### Fidelity check
 
 ``` r
 
 # Dimensions match
-stopifnot(ncol(pbmc_rt) == ncol(pbmc))
-stopifnot(nrow(pbmc_rt) == nrow(pbmc))
+stopifnot(ncol(pbmc_rt) == ncol(pbmc_rds))
+stopifnot(nrow(pbmc_rt) == nrow(pbmc_rds))
 
 # Barcodes and features match
-stopifnot(identical(sort(colnames(pbmc_rt)), sort(colnames(pbmc))))
-stopifnot(identical(sort(rownames(pbmc_rt)), sort(rownames(pbmc))))
+stopifnot(identical(sort(colnames(pbmc_rt)), sort(colnames(pbmc_rds))))
+stopifnot(identical(sort(rownames(pbmc_rt)), sort(rownames(pbmc_rds))))
 
 # PCA coordinates are exact
 pca_diff <- max(abs(
-  Embeddings(pbmc, "pca")[colnames(pbmc_rt), ] -
+  Embeddings(pbmc_rds, "pca")[colnames(pbmc_rt), ] -
   Embeddings(pbmc_rt, "pca")
 ))
 stopifnot(pca_diff < 1e-10)

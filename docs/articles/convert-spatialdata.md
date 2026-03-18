@@ -16,18 +16,20 @@ and
 to move between SpatialData stores and Seurat objects, with no Python
 dependency.
 
-## Load spatial demo data
+## Read spatial data from h5ad
 
-We use a 400-spot Visium mouse brain dataset that ships with scConvert.
-It includes a tissue image, PCA/UMAP embeddings, and 15 clusters.
+We start by reading a 400-spot Visium mouse brain dataset shipped with
+scConvert as an h5ad file. This dataset includes spatial coordinates, a
+tissue image, PCA/UMAP embeddings, and 15 clusters across 1500 genes.
 
 ``` r
 
-brain <- readRDS(system.file("extdata", "spatial_demo.rds", package = "scConvert"))
+h5ad_path <- system.file("extdata", "spatial_demo.h5ad", package = "scConvert")
+brain <- readH5AD(h5ad_path, verbose = FALSE)
 brain
 #> An object of class Seurat 
 #> 1500 features across 400 samples within 1 assay 
-#> Active assay: Spatial (1500 features, 1500 variable features)
+#> Active assay: RNA (1500 features, 1500 variable features)
 #>  2 layers present: counts, data
 #>  2 dimensional reductions calculated: pca, umap
 #>  1 spatial field of view present: anterior1
@@ -35,28 +37,37 @@ brain
 
 ``` r
 
-SpatialFeaturePlot(brain, features = "Hpca") +
-  ggtitle("Hpca expression -- Original Visium data")
+SpatialFeaturePlot(brain, features = "Ttr") +
+  ggtitle("Ttr expression -- Visium mouse brain (from h5ad)")
 ```
 
 ![](convert-spatialdata_files/figure-html/spatial-plot-original-1.png)
 
-## Write to SpatialData
+Ttr (transthyretin) marks the choroid plexus. The spatial expression
+pattern confirms the data was loaded correctly from the h5ad file.
 
-Save the Seurat object as a SpatialData Zarr store. The expression data,
-metadata, embeddings, spatial coordinates, and shapes are all written.
+``` r
+
+DimPlot(brain, reduction = "umap", label = TRUE, pt.size = 1) +
+  ggtitle("Cluster assignments (from h5ad)") + NoLegend()
+```
+
+![](convert-spatialdata_files/figure-html/dimplot-original-1.png)
+
+## Write to SpatialData and read back
+
+SpatialData stores have a complex directory structure with separate
+groups for tables, shapes, images, and coordinate systems. We write the
+Seurat object to a SpatialData Zarr store and read it back to verify the
+round-trip.
 
 ``` r
 
 sd_path <- file.path(tempdir(), "brain.spatialdata.zarr")
 writeSpatialData(brain, sd_path, overwrite = TRUE, verbose = FALSE)
 cat("SpatialData store written to:", sd_path, "\n")
-#> SpatialData store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpM9FOe4/brain.spatialdata.zarr
+#> SpatialData store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpD6izHU/brain.spatialdata.zarr
 ```
-
-## Read back from SpatialData
-
-Load the store back into a Seurat object.
 
 ``` r
 
@@ -71,43 +82,20 @@ cat("Images:", paste(Images(brain_rt), collapse = ", "), "\n")
 
 ## Compare original and round-trip
 
-Side-by-side comparisons confirm that cluster assignments and gene
-expression patterns survive the SpatialData round-trip.
-
-### Cluster UMAP
-
 ``` r
 
 library(patchwork)
 
-p1 <- DimPlot(brain, reduction = "umap", label = TRUE, pt.size = 1) +
-  ggtitle("Original") + NoLegend()
-
-p2 <- DimPlot(brain_rt, reduction = "umap", label = TRUE, pt.size = 1) +
-  ggtitle("After SpatialData round-trip") + NoLegend()
-
-p1 + p2
-```
-
-![](convert-spatialdata_files/figure-html/compare-dimplot-1.png)
-
-### Gene expression
-
-Ttr (transthyretin) marks the choroid plexus in mouse brain. Expression
-patterns are identical before and after the round-trip.
-
-``` r
-
 p1 <- FeaturePlot(brain, features = "Ttr", pt.size = 1) +
-  ggtitle("Ttr -- Original")
+  ggtitle("Ttr -- Original (h5ad)")
 p2 <- FeaturePlot(brain_rt, features = "Ttr", pt.size = 1) +
-  ggtitle("Ttr -- SpatialData round-trip")
+  ggtitle("Ttr -- After SpatialData round-trip")
 p1 + p2
 ```
 
 ![](convert-spatialdata_files/figure-html/compare-feature-1.png)
 
-### Quick fidelity check
+### Fidelity check
 
 ``` r
 

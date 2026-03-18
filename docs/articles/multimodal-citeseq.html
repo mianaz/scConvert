@@ -91,32 +91,34 @@
 <p>CITE-seq (Cellular Indexing of Transcriptomes and Epitopes by
 Sequencing) measures RNA transcription and surface protein abundance
 from the same cells. This produces two assays per cell: RNA gene
-expression and ADT (antibody-derived tag) protein counts. scConvert
-handles both assays during format conversion, giving you two export
-options:</p>
+expression and ADT (antibody-derived tag) protein counts. The h5mu
+format is ideal for storing both modalities in a single file. scConvert
+handles both assays during format conversion, and provides two export
+paths:</p>
 <ul>
 <li>
 <strong>h5ad</strong>: Exports a single assay (RNA or ADT) per file,
-ideal for scanpy workflows</li>
+for scanpy workflows</li>
 <li>
-<strong>h5mu</strong>: Exports all assays in one file, ideal for
+<strong>h5mu</strong>: Exports all assays in one file, for
 muon/MuData workflows</li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="load-cite-seq-data">Load CITE-seq data<a class="anchor" aria-label="anchor" href="#load-cite-seq-data"></a>
+<h2 id="read-cite-seq-data-from-h5mu">Read CITE-seq data from h5mu<a class="anchor" aria-label="anchor" href="#read-cite-seq-data-from-h5mu"></a>
 </h2>
-<p>The shipped <code>citeseq_demo.rds</code> contains 500 cells with RNA
-(2000 genes) and ADT (10 antibodies: CD3, CD4, CD8, CD45RA, CD56, CD16,
-CD11c, CD14, CD19, CD34), pre-processed with PCA, UMAP, and
+<p>The shipped <code>citeseq_demo.h5mu</code> contains 500 cells with
+RNA (2,000 genes) and ADT (10 antibodies: CD3, CD4, CD8, CD45RA, CD56,
+CD16, CD11c, CD14, CD19, CD34), pre-processed with PCA, UMAP, and
 clustering.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"citeseq_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">h5mu_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"citeseq_demo.h5mu"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="va">h5mu_file</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Cells: 500</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Assays</span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Assays: RNA, ADT</span></span>
+<span><span class="co">#&gt; Assays: ADT, RNA</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; RNA features: 2000</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ADT features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
@@ -136,33 +138,35 @@ clustering.</p>
 <h2 id="visualize-protein-expression">Visualize protein expression<a class="anchor" aria-label="anchor" href="#visualize-protein-expression"></a>
 </h2>
 <p>ADT markers reveal cell-surface protein levels that complement the
-transcriptomic clusters. CD3 marks T cells; CD14 marks monocytes.</p>
+transcriptomic clusters. After reading h5mu, the ADT assay contains only
+raw counts, so we normalize with CLR before plotting. CD3 marks T cells;
+CD14 marks monocytes.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"ADT"</span></span>
+<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">NormalizeData</span><span class="op">(</span><span class="va">obj</span>, normalization.method <span class="op">=</span> <span class="st">"CLR"</span>, margin <span class="op">=</span> <span class="fl">2</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"ADT"</span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD3"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"CD3 (T cells)"</span><span class="op">)</span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"CD14 (Monocytes)"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"RNA"</span></span>
-<span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
 <p><img src="multimodal-citeseq_files/figure-html/featureplot-adt-1.png" class="r-plt" alt="" width="1152"></p>
 <div class="section level3">
 <h3 id="adt-expression-across-clusters">ADT expression across clusters<a class="anchor" aria-label="anchor" href="#adt-expression-across-clusters"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"ADT"</span></span>
-<span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD3"</span>, group.by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, pt.size <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op">+</span></span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD3"</span>, group.by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, pt.size <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"CD3 protein across clusters"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="multimodal-citeseq_files/figure-html/vlnplot-adt-1.png" class="r-plt" alt="" width="768"></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"RNA"</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="export-to-h5ad-single-assay">Export to h5ad (single assay)<a class="anchor" aria-label="anchor" href="#export-to-h5ad-single-assay"></a>
+<h2 id="export-h5ad-vs-h5mu">Export: h5ad vs h5mu<a class="anchor" aria-label="anchor" href="#export-h5ad-vs-h5mu"></a>
 </h2>
+<div class="section level3">
+<h3 id="h5ad-single-assay">h5ad – single assay<a class="anchor" aria-label="anchor" href="#h5ad-single-assay"></a>
+</h3>
 <p><code><a href="../reference/writeH5AD.html">writeH5AD()</a></code> writes one assay at a time. By default it
 writes the active assay (RNA). This is the right choice for standard
 scanpy workflows.</p>
@@ -174,18 +178,19 @@ scanpy workflows.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"File size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; File size: 0.7 MB</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="export-to-h5mu-multi-assay">Export to h5mu (multi-assay)<a class="anchor" aria-label="anchor" href="#export-to-h5mu-multi-assay"></a>
-</h2>
-<p><code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> writes all assays into a single file, each
-as a separate modality. This preserves both RNA and ADT together.</p>
+<div class="section level3">
+<h3 id="h5mu-all-assays">h5mu – all assays<a class="anchor" aria-label="anchor" href="#h5mu-all-assays"></a>
+</h3>
+<p><code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> writes every assay as a separate modality,
+keeping RNA and ADT together in a single file.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">h5mu_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"citeseq.h5mu"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">h5mu_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"citeseq_roundtrip.h5mu"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5mu_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Wrote RNA + ADT to:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Wrote RNA + ADT to: citeseq.h5mu</span></span>
+<span><span class="co">#&gt; Wrote RNA + ADT to: citeseq_roundtrip.h5mu</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"File size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; File size: 0.7 MB</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="reload-and-verify">Reload and verify<a class="anchor" aria-label="anchor" href="#reload-and-verify"></a>
@@ -218,20 +223,20 @@ as a separate modality. This preserves both RNA and ADT together.</p>
 <h3 id="verify-expression-preservation">Verify expression preservation<a class="anchor" aria-label="anchor" href="#verify-expression-preservation"></a>
 </h3>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">common_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Compare against the original h5mu-loaded object</span></span>
+<span><span class="va">orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="va">h5mu_file</span><span class="op">)</span></span>
+<span><span class="va">common_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">orig</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># RNA counts</span></span>
-<span><span class="va">common_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">obj</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
+<span><span class="va">common_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">orig</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">orig_rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">orig</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_genes</span>, <span class="fl">100</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">loaded_h5mu</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
+<span><span class="va">rt_rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">loaded_h5mu</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_genes</span>, <span class="fl">100</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA counts identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">orig</span>, <span class="va">rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA counts identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">orig_rna</span>, <span class="va">rt_rna</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; RNA counts identical: TRUE</span></span>
 <span></span>
-<span><span class="co"># ADT counts</span></span>
-<span><span class="va">common_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">orig_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">obj</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
+<span><span class="va">common_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">orig</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">orig_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">orig</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="va">common_adt</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">rt_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">loaded_h5mu</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
 <span>  <span class="va">common_adt</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>

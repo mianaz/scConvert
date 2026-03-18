@@ -8,15 +8,17 @@ scConvert preserves spot coordinates, tissue images, scale factors, and
 all associated metadata so the data is immediately usable in both R
 (Seurat) and Python (scanpy/squidpy) ecosystems.
 
-## Load the demo Visium dataset
+## Read spatial data from h5ad
 
-The shipped demo contains 400 mouse brain Visium spots with 1,500 genes,
-PCA/UMAP reductions, and 15 clusters.
+The shipped `spatial_demo.h5ad` contains 400 mouse brain Visium spots
+with 1,500 genes, PCA/UMAP reductions, and cluster labels.
+[`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
+rebuilds the full Seurat spatial object, including the tissue image.
 
 ``` r
 
-spatial_path <- system.file("extdata", "spatial_demo.rds", package = "scConvert")
-brain <- readRDS(spatial_path)
+h5ad_file <- system.file("extdata", "spatial_demo.h5ad", package = "scConvert")
+brain <- readH5AD(h5ad_file, verbose = FALSE)
 
 cat("Spots:", ncol(brain), "\n")
 #> Spots: 400
@@ -24,11 +26,11 @@ cat("Genes:", nrow(brain), "\n")
 #> Genes: 1500
 cat("Image:", Images(brain), "\n")
 #> Image: anterior1
-cat("Clusters:", nlevels(brain$seurat_clusters), "\n")
-#> Clusters: 15
+cat("Assay:", Assays(brain), "\n")
+#> Assay: RNA
 ```
 
-### Visualize a brain marker gene
+### Spatial expression of a brain marker
 
 Hpca (Hippocalcin) marks hippocampal neurons and shows clear regional
 expression in the mouse brain.
@@ -36,31 +38,36 @@ expression in the mouse brain.
 ``` r
 
 SpatialFeaturePlot(brain, features = "Hpca", pt.size.factor = 1.6) +
-  ggplot2::ggtitle("Hpca expression (original)")
+  ggtitle("Hpca expression (loaded from h5ad)")
 ```
 
-![](spatial-visium_files/figure-html/plot-original-1.png)
+![](spatial-visium_files/figure-html/spatialplot-hpca-1.png)
 
-## Convert to h5ad
-
-Write the Visium object to h5ad format. scConvert automatically exports
-spot coordinates to `obsm/spatial`, tissue images and scale factors to
-`uns/spatial`, and all metadata to `obs`.
+### Cluster overview
 
 ``` r
 
-h5ad_file <- tempfile(fileext = ".h5ad")
-writeH5AD(brain, h5ad_file, overwrite = TRUE)
-cat("Wrote:", round(file.size(h5ad_file) / 1024^2, 1), "MB\n")
+DimPlot(brain, reduction = "umap", group.by = "seurat_clusters",
+        label = TRUE, repel = TRUE) +
+  ggtitle("UMAP clusters (loaded from h5ad)")
+```
+
+![](spatial-visium_files/figure-html/dimplot-clusters-1.png)
+
+## Write-and-read roundtrip
+
+Write the spatial object to a new h5ad file, read it back, and confirm
+that coordinates, images, scale factors, and expression values are all
+preserved.
+
+``` r
+
+h5ad_rt <- file.path(tempdir(), "spatial_roundtrip.h5ad")
+writeH5AD(brain, h5ad_rt, overwrite = TRUE)
+cat("Wrote:", round(file.size(h5ad_rt) / 1024^2, 1), "MB\n")
 #> Wrote: 3.2 MB
-```
 
-## Read back into Seurat
-
-``` r
-
-brain_rt <- readH5AD(h5ad_file, verbose = FALSE)
-
+brain_rt <- readH5AD(h5ad_rt, verbose = FALSE)
 cat("Roundtrip spots:", ncol(brain_rt), "\n")
 #> Roundtrip spots: 400
 cat("Roundtrip genes:", nrow(brain_rt), "\n")
@@ -69,28 +76,17 @@ cat("Image:", Images(brain_rt), "\n")
 #> Image: anterior1
 ```
 
-## Compare original and roundtrip
+### Compare spatial plots
 
-The spatial expression pattern is preserved through the h5ad roundtrip.
+The spatial expression pattern should be identical after roundtrip.
 
 ``` r
 
 SpatialFeaturePlot(brain_rt, features = "Hpca", pt.size.factor = 1.6) +
-  ggplot2::ggtitle("Hpca expression (after h5ad roundtrip)")
+  ggtitle("Hpca expression (after h5ad roundtrip)")
 ```
 
-![](spatial-visium_files/figure-html/plot-roundtrip-1.png)
-
-Cluster assignments also survive conversion:
-
-``` r
-
-DimPlot(brain_rt, reduction = "umap", group.by = "seurat_clusters",
-        label = TRUE, repel = TRUE) +
-  ggplot2::ggtitle("UMAP clusters (after h5ad roundtrip)")
-```
-
-![](spatial-visium_files/figure-html/plot-clusters-1.png)
+![](spatial-visium_files/figure-html/spatialplot-roundtrip-1.png)
 
 ### Verify data integrity
 
@@ -107,6 +103,20 @@ cat("Clusters match:",
 #> Clusters match: TRUE
 ```
 
+## What gets preserved
+
+scConvert maintains full fidelity for Visium spatial data during
+conversion:
+
+| Component              | h5ad location                | Preserved |
+|------------------------|------------------------------|-----------|
+| Expression matrix      | `X` / `raw/X`                | Yes       |
+| Spot coordinates       | `obsm/spatial`               | Yes       |
+| Tissue image           | `uns/spatial/*/images`       | Yes       |
+| Scale factors          | `uns/spatial/*/scalefactors` | Yes       |
+| Cell metadata          | `obs`                        | Yes       |
+| Reductions (PCA, UMAP) | `obsm`                       | Yes       |
+
 ## Use in Python (scanpy/squidpy)
 
 The exported h5ad works directly with scanpy and squidpy. Images,
@@ -116,7 +126,7 @@ coordinates, and scale factors use standard scanpy conventions.
 # Requires Python with scanpy and squidpy installed
 import scanpy as sc
 
-adata = sc.read_h5ad("brain.h5ad")
+adata = sc.read_h5ad("spatial_demo.h5ad")
 print(adata)
 print(f"Spatial coords shape: {adata.obsm['spatial'].shape}")
 
@@ -129,7 +139,7 @@ sq.gr.spatial_neighbors(adata, coord_type="generic")
 sq.gr.spatial_autocorr(adata, mode="moran", genes=["Hpca", "Ttr"])
 ```
 
-## Cleanup
+## Clean up
 
 ## Session Info
 

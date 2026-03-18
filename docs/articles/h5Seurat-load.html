@@ -85,80 +85,74 @@
 
     
     
-<p>The h5Seurat format is an HDF5-based file format designed for Seurat
-objects. It stores all assays, reductions, graphs, and metadata in a
-single file and supports selective loading so you can read only the
-components you need.</p>
+<p>The h5Seurat format is an HDF5-based file format designed
+specifically for Seurat objects. It stores all assays, reductions,
+graphs, and metadata in a single file and supports selective loading so
+you can read only the components you need.</p>
 <div class="section level2">
-<h2 id="save-a-seurat-object">Save a Seurat object<a class="anchor" aria-label="anchor" href="#save-a-seurat-object"></a>
+<h2 id="read-an-h5seurat-file">Read an h5Seurat file<a class="anchor" aria-label="anchor" href="#read-an-h5seurat-file"></a>
 </h2>
-<p>We start with the shipped 500-cell PBMC demo dataset, which includes
-PCA, UMAP, neighbor graphs, and nine annotated cell types.</p>
+<p>scConvert ships a 500-cell PBMC dataset in h5Seurat format.
+<code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code> loads it directly into a fully functional
+Seurat object.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">h5seurat_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.h5seurat"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5seurat_file</span><span class="op">)</span></span>
 <span><span class="va">pbmc</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 2000 features across 500 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (2000 features, 2000 variable features)</span></span>
 <span><span class="co">#&gt;  2 layers present: counts, data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
+<p>The loaded object contains all nine annotated cell types with PCA,
+UMAP, and neighbor graphs:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
 <span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="h5Seurat-load_files/figure-html/dimplot-original-1.png" class="r-plt" alt="" width="672"></p>
-<p>Write the object to an h5Seurat file with
-<code><a href="../reference/writeH5Seurat.html">writeH5Seurat()</a></code>. All assays, dimensional reductions,
-graphs, and cell metadata are saved automatically.</p>
+<p><img src="h5Seurat-load_files/figure-html/dimplot-1.png" class="r-plt" alt="" width="672"></p>
+<p>Expression data is fully available. LYZ is a monocyte marker:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">h5seurat_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="va">h5seurat_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+<p><img src="h5Seurat-load_files/figure-html/featureplot-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="write-a-seurat-object-to-h5seurat">Write a Seurat object to h5Seurat<a class="anchor" aria-label="anchor" href="#write-a-seurat-object-to-h5seurat"></a>
+</h2>
+<p><code><a href="../reference/writeH5Seurat.html">writeH5Seurat()</a></code> saves any Seurat object to h5Seurat
+format, preserving all assays, dimensional reductions, graphs, and cell
+metadata.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_seurat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">h5seurat_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">pbmc_seurat</span>, filename <span class="op">=</span> <span class="va">h5seurat_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"File size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5seurat_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e6</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; File size: 2.3 MB</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="load-it-back">Load it back<a class="anchor" aria-label="anchor" href="#load-it-back"></a>
+<h2 id="verify-the-round-trip">Verify the round-trip<a class="anchor" aria-label="anchor" href="#verify-the-round-trip"></a>
 </h2>
-<p><code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code> reads the full object back into memory by
-default:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5seurat_path</span><span class="op">)</span></span>
-<span><span class="va">pbmc2</span></span>
-<span><span class="co">#&gt; An object of class Seurat </span></span>
-<span><span class="co">#&gt; 2000 features across 500 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: RNA (2000 features, 2000 variable features)</span></span>
-<span><span class="co">#&gt;  2 layers present: counts, data</span></span>
-<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
-<p>The loaded object preserves all components – clusters, reductions,
-and expression data look identical to the original:</p>
+<p>Read the written file back and confirm that the UMAP coordinates,
+cluster labels, and expression values are identical to the original.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5seurat_path</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc2</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"From h5Seurat"</span><span class="op">)</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_seurat</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original (.rds)"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Round-trip (.h5Seurat)"</span><span class="op">)</span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="h5Seurat-load_files/figure-html/compare-dimplot-1.png" class="r-plt" alt="" width="960"></p>
+<p><img src="h5Seurat-load_files/figure-html/roundtrip-compare-1.png" class="r-plt" alt="" width="960"></p>
 </div>
 <div class="section level2">
 <h2 id="selective-loading">Selective loading<a class="anchor" aria-label="anchor" href="#selective-loading"></a>
 </h2>
-<p>For large datasets, you can load only what you need. This is
-particularly useful when you have a multi-gigabyte h5Seurat file and
-only want to make a quick UMAP plot. The <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code>
-function accepts four parameters for controlling what gets loaded:</p>
-<ul>
-<li>
-<code>assays</code>: which assays and layers to load</li>
-<li>
-<code>reductions</code>: which dimensional reductions to load</li>
-<li>
-<code>graphs</code>: which nearest-neighbor graphs to load</li>
-<li>
-<code>images</code>: which spatial images to load</li>
-</ul>
+<p>For large datasets, you can load only what you need. This is useful
+when you have a multi-gigabyte h5Seurat file and only want to make a
+quick UMAP plot.</p>
 <p>Load only the RNA assay with UMAP, skipping PCA and all graphs:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_light</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5seurat_path</span>, assays <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_light</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5seurat_file</span>, assays <span class="op">=</span> <span class="st">"RNA"</span>,</span>
 <span>                           reductions <span class="op">=</span> <span class="st">"umap"</span>, graphs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pbmc_light</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
@@ -166,32 +160,22 @@ function accepts four parameters for controlling what gets loaded:</p>
 <span><span class="co">#&gt; Active assay: RNA (2000 features, 2000 variable features)</span></span>
 <span><span class="co">#&gt;  2 layers present: counts, data</span></span>
 <span><span class="co">#&gt;  1 dimensional reduction calculated: umap</span></span></code></pre></div>
-<p>The loaded object still supports visualization since UMAP coordinates
+<p>The light object still supports visualization since UMAP coordinates
 are present:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_light</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
 <span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="h5Seurat-load_files/figure-html/selective-dimplot-1.png" class="r-plt" alt="" width="672"></p>
-<p>You can also control which layers of an assay to load. For example,
-to load only the normalized data (skipping raw counts and scaled
-data):</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_data_only</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5seurat_path</span>,</span>
-<span>                               assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span>,</span>
-<span>                               reductions <span class="op">=</span> <span class="st">"umap"</span>, graphs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Layers loaded:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Layers</span><span class="op">(</span><span class="va">pbmc_data_only</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Layers loaded: counts, data</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="query-file-contents-with-scconnect">Query file contents with scConnect()<a class="anchor" aria-label="anchor" href="#query-file-contents-with-scconnect"></a>
 </h2>
-<p>Before loading, you can inspect what is stored in an h5Seurat file
-without reading any data into memory. <code><a href="../reference/scConnect.html">scConnect()</a></code> opens a
-lightweight connection to the file and <code>.index()</code> summarizes
-its contents, showing which assays, reductions, graphs, and images are
-available.</p>
+<p>Before loading any data, you can inspect what is stored in an
+h5Seurat file using <code><a href="../reference/scConnect.html">scConnect()</a></code>. This opens a lightweight
+connection and <code>.index()</code> summarizes the contents – which
+assays, reductions, graphs, and images are available.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hfile</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scConnect.html">scConnect</a></span><span class="op">(</span><span class="va">h5seurat_path</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">hfile</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scConnect.html">scConnect</a></span><span class="op">(</span><span class="va">h5seurat_file</span><span class="op">)</span></span>
 <span><span class="va">hfile</span><span class="op">$</span><span class="fu">index</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Data for assay RNA<span style="color: #BBBB00;">★</span> (default assay)</span></span>
 <span><span class="co">#&gt;    counts      data    scale.data</span></span>
@@ -205,47 +189,19 @@ available.</p>
 what to load before committing memory.</p>
 </div>
 <div class="section level2">
-<h2 id="compare-expression-before-and-after">Compare expression before and after<a class="anchor" aria-label="anchor" href="#compare-expression-before-and-after"></a>
+<h2 id="per-cluster-expression">Per-cluster expression<a class="anchor" aria-label="anchor" href="#per-cluster-expression"></a>
 </h2>
-<p>The expression values are preserved exactly through the h5Seurat
-round-trip. Here we compare the LYZ gene (a monocyte marker) in the
-original and reloaded objects:</p>
+<p>A violin plot shows the LYZ expression distribution across all nine
+cell types:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ - Original"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc2</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ - From h5Seurat"</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="h5Seurat-load_files/figure-html/featureplot-compare-1.png" class="r-plt" alt="" width="960"></p>
-<p>A violin plot confirms the per-cluster expression distribution is
-identical:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">pbmc2</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>, pt.size <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
+<code class="sourceCode R"><span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>, pt.size <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="h5Seurat-load_files/figure-html/vlnplot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="incremental-loading-with-scappenddata">Incremental loading with scAppendData()<a class="anchor" aria-label="anchor" href="#incremental-loading-with-scappenddata"></a>
-</h2>
-<p>If you loaded a partial object and later need additional components,
-use <code><a href="../reference/scAppendData.html">scAppendData()</a></code> to add them without reloading from
-scratch:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Start with a minimal load (data layer + UMAP only)</span></span>
-<span><span class="va">pbmc_partial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5Seurat.html">readH5Seurat</a></span><span class="op">(</span><span class="va">h5seurat_path</span>, assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"RNA"</span> <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span>,</span>
-<span>                             reductions <span class="op">=</span> <span class="st">"umap"</span>, graphs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Before append - Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Reductions</span><span class="op">(</span><span class="va">pbmc_partial</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Before append - Reductions: umap</span></span>
-<span></span>
-<span><span class="co"># Now add PCA</span></span>
-<span><span class="va">pbmc_partial</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/scAppendData.html">scAppendData</a></span><span class="op">(</span><span class="va">h5seurat_path</span>, <span class="va">pbmc_partial</span>,</span>
-<span>                             assays <span class="op">=</span> <span class="cn">FALSE</span>, reductions <span class="op">=</span> <span class="st">"pca"</span>,</span>
-<span>                             graphs <span class="op">=</span> <span class="cn">FALSE</span>, images <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"After append  - Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Reductions</span><span class="op">(</span><span class="va">pbmc_partial</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; After append  - Reductions: umap, pca</span></span></code></pre></div>
-</div>
-<div class="section level2">
 <h2 id="clean-up">Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">h5seurat_path</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

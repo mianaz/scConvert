@@ -30,9 +30,13 @@ backend behind [CELLxGENE Census](https://chanzuckerberg.github.io/cellxgene-cen
 which hosts 61M+ cells across 900+ datasets. SOMA supports efficient slicing
 by cells or features without loading the full dataset, making it ideal for
 working with large atlases.
+
 scConvert provides `writeSOMA()` and `readSOMA()` for Seurat interoperability.
 Both functions require the
 [tiledbsoma](https://github.com/single-cell-data/TileDB-SOMA) R package.
+SOMA experiments are database-like stores rather than single files, so they
+cannot easily be shipped as package demo data. Instead, we start from the
+shipped RDS and demonstrate the round-trip.
 
 ## Load demo data
 
@@ -96,6 +100,8 @@ p2 <- DimPlot(pbmc_rt, reduction = "umap", group.by = "seurat_annotations",
 p1 + p2
 ```
 
+### Violin plot
+
 LYZ is a strong monocyte marker -- the violin plot below shows its expression
 distribution across all 9 cell types loaded from the SOMA store.
 
@@ -105,7 +111,7 @@ VlnPlot(pbmc_rt, features = "LYZ", pt.size = 0) +
   ggtitle("LYZ expression by cell type (from SOMA)") + NoLegend()
 ```
 
-### Quick fidelity check
+### Fidelity check
 
 ```{r fidelity-check, eval = has_soma}
 stopifnot(ncol(pbmc_rt) == ncol(pbmc))
