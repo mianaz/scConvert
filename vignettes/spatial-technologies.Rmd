@@ -1,8 +1,8 @@
 ---
-title: "Spatial Technologies: Slide-seq, Visium HD, and Others"
+title: "Spatial Technologies Overview"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Spatial Technologies: Slide-seq, Visium HD, and Others}
+  %\VignetteIndexEntry{Spatial Technologies Overview}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,259 +11,146 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
   message = FALSE,
-  warning = FALSE,
-  out.width = "100%",
-  dev = "png",
-  fig.width = 8,
-  fig.height = 6
+  warning = FALSE
 )
-has_SeuratData <- requireNamespace("SeuratData", quietly = TRUE)
-has_ssHippo <- FALSE
-has_stxKidney <- FALSE
-if (has_SeuratData) {
-  library(SeuratData)
-  has_ssHippo <- tryCatch("ssHippo.SeuratData" %in% rownames(InstalledData()), error = function(e) FALSE)
-  has_stxKidney <- tryCatch("stxKidney.SeuratData" %in% rownames(InstalledData()), error = function(e) FALSE)
-}
-```
-
-## Overview
-
-Spatial transcriptomics encompasses a diverse set of technologies, each with distinct coordinate systems, resolutions, and data structures. scConvert supports conversion of spatial data from all technologies that produce Seurat objects or h5ad files.
-
-This vignette covers:
-
-1. **Slide-seq v2** (bead-based, continuous coordinates)
-2. **Visium / Visium HD** (spot-based, gridded coordinates)
-3. **Xenium / MERFISH / CosMx** (subcellular, molecule-based)
-4. **CODEX / Stereo-seq** (imaging-based)
-
-```{r packages}
-library(Seurat)
 library(scConvert)
+library(Seurat)
 library(ggplot2)
 ```
 
-## Slide-seq v2: Mouse Hippocampus
+## Introduction
 
-Slide-seq uses DNA barcoded beads on a surface to capture spatial transcriptomes with near-cellular resolution (~10 um).
+Spatial transcriptomics spans a range of technologies -- from spot-based
+platforms like Visium and Slide-seq to subcellular-resolution methods like
+Xenium and MERFISH. scConvert handles spatial data from any platform that
+produces a Seurat object or h5ad file, preserving coordinates, images, and
+metadata through format conversion.
 
-```{r load_ss, eval = has_ssHippo}
-library(SeuratData)
-ss <- UpdateSeuratObject(LoadData("ssHippo"))
-ss <- NormalizeData(ss, verbose = FALSE)
+## Supported spatial technologies
 
-cat("Technology: Slide-seq v2\n")
-cat("Beads:", ncol(ss), "\n")
-cat("Genes:", nrow(ss), "\n")
-cat("Images:", Images(ss), "\n")
+| Technology | Resolution | Coordinates | Images | h5ad roundtrip |
+|------------|-----------|-------------|--------|----------------|
+| **10x Visium** | ~55 um spots | Gridded | H&E tissue | Full support |
+| **10x Visium HD** | 2--8 um bins | Dense grid | H&E tissue | Coordinates + image |
+| **Slide-seq v2** | ~10 um beads | Continuous | None | Coordinates |
+| **10x Xenium** | Subcellular | Molecule-based | DAPI/IF | Coordinates via FOV |
+| **MERFISH (Vizgen)** | Subcellular | Molecule-based | DAPI | Coordinates via FOV |
+| **CosMx (NanoString)** | Subcellular | Molecule-based | Morphology | Coordinates via FOV |
+| **CODEX (Akoya)** | Cell-level | Centroids | Fluorescence | Coordinates |
+| **Stereo-seq (BGI)** | ~0.5 um | Continuous | H&E | Coordinates |
+
+All technologies store spatial coordinates in the h5ad `obsm/spatial` field.
+Visium additionally stores tissue images and scale factors in `uns/spatial`.
+
+## Visium example: mouse brain
+
+We demonstrate a full roundtrip with the shipped Visium demo dataset (400 mouse
+brain spots, 1,500 genes, 15 clusters).
+
+```{r load-data, eval = TRUE}
+spatial_path <- system.file("extdata", "spatial_demo.rds", package = "scConvert")
+brain <- readRDS(spatial_path)
+
+cat("Spots:", ncol(brain), "\n")
+cat("Genes:", nrow(brain), "\n")
+cat("Image:", Images(brain), "\n")
+cat("Assay:", Assays(brain), "\n")
 ```
 
-### Visualize original
+### Spatial gene expression
 
-```{r plot_ss_orig, eval = has_ssHippo, fig.width = 10, fig.height = 8}
-SpatialFeaturePlot(ss, features = "HPCA", pt.size.factor = 1) +
-  ggtitle("HPCA - Slide-seq v2 hippocampus (original)")
+Ttr (Transthyretin) is expressed in the choroid plexus and shows strong spatial
+localization.
+
+```{r plot-spatial, eval = TRUE, fig.width = 7, fig.height = 5}
+SpatialFeaturePlot(brain, features = "Ttr", pt.size.factor = 1.6) +
+  ggplot2::ggtitle("Ttr expression (original)")
 ```
 
-### Convert to h5ad and back
+### Convert and load back
 
-```{r ss_convert, eval = has_ssHippo}
-h5ad_path <- tempfile(fileext = ".h5ad")
-writeH5AD(ss, h5ad_path, overwrite = TRUE, verbose = FALSE)
-ss_rt <- readH5AD(h5ad_path, verbose = FALSE)
+```{r roundtrip, eval = TRUE}
+h5ad_file <- tempfile(fileext = ".h5ad")
+writeH5AD(brain, h5ad_file, overwrite = TRUE)
+brain_rt <- readH5AD(h5ad_file, verbose = FALSE)
 
-cat("Roundtrip beads:", ncol(ss_rt), "/", ncol(ss), "\n")
-cat("Roundtrip genes:", nrow(ss_rt), "/", nrow(ss), "\n")
+cat("Roundtrip spots:", ncol(brain_rt), "\n")
+cat("Roundtrip genes:", nrow(brain_rt), "\n")
+cat("Image preserved:", length(Images(brain_rt)) > 0, "\n")
 ```
 
-### Verify expression
+### Verify coordinate preservation
 
-```{r ss_verify, eval = has_ssHippo}
-common_c <- intersect(colnames(ss), colnames(ss_rt))
-common_g <- intersect(rownames(ss), rownames(ss_rt))
-set.seed(42)
-sc <- sample(common_c, min(200, length(common_c)))
-sg <- sample(common_g, min(100, length(common_g)))
-
-corr <- cor(
-  as.numeric(GetAssayData(ss, layer = "data")[sg, sc]),
-  as.numeric(GetAssayData(ss_rt, layer = "data")[sg, sc])
-)
-cat("Expression correlation:", corr, "\n")
+```{r check-coords, eval = TRUE}
+cat("Barcodes match:", all(colnames(brain) == colnames(brain_rt)), "\n")
+cat("Features match:", all(rownames(brain) == rownames(brain_rt)), "\n")
+cat("Clusters match:",
+    all(as.character(brain$seurat_clusters) ==
+        as.character(brain_rt$seurat_clusters)), "\n")
 ```
 
-### Visualize roundtripped coordinates
+### Clusters preserved through roundtrip
 
-```{r plot_ss_rt, eval = has_ssHippo, fig.width = 10, fig.height = 8}
-# Slide-seq coordinates are continuous (not gridded)
-tryCatch({
-  SpatialFeaturePlot(ss_rt, features = "HPCA", pt.size.factor = 1) +
-    ggtitle("HPCA - Slide-seq v2 (roundtrip)")
-}, error = function(e) {
-  if (!is.null(ss_rt@meta.data$spatial_x)) {
-    df <- data.frame(
-      x = ss_rt@meta.data$spatial_x,
-      y = ss_rt@meta.data$spatial_y,
-      expr = as.numeric(GetAssayData(ss_rt, layer = "data")["HPCA", ])
-    )
-    ggplot(df, aes(x = x, y = -y, color = expr)) +
-      geom_point(size = 0.3, alpha = 0.5) +
-      scale_color_viridis_c() +
-      labs(title = "HPCA - Slide-seq v2 (roundtrip)", color = "Expression") +
-      theme_classic() + coord_fixed()
-  }
-})
+```{r plot-clusters, eval = TRUE, fig.width = 7, fig.height = 5}
+DimPlot(brain_rt, reduction = "umap", group.by = "seurat_clusters",
+        label = TRUE, repel = TRUE) +
+  ggplot2::ggtitle("UMAP clusters (after h5ad roundtrip)")
 ```
 
-```{r ss_cleanup, echo = FALSE, results = 'hide', eval = has_ssHippo}
-unlink(h5ad_path)
+### Another gene: Nrgn
+
+Nrgn (Neurogranin) is a cortical neuron marker with a different spatial pattern
+than Ttr.
+
+```{r plot-nrgn, eval = TRUE, fig.width = 7, fig.height = 5}
+FeaturePlot(brain_rt, features = "Nrgn", reduction = "umap") +
+  ggplot2::ggtitle("Nrgn expression (UMAP, after roundtrip)")
 ```
 
-## Visium: Mouse Kidney
+## Working with other spatial platforms
 
-A second Visium example with a different tissue:
-
-```{r load_kidney, eval = has_stxKidney}
-library(SeuratData)
-
-# stxKidney uses the legacy SliceImage class; reconstruct as VisiumV2
-data("stxKidney", package = "stxKidney.SeuratData")
-counts <- stxKidney@assays[["Spatial"]]@counts
-kidney <- CreateSeuratObject(counts = counts, assay = "Spatial")
-kidney <- NormalizeData(kidney, verbose = FALSE)
-
-# Reconstruct VisiumV2 from SliceImage
-old_img <- stxKidney@images[["image"]]
-sf <- old_img@scale.factors
-scales <- scalefactors(spot = sf[["spot"]], fiducial = sf[["fiducial"]],
-                       hires = sf[["hires"]], lowres = sf[["lowres"]])
-coord_df <- data.frame(
-  imagerow = old_img@coordinates[, "imagerow"],
-  imagecol = old_img@coordinates[, "imagecol"],
-  row.names = rownames(old_img@coordinates)
-)
-fov <- CreateFOV(coords = coord_df, type = "centroids",
-                 radius = sf[["spot"]], assay = "Spatial", key = "image_")
-v2 <- new(Class = "VisiumV2", image = old_img@image, scale.factors = scales,
-          molecules = fov@molecules, boundaries = fov@boundaries,
-          coords_x_orientation = "horizontal", assay = "Spatial", key = "image_")
-v2 <- v2[colnames(kidney)]
-kidney[["image"]] <- v2
-
-cat("Technology: 10x Visium\n")
-cat("Spots:", ncol(kidney), "\n")
-cat("Genes:", nrow(kidney), "\n")
-```
-
-```{r plot_kidney, eval = has_stxKidney, fig.width = 10, fig.height = 8}
-# Use a kidney marker gene
-kidney_markers <- intersect(c("Umod", "Slc12a1", "Nphs2"), rownames(kidney))
-if (length(kidney_markers) > 0) {
-  SpatialFeaturePlot(kidney, features = kidney_markers[1], pt.size.factor = 1.5) +
-    ggtitle(paste0(kidney_markers[1], " - Visium kidney (original)"))
-}
-```
-
-```{r kidney_convert, eval = has_stxKidney}
-h5ad_path <- tempfile(fileext = ".h5ad")
-writeH5AD(kidney, h5ad_path, overwrite = TRUE, verbose = FALSE)
-kidney_rt <- readH5AD(h5ad_path, verbose = FALSE)
-
-common_c <- intersect(colnames(kidney), colnames(kidney_rt))
-common_g <- intersect(rownames(kidney), rownames(kidney_rt))
-set.seed(42)
-sc <- sample(common_c, min(200, length(common_c)))
-sg <- sample(common_g, min(100, length(common_g)))
-corr <- cor(
-  as.numeric(GetAssayData(kidney, layer = "data")[sg, sc]),
-  as.numeric(GetAssayData(kidney_rt, layer = "data")[sg, sc])
-)
-cat("Expression correlation:", corr, "\n")
-cat("Spots preserved:", ncol(kidney_rt), "/", ncol(kidney), "\n")
-```
-
-```{r kidney_cleanup, echo = FALSE, results = 'hide', eval = has_stxKidney}
-unlink(h5ad_path)
-```
-
-## Spatial technology compatibility matrix
-
-| Technology | Coordinate Type | Image? | scConvert Support | Tested |
-|-----------|----------------|--------|-------------------|--------|
-| **10x Visium** | Gridded spots | H&E tissue | Full (VisiumV2) | stxBrain, stxKidney |
-| **10x Visium HD** | Dense grid | H&E tissue | Coordinates + image | Via h5ad |
-| **Slide-seq v2** | Continuous beads | No | Coordinates | ssHippo |
-| **10x Xenium** | Subcellular molecules | DAPI/IF | Coordinates via FOV | Via h5ad |
-| **MERFISH (Vizgen)** | Subcellular molecules | DAPI | Coordinates via FOV | Via h5ad |
-| **CosMx (NanoString)** | Subcellular molecules | Morphology | Coordinates via FOV | Via h5ad |
-| **CODEX (Akoya)** | Cell centroids | Fluorescence | Coordinates | Via h5ad |
-| **Stereo-seq (BGI)** | Continuous spots | H&E | Coordinates | Via h5ad |
-| **MERSCOPE** | Subcellular | DAPI | Coordinates via FOV | Via h5ad |
-
-### How spatial data is stored in h5ad
-
-All spatial technologies store coordinates in `obsm/spatial` as an N x 2 (or N x 3) matrix:
-
-```
-obsm/
-  spatial: float64 array (n_cells x 2)   # [x, y] coordinates
-uns/
-  spatial/
-    {library_id}/
-      scalefactors/                        # Visium only
-        spot_diameter_fullres: float
-        tissue_hires_scalef: float
-        tissue_lowres_scalef: float
-      images/                               # Visium only
-        hires: uint8 array (H x W x 3)
-        lowres: uint8 array (H x W x 3)
-```
-
-**Key difference by technology:**
-
-- **Visium**: Has both `obsm/spatial` AND `uns/spatial` (with images and scale factors)
-- **Slide-seq**: Has `obsm/spatial` only (no tissue images)
-- **Subcellular (Xenium, MERFISH, CosMx)**: Has `obsm/spatial` for cell centroids; molecule coordinates may be stored separately
-
-### scConvert's spatial detection logic
-
-scConvert automatically detects the spatial technology:
-
-1. If `uns/spatial/{lib}/scalefactors/tissue_hires_scalef` exists -> **Visium**
-2. If coordinates are gridded (many shared X/Y values) -> **Visium** (fallback)
-3. If coordinates are continuous -> **Slide-seq/Generic**
-4. If molecule-level data exists -> **FOV** (generic spatial)
-
-## Working with non-standard spatial h5ad files
-
-For h5ad files from technologies not directly tested:
+For any h5ad file with spatial coordinates, the same workflow applies:
 
 ```r
-# Load any h5ad with spatial coordinates
-obj <- readH5AD("spatial_data.h5ad")
+# Load spatial h5ad from any platform
+obj <- readH5AD("merfish_data.h5ad")
 
-# Check if spatial data was detected
+# Check what was detected
 cat("Images:", Images(obj), "\n")
-cat("Has spatial_x:", "spatial_x" %in% colnames(obj[[]]), "\n")
 
-# If spatial coordinates are in metadata, create manual plot
-if ("spatial_x" %in% colnames(obj[[]])) {
-  library(ggplot2)
-  df <- data.frame(
-    x = obj@meta.data$spatial_x,
-    y = obj@meta.data$spatial_y,
-    cluster = obj@meta.data$seurat_clusters
-  )
-  ggplot(df, aes(x = x, y = -y, color = cluster)) +
-    geom_point(size = 0.5) +
-    theme_classic() + coord_fixed()
-}
+# Convert to another format
+scConvert("merfish_data.h5ad", "merfish_data.h5seurat")
+```
+
+Technologies without tissue images (Slide-seq, MERFISH, CODEX) store only
+coordinates in `obsm/spatial`. scConvert reads these into the Seurat object and
+makes them available for plotting and downstream analysis.
+
+## Python interop
+
+```{python python-example, eval = FALSE}
+# Requires Python with scanpy installed
+import scanpy as sc
+
+adata = sc.read_h5ad("brain.h5ad")
+print(adata)
+
+# Works with any spatial technology
+sc.pl.spatial(adata, color="Ttr")  # Visium (with image)
+sc.pl.embedding(adata, basis="spatial", color="cluster")  # Generic spatial
+```
+
+## Cleanup
+
+```{r cleanup, eval = TRUE, echo = FALSE, results = "hide"}
+unlink(h5ad_file)
 ```
 
 ## Session Info
 
-```{r sessionInfo}
+```{r session-info}
 sessionInfo()
 ```

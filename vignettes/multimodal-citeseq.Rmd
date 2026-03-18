@@ -1,8 +1,8 @@
 ---
-title: "Multimodal: CITE-seq and Multiome"
+title: "CITE-seq Analysis Workflow"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Multimodal: CITE-seq and Multiome}
+  %\VignetteIndexEntry{CITE-seq Analysis Workflow}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,356 +11,184 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
   message = FALSE,
-  warning = FALSE,
-  out.width = "100%",
-  dev = "png",
-  fig.width = 8,
-  fig.height = 6
+  warning = FALSE
 )
-has_SeuratData <- requireNamespace("SeuratData", quietly = TRUE)
-has_cbmc <- FALSE
-has_multiome <- FALSE
-if (has_SeuratData) {
-  library(SeuratData)
-  has_cbmc <- tryCatch("cbmc.SeuratData" %in% rownames(InstalledData()), error = function(e) FALSE)
-  has_multiome <- file.exists("multiome_demo.h5mu")
-}
-has_muon <- FALSE
-has_scanpy <- FALSE
-if (requireNamespace("reticulate", quietly = TRUE)) {
-  scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
-  if (dir.exists(scverse_path)) {
-    reticulate::use_condaenv("scverse", required = FALSE)
-    Sys.setenv(
-      OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
-      MKL_NUM_THREADS = "1", NUMBA_THREADING_LAYER = "tbb"
-    )
-    has_muon <- reticulate::py_module_available("mudata")
-    has_scanpy <- reticulate::py_module_available("scanpy")
-    if (has_scanpy) {
-      reticulate::py_run_string("import matplotlib; matplotlib.use('Agg')")
-    }
-  }
-}
-```
-
-## Overview
-
-Multimodal single-cell experiments measure multiple data types from the same cells. This vignette demonstrates scConvert's handling of:
-
-1. **CITE-seq** (RNA + surface protein / ADT) via h5mu format
-2. **Multiome** (RNA + ATAC) via h5Seurat format
-
-The **h5mu** (MuData) format is the standard for multimodal data in the scverse ecosystem, storing each modality as a separate AnnData within a single file.
-
-```{r packages}
-library(Seurat)
 library(scConvert)
+library(Seurat)
 library(ggplot2)
 ```
 
-## CITE-seq: CBMC dataset
+## Introduction
 
-The CBMC (cord blood mononuclear cell) dataset contains RNA and ADT (antibody-derived tag) measurements from CITE-seq:
+CITE-seq (Cellular Indexing of Transcriptomes and Epitopes by Sequencing)
+measures RNA transcription and surface protein abundance from the same cells.
+This produces two assays per cell: RNA gene expression and ADT
+(antibody-derived tag) protein counts. scConvert handles both assays during
+format conversion, giving you two export options:
 
-```{r load_cbmc, eval = has_cbmc}
-library(SeuratData)
-data("cbmc", package = "cbmc.SeuratData")
-cbmc <- UpdateSeuratObject(cbmc)
+- **h5ad**: Exports a single assay (RNA or ADT) per file, ideal for scanpy
+  workflows
+- **h5mu**: Exports all assays in one file, ideal for muon/MuData workflows
 
-cat("Cells:", ncol(cbmc), "\n")
-cat("Assays:", paste(Assays(cbmc), collapse = ", "), "\n")
-cat("RNA features:", nrow(cbmc[["RNA"]]), "\n")
-cat("ADT features:", nrow(cbmc[["ADT"]]), "\n")
+## Load CITE-seq data
+
+The shipped `citeseq_demo.rds` contains 500 cells with RNA (2000 genes) and
+ADT (10 antibodies: CD3, CD4, CD8, CD45RA, CD56, CD16, CD11c, CD14, CD19,
+CD34), pre-processed with PCA, UMAP, and clustering.
+
+```{r load-data, eval = TRUE}
+obj <- readRDS(system.file("extdata", "citeseq_demo.rds", package = "scConvert"))
+
+cat("Cells:", ncol(obj), "\n")
+cat("Assays:", paste(Assays(obj), collapse = ", "), "\n")
+cat("RNA features:", nrow(obj[["RNA"]]), "\n")
+cat("ADT features:", nrow(obj[["ADT"]]), "\n")
+cat("ADT markers:", paste(rownames(obj[["ADT"]]), collapse = ", "), "\n")
 ```
 
-### Process and cluster
+## Visualize RNA clusters
 
-```{r process_cbmc, eval = has_cbmc}
-cbmc <- NormalizeData(cbmc, verbose = FALSE)
-cbmc <- FindVariableFeatures(cbmc, verbose = FALSE)
-cbmc <- ScaleData(cbmc, verbose = FALSE)
-cbmc <- RunPCA(cbmc, verbose = FALSE)
-cbmc <- RunUMAP(cbmc, dims = 1:30, verbose = FALSE)
-cbmc <- FindNeighbors(cbmc, dims = 1:30, verbose = FALSE)
-cbmc <- FindClusters(cbmc, resolution = 0.8, verbose = FALSE)
+```{r dimplot-rna, eval = TRUE, fig.width = 7, fig.height = 5}
+DimPlot(obj, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
+  ggtitle("RNA-based clusters")
 ```
 
-### UMAP visualization
+## Visualize protein expression
 
-```{r cbmc_umap, eval = has_cbmc, fig.width = 14, fig.height = 6}
+ADT markers reveal cell-surface protein levels that complement the
+transcriptomic clusters. CD3 marks T cells; CD14 marks monocytes.
+
+```{r featureplot-adt, eval = TRUE, fig.width = 12, fig.height = 5}
 library(patchwork)
 
-p1 <- DimPlot(cbmc, label = TRUE, pt.size = 0.3) + NoLegend() + ggtitle("RNA clusters")
-
-# Normalize ADT
-cbmc <- NormalizeData(cbmc, assay = "ADT", normalization.method = "CLR", verbose = FALSE)
-p2 <- FeaturePlot(cbmc, features = "adt_CD3", pt.size = 0.3) + ggtitle("CD3 protein (ADT)")
+DefaultAssay(obj) <- "ADT"
+p1 <- FeaturePlot(obj, features = "CD3", pt.size = 0.8) + ggtitle("CD3 (T cells)")
+p2 <- FeaturePlot(obj, features = "CD14", pt.size = 0.8) + ggtitle("CD14 (Monocytes)")
+DefaultAssay(obj) <- "RNA"
 
 p1 + p2
 ```
 
-### Export to h5mu
+### ADT expression across clusters
 
-```{r export_h5mu, eval = has_cbmc}
-# Remove overlapping features (h5mu requires unique names per modality)
-overlap <- intersect(rownames(cbmc[["ADT"]]), rownames(cbmc[["RNA"]]))
-if (length(overlap) > 0) {
-  adt_keep <- setdiff(rownames(cbmc[["ADT"]]), overlap)
-  cbmc[["ADT"]] <- subset(cbmc[["ADT"]], features = adt_keep)
-  cat("Removed", length(overlap), "overlapping features from ADT\n")
-}
-
-h5mu_path <- tempfile(fileext = ".h5mu")
-writeH5MU(cbmc, h5mu_path, overwrite = TRUE)
-cat("h5mu file size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
+```{r vlnplot-adt, eval = TRUE, fig.width = 8, fig.height = 5}
+DefaultAssay(obj) <- "ADT"
+VlnPlot(obj, features = "CD3", group.by = "seurat_clusters", pt.size = 0.1) +
+  ggtitle("CD3 protein across clusters") +
+  NoLegend()
+DefaultAssay(obj) <- "RNA"
 ```
 
-### Validate h5mu in Python
+## Export to h5ad (single assay)
 
-The exported h5mu file is directly compatible with the Python mudata/muon ecosystem:
+`writeH5AD()` writes one assay at a time. By default it writes the active
+assay (RNA). This is the right choice for standard scanpy workflows.
 
-```{python inspect_citeseq_h5mu, eval = has_cbmc && has_muon}
+```{r write-h5ad, eval = TRUE}
+h5ad_path <- file.path(tempdir(), "citeseq_rna.h5ad")
+writeH5AD(obj, h5ad_path, overwrite = TRUE)
+cat("Wrote RNA to:", basename(h5ad_path), "\n")
+cat("File size:", round(file.size(h5ad_path) / 1024^2, 1), "MB\n")
+```
+
+## Export to h5mu (multi-assay)
+
+`writeH5MU()` writes all assays into a single file, each as a separate
+modality. This preserves both RNA and ADT together.
+
+```{r write-h5mu, eval = TRUE}
+h5mu_path <- file.path(tempdir(), "citeseq.h5mu")
+writeH5MU(obj, h5mu_path, overwrite = TRUE)
+cat("Wrote RNA + ADT to:", basename(h5mu_path), "\n")
+cat("File size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
+```
+
+## Reload and verify
+
+### From h5ad (RNA only)
+
+```{r reload-h5ad, eval = TRUE}
+loaded_h5ad <- readH5AD(h5ad_path)
+cat("h5ad loaded:", ncol(loaded_h5ad), "cells x", nrow(loaded_h5ad), "features\n")
+cat("Assays:", paste(Assays(loaded_h5ad), collapse = ", "), "\n")
+```
+
+### From h5mu (RNA + ADT)
+
+```{r reload-h5mu, eval = TRUE}
+loaded_h5mu <- readH5MU(h5mu_path)
+cat("h5mu loaded:", ncol(loaded_h5mu), "cells\n")
+cat("Assays:", paste(Assays(loaded_h5mu), collapse = ", "), "\n")
+cat("RNA features:", nrow(loaded_h5mu[["RNA"]]), "\n")
+cat("ADT features:", nrow(loaded_h5mu[["ADT"]]), "\n")
+```
+
+### Verify expression preservation
+
+```{r verify, eval = TRUE}
+common_cells <- intersect(colnames(obj), colnames(loaded_h5mu))
+
+# RNA counts
+common_genes <- intersect(rownames(obj[["RNA"]]), rownames(loaded_h5mu[["RNA"]]))
+orig <- as.numeric(GetAssayData(obj, assay = "RNA", layer = "counts")[
+  head(common_genes, 100), head(common_cells, 100)])
+rt <- as.numeric(GetAssayData(loaded_h5mu, assay = "RNA", layer = "counts")[
+  head(common_genes, 100), head(common_cells, 100)])
+cat("RNA counts identical:", identical(orig, rt), "\n")
+
+# ADT counts
+common_adt <- intersect(rownames(obj[["ADT"]]), rownames(loaded_h5mu[["ADT"]]))
+orig_adt <- as.numeric(GetAssayData(obj, assay = "ADT", layer = "counts")[
+  common_adt, head(common_cells, 100)])
+rt_adt <- as.numeric(GetAssayData(loaded_h5mu, assay = "ADT", layer = "counts")[
+  common_adt, head(common_cells, 100)])
+cat("ADT counts identical:", identical(orig_adt, rt_adt), "\n")
+```
+
+## When to use h5ad vs h5mu
+
+| Scenario | Recommended format | Why |
+|----------|--------------------|-----|
+| scanpy RNA analysis | h5ad | scanpy expects single-AnnData input |
+| Share with Python collaborator (multi-assay) | h5mu | Keeps RNA + ADT together in one file |
+| Archive a CITE-seq experiment | h5mu | Preserves all modalities |
+| Feed into cellxgene | h5ad | cellxgene reads h5ad, not h5mu |
+| Downstream muon/MOFA+ analysis | h5mu | muon operates on MuData objects |
+
+## Python interoperability
+
+Both exported files are directly readable in Python.
+
+```{python python-h5ad, eval = FALSE}
+# Requires Python: pip install scanpy
+import scanpy as sc
+
+adata = sc.read_h5ad("citeseq_rna.h5ad")
+print(adata)
+sc.pl.umap(adata, color="seurat_clusters")
+```
+
+```{python python-h5mu, eval = FALSE}
+# Requires Python: pip install mudata
 import mudata as md
 
-mdata = md.read_h5mu(r.h5mu_path)
+mdata = md.read_h5mu("citeseq.h5mu")
 print(mdata)
-print(f"\nModalities: {list(mdata.mod.keys())}")
 for name, mod in mdata.mod.items():
     print(f"  {name}: {mod.n_obs} cells x {mod.n_vars} features")
-    if mod.X is not None:
-        import numpy as np
-        x = mod.X.toarray() if hasattr(mod.X, 'toarray') else mod.X
-        print(f"    X range: [{x.min():.2f}, {x.max():.2f}]")
 ```
 
-```{python scanpy_on_citeseq, eval = has_cbmc && has_muon && has_scanpy}
-import scanpy as sc
-import matplotlib.pyplot as plt
+## Clean up
 
-rna = mdata.mod["rna"].copy()
-sc.pp.normalize_total(rna)
-sc.pp.log1p(rna)
-sc.pp.highly_variable_genes(rna, n_top_genes=2000)
-sc.pp.pca(rna)
-sc.pp.neighbors(rna)
-sc.tl.umap(rna)
-sc.tl.leiden(rna, flavor="igraph")
-
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-sc.pl.umap(rna, color="leiden", ax=axes[0], show=False, title="RNA Leiden clusters")
-sc.pl.umap(rna, color="n_counts" if "n_counts" in rna.obs else rna.obs.columns[0],
-           ax=axes[1], show=False, title="RNA QC metric")
-plt.tight_layout()
-plt.show()
+```{r cleanup, eval = TRUE}
+unlink(c(h5ad_path, h5mu_path))
 ```
-
-### Load h5mu back
-
-```{r load_h5mu, eval = has_cbmc}
-cbmc_rt <- readH5MU(h5mu_path)
-
-cat("Cells:", ncol(cbmc_rt), "\n")
-cat("Assays:", paste(Assays(cbmc_rt), collapse = ", "), "\n")
-cat("RNA features:", nrow(cbmc_rt[["RNA"]]), "\n")
-cat("ADT features:", nrow(cbmc_rt[["ADT"]]), "\n")
-```
-
-### Verify preservation
-
-```{r verify_preservation, eval = has_cbmc}
-cat("=== Dimensions ===\n")
-cat("Original:", ncol(cbmc), "cells,", length(Assays(cbmc)), "assays\n")
-cat("Loaded:  ", ncol(cbmc_rt), "cells,", length(Assays(cbmc_rt)), "assays\n")
-cat("Assay match:", identical(sort(Assays(cbmc)), sort(Assays(cbmc_rt))), "\n")
-
-common_c <- intersect(colnames(cbmc), colnames(cbmc_rt))
-cat("\n=== Barcodes ===\n")
-cat("Shared:", length(common_c), "/", ncol(cbmc), "\n")
-
-cat("\n=== RNA preservation ===\n")
-common_g <- intersect(rownames(cbmc[["RNA"]]), rownames(cbmc_rt[["RNA"]]))
-cat("Features shared:", length(common_g), "/", nrow(cbmc[["RNA"]]), "\n")
-set.seed(42)
-sc <- sample(common_c, min(300, length(common_c)))
-sg <- sample(common_g, min(100, length(common_g)))
-rna_orig <- as.numeric(GetAssayData(cbmc, assay = "RNA", layer = "counts")[sg, sc])
-rna_rt <- as.numeric(GetAssayData(cbmc_rt, assay = "RNA", layer = "counts")[sg, sc])
-cat("Values identical:", identical(rna_orig, rna_rt), "\n")
-cat("Max abs diff:", max(abs(rna_orig - rna_rt)), "\n")
-
-cat("\n=== ADT preservation ===\n")
-common_adt <- intersect(rownames(cbmc[["ADT"]]), rownames(cbmc_rt[["ADT"]]))
-cat("Features shared:", length(common_adt), "/", nrow(cbmc[["ADT"]]), "\n")
-if (length(common_adt) > 0) {
-  adt_orig <- as.numeric(GetAssayData(cbmc, assay = "ADT", layer = "counts")[common_adt, sc])
-  adt_rt <- as.numeric(GetAssayData(cbmc_rt, assay = "ADT", layer = "counts")[common_adt, sc])
-  cat("Values identical:", identical(adt_orig, adt_rt), "\n")
-  cat("Max abs diff:", max(abs(adt_orig - adt_rt)), "\n")
-}
-
-cat("\n=== Metadata ===\n")
-shared_meta <- intersect(colnames(cbmc[[]]), colnames(cbmc_rt[[]]))
-cat("Columns preserved:", length(shared_meta), "/", ncol(cbmc[[]]), "\n")
-```
-
-```{r cbmc_cleanup, echo = FALSE, results = 'hide', eval = has_cbmc}
-unlink(h5mu_path)
-```
-
-## Multiome: RNA + ATAC
-
-10x Genomics Multiome measures RNA and chromatin accessibility (ATAC) from the same cells. scConvert supports roundtripping both modalities via h5mu.
-
-```{r load_multiome, eval = has_multiome}
-library(SeuratData)
-
-# Load both RNA and ATAC from PBMC Multiome
-pbmc.rna <- LoadData("pbmcMultiome", "pbmc.rna")
-pbmc.atac <- LoadData("pbmcMultiome", "pbmc.atac")
-pbmc.rna <- UpdateSeuratObject(pbmc.rna)
-pbmc.atac <- UpdateSeuratObject(pbmc.atac)
-
-cat("RNA cells:", ncol(pbmc.rna), "\n")
-cat("RNA features:", nrow(pbmc.rna), "\n")
-cat("ATAC cells:", ncol(pbmc.atac), "\n")
-cat("ATAC features (peaks):", nrow(pbmc.atac), "\n")
-```
-
-### Combine RNA + ATAC into a single object
-
-```{r combine_multiome, eval = has_multiome}
-# Find shared cells
-shared_cells <- intersect(colnames(pbmc.rna), colnames(pbmc.atac))
-cat("Shared cells:", length(shared_cells), "\n")
-
-# Create combined object
-combined <- CreateSeuratObject(
-  counts = GetAssayData(pbmc.rna, layer = "counts")[, shared_cells],
-  assay = "RNA"
-)
-combined[["ATAC"]] <- CreateAssay5Object(
-  counts = GetAssayData(pbmc.atac, layer = "counts")[, shared_cells]
-)
-
-cat("Combined object:\n")
-cat("  Cells:", ncol(combined), "\n")
-cat("  Assays:", paste(Assays(combined), collapse = ", "), "\n")
-cat("  RNA features:", nrow(combined[["RNA"]]), "\n")
-cat("  ATAC features:", nrow(combined[["ATAC"]]), "\n")
-```
-
-### Roundtrip via h5mu
-
-The h5mu format stores each assay as a separate modality, making it ideal for multimodal data:
-
-```{r multiome_h5mu, eval = has_multiome}
-h5mu_path <- tempfile(fileext = ".h5mu")
-writeH5MU(combined, h5mu_path, overwrite = TRUE)
-cat("h5mu file size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
-
-# Load back
-combined_rt <- readH5MU(h5mu_path)
-cat("Roundtrip assays:", paste(Assays(combined_rt), collapse = ", "), "\n")
-cat("Roundtrip RNA features:", nrow(combined_rt[["RNA"]]), "\n")
-cat("Roundtrip ATAC features:", nrow(combined_rt[["ATAC"]]), "\n")
-```
-
-### Verify preservation of both modalities
-
-```{r multiome_verify, eval = has_multiome}
-common_c <- intersect(colnames(combined), colnames(combined_rt))
-cat("Cells preserved:", length(common_c), "/", ncol(combined), "\n")
-set.seed(42)
-sc <- sample(common_c, min(200, length(common_c)))
-
-# RNA
-rna_genes <- intersect(rownames(combined[["RNA"]]), rownames(combined_rt[["RNA"]]))
-sg <- sample(rna_genes, min(100, length(rna_genes)))
-rna_orig <- as.numeric(GetAssayData(combined, assay = "RNA", layer = "counts")[sg, sc])
-rna_rt <- as.numeric(GetAssayData(combined_rt, assay = "RNA", layer = "counts")[sg, sc])
-cat("RNA features preserved:", length(rna_genes), "/", nrow(combined[["RNA"]]), "\n")
-cat("RNA values identical:", identical(rna_orig, rna_rt), "\n")
-
-# ATAC
-atac_peaks <- intersect(rownames(combined[["ATAC"]]), rownames(combined_rt[["ATAC"]]))
-sp <- sample(atac_peaks, min(100, length(atac_peaks)))
-atac_orig <- as.numeric(GetAssayData(combined, assay = "ATAC", layer = "counts")[sp, sc])
-atac_rt <- as.numeric(GetAssayData(combined_rt, assay = "ATAC", layer = "counts")[sp, sc])
-cat("ATAC features preserved:", length(atac_peaks), "/", nrow(combined[["ATAC"]]), "\n")
-cat("ATAC values identical:", identical(atac_orig, atac_rt), "\n")
-```
-
-### Convert RNA component to h5ad
-
-The RNA component can also be exported independently via h5ad:
-
-```{r multiome_h5ad, eval = has_multiome}
-h5ad_path <- tempfile(fileext = ".h5ad")
-h5s_path <- tempfile(fileext = ".h5Seurat")
-
-writeH5Seurat(pbmc.rna, h5s_path, overwrite = TRUE, verbose = FALSE)
-scConvert(h5s_path, dest = "h5ad", overwrite = TRUE, verbose = FALSE)
-h5ad_path <- sub("\\.h5Seurat$", ".h5ad", h5s_path)
-
-rna_rt <- readH5AD(h5ad_path, verbose = FALSE)
-cat("h5ad roundtrip cells:", ncol(rna_rt), "/", ncol(pbmc.rna), "\n")
-```
-
-```{r multiome_cleanup, echo = FALSE, results = 'hide', eval = has_multiome}
-unlink(c(h5mu_path, h5ad_path, h5s_path))
-```
-
-## scATAC-seq notes
-
-For standalone scATAC-seq data (not part of Multiome):
-
-- **Peak matrices** are stored as standard sparse matrices and convert normally via h5ad/h5Seurat
-- **Fragment files** (`.tsv.gz`) are not part of the h5ad/h5Seurat format and must be transferred separately
-- **Signac ChromatinAssay** objects: The expression matrix (peaks x cells) is preserved; Signac-specific slots (fragments, motifs, annotations) require separate handling
-
-```r
-# Convert ATAC peak matrix
-atac_obj <- CreateSeuratObject(counts = peak_matrix, assay = "ATAC")
-writeH5Seurat(atac_obj, "atac.h5Seurat")
-scConvert("atac.h5Seurat", dest = "h5ad")
-
-# Fragment files must be copied separately
-file.copy("fragments.tsv.gz", "output_dir/fragments.tsv.gz")
-file.copy("fragments.tsv.gz.tbi", "output_dir/fragments.tsv.gz.tbi")
-```
-
-## Data mapping for multimodal formats
-
-### h5mu modality mapping
-
-| Seurat Assay | h5mu Modality | Standard for |
-|-------------|---------------|-------------|
-| RNA | rna | Gene expression |
-| ADT | prot | Surface proteins (CITE-seq) |
-| ATAC | atac | Chromatin accessibility |
-| Spatial | spatial | Spatial gene expression |
-| SCT | sct | SCTransform-normalized |
-| Custom | lowercase name | Any other assay |
-
-### What is preserved in h5mu roundtrip
-
-| Component | Preserved | Notes |
-|-----------|-----------|-------|
-| Expression matrices | Yes | Per-modality |
-| Cell metadata | Yes | Global obs + per-modality |
-| Feature metadata | Yes | Per-modality var |
-| Dimensional reductions | Partial | Stored in modality obsm |
-| Neighbor graphs | Partial | Stored in modality obsp |
-
-## See Also
-
-- [Multimodal: h5mu Format](multimodal-h5mu.html) -- native h5mu read/write without external dependencies
-- [scATAC-seq with Signac](scatac-signac.html) -- converting chromatin accessibility data
 
 ## Session Info
 
-```{r sessionInfo}
+```{r session-info}
 sessionInfo()
 ```

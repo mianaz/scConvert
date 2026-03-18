@@ -1,216 +1,135 @@
-# Spatial Transcriptomics: Visium
+# Visium Spatial Data Conversion
 
-## Overview
+## Introduction
 
-This vignette demonstrates how scConvert handles **10x Genomics Visium**
-spatial transcriptomics data, including tissue images, scale factors,
-and spot coordinates. Visium data is stored in h5ad files with
-spatial-specific fields (`obsm/spatial`, `uns/spatial`) that scConvert
-automatically reconstructs into Seurat `VisiumV2` image objects.
+10x Genomics Visium captures spatially-resolved gene expression across
+tissue sections. When converting Visium data between Seurat and h5ad,
+scConvert preserves spot coordinates, tissue images, scale factors, and
+all associated metadata so the data is immediately usable in both R
+(Seurat) and Python (scanpy/squidpy) ecosystems.
 
-We show that the exported h5ad is **natively usable** in scanpy and
-squidpy (spatial scatter plots, Moran’s I), and that all key components
-— dimensions, metadata, barcodes, features, spatial coordinates, scale
-factors, and dimensionality reductions — are preserved.
+## Load the demo Visium dataset
 
-``` r
-
-library(Seurat)
-library(scConvert)
-library(ggplot2)
-```
-
-## Load Visium data
-
-We use the **stxBrain** dataset (mouse brain anterior1, ~2,700 spots x
-~31,000 genes):
+The shipped demo contains 400 mouse brain Visium spots with 1,500 genes,
+PCA/UMAP reductions, and 15 clusters.
 
 ``` r
 
-library(SeuratData)
-brain <- UpdateSeuratObject(LoadData("stxBrain", type = "anterior1"))
-brain <- NormalizeData(brain)
+spatial_path <- system.file("extdata", "spatial_demo.rds", package = "scConvert")
+brain <- readRDS(spatial_path)
 
-cat("Cells:", ncol(brain), "\n")
-#> Cells: 2696
+cat("Spots:", ncol(brain), "\n")
+#> Spots: 400
 cat("Genes:", nrow(brain), "\n")
-#> Genes: 31053
-cat("Images:", Images(brain), "\n")
-#> Images: anterior1
-cat("Layers:", paste(Layers(brain), collapse = ", "), "\n")
-#> Layers: counts, data
-cat("Metadata columns:", ncol(brain[[]]), "\n")
-#> Metadata columns: 5
+#> Genes: 1500
+cat("Image:", Images(brain), "\n")
+#> Image: anterior1
+cat("Clusters:", nlevels(brain$seurat_clusters), "\n")
+#> Clusters: 15
 ```
 
-### Visualize the original spatial data
+### Visualize a brain marker gene
+
+Hpca (Hippocalcin) marks hippocampal neurons and shows clear regional
+expression in the mouse brain.
 
 ``` r
 
-SpatialFeaturePlot(brain, features = "Hpca", pt.size.factor = 1.5)
+SpatialFeaturePlot(brain, features = "Hpca", pt.size.factor = 1.6) +
+  ggplot2::ggtitle("Hpca expression (original)")
 ```
 
-![](spatial-visium_files/figure-html/plot_orig_spatial-1.png)
+![](spatial-visium_files/figure-html/plot-original-1.png)
 
-Hpca (Hippocalcin) is a marker for hippocampal neurons, showing strong
-regional expression.
+## Convert to h5ad
 
-## Export to h5ad
-
-scConvert writes Visium spatial data to h5ad using scanpy/squidpy
-conventions:
-
-| Seurat Component | h5ad Location | Description |
-|----|----|----|
-| Tissue coordinates | `obsm/spatial` | Spot XY positions |
-| Scale factors | `uns/spatial/{lib}/scalefactors` | `spot_diameter_fullres`, `tissue_hires_scalef`, etc. |
-| Tissue image (lowres) | `uns/spatial/{lib}/images/lowres` | Low-resolution H&E image |
-| Tissue image (hires) | `uns/spatial/{lib}/images/hires` | High-resolution H&E image |
+Write the Visium object to h5ad format. scConvert automatically exports
+spot coordinates to `obsm/spatial`, tissue images and scale factors to
+`uns/spatial`, and all metadata to `obs`.
 
 ``` r
 
-h5ad_path <- tempfile(fileext = ".h5ad")
-writeH5AD(brain, h5ad_path, overwrite = TRUE)
-cat("File size:", round(file.size(h5ad_path) / 1024^2, 1), "MB\n")
-#> File size: 70 MB
+h5ad_file <- tempfile(fileext = ".h5ad")
+writeH5AD(brain, h5ad_file, overwrite = TRUE)
+cat("Wrote:", round(file.size(h5ad_file) / 1024^2, 1), "MB\n")
+#> Wrote: 3.2 MB
 ```
 
-## Validate in Python with scanpy
+## Read back into Seurat
 
-The exported h5ad is immediately usable in the scverse ecosystem — no
-extra configuration needed:
+``` r
+
+brain_rt <- readH5AD(h5ad_file, verbose = FALSE)
+
+cat("Roundtrip spots:", ncol(brain_rt), "\n")
+#> Roundtrip spots: 400
+cat("Roundtrip genes:", nrow(brain_rt), "\n")
+#> Roundtrip genes: 1500
+cat("Image:", Images(brain_rt), "\n")
+#> Image: anterior1
+```
+
+## Compare original and roundtrip
+
+The spatial expression pattern is preserved through the h5ad roundtrip.
+
+``` r
+
+SpatialFeaturePlot(brain_rt, features = "Hpca", pt.size.factor = 1.6) +
+  ggplot2::ggtitle("Hpca expression (after h5ad roundtrip)")
+```
+
+![](spatial-visium_files/figure-html/plot-roundtrip-1.png)
+
+Cluster assignments also survive conversion:
+
+``` r
+
+DimPlot(brain_rt, reduction = "umap", group.by = "seurat_clusters",
+        label = TRUE, repel = TRUE) +
+  ggplot2::ggtitle("UMAP clusters (after h5ad roundtrip)")
+```
+
+![](spatial-visium_files/figure-html/plot-clusters-1.png)
+
+### Verify data integrity
+
+``` r
+
+cat("Dimensions match:",
+    ncol(brain) == ncol(brain_rt) && nrow(brain) == nrow(brain_rt), "\n")
+#> Dimensions match: TRUE
+cat("Barcodes match:", all(colnames(brain) == colnames(brain_rt)), "\n")
+#> Barcodes match: TRUE
+cat("Clusters match:",
+    all(as.character(brain$seurat_clusters) ==
+        as.character(brain_rt$seurat_clusters)), "\n")
+#> Clusters match: TRUE
+```
+
+## Use in Python (scanpy/squidpy)
+
+The exported h5ad works directly with scanpy and squidpy. Images,
+coordinates, and scale factors use standard scanpy conventions.
 
 ``` python
+# Requires Python with scanpy and squidpy installed
 import scanpy as sc
-import numpy as np
 
-adata = sc.read_h5ad(r.h5ad_path)
+adata = sc.read_h5ad("brain.h5ad")
 print(adata)
-#> AnnData object with n_obs × n_vars = 2696 × 31053
-#>     obs: 'orig.ident', 'nCount_Spatial', 'nFeature_Spatial', 'slice', 'region'
-#>     uns: 'spatial'
-#>     obsm: 'spatial'
-print(f"\nobsm keys: {list(adata.obsm.keys())}")
-#> 
-#> obsm keys: ['spatial']
 print(f"Spatial coords shape: {adata.obsm['spatial'].shape}")
-#> Spatial coords shape: (2696, 2)
-print(f"Spatial coord range X: [{adata.obsm['spatial'][:,0].min():.1f}, {adata.obsm['spatial'][:,0].max():.1f}]")
-#> Spatial coord range X: [1480.0, 9533.0]
-print(f"Spatial coord range Y: [{adata.obsm['spatial'][:,1].min():.1f}, {adata.obsm['spatial'][:,1].max():.1f}]")
-#> Spatial coord range Y: [2685.0, 10469.0]
-print(f"No NaN in coords: {not np.isnan(adata.obsm['spatial']).any()}")
-#> No NaN in coords: True
 
-# Verify uns/spatial structure matches scanpy convention
-if "spatial" in adata.uns:
-    lib_ids = list(adata.uns["spatial"].keys())
-    print(f"\nSpatial library IDs: {lib_ids}")
-    for lib_id in lib_ids:
-        lib = adata.uns["spatial"][lib_id]
-        if "images" in lib:
-            for k, v in lib["images"].items():
-                print(f"  Image '{k}': shape {v.shape}, dtype {v.dtype}")
-        if "scalefactors" in lib:
-            sf = lib["scalefactors"]
-            print(f"  Scale factors: {sf}")
-            # Verify standard keys exist
-            for key in ["spot_diameter_fullres", "tissue_hires_scalef", "tissue_lowres_scalef"]:
-                print(f"    {key}: {'present' if key in sf else 'MISSING'}")
-#> 
-#> Spatial library IDs: ['anterior1']
-#>   Image 'lowres': shape (599, 600, 3), dtype float64
-#>   Scale factors: {'fiducial_diameter_fullres': np.float64(144.54121946972606), 'spot_diameter_fullres': np.float64(89.47789776697327), 'tissue_hires_scalef': np.float64(0.17211704), 'tissue_lowres_scalef': np.float64(0.051635113)}
-#>     spot_diameter_fullres: present
-#>     tissue_hires_scalef: present
-#>     tissue_lowres_scalef: present
-```
+# Spatial scatter plot
+sc.pl.spatial(adata, color="seurat_clusters")
 
-### Spatial scatter plot with squidpy
-
-Because scConvert writes scale factors with the correct
-scanpy-convention names (`spot_diameter_fullres`, `tissue_hires_scalef`,
-etc.), squidpy plotting works out of the box:
-
-``` python
+# Squidpy spatial analysis
 import squidpy as sq
-
-sq.pl.spatial_scatter(adata, color="Hpca", library_id=list(adata.uns["spatial"].keys())[0],
-                      img_res_key="lowres", size=1.5, alpha=0.7,
-                      title="Hpca — squidpy spatial_scatter (from scConvert h5ad)")
-```
-
-![](spatial-visium_files/figure-html/squidpy_scatter-1.png)
-
-### Scanpy spatial plot (coordinate-based)
-
-``` python
-import matplotlib.pyplot as plt
-
-coords = adata.obsm["spatial"]
-expr = adata[:, "Hpca"].X.toarray().flatten() if hasattr(adata[:, "Hpca"].X, 'toarray') else adata[:, "Hpca"].X.flatten()
-
-fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-sc_plot = ax.scatter(coords[:, 0], -coords[:, 1], c=expr, s=8, cmap="viridis", alpha=0.8)
-plt.colorbar(sc_plot, ax=ax, label="Hpca expression")
-#> <matplotlib.colorbar.Colorbar object at 0x3aea2b9b0>
-ax.set_title("Hpca — scanpy/matplotlib (from scConvert h5ad)")
-ax.set_aspect("equal")
-ax.axis("off")
-#> (np.float64(1077.35), np.float64(9935.65), np.float64(-10858.2), np.float64(-2295.8))
-plt.show()
-```
-
-![](spatial-visium_files/figure-html/scanpy_spatial_plot-3.png)
-
-### Spatial analysis: Moran’s I
-
-``` python
-import squidpy as sq
-
 sq.gr.spatial_neighbors(adata, coord_type="generic")
-#>  [34mINFO     [0m Creating graph using `generic` coordinates and ` [3;35mNone [0m` transform and ` [1;36m1 [0m`
-#>          libraries.
-genes = list(adata.var_names[:5])
-sq.gr.spatial_autocorr(adata, mode="moran", genes=genes)
-print("Moran's I results:")
-#> Moran's I results:
-print(adata.uns["moranI"].head())
-#>                 I  pval_norm  var_norm  pval_norm_fdr_bh
-#> Sox17    0.012438   0.123048  0.000122               NaN
-#> Rp1     -0.000371   0.500000  0.000122               NaN
-#> Xkr4    -0.009214   0.211632  0.000122               NaN
-#> Gm1992        NaN        NaN  0.000122               NaN
-#> Gm37381       NaN        NaN  0.000122               NaN
+sq.gr.spatial_autocorr(adata, mode="moran", genes=["Hpca", "Ttr"])
 ```
 
-## Load h5ad back into Seurat
-
-``` r
-
-brain_rt <- readH5AD(h5ad_path, verbose = FALSE)
-
-cat("Dimensions:", ncol(brain_rt), "cells x", nrow(brain_rt), "genes\n")
-#> Dimensions: 2696 cells x 31053 genes
-cat("Images:", paste(Images(brain_rt), collapse = ", "), "\n")
-#> Images: anterior1
-cat("Dims match:", ncol(brain) == ncol(brain_rt) && nrow(brain) == nrow(brain_rt), "\n")
-#> Dims match: TRUE
-```
-
-## Known limitations
-
-- **Image reconstruction**: Tissue images stored in h5ad may require
-  specific Seurat version compatibility for full
-  [`SpatialFeaturePlot()`](https://satijalab.org/seurat/reference/SpatialPlot.html)
-  support. Coordinates and expression values are always preserved.
-- **Non-Visium spatial**: For Slide-seq, MERFISH, Xenium, and other
-  technologies, see the [Spatial
-  Technologies](https://mianaz.github.io/scConvert/articles/spatial-technologies.md)
-  vignette.
-- **Large images**: High-resolution images increase file size
-  substantially. Consider using `lowres` images for exploratory
-  analysis.
+## Cleanup
 
 ## Session Info
 
@@ -235,13 +154,8 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#>  [1] ggplot2_4.0.2                 scConvert_0.1.0              
-#>  [3] Seurat_5.4.0                  SeuratObject_5.3.0           
-#>  [5] sp_2.2-1                      stxKidney.SeuratData_0.1.0   
-#>  [7] stxBrain.SeuratData_0.1.2     ssHippo.SeuratData_3.1.4     
-#>  [9] pbmcref.SeuratData_1.0.0      pbmcMultiome.SeuratData_0.1.4
-#> [11] pbmc3k.SeuratData_3.1.4       panc8.SeuratData_3.0.2       
-#> [13] cbmc.SeuratData_3.1.4         SeuratData_0.2.2.9002        
+#> [1] ggplot2_4.0.2      Seurat_5.4.0       SeuratObject_5.3.0 sp_2.2-1          
+#> [5] scConvert_0.1.0   
 #> 
 #> loaded via a namespace (and not attached):
 #>   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        
@@ -262,31 +176,31 @@ sessionInfo()
 #>  [46] spatstat.sparse_3.1-0  httr_1.4.8             polyclip_1.10-7       
 #>  [49] abind_1.4-8            compiler_4.5.2         bit64_4.6.0-1         
 #>  [52] withr_3.0.2            S7_0.2.1               fastDummies_1.7.5     
-#>  [55] MASS_7.3-65            rappdirs_0.3.4         tools_4.5.2           
-#>  [58] lmtest_0.9-40          otel_0.2.0             httpuv_1.6.16         
-#>  [61] future.apply_1.20.2    goftest_1.2-3          glue_1.8.0            
-#>  [64] nlme_3.1-168           promises_1.5.0         grid_4.5.2            
-#>  [67] Rtsne_0.17             cluster_2.1.8.2        reshape2_1.4.5        
-#>  [70] generics_0.1.4         hdf5r_1.3.12           gtable_0.3.6          
-#>  [73] spatstat.data_3.1-9    tidyr_1.3.2            data.table_1.18.2.1   
-#>  [76] XVector_0.50.0         BiocGenerics_0.56.0    BPCells_0.2.0         
-#>  [79] spatstat.geom_3.7-0    RcppAnnoy_0.0.23       ggrepel_0.9.7         
-#>  [82] RANN_2.6.2             pillar_1.11.1          stringr_1.6.0         
-#>  [85] spam_2.11-3            RcppHNSW_0.6.0         later_1.4.8           
-#>  [88] splines_4.5.2          dplyr_1.2.0            lattice_0.22-9        
-#>  [91] bit_4.6.0              survival_3.8-6         deldir_2.0-4          
-#>  [94] tidyselect_1.2.1       miniUI_0.1.2           pbapply_1.7-4         
-#>  [97] knitr_1.51             gridExtra_2.3          Seqinfo_1.0.0         
-#> [100] IRanges_2.44.0         scattermore_1.2        stats4_4.5.2          
-#> [103] xfun_0.56              matrixStats_1.5.0      UCSC.utils_1.6.1      
-#> [106] stringi_1.8.7          lazyeval_0.2.2         yaml_2.3.12           
-#> [109] evaluate_1.0.5         codetools_0.2-20       tibble_3.3.1          
-#> [112] cli_3.6.5              uwot_0.2.4             xtable_1.8-8          
-#> [115] reticulate_1.45.0      systemfonts_1.3.1      jquerylib_0.1.4       
-#> [118] GenomeInfoDb_1.46.2    dichromat_2.0-0.1      Rcpp_1.1.1            
-#> [121] globals_0.19.1         spatstat.random_3.4-4  png_0.1-8             
-#> [124] spatstat.univar_3.1-6  parallel_4.5.2         pkgdown_2.2.0         
-#> [127] dotCall64_1.2          listenv_0.10.1         viridisLite_0.4.3     
-#> [130] scales_1.4.0           ggridges_0.5.7         purrr_1.2.1           
-#> [133] crayon_1.5.3           rlang_1.1.7            cowplot_1.2.0
+#>  [55] MASS_7.3-65            tools_4.5.2            lmtest_0.9-40         
+#>  [58] otel_0.2.0             httpuv_1.6.16          future.apply_1.20.2   
+#>  [61] goftest_1.2-3          glue_1.8.0             nlme_3.1-168          
+#>  [64] promises_1.5.0         grid_4.5.2             Rtsne_0.17            
+#>  [67] cluster_2.1.8.2        reshape2_1.4.5         generics_0.1.4        
+#>  [70] hdf5r_1.3.12           gtable_0.3.6           spatstat.data_3.1-9   
+#>  [73] tidyr_1.3.2            data.table_1.18.2.1    XVector_0.50.0        
+#>  [76] BiocGenerics_0.56.0    BPCells_0.2.0          spatstat.geom_3.7-0   
+#>  [79] RcppAnnoy_0.0.23       ggrepel_0.9.7          RANN_2.6.2            
+#>  [82] pillar_1.11.1          stringr_1.6.0          spam_2.11-3           
+#>  [85] RcppHNSW_0.6.0         later_1.4.8            splines_4.5.2         
+#>  [88] dplyr_1.2.0            lattice_0.22-9         survival_3.8-6        
+#>  [91] bit_4.6.0              deldir_2.0-4           tidyselect_1.2.1      
+#>  [94] miniUI_0.1.2           pbapply_1.7-4          knitr_1.51            
+#>  [97] gridExtra_2.3          Seqinfo_1.0.0          IRanges_2.44.0        
+#> [100] scattermore_1.2        stats4_4.5.2           xfun_0.56             
+#> [103] matrixStats_1.5.0      UCSC.utils_1.6.1       stringi_1.8.7         
+#> [106] lazyeval_0.2.2         yaml_2.3.12            evaluate_1.0.5        
+#> [109] codetools_0.2-20       tibble_3.3.1           cli_3.6.5             
+#> [112] uwot_0.2.4             xtable_1.8-8           reticulate_1.45.0     
+#> [115] systemfonts_1.3.1      jquerylib_0.1.4        GenomeInfoDb_1.46.2   
+#> [118] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.1        
+#> [121] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 
+#> [124] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         
+#> [127] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          
+#> [130] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          
+#> [133] rlang_1.1.7            cowplot_1.2.0
 ```

@@ -7,288 +7,175 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE, purl = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-  eval = TRUE,
-  message = FALSE,
-  warning = FALSE,
   collapse = TRUE,
   comment = "#>",
-  tidy = FALSE,
-  out.width = "100%",
-  dev = "png",
-  purl = FALSE
+  fig.width = 7,
+  fig.height = 5,
+  message = FALSE,
+  warning = FALSE
 )
-can_run <- requireNamespace("SeuratData", quietly = TRUE) &&
-  tryCatch({
-    library(SeuratData)
-    "cbmc.SeuratData" %in% rownames(InstalledData())
-  }, error = function(e) FALSE)
-can_load <- can_run
-has_muon <- FALSE
-has_scanpy <- FALSE
-if (requireNamespace("reticulate", quietly = TRUE)) {
-  scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
-  if (dir.exists(scverse_path)) {
-    reticulate::use_condaenv("scverse", required = FALSE)
-    Sys.setenv(
-      OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
-      MKL_NUM_THREADS = "1", NUMBA_THREADING_LAYER = "tbb"
-    )
-    has_muon <- reticulate::py_module_available("mudata")
-    has_scanpy <- reticulate::py_module_available("scanpy")
-    if (has_scanpy) {
-      reticulate::py_run_string("import matplotlib; matplotlib.use('Agg')")
-    }
-  }
-}
-```
-
-```{r cleanup, echo=FALSE, results='hide', purl = FALSE}
-outs <- c("cbmc_multimodal.h5mu", "cbmc_roundtrip.h5mu")
-existing_files <- outs[file.exists(outs)]
-if (length(existing_files) > 0) file.remove(existing_files)
+library(scConvert)
+library(Seurat)
+library(ggplot2)
 ```
 
 ## Introduction
 
-The [MuData](https://muon.readthedocs.io/en/latest/io/mudata.html) format (`.h5mu`) stores multimodal single-cell data — multiple modalities (e.g., RNA + protein) in a single file with shared cell annotations. This is the native format for [muon](https://muon-tutorials.readthedocs.io/) in Python.
+The [MuData](https://muon.readthedocs.io/en/latest/io/mudata.html) format
+(`.h5mu`) stores multimodal single-cell data in a single file. Each modality
+(RNA, protein, ATAC) lives as a separate AnnData object, sharing a common set
+of cell barcodes. This is the native format for
+[muon](https://muon-tutorials.readthedocs.io/) in Python.
+scConvert reads and writes h5mu natively -- no Python or MuDataSeurat required.
 
-scConvert provides native h5mu read/write with no external dependencies (no MuDataSeurat or Python required):
-
-- **`writeH5MU()`**: Export a multi-assay Seurat object to h5mu, with automatic assay-to-modality name mapping. Works with Seurat V5 Assay5.
-- **`readH5MU()`**: Load an h5mu file as a Seurat object, with automatic modality-to-assay name mapping
-
-### When to use h5mu vs h5ad
-
-| Format | Use case |
+| Format | Best for |
 |--------|----------|
-| **h5ad** | Single-modality data (RNA only) |
-| **h5mu** | Multi-modal data (RNA + ADT, RNA + ATAC, etc.) |
+| **h5ad** | Single-modality (RNA only) |
+| **h5mu** | Multi-modal (RNA + ADT, RNA + ATAC, etc.) |
 
-```{r packages, eval = can_run, purl = FALSE}
-library(Seurat)
-library(scConvert)
-library(ggplot2)
-library(patchwork)
+## Load CITE-seq demo data
+
+The shipped `citeseq_demo.rds` contains 500 CITE-seq cells with two assays:
+RNA (2000 genes) and ADT (10 surface protein antibodies).
+
+```{r load-data, eval = TRUE}
+obj <- readRDS(system.file("extdata", "citeseq_demo.rds", package = "scConvert"))
+
+cat("Cells:", ncol(obj), "\n")
+cat("Assays:", paste(Assays(obj), collapse = ", "), "\n")
+cat("RNA features:", nrow(obj[["RNA"]]), "\n")
+cat("ADT features:", nrow(obj[["ADT"]]), "\n")
 ```
 
-## Create a multimodal Seurat object
-
-We use the `cbmc` dataset from SeuratData — a CITE-seq experiment with RNA and ADT (antibody-derived tag) assays:
-
-```{r load_cbmc, eval = can_run, purl = FALSE}
-library(SeuratData)
-if (!"cbmc" %in% rownames(InstalledData())) {
-  InstallData("cbmc")
-}
-data("cbmc", package = "cbmc.SeuratData")
-cbmc <- UpdateSeuratObject(cbmc)
-
-# Remove ADT features that overlap with RNA (h5mu requires unique feature names per modality)
-overlap <- intersect(rownames(cbmc[["ADT"]]), rownames(cbmc[["RNA"]]))
-if (length(overlap) > 0) {
-  adt_keep <- setdiff(rownames(cbmc[["ADT"]]), overlap)
-  cbmc[["ADT"]] <- subset(cbmc[["ADT"]], features = adt_keep)
-  cat("Removed", length(overlap), "overlapping features from ADT\n")
-}
-
-cat("Assays:", paste(Assays(cbmc), collapse = ", "), "\n")
-cat("Cells:", ncol(cbmc), "\n")
-cat("RNA features:", nrow(cbmc[["RNA"]]), "\n")
-cat("ADT features:", nrow(cbmc[["ADT"]]), "\n")
+```{r dimplot-original, eval = TRUE, fig.width = 7, fig.height = 5}
+DimPlot(obj, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
+  ggtitle("CITE-seq clusters (original)")
 ```
 
-This object has two assays — RNA (gene expression) and ADT (surface protein) — measured on the same cells, making it ideal for h5mu.
+## Export to h5mu
 
-> **Note**: h5mu requires unique feature names across modalities. If your CITE-seq ADT panel has features that share names with RNA genes (e.g., CD3D), remove duplicates before saving.
-
-### Process and visualize
-
-```{r process_cbmc, eval = can_run, purl = FALSE}
-DefaultAssay(cbmc) <- "RNA"
-cbmc <- NormalizeData(cbmc, verbose = FALSE)
-cbmc <- FindVariableFeatures(cbmc, verbose = FALSE)
-cbmc <- ScaleData(cbmc, verbose = FALSE)
-cbmc <- RunPCA(cbmc, verbose = FALSE)
-cbmc <- RunUMAP(cbmc, dims = 1:30, verbose = FALSE)
-cbmc <- NormalizeData(cbmc, assay = "ADT", normalization.method = "CLR", verbose = FALSE)
-```
-
-```{r plot_cbmc, eval = can_run, purl = FALSE, fig.width = 14, fig.height = 6}
-library(patchwork)
-
-p1 <- DimPlot(cbmc, label = TRUE, pt.size = 0.3) + NoLegend() + ggtitle("RNA clusters")
-DefaultAssay(cbmc) <- "ADT"
-p2 <- FeaturePlot(cbmc, features = "adt_CD3", pt.size = 0.3) + ggtitle("CD3 protein (ADT)")
-DefaultAssay(cbmc) <- "RNA"
-p1 + p2
-```
-
-## Save with writeH5MU
-
-`writeH5MU()` exports all assays to a single h5mu file. Assay names are automatically mapped to standard MuData modality names:
+`writeH5MU()` saves every assay as a separate modality. Seurat assay names are
+automatically mapped to standard MuData conventions:
 
 | Seurat Assay | h5mu Modality |
 |-------------|---------------|
 | RNA | rna |
 | ADT | prot |
 | ATAC | atac |
-| Spatial | spatial |
 | Other | lowercase name |
 
-```{r save_h5mu, eval = can_run, purl = FALSE}
-writeH5MU(cbmc, "cbmc_multimodal.h5mu", overwrite = TRUE)
+```{r write-h5mu, eval = TRUE}
+h5mu_path <- file.path(tempdir(), "citeseq.h5mu")
+writeH5MU(obj, h5mu_path, overwrite = TRUE)
+cat("Wrote:", h5mu_path, "\n")
+cat("File size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
 ```
 
-### Inspect in Python
+## Load h5mu back into R
 
-If you have [muon](https://muon-tutorials.readthedocs.io/) installed, you can inspect the h5mu file:
-
-```{python inspect_h5mu, eval = can_run && has_muon}
-import mudata as md
-mdata = md.read_h5mu("cbmc_multimodal.h5mu")
-print(mdata)
-print("\nModalities:", list(mdata.mod.keys()))
-for mod_name, mod in mdata.mod.items():
-    print(f"  {mod_name}: {mod.n_obs} cells x {mod.n_vars} features")
-```
-
-### scanpy on RNA modality
-
-We can run standard scanpy preprocessing on the RNA modality extracted from the h5mu file:
-
-```{python scanpy_on_h5mu, eval = can_run && has_muon && has_scanpy}
-import scanpy as sc
-
-rna = mdata.mod["rna"].copy()
-sc.pp.normalize_total(rna)
-sc.pp.log1p(rna)
-sc.pp.highly_variable_genes(rna, n_top_genes=2000)
-sc.pp.pca(rna)
-sc.pp.neighbors(rna)
-sc.tl.umap(rna)
-sc.tl.leiden(rna, flavor="igraph")
-
-sc.pl.umap(rna, color="leiden", title="CBMC RNA (from h5mu) — Leiden clusters")
-```
-
-## Load with readH5MU
-
-`readH5MU()` reads the h5mu file back into a Seurat object, reversing the modality name mapping:
+`readH5MU()` reverses the mapping, restoring standard Seurat assay names:
 
 | h5mu Modality | Seurat Assay |
 |---------------|-------------|
 | rna | RNA |
 | prot | ADT |
 | atac | ATAC |
-| spatial | Spatial |
-| Other | preserved |
 
-```{r load_h5mu, eval = can_load, purl = FALSE}
-cbmc_loaded <- readH5MU("cbmc_multimodal.h5mu")
-cbmc_loaded
+```{r read-h5mu, eval = TRUE}
+loaded <- readH5MU(h5mu_path)
+
+cat("Cells:", ncol(loaded), "\n")
+cat("Assays:", paste(Assays(loaded), collapse = ", "), "\n")
+cat("RNA features:", nrow(loaded[["RNA"]]), "\n")
+cat("ADT features:", nrow(loaded[["ADT"]]), "\n")
 ```
 
-`readH5MU()` uses scConvert's native reader — no MuDataSeurat or Python required.
+## Compare original and roundtripped data
 
-## Verify round-trip preservation
+### Side-by-side DimPlot
 
-```{r verify_roundtrip, eval = can_load, purl = FALSE}
-cat("=== Original ===\n")
-cat("Assays:", paste(Assays(cbmc), collapse = ", "), "\n")
-cat("Cells:", ncol(cbmc), "\n")
+```{r dimplot-compare, eval = TRUE, fig.width = 12, fig.height = 5}
+library(patchwork)
 
-cat("\n=== Loaded ===\n")
-cat("Assays:", paste(Assays(cbmc_loaded), collapse = ", "), "\n")
-cat("Cells:", ncol(cbmc_loaded), "\n")
+p1 <- DimPlot(obj, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
+  ggtitle("Original") + NoLegend()
+p2 <- DimPlot(loaded, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
+  ggtitle("After h5mu roundtrip") + NoLegend()
+p1 + p2
+```
 
-# Check metadata
-cat("\nMetadata columns (original):", ncol(cbmc[[]]), "\n")
-cat("Metadata columns (loaded):", ncol(cbmc_loaded[[]]), "\n")
+### ADT protein expression
+
+```{r featureplot-adt, eval = TRUE, fig.width = 7, fig.height = 5}
+DefaultAssay(loaded) <- "ADT"
+loaded <- NormalizeData(loaded, normalization.method = "CLR", margin = 2, verbose = FALSE)
+FeaturePlot(loaded, features = "CD3", pt.size = 0.8) +
+  ggtitle("CD3 protein (ADT) -- loaded from h5mu")
+DefaultAssay(loaded) <- "RNA"
 ```
 
 ### Verify expression values
 
-```{r verify_expression, eval = can_load, purl = FALSE}
-common_c <- intersect(colnames(cbmc), colnames(cbmc_loaded))
-common_g <- intersect(rownames(cbmc[["RNA"]]), rownames(cbmc_loaded[["RNA"]]))
-set.seed(42)
-sc <- sample(common_c, min(200, length(common_c)))
-sg <- sample(common_g, min(100, length(common_g)))
+```{r verify, eval = TRUE}
+cat("=== Dimensions ===\n")
+cat("Cells match:", ncol(obj) == ncol(loaded), "\n")
+cat("Assays match:", identical(sort(Assays(obj)), sort(Assays(loaded))), "\n")
 
-orig_vals <- as.numeric(GetAssayData(cbmc, assay = "RNA", layer = "counts")[sg, sc])
-rt_vals <- as.numeric(GetAssayData(cbmc_loaded, assay = "RNA", layer = "counts")[sg, sc])
-cat("RNA values identical:", identical(orig_vals, rt_vals), "\n")
-cat("Max abs diff:", max(abs(orig_vals - rt_vals)), "\n")
+# RNA counts
+common_cells <- intersect(colnames(obj), colnames(loaded))
+common_genes <- intersect(rownames(obj[["RNA"]]), rownames(loaded[["RNA"]]))
+orig_rna <- as.numeric(GetAssayData(obj, assay = "RNA", layer = "counts")[
+  head(common_genes, 100), head(common_cells, 100)])
+rt_rna <- as.numeric(GetAssayData(loaded, assay = "RNA", layer = "counts")[
+  head(common_genes, 100), head(common_cells, 100)])
+cat("\n=== RNA counts ===\n")
+cat("Values identical:", identical(orig_rna, rt_rna), "\n")
 
-# Check ADT assay too
-adt_genes <- intersect(rownames(cbmc[["ADT"]]), rownames(cbmc_loaded[["ADT"]]))
-if (length(adt_genes) > 0) {
-  adt_orig <- as.numeric(GetAssayData(cbmc, assay = "ADT", layer = "counts")[adt_genes, sc])
-  adt_rt <- as.numeric(GetAssayData(cbmc_loaded, assay = "ADT", layer = "counts")[adt_genes, sc])
-  cat("ADT values identical:", identical(adt_orig, adt_rt), "\n")
-}
+# ADT counts
+common_adt <- intersect(rownames(obj[["ADT"]]), rownames(loaded[["ADT"]]))
+orig_adt <- as.numeric(GetAssayData(obj, assay = "ADT", layer = "counts")[
+  common_adt, head(common_cells, 100)])
+rt_adt <- as.numeric(GetAssayData(loaded, assay = "ADT", layer = "counts")[
+  common_adt, head(common_cells, 100)])
+cat("\n=== ADT counts ===\n")
+cat("Values identical:", identical(orig_adt, rt_adt), "\n")
 ```
 
 ## Custom modality name mapping
 
-You can override the default mapping with `assays` (for `writeH5MU()`) or `assay.names` (for `readH5MU()`):
+You can override the default mapping when reading back with the `assay.names`
+argument:
 
-```{r custom_mapping, eval = can_load, purl = FALSE}
-# Save with custom modality names (native writer)
-writeH5MU(cbmc, filename = "cbmc_roundtrip.h5mu", overwrite = TRUE)
-
-# Load with custom assay names
-cbmc_custom <- readH5MU(
-  "cbmc_roundtrip.h5mu",
-  assay.names = c(rna = "RNA", prot = "Protein")
-)
-
-cat("Assays:", paste(Assays(cbmc_custom), collapse = ", "), "\n")
+```{r custom-mapping, eval = TRUE}
+custom <- readH5MU(h5mu_path, assay.names = c(rna = "RNA", prot = "Protein"))
+cat("Assays with custom mapping:", paste(Assays(custom), collapse = ", "), "\n")
 ```
 
-## Conflict resolution
+## Python interoperability
 
-When a Seurat object has multiple assays that would map to the same modality name, `writeH5MU()` automatically resolves the conflict. For example, if you have both RNA and SCT assays (both map to "rna" by default), SCT is remapped to "sct":
+The exported h5mu file is directly compatible with muon in Python.
 
-| Seurat Assays | Modality Mapping |
-|--------------|-----------------|
-| RNA, ADT | rna, prot (no conflict) |
-| RNA, SCT, ADT | rna, sct, prot (SCT remapped) |
+```{python inspect-python, eval = FALSE}
+# Requires Python: pip install mudata
+import mudata as md
 
-This ensures each modality has a unique name in the h5mu file.
+mdata = md.read_h5mu("citeseq.h5mu")
+print(mdata)
+print("Modalities:", list(mdata.mod.keys()))
+for name, mod in mdata.mod.items():
+    print(f"  {name}: {mod.n_obs} cells x {mod.n_vars} features")
+```
 
-## Data mapping reference
+## Clean up
 
-### writeH5MU: Seurat to h5mu
-
-| Seurat Component | h5mu Location | Notes |
-|-----------------|--------------|-------|
-| Each assay | `/mod/{modality}/` | One AnnData per modality |
-| Assay counts | `/mod/{modality}/X` | Expression matrix |
-| Assay metadata | `/mod/{modality}/var` | Feature metadata |
-| Cell metadata | `/obs` | Global cell annotations |
-| Reductions | `/mod/{modality}/obsm/X_{name}` | Per-modality |
-| Graphs | `/mod/{modality}/obsp/{name}` | Per-modality |
-
-### readH5MU: h5mu to Seurat
-
-| h5mu Location | Seurat Component | Notes |
-|--------------|-----------------|-------|
-| `/mod/{modality}/` | Assay (renamed) | Modality -> assay name mapping |
-| `/mod/{modality}/X` | Assay data | Expression matrix |
-| `/obs` | `meta.data` | Global cell metadata merged |
-| `/mod/{modality}/obsm/spatial` | Spatial coordinates | If present |
+```{r cleanup, eval = TRUE}
+unlink(h5mu_path)
+```
 
 ## Session Info
 
-```{r sessionInfo, purl = FALSE}
+```{r session-info}
 sessionInfo()
-```
-
-```{r cleanup-final, echo=FALSE, results='hide', purl = FALSE}
-outs <- c("cbmc_multimodal.h5mu", "cbmc_roundtrip.h5mu")
-existing_files <- outs[file.exists(outs)]
-if (length(existing_files) > 0) file.remove(existing_files)
 ```

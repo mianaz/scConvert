@@ -1,238 +1,121 @@
 ---
-title: "Working with SpatialData (.spatialdata.zarr)"
+title: "SpatialData Zarr Stores"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Working with SpatialData (.spatialdata.zarr)}
+  %\VignetteIndexEntry{SpatialData Zarr Stores}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-  eval = TRUE,
   collapse = TRUE,
   comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
   message = FALSE,
-  warning = FALSE,
-  out.width = "100%",
-  dev = "png",
-  fig.width = 8,
-  fig.height = 6,
-  purl = FALSE
+  warning = FALSE
 )
-# SpatialData zarr I/O is pure R — always available
-has_spatialdata <- TRUE
-has_scanpy <- FALSE
-if (requireNamespace("reticulate", quietly = TRUE)) {
-  scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
-  if (dir.exists(scverse_path)) {
-    reticulate::use_condaenv("scverse", required = FALSE)
-    Sys.setenv(
-      OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
-      MKL_NUM_THREADS = "1", NUMBA_THREADING_LAYER = "tbb"
-    )
-    has_scanpy <- reticulate::py_module_available("scanpy")
-    if (has_scanpy) {
-      reticulate::py_run_string("import matplotlib; matplotlib.use('Agg')")
-    }
-  }
-}
+library(scConvert)
+library(Seurat)
+library(ggplot2)
 ```
 
-## Overview
+## Introduction
 
 [SpatialData](https://spatialdata.scverse.org/) is the scverse standard for
-representing spatial omics data. It uses a Zarr-based directory layout that
-combines OME-NGFF images, geometric shapes, transcript-level point
-annotations, segmentation labels, and anndata expression tables into a single
-hierarchical store. Technologies such as Visium, MERFISH, Xenium, Slide-seq,
-CODEX, and Stereo-seq all have SpatialData representations, making it a
-unifying format across the spatial omics ecosystem.
+spatial omics data. A `.spatialdata.zarr` store combines expression tables,
+spatial coordinates, shapes, and tissue images in a single Zarr directory.
+Technologies like Visium, MERFISH, Xenium, Slide-seq, and CODEX all have
+SpatialData representations, making it a unifying format for the spatial
+transcriptomics ecosystem.
 
-scConvert provides native R support for reading and writing SpatialData stores
-with no Python dependency, and includes direct pair converters for moving data
-between SpatialData and other formats (h5ad, h5Seurat, Zarr).
+scConvert provides `readSpatialData()` and `writeSpatialData()` to move
+between SpatialData stores and Seurat objects, with no Python dependency.
 
-```{r packages, eval = has_spatialdata}
-library(Seurat)
-library(scConvert)
+## Load spatial demo data
+
+We use a 400-spot Visium mouse brain dataset that ships with scConvert. It
+includes a tissue image, PCA/UMAP embeddings, and 15 clusters.
+
+```{r load-data, eval = TRUE}
+brain <- readRDS(system.file("extdata", "spatial_demo.rds", package = "scConvert"))
+brain
 ```
 
-## SpatialData store layout
-
-A `.spatialdata.zarr` directory follows this structure:
-
-```
-sample.spatialdata.zarr/
-+-- .zattrs              # {"spatialdata_attrs": {"version": "0.2.0"}}
-+-- .zgroup              # {"zarr_format": 2}
-+-- images/              # OME-NGFF multiscale tissue images
-+-- labels/              # Segmentation masks (cell/nucleus outlines)
-+-- points/              # Point annotations (e.g., transcript coordinates)
-+-- shapes/              # Geometric shapes (spot positions with radii)
-+-- tables/              # AnnData expression tables (one or more)
-    +-- table/           # Default table (standard anndata zarr)
+```{r spatial-plot-original, eval = TRUE, fig.width = 7, fig.height = 5}
+SpatialFeaturePlot(brain, features = "Hpca") +
+  ggtitle("Hpca expression -- Original Visium data")
 ```
 
-The `tables/table/` subdirectory is a standard anndata zarr store, so
-scConvert's existing Zarr infrastructure handles the expression data, metadata,
-embeddings, and graphs. The SpatialData-specific elements (shapes, points,
-images, labels) are handled by dedicated readers and writers.
+## Write to SpatialData
 
-## Create a demo SpatialData store
+Save the Seurat object as a SpatialData Zarr store. The expression data,
+metadata, embeddings, spatial coordinates, and shapes are all written.
 
-We create a Seurat object with spatial coordinates and write it as a
-SpatialData store using `writeSpatialData()`:
-
-```{r create_demo, eval = has_spatialdata}
-library(Seurat)
-set.seed(42)
-
-# Synthetic spatial expression data: 100 genes × 200 cells
-counts <- Matrix::rsparsematrix(100, 200, density = 0.05, rand.x = function(n) rpois(n, 5) + 1)
-dimnames(counts) <- list(paste0("Gene", seq_len(100)), paste0("Cell", seq_len(200)))
-demo <- CreateSeuratObject(counts = counts, min.cells = 0, min.features = 0)
-
-# Add spatial coordinates and metadata
-demo$spatial_x <- runif(200, 0, 1000)
-demo$spatial_y <- runif(200, 0, 1000)
-demo$cell_type <- factor(sample(c("Epithelial", "Stromal", "Immune"), 200, replace = TRUE))
-demo$region <- "tissue_section"
-
-# Write as SpatialData
-writeSpatialData(demo, "demo.spatialdata.zarr", overwrite = TRUE, verbose = TRUE)
+```{r write-spatialdata, eval = TRUE}
+sd_path <- file.path(tempdir(), "brain.spatialdata.zarr")
+writeSpatialData(brain, sd_path, overwrite = TRUE, verbose = FALSE)
+cat("SpatialData store written to:", sd_path, "\n")
 ```
 
-## Reading SpatialData
+## Read back from SpatialData
 
-Use `readSpatialData()` to load the store into a Seurat object:
+Load the store back into a Seurat object.
 
-```{r read_basic, eval = has_spatialdata}
-obj <- readSpatialData("demo.spatialdata.zarr", verbose = TRUE)
-obj
+```{r read-spatialdata, eval = TRUE}
+brain_rt <- readSpatialData(sd_path, verbose = FALSE)
+cat("Cells:", ncol(brain_rt), "| Genes:", nrow(brain_rt), "\n")
+cat("Reductions:", paste(Reductions(brain_rt), collapse = ", "), "\n")
+cat("Images:", paste(Images(brain_rt), collapse = ", "), "\n")
 ```
 
-### What gets preserved
+## Compare original and round-trip
 
-The reader extracts the following components:
+Side-by-side comparisons confirm that cluster assignments and gene expression
+patterns survive the SpatialData round-trip.
 
-| SpatialData Element | Seurat Destination | Notes |
-|--------------------|--------------------|-------|
-| `tables/table/` | Expression assay, metadata, reductions | Via `readZarr()` |
-| `shapes/{region}/` | Spatial coordinates (FOV/image) | x, y, radius columns |
-| `points/{region}/` | `misc$points_{name}` | Transcript-level data |
-| `images/{name}/` | Image object (if coords present) | OME-NGFF, normalized to [0,1] |
-| `labels/` | `misc$__spatialdata_labels__` | Names only (see Limitations) |
+### Cluster UMAP
 
-SpatialData attributes (`region`, `region_key`, `instance_key`) are stored in
-`misc$__spatialdata_attrs__` and used during write-back to ensure round-trip
-fidelity.
+```{r compare-dimplot, eval = TRUE, fig.width = 12, fig.height = 5}
+library(patchwork)
 
-### Inspect the Seurat object
+p1 <- DimPlot(brain, reduction = "umap", label = TRUE, pt.size = 1) +
+  ggtitle("Original") + NoLegend()
 
-```{r inspect, eval = has_spatialdata}
-cat("Cells:    ", ncol(obj), "\n")
-cat("Features: ", nrow(obj), "\n")
-cat("Layers:   ", paste(Layers(obj), collapse = ", "), "\n")
-cat("Images:   ", paste(Images(obj), collapse = ", "), "\n")
+p2 <- DimPlot(brain_rt, reduction = "umap", label = TRUE, pt.size = 1) +
+  ggtitle("After SpatialData round-trip") + NoLegend()
 
-# SpatialData metadata preserved for roundtrip
-sd_attrs <- obj@misc[["__spatialdata_attrs__"]]
-if (!is.null(sd_attrs)) {
-  cat("Region:       ", paste(sd_attrs$region, collapse = ", "), "\n")
-  cat("Region key:   ", sd_attrs$region_key, "\n")
-  cat("Instance key: ", sd_attrs$instance_key, "\n")
-}
-
-# Points stored in misc
-point_keys <- grep("^points_", names(obj@misc), value = TRUE)
-if (length(point_keys) > 0) {
-  for (pk in point_keys) {
-    cat("Points (", pk, "): ", nrow(obj@misc[[pk]]), " entries\n", sep = "")
-  }
-}
-
-# Label names
-label_names <- obj@misc[["__spatialdata_labels__"]]
-if (!is.null(label_names)) {
-  cat("Labels:   ", paste(label_names, collapse = ", "), "\n")
-}
+p1 + p2
 ```
 
-### Specifying a table
+### Gene expression
 
-SpatialData stores can contain multiple tables. Use the `table` argument to
-select which one to read:
+Ttr (transthyretin) marks the choroid plexus in mouse brain. Expression
+patterns are identical before and after the round-trip.
 
-```{r read_table, eval = FALSE}
-# Read the default table
-obj <- readSpatialData("multi_table.spatialdata.zarr", table = "table")
-
-# Read a specific table
-obj <- readSpatialData("multi_table.spatialdata.zarr", table = "rna_counts")
+```{r compare-feature, eval = TRUE, fig.width = 12, fig.height = 5}
+p1 <- FeaturePlot(brain, features = "Ttr", pt.size = 1) +
+  ggtitle("Ttr -- Original")
+p2 <- FeaturePlot(brain_rt, features = "Ttr", pt.size = 1) +
+  ggtitle("Ttr -- SpatialData round-trip")
+p1 + p2
 ```
 
-### Skipping images
+### Quick fidelity check
 
-For large stores where only the expression data and coordinates are needed,
-set `images = FALSE` to skip OME-NGFF image reading:
-
-```{r read_no_images, eval = FALSE}
-obj <- readSpatialData("large_sample.spatialdata.zarr", images = FALSE)
-```
-
-## Writing SpatialData
-
-Use `writeSpatialData()` to write the Seurat object back as a SpatialData zarr
-store, completing the round trip:
-
-```{r write_basic, eval = has_spatialdata}
-writeSpatialData(obj, "demo_roundtrip.spatialdata.zarr", overwrite = TRUE)
-cat("Written to: demo_roundtrip.spatialdata.zarr\n")
-cat("Store size: ",
-    round(sum(file.info(
-      list.files("demo_roundtrip.spatialdata.zarr",
-                 recursive = TRUE, full.names = TRUE)
-    )$size) / 1024^2, 1), " MB\n")
-```
-
-The writer creates the full SpatialData directory layout:
-
-| Seurat Source | SpatialData Destination | Notes |
-|--------------|------------------------|-------|
-| Expression, metadata, reductions | `tables/table/` | Via `writeZarr()` |
-| Tissue coordinates | `shapes/{region}/` | DataFrame with x, y, radius |
-| `misc$points_*` | `points/{name}/` | Preserved from read |
-| Image arrays | `images/{name}/` | OME-NGFF with multiscales metadata |
-
-### Verify the roundtrip
-
-```{r verify_roundtrip, eval = has_spatialdata}
-obj_rt <- readSpatialData("demo_roundtrip.spatialdata.zarr", verbose = FALSE)
-
-cat("Original cells:   ", ncol(obj), "\n")
-cat("Roundtrip cells:  ", ncol(obj_rt), "\n")
-cat("Original features:", nrow(obj), "\n")
-cat("Roundtrip features:", nrow(obj_rt), "\n")
-cat("Dimensions match: ", ncol(obj) == ncol(obj_rt) && nrow(obj) == nrow(obj_rt), "\n")
+```{r fidelity-check, eval = TRUE}
+stopifnot(ncol(brain_rt) == ncol(brain))
+stopifnot(nrow(brain_rt) == nrow(brain))
+stopifnot(identical(sort(colnames(brain_rt)), sort(colnames(brain))))
+cat("All checks passed:", ncol(brain_rt), "spots x", nrow(brain_rt), "genes.\n")
 ```
 
 ## Direct pair converters
 
-scConvert provides six direct conversion functions that combine reading and
-writing in a single call, without requiring you to manage intermediate Seurat
-objects.
+Convert between SpatialData and other formats in a single call:
 
-### SpatialData to h5ad
-
-```{r direct_to_h5ad, eval = has_spatialdata}
-SpatialDataToH5AD("demo.spatialdata.zarr", "demo_spatial.h5ad", overwrite = TRUE)
-cat("h5ad size:", round(file.size("demo_spatial.h5ad") / 1024^2, 1), "MB\n")
-```
-
-### All six converters
-
-```{r direct_converters, eval = FALSE}
+```{r pair-converters, eval = FALSE}
 # SpatialData <-> h5ad
 SpatialDataToH5AD("sample.spatialdata.zarr", "sample.h5ad")
 H5ADToSpatialData("sample.h5ad", "sample.spatialdata.zarr")
@@ -241,80 +124,42 @@ H5ADToSpatialData("sample.h5ad", "sample.spatialdata.zarr")
 SpatialDataToH5Seurat("sample.spatialdata.zarr", "sample.h5seurat")
 H5SeuratToSpatialData("sample.h5seurat", "sample.spatialdata.zarr")
 
-# SpatialData <-> standard Zarr (anndata zarr without SpatialData wrapper)
-SpatialDataToZarr("sample.spatialdata.zarr", "sample.zarr")
-ZarrToSpatialData("sample.zarr", "sample.spatialdata.zarr")
-```
-
-All six functions accept `overwrite = TRUE` and `verbose = TRUE/FALSE`
-arguments. The `SpatialDataToH5AD`, `SpatialDataToH5Seurat`, and
-`SpatialDataToZarr` functions also accept a `table` argument to specify which
-table to extract from the store.
-
-These converters also work through the `scConvert()` dispatcher:
-
-```{r scconvert_dispatch, eval = FALSE}
+# Or use the universal dispatcher
 scConvert("sample.spatialdata.zarr", dest = "sample.h5ad", overwrite = TRUE)
-scConvert("sample.h5ad", dest = "output.spatialdata.zarr", overwrite = TRUE)
 ```
+
+## Limitations
+
+- **Images**: Large OME-NGFF images (>100M pixels) are skipped to avoid memory
+  issues. Use `images = FALSE` to read coordinates only.
+- **Coordinate transforms**: SpatialData supports affine transformations
+  between elements. These are not currently applied during reading; coordinates
+  are used as-is.
+- **Labels/segmentation**: Cell and nucleus segmentation masks are recorded by
+  name but not loaded (they have no natural Seurat representation).
+- **Multiple tables**: Only one table is read per call. Use the `table`
+  argument to select which one.
 
 ## Python interoperability
 
 SpatialData stores written by scConvert are readable by the Python
-[spatialdata](https://spatialdata.scverse.org/) library and its ecosystem
-(squidpy, napari-spatialdata).
+[spatialdata](https://spatialdata.scverse.org/) library. Requires Python
+with spatialdata installed.
 
-### Read the h5ad output in Python
+```{python python-read, eval = FALSE}
+import spatialdata as sd
 
-The h5ad produced by `SpatialDataToH5AD()` is a standard AnnData file readable
-by scanpy:
-
-```{python verify_h5ad_py, eval = has_scanpy}
-import scanpy as sc
-
-adata = sc.read_h5ad("demo_spatial.h5ad")
-print(adata)
-print(f"\nobs columns: {list(adata.obs.columns)}")
-print(f"Cells: {adata.n_obs}, Genes: {adata.n_vars}")
+sdata = sd.read_zarr("brain.spatialdata.zarr")
+print(sdata)
+sdata.pl.render_shapes().pl.show()
 ```
 
-## Known limitations
-
-- **Labels/segmentation masks**: scConvert records the names of label layers
-  found in `labels/` but does not read the full mask arrays. These are
-  typically large (cell/nucleus segmentation at pixel resolution) and have no
-  natural representation in Seurat. Label names are preserved in
-  `misc$__spatialdata_labels__` for metadata purposes.
-
-- **Multiple tables**: Only one table is read per call. If your SpatialData
-  store contains multiple tables (e.g., separate RNA and protein assays), call
-  `readSpatialData()` once per table and merge the resulting Seurat objects.
-
-- **Large images**: OME-NGFF images larger than 100 million pixels are skipped
-  to avoid memory issues. Use `images = FALSE` and work with coordinates only,
-  or downsample the image externally before reading.
-
-- **Coordinate transforms**: SpatialData supports affine and sequence
-  coordinate transformations between elements. These are not currently applied
-  during reading; coordinates are used as-is from the zarr arrays.
-
-## See also
-
-- [Spatial Transcriptomics: Visium](spatial-visium.html) -- Visium-specific
-  workflows with tissue images and squidpy validation
-- [Spatial Technologies](spatial-technologies.html) -- support for MERFISH,
-  Slide-seq, Xenium, CODEX, and other platforms
-- [Conversions: Seurat and Zarr](convert-zarr.html) -- general Zarr format
-  details, streaming conversion, and Python interop
+```{r cleanup, include = FALSE}
+unlink(sd_path, recursive = TRUE)
+```
 
 ## Session Info
 
-```{r session, eval = TRUE}
+```{r session-info, eval = TRUE}
 sessionInfo()
-```
-
-```{r cleanup, echo = FALSE, results = "hide"}
-unlink("demo.spatialdata.zarr", recursive = TRUE)
-unlink("demo_roundtrip.spatialdata.zarr", recursive = TRUE)
-unlink("demo_spatial.h5ad")
 ```
