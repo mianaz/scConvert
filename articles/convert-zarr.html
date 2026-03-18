@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Conversions: Seurat and Zarr • scConvert</title>
+<title>Convert to Zarr Format • scConvert</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Conversions: Seurat and Zarr">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Convert to Zarr Format">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -35,25 +35,25 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Conversions: h5Seurat and AnnData</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Saving and Loading Data from an h5Seurat File</a></li>
-    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface (CLI)</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
+    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-loom.html">Conversions: Seurat and Loom</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Conversions: Seurat and Zarr</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-soma.html">Converting Between Seurat and TileDB-SOMA</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
     <li><a class="dropdown-item" href="../articles/multimodal-h5mu.html">Multimodal Data with MuData (h5mu)</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat File Format Specification</a></li>
-    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Data Mapping Reference</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat Format Specification</a></li>
+    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Format Mapping Reference</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
-    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">Multimodal: CITE-seq and Multiome</a></li>
-    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion with Signac</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Spatial Transcriptomics: Visium</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies: Slide-seq, Visium HD, and Others</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">Working with SpatialData (.spatialdata.zarr)</a></li>
-    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire (TCR/BCR) Data with scConvert</a></li>
+    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">CITE-seq Analysis Workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Visium Spatial Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies Overview</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">SpatialData Zarr Stores</a></li>
+    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire Metadata Preservation</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -76,7 +76,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Conversions: Seurat and Zarr</h1>
+      <h1>Convert to Zarr Format</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/HEAD/vignettes/convert-zarr.Rmd" class="external-link"><code>vignettes/convert-zarr.Rmd</code></a></small>
@@ -85,1006 +85,155 @@
 
     
     
-<p>This vignette demonstrates how to convert between Seurat objects and
-<a href="https://zarr.dev/" class="external-link">Zarr</a> stores using scConvert. Zarr is a
-chunked, compressed N-dimensional array format commonly used in
-cloud-native single-cell workflows, including <a href="https://chanzuckerberg.github.io/cellxgene-census/" class="external-link">CELLxGENE
-Census</a>, <a href="https://spatialdata.scverse.org/" class="external-link">SpatialData</a>,
-and the <a href="https://data.humancellatlas.org/" class="external-link">Human Cell
-Atlas</a>.</p>
-<p>scConvert reads and writes Zarr v2 stores following the <a href="https://anndata.readthedocs.io/en/latest/fileformat-prose.html" class="external-link">AnnData
-on-disk specification</a>, with no Python dependency. Zarr stores
-produced by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> are directly readable by Python
-<code>anndata.read_zarr()</code> and scanpy.</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
+<p><a href="https://zarr.dev/" class="external-link">Zarr</a> is a directory-based format for
+chunked, compressed arrays. It is widely used in cloud-native
+single-cell workflows – including <a href="https://chanzuckerberg.github.io/cellxgene-census/" class="external-link">CELLxGENE
+Census</a> and <a href="https://spatialdata.scverse.org/" class="external-link">SpatialData</a> – because each
+chunk is an independent file that can be read in parallel from object
+stores like S3 or GCS. scConvert reads and writes Zarr v2 stores
+following the AnnData on-disk specification, with no Python
+dependency.</p>
+</div>
+<div class="section level2">
+<h2 id="load-demo-data">Load demo data<a class="anchor" aria-label="anchor" href="#load-demo-data"></a>
+</h2>
+<p>We start with a 500-cell PBMC dataset that ships with scConvert. It
+has PCA, UMAP, cluster labels, and neighbor graphs already computed.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
-<div class="section level2">
-<h2 id="seurat-to-zarr">Seurat to Zarr<a class="anchor" aria-label="anchor" href="#seurat-to-zarr"></a>
-</h2>
-<div class="section level3">
-<h3 id="basic-conversion">Basic conversion<a class="anchor" aria-label="anchor" href="#basic-conversion"></a>
-</h3>
-<p>To save a Seurat object as a Zarr store, use <code><a href="../reference/writeZarr.html">writeZarr()</a></code>
-directly or <code>scConvert()</code> with the <code>.zarr</code>
-extension:</p>
+<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span></span>
+<span><span class="co">#&gt; An object of class Seurat </span></span>
+<span><span class="co">#&gt; 2000 features across 500 samples within 1 assay </span></span>
+<span><span class="co">#&gt; Active assay: RNA (2000 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt;  2 layers present: counts, data</span></span>
+<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.satijalab.org/seurat" class="external-link">SeuratData</a></span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="st">"pbmc3k.final"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.org/seurat/reference/InstalledData.html" class="external-link">InstalledData</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/InstallData.html" class="external-link">InstallData</a></span><span class="op">(</span><span class="st">"pbmc3k"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"pbmc3k.final"</span>, package <span class="op">=</span> <span class="st">"pbmc3k.SeuratData"</span><span class="op">)</span></span>
-<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/UpdateSeuratObject.html" class="external-link">UpdateSeuratObject</a></span><span class="op">(</span><span class="va">pbmc3k.final</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Input:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Input: 2638 cells x 13714 genes</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Reductions</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Reductions: pca, umap</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Layers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Layers: counts, data, scale.data</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original PBMC data"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-zarr_files/figure-html/dimplot-original-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="write-to-zarr">Write to Zarr<a class="anchor" aria-label="anchor" href="#write-to-zarr"></a>
+</h2>
+<p>Save the Seurat object as a Zarr store with <code><a href="../reference/writeZarr.html">writeZarr()</a></code>.
+Expression data, metadata, embeddings, and graphs are all preserved.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Direct API</span></span>
-<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pbmc3k.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Or via scConvert()</span></span>
-<span><span class="co"># scConvert(pbmc, dest = "pbmc3k.zarr", overwrite = TRUE)</span></span></code></pre></div>
-<p><code><a href="../reference/writeZarr.html">writeZarr()</a></code> writes the following components:</p>
-<table class="table">
-<colgroup>
-<col width="31%">
-<col width="38%">
-<col width="29%">
-</colgroup>
-<thead><tr class="header">
-<th>Seurat Source</th>
-<th>Zarr Destination</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>GetAssayData(layer = "counts")</code></td>
-<td><code>X/</code></td>
-<td>Primary expression matrix (prefers counts)</td>
-</tr>
-<tr class="even">
-<td><code>GetAssayData(layer = "data")</code></td>
-<td><code>layers/data/</code></td>
-<td>Normalized data (if different from counts)</td>
-</tr>
-<tr class="odd">
-<td><code>meta.data</code></td>
-<td><code>obs/</code></td>
-<td>Cell metadata with categorical encoding</td>
-</tr>
-<tr class="even">
-<td>Assay feature metadata</td>
-<td><code>var/</code></td>
-<td>Gene-level annotations</td>
-</tr>
-<tr class="odd">
-<td><code>Embeddings(, "pca")</code></td>
-<td><code>obsm/X_pca/</code></td>
-<td>PCA coordinates</td>
-</tr>
-<tr class="even">
-<td><code>Embeddings(, "umap")</code></td>
-<td><code>obsm/X_umap/</code></td>
-<td>UMAP coordinates</td>
-</tr>
-<tr class="odd">
-<td><code>Graphs(, "RNA_snn")</code></td>
-<td><code>obsp/connectivities/</code></td>
-<td>SNN graph (sparse CSR)</td>
-</tr>
-<tr class="even">
-<td><code>Graphs(, "RNA_nn")</code></td>
-<td><code>obsp/distances/</code></td>
-<td>NN distance graph</td>
-</tr>
-<tr class="odd">
-<td><code><a href="https://satijalab.github.io/seurat-object/reference/Misc.html" class="external-link">Misc()</a></code></td>
-<td><code>uns/</code></td>
-<td>Unstructured annotations</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="zarr-store-structure">Zarr store structure<a class="anchor" aria-label="anchor" href="#zarr-store-structure"></a>
-</h3>
-<p>The Zarr store is a directory tree following AnnData v0.1.0
-conventions:</p>
-<pre><code>pbmc3k.zarr/
-├── .zgroup            # Root group metadata
-├── .zattrs            # encoding-type: anndata, encoding-version: 0.1.0
-├── X/                 # Expression matrix (sparse CSR or dense)
-│   ├── .zattrs        # encoding-type: csr_matrix / array
-│   ├── data/          # Non-zero values
-│   ├── indices/       # Column indices (0-based)
-│   └── indptr/        # Row pointers
-├── obs/               # Cell metadata
-│   ├── .zattrs        # encoding-type: dataframe, column-order
-│   ├── _index/        # Cell barcodes (string-array)
-│   ├── seurat_clusters/  # Categorical: codes/ + categories/
-│   └── nCount_RNA/    # Numeric array
-├── var/               # Feature metadata
-│   ├── _index/        # Gene names
-│   └── ...
-├── obsm/              # Dimensional reductions
-│   ├── X_pca/         # [n_cells, n_components] dense array
-│   └── X_umap/        # [n_cells, 2] dense array
-└── obsp/              # Pairwise cell annotations (graphs)
-    ├── connectivities/  # SNN graph (sparse)
-    └── distances/       # NN distance graph (sparse)</code></pre>
-</div>
+<code class="sourceCode R"><span><span class="va">zarr_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="va">zarr_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Zarr store written to:"</span>, <span class="va">zarr_path</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Zarr store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpY170FZ/pbmc.zarr</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="zarr-to-seurat">Zarr to Seurat<a class="anchor" aria-label="anchor" href="#zarr-to-seurat"></a>
+<h2 id="read-back-from-zarr">Read back from Zarr<a class="anchor" aria-label="anchor" href="#read-back-from-zarr"></a>
 </h2>
+<p>Load the Zarr store back into a Seurat object with
+<code><a href="../reference/readZarr.html">readZarr()</a></code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="va">zarr_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Cells: 500 | Genes: 2000</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Reductions</span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Reductions: pca, umap</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="compare-original-and-round-trip">Compare original and round-trip<a class="anchor" aria-label="anchor" href="#compare-original-and-round-trip"></a>
+</h2>
+<p>The UMAP coordinates, cluster labels, and expression values are
+preserved exactly through the Zarr round-trip. We verify this with
+side-by-side visualizations.</p>
 <div class="section level3">
-<h3 id="loading-a-zarr-store">Loading a Zarr store<a class="anchor" aria-label="anchor" href="#loading-a-zarr-store"></a>
+<h3 id="cluster-labels">Cluster labels<a class="anchor" aria-label="anchor" href="#cluster-labels"></a>
 </h3>
-<p>Use <code><a href="../reference/readZarr.html">readZarr()</a></code> to read a Zarr store into a Seurat
-object:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"pbmc3k.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loaded:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loaded: 2638 cells x 13714 genes</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Reductions</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Reductions: pca, umap</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Metadata columns:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, seurat_annotations, percent.mt, RNA_snn_res.0.5, seurat_clusters</span></span></code></pre></div>
-<p><code><a href="../reference/readZarr.html">readZarr()</a></code> maps AnnData fields to Seurat:</p>
-<table class="table">
-<colgroup>
-<col width="31%">
-<col width="50%">
-<col width="18%">
-</colgroup>
-<thead><tr class="header">
-<th>Zarr Source</th>
-<th>Seurat Destination</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>X/</code></td>
-<td>Default assay counts/data</td>
-<td>Sparse CSR or dense</td>
-</tr>
-<tr class="even">
-<td><code>layers/*</code></td>
-<td>Additional assay layers</td>
-<td>Via <code><a href="../reference/AnnDataLayerToSeurat.html">AnnDataLayerToSeurat()</a></code> mapping</td>
-</tr>
-<tr class="odd">
-<td><code>obs/</code></td>
-<td><code>meta.data</code></td>
-<td>Categoricals become factors</td>
-</tr>
-<tr class="even">
-<td><code>var/</code></td>
-<td>Feature metadata</td>
-<td>
-<code>highly_variable</code> → <code><a href="https://satijalab.github.io/seurat-object/reference/VariableFeatures.html" class="external-link">VariableFeatures()</a></code>
-</td>
-</tr>
-<tr class="odd">
-<td><code>obsm/X_pca</code></td>
-<td><code>reductions$pca</code></td>
-<td>Smart transpose handling</td>
-</tr>
-<tr class="even">
-<td><code>obsm/X_umap</code></td>
-<td><code>reductions$umap</code></td>
-<td>Smart transpose handling</td>
-</tr>
-<tr class="odd">
-<td><code>obsp/connectivities</code></td>
-<td><code>graphs$RNA_snn</code></td>
-<td>Sparse matrix</td>
-</tr>
-<tr class="even">
-<td><code>obsp/distances</code></td>
-<td><code>graphs$RNA_nn</code></td>
-<td>Sparse matrix</td>
-</tr>
-<tr class="odd">
-<td><code>varp/*</code></td>
-<td><code>misc[["__varp__"]]</code></td>
-<td>Pairwise variable annotations</td>
-</tr>
-<tr class="even">
-<td><code>uns/*</code></td>
-<td><code>misc</code></td>
-<td>Best-effort for strings/numerics</td>
-</tr>
-</tbody>
-</table>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"After Zarr round-trip"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
+<p><img src="convert-zarr_files/figure-html/compare-dimplot-1.png" class="r-plt" alt="" width="1152"></p>
 </div>
 <div class="section level3">
-<h3 id="alternative-scconvert">Alternative: scConvert()<a class="anchor" aria-label="anchor" href="#alternative-scconvert"></a>
+<h3 id="gene-expression">Gene expression<a class="anchor" aria-label="anchor" href="#gene-expression"></a>
 </h3>
-<p><code>scConvert()</code> also works with Zarr — it auto-detects the
-format from the file extension:</p>
+<p>Expression patterns are also preserved – here we compare LYZ (a
+monocyte marker) across the original and round-tripped objects.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Convert from other formats to zarr</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.rds"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.loom"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Direct converters (streaming by default, no Seurat intermediate)</span></span>
-<span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ZarrToH5AD.html">ZarrToH5AD</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"output.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/H5SeuratToZarr.html">H5SeuratToZarr</a></span><span class="op">(</span><span class="st">"data.h5seurat"</span>, <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ZarrToH5Seurat.html">ZarrToH5Seurat</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5seurat"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Convert via Seurat hub (any format pair)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.zarr"</span>, dest <span class="op">=</span> <span class="st">"data.rds"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"data.zarr"</span>, dest <span class="op">=</span> <span class="st">"data.loom"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># scConvert_cli() auto-dispatches to the best path</span></span>
-<span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ -- Original"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ -- Zarr round-trip"</span><span class="op">)</span></span>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
+<p><img src="convert-zarr_files/figure-html/compare-featureplot-1.png" class="r-plt" alt="" width="1152"></p>
 </div>
 <div class="section level3">
-<h3 id="streaming-conversion">Streaming conversion<a class="anchor" aria-label="anchor" href="#streaming-conversion"></a>
+<h3 id="quick-fidelity-check">Quick fidelity check<a class="anchor" aria-label="anchor" href="#quick-fidelity-check"></a>
 </h3>
-<p>The direct converters (<code>H5ADToZarr</code>,
-<code>ZarrToH5AD</code>, <code>H5SeuratToZarr</code>,
-<code>ZarrToH5Seurat</code>) use <strong>streaming</strong> by default
-(<code>stream = TRUE</code>). This copies AnnData fields (X, obs, var,
-obsm, obsp, layers, uns, varp, raw) directly between backends without
-materializing a Seurat object in memory.</p>
-<p>Streaming conversion:</p>
-<ul>
-<li>
-<strong>Avoids loading all data into R memory</strong> — matrices
-are read and written one field at a time</li>
-<li>
-<strong>Preserves the exact data layout</strong> — no lossy
-conversion through Seurat</li>
-<li>
-<strong>Handles all AnnData components</strong> including
-<code>raw/</code> (pre-filtering data), <code>varp</code> (gene-gene
-matrices), and complex categorical metadata</li>
-<li>
-<strong>Translates format conventions</strong> automatically —
-h5seurat factor encoding (levels/values, 1-based) ↔︎ AnnData categoricals
-(categories/codes, 0-based), sparse matrix orientation (CSC genes×cells
-↔︎ CSR cells×genes)</li>
-</ul>
-<p>Set <code>stream = FALSE</code> to fall back to the Seurat hub
-path:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Streaming (default): direct field-by-field copy</span></span>
-<span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"large_dataset.h5ad"</span>, <span class="st">"large_dataset.zarr"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Dimensions match</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Hub path: load as Seurat, then save (stream = FALSE)</span></span>
-<span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span>, stream <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co"># Barcodes and features match</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># scConvert_cli uses streaming automatically for zarr pairs</span></span>
-<span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.h5seurat"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"output.h5ad"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># PCA coordinates are exact</span></span>
+<span><span class="va">pca_diff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span></span>
+<span>  <span class="fu">Embeddings</span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pca"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="op">]</span> <span class="op">-</span></span>
+<span>  <span class="fu">Embeddings</span><span class="op">(</span><span class="va">pbmc_rt</span>, <span class="st">"pca"</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">pca_diff</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"All checks passed: dimensions, barcodes, features, and PCA are exact.\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; All checks passed: dimensions, barcodes, features, and PCA are exact.</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="visualizing-zarr-round-trip-data">Visualizing Zarr round-trip data<a class="anchor" aria-label="anchor" href="#visualizing-zarr-round-trip-data"></a>
+<h2 id="streaming-converters">Streaming converters<a class="anchor" aria-label="anchor" href="#streaming-converters"></a>
 </h2>
-<p>After converting to Zarr and loading back, the UMAP coordinates,
-cluster labels, and expression values are preserved exactly:</p>
+<p>For converting between file formats without loading data into R,
+scConvert provides streaming converters that copy fields directly
+between backends:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Original Seurat"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># h5ad &lt;-&gt; Zarr (no Seurat intermediate)</span></span>
+<span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ZarrToH5AD.html">ZarrToH5AD</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5ad"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"After Zarr round-trip"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co"># h5Seurat &lt;-&gt; Zarr</span></span>
+<span><span class="fu"><a href="../reference/H5SeuratToZarr.html">H5SeuratToZarr</a></span><span class="op">(</span><span class="st">"data.h5seurat"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/ZarrToH5Seurat.html">ZarrToH5Seurat</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5seurat"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/viz_roundtrip-1.png" class="r-plt" alt="" width="100%"></p>
-<p>Expression patterns are also preserved:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Zarr round-trip"</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/viz_feature-1.png" class="r-plt" alt="" width="100%"></p>
+<span><span class="co"># Or use the universal dispatcher</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"data.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>These are particularly useful for large datasets where materializing
+the full Seurat object would be expensive.</p>
 </div>
 <div class="section level2">
 <h2 id="python-interoperability">Python interoperability<a class="anchor" aria-label="anchor" href="#python-interoperability"></a>
 </h2>
-<p>Zarr stores written by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> are directly readable
-by Python’s <code>anndata.read_zarr()</code> and scanpy. No intermediate
-conversion needed.</p>
-<div class="section level3">
-<h3 id="reading-scconvert-zarr-in-python">Reading scConvert Zarr in Python<a class="anchor" aria-label="anchor" href="#reading-scconvert-zarr-in-python"></a>
-</h3>
-<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>adata <span class="op">=</span> ad.read_zarr(<span class="st">"pbmc3k.zarr"</span>)</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; AnnData object with n_obs × n_vars = 2638 × 13714</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;     obs: 'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'seurat_annotations', 'percent.mt', 'RNA_snn_res.0.5', 'seurat_clusters'</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;     var: 'vst.mean', 'vst.variance', 'vst.variance.expected', 'vst.variance.standardized', 'vst.variable'</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;     obsm: 'X_pca', 'X_umap'</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;     layers: 'scaled', 'data'</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;     obsp: 'distances', 'connectivities'</span></span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Embeddings: </span><span class="sc">{</span><span class="bu">list</span>(adata.obsm.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Embeddings: ['X_pca', 'X_umap']</span></span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Graphs: </span><span class="sc">{</span><span class="bu">list</span>(adata.obsp.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; Graphs: ['distances', 'connectivities']</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="visualizing-in-scanpy">Visualizing in scanpy<a class="anchor" aria-label="anchor" href="#visualizing-in-scanpy"></a>
-</h3>
-<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>adata <span class="op">=</span> ad.read_zarr(<span class="st">"pbmc3k.zarr"</span>)</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">5</span>))</span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>sc.pl.embedding(adata, basis<span class="op">=</span><span class="st">"X_umap"</span>, color<span class="op">=</span><span class="st">"seurat_annotations"</span>,</span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>                title<span class="op">=</span><span class="st">"scConvert Zarr in scanpy</span><span class="ch">\n</span><span class="st">(cluster annotations)"</span>,</span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>                ax<span class="op">=</span>axes[<span class="dv">0</span>], show<span class="op">=</span><span class="va">False</span>, legend_loc<span class="op">=</span><span class="st">"on data"</span>, legend_fontsize<span class="op">=</span><span class="dv">7</span>)</span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>sc.pl.embedding(adata, basis<span class="op">=</span><span class="st">"X_umap"</span>, color<span class="op">=</span><span class="st">"CD14"</span>,</span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>                title<span class="op">=</span><span class="st">"scConvert Zarr in scanpy</span><span class="ch">\n</span><span class="st">(CD14 expression)"</span>,</span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>                ax<span class="op">=</span>axes[<span class="dv">1</span>], show<span class="op">=</span><span class="va">False</span>, use_raw<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a></span>
-<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>plt.savefig(<span class="st">"pbmc_zarr_scanpy.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
-<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>plt.close()</span></code></pre></div>
-<p><img src="pbmc_zarr_scanpy.png" class="r-plt" alt="" width="100%"></p>
-</div>
-<div class="section level3">
-<h3 id="reading-python-generated-zarr-in-r">Reading Python-generated Zarr in R<a class="anchor" aria-label="anchor" href="#reading-python-generated-zarr-in-r"></a>
-</h3>
-<p>Zarr stores created by scanpy or anndata are readable by
-<code><a href="../reference/readZarr.html">readZarr()</a></code>. Note that Python’s default compressor is blosc
-(not zlib), so reading Python-generated zarr stores requires the <a href="https://CRAN.R-project.org/package=blosc" class="external-link">blosc</a> R package:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co"># Process a dataset in scanpy</span></span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>adata <span class="op">=</span> ad.read_zarr(<span class="st">"pbmc3k.zarr"</span>)</span>
-<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>sc.pp.neighbors(adata, use_rep<span class="op">=</span><span class="st">"X_pca"</span>, n_neighbors<span class="op">=</span><span class="dv">15</span>)</span>
-<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>sc.tl.leiden(adata, resolution<span class="op">=</span><span class="fl">0.8</span>)</span>
-<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a></span>
-<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co"># Write back to zarr</span></span>
-<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>adata.write_zarr(<span class="st">"from_scanpy.zarr"</span>)</span>
-<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Wrote zarr with leiden clusters: </span><span class="sc">{</span>adata<span class="sc">.</span>obs[<span class="st">'leiden'</span>]<span class="sc">.</span>nunique()<span class="sc">}</span><span class="ss"> clusters"</span>)</span>
-<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co">#&gt; Wrote zarr with leiden clusters: 7 clusters</span></span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Load the scanpy-generated zarr store in R</span></span>
-<span><span class="va">obj_scanpy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"from_scanpy.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj_scanpy</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj_scanpy</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cells: 2638 | Genes: 13714</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Metadata:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj_scanpy</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metadata: orig.ident, nCount_RNA, nFeature_RNA, seurat_annotations, percent.mt, RNA_snn_res.0.5, seurat_clusters, leiden</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Leiden clusters:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nlevels.html" class="external-link">nlevels</a></span><span class="op">(</span><span class="va">obj_scanpy</span><span class="op">[[</span><span class="st">"leiden"</span>, drop <span class="op">=</span> <span class="cn">TRUE</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Leiden clusters: 7</span></span>
-<span></span>
-<span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">obj_scanpy</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"leiden"</span>,</span>
-<span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"scanpy-computed leiden clusters loaded via readZarr()"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/load_scanpy_zarr-1.png" class="r-plt" alt="" width="100%"></p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="seurat-analysis-with-zarr-storage">Seurat analysis with Zarr storage<a class="anchor" aria-label="anchor" href="#seurat-analysis-with-zarr-storage"></a>
-</h2>
-<p>Zarr can serve as the persistent storage format for a Seurat analysis
-workflow. This section demonstrates a complete pipeline: loading data,
-running standard Seurat analysis, saving checkpoints to Zarr, and
-resuming from saved state.</p>
-<div class="section level3">
-<h3 id="starting-from-an-h5ad-file">Starting from an h5ad file<a class="anchor" aria-label="anchor" href="#starting-from-an-h5ad-file"></a>
-</h3>
-<p>Many public datasets (CELLxGENE, HCA) distribute data as h5ad or
-zarr. Here we start from the shipped test h5ad and run a standard Seurat
-pipeline:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Load from h5ad</span></span>
-<span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"pbmc_small.h5ad"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loaded:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loaded: 214 cells x 2000 genes</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Layers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Layers: counts, data</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Reductions</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Reductions: pca, umap</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="running-seurat-analysis">Running Seurat analysis<a class="anchor" aria-label="anchor" href="#running-seurat-analysis"></a>
-</h3>
-<p>The loaded object has counts and normalized data from scanpy. We can
-run Seurat’s standard pipeline on top:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Variable features, scaling, PCA</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Clustering</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindNeighbors.html" class="external-link">FindNeighbors</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">FindClusters</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, resolution <span class="op">=</span> <span class="fl">0.5</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># UMAP</span></span>
-<span><span class="va">pbmc_wf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">20</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Clusters:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nlevels.html" class="external-link">nlevels</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Clusters: 3</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Reductions</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Reductions: pca, umap</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Graphs:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">@</span><span class="va">graphs</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Graphs: RNA_nn, RNA_snn</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="saving-analysis-state-to-zarr">Saving analysis state to Zarr<a class="anchor" aria-label="anchor" href="#saving-analysis-state-to-zarr"></a>
-</h3>
-<p>Save the full analysis state — expression data, metadata, PCA, UMAP,
-clusters, and neighbor graphs — to a Zarr store:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, <span class="st">"analysis_checkpoint.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Verify the store is valid</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Zarr store size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.info</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"analysis_checkpoint.zarr"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="op">)</span><span class="op">$</span><span class="va">size</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span>, <span class="st">"KB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Zarr store size: 1001.415 KB</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="resuming-from-zarr-checkpoint">Resuming from Zarr checkpoint<a class="anchor" aria-label="anchor" href="#resuming-from-zarr-checkpoint"></a>
-</h3>
-<p>Load the checkpoint and verify the full analysis state is
-preserved:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">resumed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"analysis_checkpoint.zarr"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cells: 214 | Genes: 2000</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Clusters:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nlevels.html" class="external-link">nlevels</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Clusters: 3</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Reductions</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Reductions: pca, umap</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Graphs:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">@</span><span class="va">graphs</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Graphs: RNA_snn, RNA_nn</span></span>
-<span></span>
-<span><span class="co"># Verify PCA is exact</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, <span class="st">"pca"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span>, <span class="op">]</span> <span class="op">-</span></span>
-<span>  <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">resumed</span>, <span class="st">"pca"</span><span class="op">)</span></span>
-<span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PCA: exact match\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; PCA: exact match</span></span>
-<span></span>
-<span><span class="co"># Verify clusters match</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">pbmc_wf</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span></span>
-<span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cluster assignments: exact match\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cluster assignments: exact match</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="visualization-from-zarr-checkpoint">Visualization from Zarr checkpoint<a class="anchor" aria-label="anchor" href="#visualization-from-zarr-checkpoint"></a>
-</h3>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">pbmc_wf</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Original analysis"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">resumed</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Resumed from Zarr"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/seurat_workflow_viz-1.png" class="r-plt" alt="" width="100%"></p>
-</div>
-<div class="section level3">
-<h3 id="continued-analysis-from-checkpoint">Continued analysis from checkpoint<a class="anchor" aria-label="anchor" href="#continued-analysis-from-checkpoint"></a>
-</h3>
-<p>After loading from Zarr, you can continue the analysis — find
-markers, subset clusters, or add new annotations. Note that cell
-identities need to be set explicitly after loading (Zarr doesn’t store
-R’s active identity class):</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Set cluster identities from saved metadata</span></span>
-<span><span class="fu"><a href="../reference/h5Seurat-bindings.html">Idents</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"seurat_clusters"</span></span>
-<span></span>
-<span><span class="co"># Find markers for the first cluster</span></span>
-<span><span class="va">first_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="fu"><a href="../reference/h5Seurat-bindings.html">Idents</a></span><span class="op">(</span><span class="va">resumed</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
-<span><span class="va">markers_c0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindMarkers.html" class="external-link">FindMarkers</a></span><span class="op">(</span><span class="va">resumed</span>, ident.1 <span class="op">=</span> <span class="va">first_cluster</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Top 5 markers for cluster"</span>, <span class="va">first_cluster</span>, <span class="st">":\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Top 5 markers for cluster 0 :</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">markers_c0</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">markers_c0</span><span class="op">$</span><span class="va">p_val_adj</span><span class="op">)</span>, <span class="op">]</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                 p_val avg_log2FC pct.1 pct.2    p_val_adj</span></span>
-<span><span class="co">#&gt; HLA-DRA  5.184691e-34  -4.452142 0.295 0.990 1.036938e-30</span></span>
-<span><span class="co">#&gt; HLA-DRB1 4.940796e-29  -3.841615 0.223 0.922 9.881592e-26</span></span>
-<span><span class="co">#&gt; CD74     1.038005e-27  -3.299494 0.768 0.971 2.076009e-24</span></span>
-<span><span class="co">#&gt; HLA-DPB1 3.384846e-26  -3.886235 0.312 0.902 6.769693e-23</span></span>
-<span><span class="co">#&gt; HLA-DPA1 3.489910e-26  -4.184216 0.250 0.873 6.979819e-23</span></span>
-<span></span>
-<span><span class="co"># Save updated object with marker results</span></span>
-<span><span class="va">resumed</span><span class="op">[[</span><span class="st">"has_markers"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
-<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">resumed</span>, <span class="st">"analysis_with_markers.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nSaved updated analysis to Zarr\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Saved updated analysis to Zarr</span></span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">top_gene</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">markers_c0</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.min</a></span><span class="op">(</span><span class="va">markers_c0</span><span class="op">$</span><span class="va">p_val_adj</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">resumed</span>, features <span class="op">=</span> <span class="va">top_gene</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">top_gene</span>, <span class="st">"(top marker for cluster"</span>, <span class="va">first_cluster</span>, <span class="st">")"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/VlnPlot.html" class="external-link">VlnPlot</a></span><span class="op">(</span><span class="va">resumed</span>, features <span class="op">=</span> <span class="va">top_gene</span>, pt.size <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/seurat_workflow_feature-1.png" class="r-plt" alt="" width="100%"></p>
-</div>
-<div class="section level3">
-<h3 id="cross-ecosystem-workflow">Cross-ecosystem workflow<a class="anchor" aria-label="anchor" href="#cross-ecosystem-workflow"></a>
-</h3>
-<p>A common pattern is to process data in scanpy, save to Zarr, then
-load in Seurat for downstream analysis (or vice versa):</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Step 1: Load scanpy-processed zarr from a collaborator</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"scanpy_analysis.zarr"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Step 2: Continue analysis in Seurat</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">obj</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span><span class="va">obj</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span><span class="va">obj</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindNeighbors.html" class="external-link">FindNeighbors</a></span><span class="op">(</span><span class="va">obj</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">FindClusters</a></span><span class="op">(</span><span class="va">obj</span>, resolution <span class="op">=</span> <span class="fl">0.8</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Step 3: Save back to zarr for the Python side</span></span>
-<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"seurat_analysis.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Or convert to h5ad for scanpy</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"seurat_analysis.zarr"</span>, dest <span class="op">=</span> <span class="st">"seurat_analysis.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="conversion-fidelity">Conversion fidelity<a class="anchor" aria-label="anchor" href="#conversion-fidelity"></a>
-</h2>
-<p>This section verifies exact data preservation through Zarr
-round-trips.</p>
-<div class="section level3">
-<h3 id="seurat-to-zarr-to-seurat">Seurat to Zarr to Seurat<a class="anchor" aria-label="anchor" href="#seurat-to-zarr-to-seurat"></a>
-</h3>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># --- Dimensions ---</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Dimensions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"genes -- OK\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Dimensions: 2638 cells x 13714 genes -- OK</span></span>
-<span></span>
-<span><span class="co"># --- Barcodes and features ---</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Barcodes and features: exact match\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Barcodes and features: exact match</span></span>
-<span></span>
-<span><span class="co"># --- Metadata preservation ---</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\nMetadata column checks:\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Metadata column checks:</span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">col</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">col</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"  %-25s MISSING\n"</span>, <span class="va">col</span><span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="kw">next</span></span>
-<span>  <span class="op">}</span></span>
-<span>  <span class="va">orig</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">[[</span><span class="va">col</span>, drop <span class="op">=</span> <span class="cn">TRUE</span><span class="op">]</span><span class="op">]</span></span>
-<span>  <span class="va">loaded</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">[[</span><span class="va">col</span>, drop <span class="op">=</span> <span class="cn">TRUE</span><span class="op">]</span><span class="op">]</span></span>
-<span>  <span class="va">orig_class</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">orig</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
-<span>  <span class="va">load_class</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">loaded</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
-<span></span>
-<span>  <span class="va">status</span> <span class="op">&lt;-</span> <span class="st">"OK"</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">is.numeric</a></span><span class="op">(</span><span class="va">orig</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">is.numeric</a></span><span class="op">(</span><span class="va">loaded</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">vals_match</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span></span>
-<span>      <span class="va">orig</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span><span class="op">]</span>, <span class="va">loaded</span>, tolerance <span class="op">=</span> <span class="fl">1e-6</span></span>
-<span>    <span class="op">)</span><span class="op">)</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">vals_match</span><span class="op">)</span> <span class="va">status</span> <span class="op">&lt;-</span> <span class="st">"MISMATCH"</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">vals_match</span><span class="op">)</span></span>
-<span>  <span class="op">}</span> <span class="kw">else</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">orig</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">is.factor</a></span><span class="op">(</span><span class="va">loaded</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">orig</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">loaded</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="op">}</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"  %-25s %-10s -&gt; %-10s %s\n"</span>, <span class="va">col</span>, <span class="va">orig_class</span>, <span class="va">load_class</span>, <span class="va">status</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt;   orig.ident                factor     -&gt; factor     OK</span></span>
-<span><span class="co">#&gt;   nCount_RNA                numeric    -&gt; numeric    OK</span></span>
-<span><span class="co">#&gt;   nFeature_RNA              integer    -&gt; integer    OK</span></span>
-<span><span class="co">#&gt;   seurat_annotations        factor     -&gt; factor     OK</span></span>
-<span><span class="co">#&gt;   percent.mt                numeric    -&gt; numeric    OK</span></span>
-<span><span class="co">#&gt;   RNA_snn_res.0.5           factor     -&gt; factor     OK</span></span>
-<span><span class="co">#&gt;   seurat_clusters           factor     -&gt; factor     OK</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="pca-and-umap-preservation">PCA and UMAP preservation<a class="anchor" aria-label="anchor" href="#pca-and-umap-preservation"></a>
-</h3>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># PCA: exact component match</span></span>
-<span><span class="va">pca_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pca"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="va">pca_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"pca"</span><span class="op">)</span></span>
-<span><span class="va">pca_diff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pca_orig</span> <span class="op">-</span> <span class="va">pca_loaded</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">pca_diff</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PCA:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pca_loaded</span><span class="op">)</span>, <span class="st">"components, max diff ="</span>, <span class="va">pca_diff</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; PCA: 50 components, max diff = 0</span></span>
-<span></span>
-<span><span class="co"># UMAP: exact match</span></span>
-<span><span class="va">umap_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"umap"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="va">umap_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"umap"</span><span class="op">)</span></span>
-<span><span class="va">umap_diff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">umap_orig</span> <span class="op">-</span> <span class="va">umap_loaded</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">umap_diff</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"UMAP: max diff ="</span>, <span class="va">umap_diff</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; UMAP: max diff = 0</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="expression-values">Expression values<a class="anchor" aria-label="anchor" href="#expression-values"></a>
-</h3>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Compare counts (exact)</span></span>
-<span><span class="va">counts_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">pbmc</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
-<span><span class="va">counts_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">obj</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Align by common barcodes/features</span></span>
-<span><span class="va">common_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">counts_orig</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">counts_loaded</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">common_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">counts_orig</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">counts_loaded</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">diff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span></span>
-<span>  <span class="va">counts_orig</span><span class="op">[</span><span class="va">common_genes</span>, <span class="va">common_cells</span><span class="op">]</span> <span class="op">-</span></span>
-<span>  <span class="va">counts_loaded</span><span class="op">[</span><span class="va">common_genes</span>, <span class="va">common_cells</span><span class="op">]</span></span>
-<span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">diff</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Counts: exact match ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_genes</span><span class="op">)</span>, <span class="st">"genes x"</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_cells</span><span class="op">)</span>, <span class="st">"cells)\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Counts: exact match ( 13714 genes x 2638 cells)</span></span>
-<span></span>
-<span><span class="co"># Compare data layer if available</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="st">"data"</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">data_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">pbmc</span>, layer <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
-<span>  <span class="va">data_loaded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">obj</span>, layer <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
-<span>  <span class="va">diff_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span></span>
-<span>    <span class="va">data_orig</span><span class="op">[</span><span class="va">common_genes</span>, <span class="va">common_cells</span><span class="op">]</span> <span class="op">-</span></span>
-<span>    <span class="va">data_loaded</span><span class="op">[</span><span class="va">common_genes</span>, <span class="va">common_cells</span><span class="op">]</span></span>
-<span>  <span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">diff_data</span> <span class="op">&lt;</span> <span class="fl">1e-6</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Data layer: max diff ="</span>, <span class="va">diff_data</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt; Data layer: max diff = 0</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="neighbor-graph-preservation">Neighbor graph preservation<a class="anchor" aria-label="anchor" href="#neighbor-graph-preservation"></a>
-</h3>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">g</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">@</span><span class="va">graphs</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">g</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">obj</span><span class="op">@</span><span class="va">graphs</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">g</span>, <span class="st">": not in zarr output (expected for some graph types)\n"</span><span class="op">)</span></span>
-<span>    <span class="kw">next</span></span>
-<span>  <span class="op">}</span></span>
-<span>  <span class="va">g_orig</span> <span class="op">&lt;-</span> <span class="va">pbmc</span><span class="op">@</span><span class="va">graphs</span><span class="op">[[</span><span class="va">g</span><span class="op">]</span><span class="op">]</span></span>
-<span>  <span class="va">g_loaded</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">@</span><span class="va">graphs</span><span class="op">[[</span><span class="va">g</span><span class="op">]</span><span class="op">]</span></span>
-<span>  <span class="va">common</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">g_orig</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">g_loaded</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">diff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">g_orig</span><span class="op">[</span><span class="va">common</span>, <span class="va">common</span><span class="op">]</span> <span class="op">-</span> <span class="va">g_loaded</span><span class="op">[</span><span class="va">common</span>, <span class="va">common</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">diff</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">g</span>, <span class="st">": exact match (nnz ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">g_loaded</span><span class="op">@</span><span class="va">x</span><span class="op">)</span>, <span class="st">")\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt; RNA_nn : exact match (nnz = 52760 )</span></span>
-<span><span class="co">#&gt; RNA_snn : exact match (nnz = 194704 )</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="full-round-trip-h5ad-to-zarr-to-h5ad">Full round-trip: h5ad to Zarr to h5ad<a class="anchor" aria-label="anchor" href="#full-round-trip-h5ad-to-zarr-to-h5ad"></a>
-</h3>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Start from the shipped test h5ad</span></span>
-<span><span class="va">h5ad_src</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"testdata"</span>, <span class="st">"pbmc_small.h5ad"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
-<span><span class="va">ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_src</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># h5ad -&gt; Seurat -&gt; Zarr</span></span>
-<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">ref</span>, <span class="st">"roundtrip.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Zarr -&gt; Seurat</span></span>
-<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="st">"roundtrip.zarr"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Verify</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># PCA</span></span>
-<span><span class="va">pca_ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">ref</span>, <span class="st">"pca"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="va">pca_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">rt</span>, <span class="st">"pca"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">pca_ref</span> <span class="op">-</span> <span class="va">pca_rt</span><span class="op">)</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5ad -&gt; Zarr -&gt; Seurat round-trip: all checks passed\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; h5ad -&gt; Zarr -&gt; Seurat round-trip: all checks passed</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Cells: 214 | Genes: 2000</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Reductions</a></span><span class="op">(</span><span class="va">rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Reductions: pca, umap</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="zarr-to-h5ad-cross-format-chain">Zarr to h5ad (cross-format chain)<a class="anchor" aria-label="anchor" href="#zarr-to-h5ad-cross-format-chain"></a>
-</h3>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Zarr -&gt; h5ad via scConvert()</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"roundtrip.zarr"</span>, dest <span class="op">=</span> <span class="st">"roundtrip_from_zarr.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">rt_h5ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"roundtrip_from_zarr.h5ad"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Zarr -&gt; h5ad cross-format chain: all checks passed\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Zarr -&gt; h5ad cross-format chain: all checks passed</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">rt_h5ad</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Cells: 214 | Genes: 2000</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="visual-validation-of-round-trip">Visual validation of round-trip<a class="anchor" aria-label="anchor" href="#visual-validation-of-round-trip"></a>
-</h3>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Original Seurat object"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"After writeZarr + readZarr"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Overlay: compute per-cell UMAP difference</span></span>
-<span><span class="va">umap_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"umap"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="va">umap_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Embeddings.html" class="external-link">Embeddings</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"umap"</span><span class="op">)</span></span>
-<span><span class="va">cell_drift</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="op">(</span><span class="va">umap_orig</span> <span class="op">-</span> <span class="va">umap_rt</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">obj</span><span class="op">$</span><span class="va">umap_drift</span> <span class="op">&lt;-</span> <span class="va">cell_drift</span></span>
-<span></span>
-<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"umap_drift"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_viridis.html" class="external-link">scale_color_viridis_c</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Per-cell UMAP drift\n(max = "</span>,</span>
-<span>                 <span class="fu"><a href="https://rdrr.io/r/base/formatc.html" class="external-link">formatC</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">cell_drift</span><span class="op">)</span>, format <span class="op">=</span> <span class="st">"e"</span>, digits <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>, <span class="st">")"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"right"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="va">p3</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/viz_roundtrip_fidelity-1.png" class="r-plt" alt="" width="100%"></p>
-<p>The per-cell UMAP drift plot confirms zero displacement — coordinates
-are preserved exactly through the Zarr round-trip, not
-approximately.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="python-validation-of-zarr-round-trip">Python validation of Zarr round-trip<a class="anchor" aria-label="anchor" href="#python-validation-of-zarr-round-trip"></a>
-</h2>
-<div class="sourceCode" id="cb29"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a></span>
-<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>adata <span class="op">=</span> ad.read_zarr(<span class="st">"pbmc3k.zarr"</span>)</span>
-<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a></span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="co"># Check PCA/UMAP preserved</span></span>
-<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="cf">assert</span> <span class="st">"X_pca"</span> <span class="kw">in</span> adata.obsm, <span class="st">"PCA missing"</span></span>
-<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a><span class="cf">assert</span> <span class="st">"X_umap"</span> <span class="kw">in</span> adata.obsm, <span class="st">"UMAP missing"</span></span>
-<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"PCA shape: </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'X_pca'</span>]<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a><span class="co">#&gt; PCA shape: (2638, 50)</span></span>
-<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"UMAP shape: </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'X_umap'</span>]<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a><span class="co">#&gt; UMAP shape: (2638, 2)</span></span>
-<span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a></span>
-<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="co"># Check metadata</span></span>
-<span id="cb29-16"><a href="#cb29-16" tabindex="-1"></a>cat_cols <span class="op">=</span> [c <span class="cf">for</span> c <span class="kw">in</span> adata.obs.columns <span class="cf">if</span> adata.obs[c].dtype.name <span class="op">==</span> <span class="st">"category"</span>]</span>
-<span id="cb29-17"><a href="#cb29-17" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Categorical columns: </span><span class="sc">{</span>cat_cols<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb29-18"><a href="#cb29-18" tabindex="-1"></a><span class="co">#&gt; Categorical columns: ['orig.ident', 'seurat_annotations', 'RNA_snn_res.0.5', 'seurat_clusters']</span></span>
-<span id="cb29-19"><a href="#cb29-19" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Numeric columns: </span><span class="sc">{</span>[c <span class="cf">for</span> c <span class="kw">in</span> adata.obs.columns <span class="cf">if</span> c <span class="kw">not</span> <span class="kw">in</span> cat_cols <span class="kw">and</span> np.issubdtype(adata.obs[c].dtype, np.number)]<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb29-20"><a href="#cb29-20" tabindex="-1"></a><span class="co">#&gt; Numeric columns: ['nCount_RNA', 'nFeature_RNA', 'percent.mt']</span></span>
-<span id="cb29-21"><a href="#cb29-21" tabindex="-1"></a></span>
-<span id="cb29-22"><a href="#cb29-22" tabindex="-1"></a><span class="co"># Verify expression matrix</span></span>
-<span id="cb29-23"><a href="#cb29-23" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Expression matrix: </span><span class="sc">{</span>adata<span class="sc">.</span>X<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">, type=</span><span class="sc">{</span><span class="bu">type</span>(adata.X)<span class="sc">.</span><span class="va">__name__</span><span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb29-24"><a href="#cb29-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb29-25"><a href="#cb29-25" tabindex="-1"></a><span class="co">#&gt; Expression matrix: (2638, 13714), type=csr_matrix</span></span>
-<span id="cb29-26"><a href="#cb29-26" tabindex="-1"></a><span class="cf">if</span> <span class="bu">hasattr</span>(adata.X, <span class="st">'nnz'</span>):</span>
-<span id="cb29-27"><a href="#cb29-27" tabindex="-1"></a>    sparsity <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> adata.X.nnz <span class="op">/</span> np.prod(adata.X.shape)</span>
-<span id="cb29-28"><a href="#cb29-28" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Sparsity: </span><span class="sc">{</span>sparsity<span class="sc">:.1%}</span><span class="ss">"</span>)</span>
-<span id="cb29-29"><a href="#cb29-29" tabindex="-1"></a><span class="co">#&gt; Sparsity: 93.8%</span></span>
-<span id="cb29-30"><a href="#cb29-30" tabindex="-1"></a></span>
-<span id="cb29-31"><a href="#cb29-31" tabindex="-1"></a><span class="co"># Visual comparison: original vs re-read</span></span>
-<span id="cb29-32"><a href="#cb29-32" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">5</span>))</span>
-<span id="cb29-33"><a href="#cb29-33" tabindex="-1"></a></span>
-<span id="cb29-34"><a href="#cb29-34" tabindex="-1"></a>sc_colors <span class="op">=</span> <span class="bu">dict</span>(<span class="bu">zip</span>(adata.obs[<span class="st">"seurat_annotations"</span>].cat.categories,</span>
-<span id="cb29-35"><a href="#cb29-35" tabindex="-1"></a>                      plt.cm.tab20.colors[:<span class="bu">len</span>(adata.obs[<span class="st">"seurat_annotations"</span>].cat.categories)]))</span>
-<span id="cb29-36"><a href="#cb29-36" tabindex="-1"></a></span>
-<span id="cb29-37"><a href="#cb29-37" tabindex="-1"></a><span class="cf">for</span> ax, (title, color_col) <span class="kw">in</span> <span class="bu">zip</span>(axes, [</span>
-<span id="cb29-38"><a href="#cb29-38" tabindex="-1"></a>    (<span class="st">"Cluster annotations"</span>, <span class="st">"seurat_annotations"</span>),</span>
-<span id="cb29-39"><a href="#cb29-39" tabindex="-1"></a>    (<span class="st">"CD14 expression"</span>, <span class="st">"CD14"</span>)</span>
-<span id="cb29-40"><a href="#cb29-40" tabindex="-1"></a>]):</span>
-<span id="cb29-41"><a href="#cb29-41" tabindex="-1"></a>    <span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb29-42"><a href="#cb29-42" tabindex="-1"></a>    sc.pl.embedding(adata, basis<span class="op">=</span><span class="st">"X_umap"</span>, color<span class="op">=</span>color_col,</span>
-<span id="cb29-43"><a href="#cb29-43" tabindex="-1"></a>                    title<span class="op">=</span><span class="ss">f"Python read of scConvert Zarr</span><span class="ch">\n</span><span class="ss">(</span><span class="sc">{</span>title<span class="sc">}</span><span class="ss">)"</span>,</span>
-<span id="cb29-44"><a href="#cb29-44" tabindex="-1"></a>                    ax<span class="op">=</span>ax, show<span class="op">=</span><span class="va">False</span>,</span>
-<span id="cb29-45"><a href="#cb29-45" tabindex="-1"></a>                    <span class="op">**</span>({<span class="st">"use_raw"</span>: <span class="va">False</span>} <span class="cf">if</span> color_col <span class="op">==</span> <span class="st">"CD14"</span> <span class="cf">else</span></span>
-<span id="cb29-46"><a href="#cb29-46" tabindex="-1"></a>                       {<span class="st">"legend_loc"</span>: <span class="st">"on data"</span>, <span class="st">"legend_fontsize"</span>: <span class="dv">7</span>}))</span>
-<span id="cb29-47"><a href="#cb29-47" tabindex="-1"></a></span>
-<span id="cb29-48"><a href="#cb29-48" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb29-49"><a href="#cb29-49" tabindex="-1"></a>plt.savefig(<span class="st">"pbmc_zarr_roundtrip.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
-<span id="cb29-50"><a href="#cb29-50" tabindex="-1"></a>plt.close()</span>
-<span id="cb29-51"><a href="#cb29-51" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">All Python validations passed"</span>)</span>
-<span id="cb29-52"><a href="#cb29-52" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb29-53"><a href="#cb29-53" tabindex="-1"></a><span class="co">#&gt; All Python validations passed</span></span></code></pre></div>
-<p><img src="pbmc_zarr_roundtrip.png" class="r-plt" alt="" width="100%"></p>
-</div>
-<div class="section level2">
-<h2 id="zarr-format-details">Zarr format details<a class="anchor" aria-label="anchor" href="#zarr-format-details"></a>
-</h2>
-<div class="section level3">
-<h3 id="compression">Compression<a class="anchor" aria-label="anchor" href="#compression"></a>
-</h3>
-<p><code><a href="../reference/writeZarr.html">writeZarr()</a></code> uses zlib compression by default (level 4).
-Compression is applied per-chunk and stored in each array’s
-<code>.zarray</code> metadata. This matches the scanpy/anndata default
-compressor:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Default (zlib level 4)</span></span>
-<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># The compression level can be set globally</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>scConvert.compression_level <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"data_compressed.zarr"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="supported-data-types">Supported data types<a class="anchor" aria-label="anchor" href="#supported-data-types"></a>
-</h3>
-<table class="table">
-<colgroup>
-<col width="27%">
-<col width="37%">
-<col width="34%">
-</colgroup>
-<thead><tr class="header">
-<th>R Type</th>
-<th>Zarr dtype</th>
-<th>Encoding</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>
-<code>numeric</code> (double)</td>
-<td><code>&lt;f8</code></td>
-<td>64-bit float, little-endian</td>
-</tr>
-<tr class="even">
-<td><code>integer</code></td>
-<td><code>&lt;i4</code></td>
-<td>32-bit int, little-endian</td>
-</tr>
-<tr class="odd">
-<td><code>logical</code></td>
-<td><code>\|b1</code></td>
-<td>Boolean (1 byte)</td>
-</tr>
-<tr class="even">
-<td><code>character</code></td>
-<td>vlen-utf8</td>
-<td>Variable-length UTF-8 strings</td>
-</tr>
-<tr class="odd">
-<td><code>factor</code></td>
-<td>categorical</td>
-<td>
-<code>codes/</code> (int8) + <code>categories/</code> (strings)</td>
-</tr>
-<tr class="even">
-<td>Sparse matrix (<code>dgCMatrix</code>)</td>
-<td>CSR/CSC</td>
-<td>
-<code>data/</code>, <code>indices/</code>, <code>indptr/</code>
-arrays</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="chunking">Chunking<a class="anchor" aria-label="anchor" href="#chunking"></a>
-</h3>
-<p>Zarr stores data in chunks. <code><a href="../reference/writeZarr.html">writeZarr()</a></code> writes
-single-chunk arrays by default (the entire array is one chunk). For
-multi-chunk zarr stores produced by other tools (e.g., cloud-hosted
-CELLxGENE Census data), <code><a href="../reference/readZarr.html">readZarr()</a></code> automatically assembles
-chunks following the grid layout.</p>
-</div>
-<div class="section level3">
-<h3 id="zarr-v2-vs-v3">Zarr v2 vs v3<a class="anchor" aria-label="anchor" href="#zarr-v2-vs-v3"></a>
-</h3>
-<p>scConvert supports Zarr <strong>v2</strong> format, which is the
-format used by:</p>
-<ul>
-<li>
-<code>anndata.read_zarr()</code> / <code>anndata.write_zarr()</code>
-(Python anndata)</li>
-<li>CELLxGENE Census</li>
-<li>SpatialData (scverse)</li>
-<li>Human Cell Atlas data portals</li>
-</ul>
-<p>Zarr v3 detection exists but full read/write support is not yet
-implemented.</p>
-</div>
-</div>
-<div class="section level2">
-<h2 id="comparison-with-h5ad">Comparison with h5ad<a class="anchor" aria-label="anchor" href="#comparison-with-h5ad"></a>
-</h2>
-<p>Both Zarr and h5ad store AnnData objects, but with different
-trade-offs:</p>
-<table class="table">
-<thead><tr class="header">
-<th>Feature</th>
-<th>Zarr (.zarr)</th>
-<th>h5ad (.h5ad)</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Storage</td>
-<td>Directory of files</td>
-<td>Single HDF5 file</td>
-</tr>
-<tr class="even">
-<td>Cloud-native</td>
-<td>Yes (S3, GCS)</td>
-<td>No (must download)</td>
-</tr>
-<tr class="odd">
-<td>Partial reads</td>
-<td>Per-chunk</td>
-<td>Requires HDF5 VFD</td>
-</tr>
-<tr class="even">
-<td>Parallel writes</td>
-<td>Yes (separate chunks)</td>
-<td>No (single file lock)</td>
-</tr>
-<tr class="odd">
-<td>Tool support</td>
-<td>anndata, scanpy, CELLxGENE</td>
-<td>anndata, scanpy, squidpy</td>
-</tr>
-<tr class="even">
-<td>R dependency</td>
-<td>jsonlite only</td>
-<td>hdf5r</td>
-</tr>
-<tr class="odd">
-<td>scConvert read</td>
-<td><code><a href="../reference/readZarr.html">readZarr()</a></code></td>
-<td><code><a href="../reference/readH5AD.html">readH5AD()</a></code></td>
-</tr>
-<tr class="even">
-<td>scConvert write</td>
-<td><code><a href="../reference/writeZarr.html">writeZarr()</a></code></td>
-<td><code><a href="../reference/writeH5AD.html">writeH5AD()</a></code></td>
-</tr>
-<tr class="odd">
-<td>CLI (C binary)</td>
-<td>No</td>
-<td>Yes (fastest)</td>
-</tr>
-</tbody>
-</table>
-<p>Use Zarr when working with cloud storage or tools that expect
-directory-based stores. Use h5ad for single-file portability and when
-the C binary’s speed advantage matters.</p>
+<p>Zarr stores produced by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> are directly
+readable by Python’s <code>anndata.read_zarr()</code> and scanpy.
+Requires Python with anndata installed.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>adata <span class="op">=</span> ad.read_zarr(<span class="st">"pbmc.zarr"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>sc.pl.umap(adata, color<span class="op">=</span><span class="st">"seurat_annotations"</span>)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
 <span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>
@@ -1104,63 +253,51 @@ the C binary’s speed advantage matters.</p>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt;  [1] future_1.69.0                 patchwork_1.3.2              </span></span>
-<span><span class="co">#&gt;  [3] ggplot2_4.0.2                 scConvert_0.1.0              </span></span>
-<span><span class="co">#&gt;  [5] Seurat_5.4.0                  SeuratObject_5.3.0           </span></span>
-<span><span class="co">#&gt;  [7] sp_2.2-1                      stxKidney.SeuratData_0.1.0   </span></span>
-<span><span class="co">#&gt;  [9] stxBrain.SeuratData_0.1.2     ssHippo.SeuratData_3.1.4     </span></span>
-<span><span class="co">#&gt; [11] pbmcref.SeuratData_1.0.0      pbmcMultiome.SeuratData_0.1.4</span></span>
-<span><span class="co">#&gt; [13] pbmc3k.SeuratData_3.1.4       panc8.SeuratData_3.0.2       </span></span>
-<span><span class="co">#&gt; [15] cbmc.SeuratData_3.1.4         SeuratData_0.2.2.9002        </span></span>
+<span><span class="co">#&gt; [1] patchwork_1.3.2    ggplot2_4.0.2      Seurat_5.4.0       SeuratObject_5.3.0</span></span>
+<span><span class="co">#&gt; [5] sp_2.2-1           scConvert_0.1.0   </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;   [1] RcppAnnoy_0.0.23       splines_4.5.2          later_1.4.8           </span></span>
-<span><span class="co">#&gt;   [4] tibble_3.3.1           BPCells_0.2.0          polyclip_1.10-7       </span></span>
-<span><span class="co">#&gt;   [7] fastDummies_1.7.5      lifecycle_1.0.5        globals_0.19.1        </span></span>
-<span><span class="co">#&gt;  [10] lattice_0.22-9         hdf5r_1.3.12           MASS_7.3-65           </span></span>
-<span><span class="co">#&gt;  [13] magrittr_2.0.4         limma_3.66.0           plotly_4.12.0         </span></span>
-<span><span class="co">#&gt;  [16] sass_0.4.10            rmarkdown_2.30         jquerylib_0.1.4       </span></span>
-<span><span class="co">#&gt;  [19] yaml_2.3.12            httpuv_1.6.16          otel_0.2.0            </span></span>
-<span><span class="co">#&gt;  [22] sctransform_0.4.3      spam_2.11-3            spatstat.sparse_3.1-0 </span></span>
-<span><span class="co">#&gt;  [25] reticulate_1.45.0      cowplot_1.2.0          pbapply_1.7-4         </span></span>
-<span><span class="co">#&gt;  [28] RColorBrewer_1.1-3     abind_1.4-8            Rtsne_0.17            </span></span>
-<span><span class="co">#&gt;  [31] GenomicRanges_1.62.1   purrr_1.2.1            presto_1.0.0          </span></span>
-<span><span class="co">#&gt;  [34] BiocGenerics_0.56.0    rappdirs_0.3.4         IRanges_2.44.0        </span></span>
-<span><span class="co">#&gt;  [37] S4Vectors_0.48.0       ggrepel_0.9.7          irlba_2.3.7           </span></span>
-<span><span class="co">#&gt;  [40] listenv_0.10.1         spatstat.utils_3.2-2   goftest_1.2-3         </span></span>
-<span><span class="co">#&gt;  [43] RSpectra_0.16-2        spatstat.random_3.4-4  fitdistrplus_1.2-6    </span></span>
-<span><span class="co">#&gt;  [46] parallelly_1.46.1      pkgdown_2.2.0          codetools_0.2-20      </span></span>
-<span><span class="co">#&gt;  [49] tidyselect_1.2.1       UCSC.utils_1.6.1       farver_2.1.2          </span></span>
-<span><span class="co">#&gt;  [52] matrixStats_1.5.0      stats4_4.5.2           spatstat.explore_3.7-0</span></span>
-<span><span class="co">#&gt;  [55] Seqinfo_1.0.0          jsonlite_2.0.0         progressr_0.18.0      </span></span>
-<span><span class="co">#&gt;  [58] ggridges_0.5.7         survival_3.8-6         systemfonts_1.3.1     </span></span>
-<span><span class="co">#&gt;  [61] tools_4.5.2            ragg_1.5.0             ica_1.0-3             </span></span>
-<span><span class="co">#&gt;  [64] Rcpp_1.1.1             glue_1.8.0             gridExtra_2.3         </span></span>
-<span><span class="co">#&gt;  [67] xfun_0.56              MatrixGenerics_1.22.0  GenomeInfoDb_1.46.2   </span></span>
-<span><span class="co">#&gt;  [70] dplyr_1.2.0            withr_3.0.2            fastmap_1.2.0         </span></span>
-<span><span class="co">#&gt;  [73] digest_0.6.39          R6_2.6.1               mime_0.13             </span></span>
-<span><span class="co">#&gt;  [76] textshaping_1.0.4      scattermore_1.2        tensor_1.5.1          </span></span>
-<span><span class="co">#&gt;  [79] dichromat_2.0-0.1      spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
-<span><span class="co">#&gt;  [82] generics_0.1.4         data.table_1.18.2.1    httr_1.4.8            </span></span>
-<span><span class="co">#&gt;  [85] htmlwidgets_1.6.4      uwot_0.2.4             pkgconfig_2.0.3       </span></span>
-<span><span class="co">#&gt;  [88] gtable_0.3.6           lmtest_0.9-40          S7_0.2.1              </span></span>
-<span><span class="co">#&gt;  [91] XVector_0.50.0         htmltools_0.5.9        dotCall64_1.2         </span></span>
-<span><span class="co">#&gt;  [94] scales_1.4.0           blosc_0.1.2            png_0.1-8             </span></span>
-<span><span class="co">#&gt;  [97] spatstat.univar_3.1-6  knitr_1.51             reshape2_1.4.5        </span></span>
-<span><span class="co">#&gt; [100] nlme_3.1-168           cachem_1.1.0           zoo_1.8-15            </span></span>
-<span><span class="co">#&gt; [103] stringr_1.6.0          KernSmooth_2.23-26     parallel_4.5.2        </span></span>
-<span><span class="co">#&gt; [106] miniUI_0.1.2           vipor_0.4.7            ggrastr_1.0.2         </span></span>
-<span><span class="co">#&gt; [109] desc_1.4.3             pillar_1.11.1          grid_4.5.2            </span></span>
-<span><span class="co">#&gt; [112] vctrs_0.7.1            RANN_2.6.2             promises_1.5.0        </span></span>
-<span><span class="co">#&gt; [115] xtable_1.8-8           cluster_2.1.8.2        beeswarm_0.4.0        </span></span>
-<span><span class="co">#&gt; [118] evaluate_1.0.5         cli_3.6.5              compiler_4.5.2        </span></span>
-<span><span class="co">#&gt; [121] rlang_1.1.7            crayon_1.5.3           future.apply_1.20.2   </span></span>
-<span><span class="co">#&gt; [124] labeling_0.4.3         plyr_1.8.9             fs_1.6.7              </span></span>
-<span><span class="co">#&gt; [127] ggbeeswarm_0.7.3       stringi_1.8.7          viridisLite_0.4.3     </span></span>
-<span><span class="co">#&gt; [130] deldir_2.0-4           lazyeval_0.2.2         spatstat.geom_3.7-0   </span></span>
-<span><span class="co">#&gt; [133] Matrix_1.7-4           RcppHNSW_0.6.0         bit64_4.6.0-1         </span></span>
-<span><span class="co">#&gt; [136] statmod_1.5.1          shiny_1.13.0           ROCR_1.0-12           </span></span>
-<span><span class="co">#&gt; [139] igraph_2.2.2           bslib_0.10.0           bit_4.6.0</span></span></code></pre></div>
+<span><span class="co">#&gt;   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        </span></span>
+<span><span class="co">#&gt;   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.30        </span></span>
+<span><span class="co">#&gt;   [7] fs_1.6.7               ragg_1.5.0             vctrs_0.7.1           </span></span>
+<span><span class="co">#&gt;  [10] ROCR_1.0-12            spatstat.explore_3.7-0 htmltools_0.5.9       </span></span>
+<span><span class="co">#&gt;  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.46.1     </span></span>
+<span><span class="co">#&gt;  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     </span></span>
+<span><span class="co">#&gt;  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            </span></span>
+<span><span class="co">#&gt;  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          </span></span>
+<span><span class="co">#&gt;  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       </span></span>
+<span><span class="co">#&gt;  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              </span></span>
+<span><span class="co">#&gt;  [31] fastmap_1.2.0          fitdistrplus_1.2-6     future_1.69.0         </span></span>
+<span><span class="co">#&gt;  [34] shiny_1.13.0           digest_0.6.39          tensor_1.5.1          </span></span>
+<span><span class="co">#&gt;  [37] RSpectra_0.16-2        irlba_2.3.7            textshaping_1.0.4     </span></span>
+<span><span class="co">#&gt;  [40] labeling_0.4.3         progressr_0.18.0       spatstat.sparse_3.1-0 </span></span>
+<span><span class="co">#&gt;  [43] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           </span></span>
+<span><span class="co">#&gt;  [46] compiler_4.5.2         bit64_4.6.0-1          withr_3.0.2           </span></span>
+<span><span class="co">#&gt;  [49] S7_0.2.1               fastDummies_1.7.5      MASS_7.3-65           </span></span>
+<span><span class="co">#&gt;  [52] tools_4.5.2            lmtest_0.9-40          otel_0.2.0            </span></span>
+<span><span class="co">#&gt;  [55] httpuv_1.6.16          future.apply_1.20.2    goftest_1.2-3         </span></span>
+<span><span class="co">#&gt;  [58] glue_1.8.0             nlme_3.1-168           promises_1.5.0        </span></span>
+<span><span class="co">#&gt;  [61] grid_4.5.2             Rtsne_0.17             cluster_2.1.8.2       </span></span>
+<span><span class="co">#&gt;  [64] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          </span></span>
+<span><span class="co">#&gt;  [67] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
+<span><span class="co">#&gt;  [70] data.table_1.18.2.1    spatstat.geom_3.7-0    RcppAnnoy_0.0.23      </span></span>
+<span><span class="co">#&gt;  [73] ggrepel_0.9.7          RANN_2.6.2             pillar_1.11.1         </span></span>
+<span><span class="co">#&gt;  [76] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        </span></span>
+<span><span class="co">#&gt;  [79] later_1.4.8            splines_4.5.2          dplyr_1.2.0           </span></span>
+<span><span class="co">#&gt;  [82] lattice_0.22-9         survival_3.8-6         bit_4.6.0             </span></span>
+<span><span class="co">#&gt;  [85] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          </span></span>
+<span><span class="co">#&gt;  [88] pbapply_1.7-4          knitr_1.51             gridExtra_2.3         </span></span>
+<span><span class="co">#&gt;  [91] scattermore_1.2        xfun_0.56              matrixStats_1.5.0     </span></span>
+<span><span class="co">#&gt;  [94] stringi_1.8.7          lazyeval_0.2.2         yaml_2.3.12           </span></span>
+<span><span class="co">#&gt;  [97] evaluate_1.0.5         codetools_0.2-20       tibble_3.3.1          </span></span>
+<span><span class="co">#&gt; [100] cli_3.6.5              uwot_0.2.4             xtable_1.8-8          </span></span>
+<span><span class="co">#&gt; [103] reticulate_1.45.0      systemfonts_1.3.1      jquerylib_0.1.4       </span></span>
+<span><span class="co">#&gt; [106] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.1        </span></span>
+<span><span class="co">#&gt; [109] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 </span></span>
+<span><span class="co">#&gt; [112] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         </span></span>
+<span><span class="co">#&gt; [115] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          </span></span>
+<span><span class="co">#&gt; [118] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
+<span><span class="co">#&gt; [121] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Spatial Transcriptomics: Visium • scConvert</title>
+<title>Visium Spatial Data Conversion • scConvert</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Spatial Transcriptomics: Visium">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Visium Spatial Data Conversion">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -35,25 +35,25 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Conversions: h5Seurat and AnnData</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Saving and Loading Data from an h5Seurat File</a></li>
-    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface (CLI)</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
+    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-loom.html">Conversions: Seurat and Loom</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Conversions: Seurat and Zarr</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-soma.html">Converting Between Seurat and TileDB-SOMA</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
     <li><a class="dropdown-item" href="../articles/multimodal-h5mu.html">Multimodal Data with MuData (h5mu)</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat File Format Specification</a></li>
-    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Data Mapping Reference</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat Format Specification</a></li>
+    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Format Mapping Reference</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
-    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">Multimodal: CITE-seq and Multiome</a></li>
-    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion with Signac</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Spatial Transcriptomics: Visium</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies: Slide-seq, Visium HD, and Others</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">Working with SpatialData (.spatialdata.zarr)</a></li>
-    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire (TCR/BCR) Data with scConvert</a></li>
+    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">CITE-seq Analysis Workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Visium Spatial Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies Overview</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">SpatialData Zarr Stores</a></li>
+    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire Metadata Preservation</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -76,7 +76,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Spatial Transcriptomics: Visium</h1>
+      <h1>Visium Spatial Data Conversion</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/HEAD/vignettes/spatial-visium.Rmd" class="external-link"><code>vignettes/spatial-visium.Rmd</code></a></small>
@@ -86,238 +86,126 @@
     
     
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>This vignette demonstrates how scConvert handles <strong>10x Genomics
-Visium</strong> spatial transcriptomics data, including tissue images,
-scale factors, and spot coordinates. Visium data is stored in h5ad files
-with spatial-specific fields (<code>obsm/spatial</code>,
-<code>uns/spatial</code>) that scConvert automatically reconstructs into
-Seurat <code>VisiumV2</code> image objects.</p>
-<p>We show that the exported h5ad is <strong>natively usable</strong> in
-scanpy and squidpy (spatial scatter plots, Moran’s I), and that all key
-components — dimensions, metadata, barcodes, features, spatial
-coordinates, scale factors, and dimensionality reductions — are
-preserved.</p>
+<p>10x Genomics Visium captures spatially-resolved gene expression
+across tissue sections. When converting Visium data between Seurat and
+h5ad, scConvert preserves spot coordinates, tissue images, scale
+factors, and all associated metadata so the data is immediately usable
+in both R (Seurat) and Python (scanpy/squidpy) ecosystems.</p>
+</div>
+<div class="section level2">
+<h2 id="load-the-demo-visium-dataset">Load the demo Visium dataset<a class="anchor" aria-label="anchor" href="#load-the-demo-visium-dataset"></a>
+</h2>
+<p>The shipped demo contains 400 mouse brain Visium spots with 1,500
+genes, PCA/UMAP reductions, and 15 clusters.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="load-visium-data">Load Visium data<a class="anchor" aria-label="anchor" href="#load-visium-data"></a>
-</h2>
-<p>We use the <strong>stxBrain</strong> dataset (mouse brain anterior1,
-~2,700 spots x ~31,000 genes):</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.satijalab.org/seurat" class="external-link">SeuratData</a></span><span class="op">)</span></span>
-<span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/UpdateSeuratObject.html" class="external-link">UpdateSeuratObject</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.org/seurat/reference/LoadData.html" class="external-link">LoadData</a></span><span class="op">(</span><span class="st">"stxBrain"</span>, type <span class="op">=</span> <span class="st">"anterior1"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">spatial_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"spatial_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
+<span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">spatial_path</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cells: 2696</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Spots:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Spots: 400</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Genes: 31053</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Images:"</span>, <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Images.html" class="external-link">Images</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Images: anterior1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Layers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Layers: counts, data</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Metadata columns:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metadata columns: 5</span></span></code></pre></div>
+<span><span class="co">#&gt; Genes: 1500</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Image:"</span>, <span class="fu">Images</span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Image: anterior1</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Clusters:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nlevels.html" class="external-link">nlevels</a></span><span class="op">(</span><span class="va">brain</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Clusters: 15</span></span></code></pre></div>
 <div class="section level3">
-<h3 id="visualize-the-original-spatial-data">Visualize the original spatial data<a class="anchor" aria-label="anchor" href="#visualize-the-original-spatial-data"></a>
+<h3 id="visualize-a-brain-marker-gene">Visualize a brain marker gene<a class="anchor" aria-label="anchor" href="#visualize-a-brain-marker-gene"></a>
 </h3>
+<p>Hpca (Hippocalcin) marks hippocampal neurons and shows clear regional
+expression in the mouse brain.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">SpatialFeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Hpca"</span>, pt.size.factor <span class="op">=</span> <span class="fl">1.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Hpca expression (original)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spatial-visium_files/figure-html/plot-original-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="convert-to-h5ad">Convert to h5ad<a class="anchor" aria-label="anchor" href="#convert-to-h5ad"></a>
+</h2>
+<p>Write the Visium object to h5ad format. scConvert automatically
+exports spot coordinates to <code>obsm/spatial</code>, tissue images and
+scale factors to <code>uns/spatial</code>, and all metadata to
+<code>obs</code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://satijalab.org/seurat/reference/SpatialPlot.html" class="external-link">SpatialFeaturePlot</a></span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Hpca"</span>, pt.size.factor <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatial-visium_files/figure-html/plot_orig_spatial-1.png" class="r-plt" alt="" width="100%"></p>
-<p>Hpca (Hippocalcin) is a marker for hippocampal neurons, showing
-strong regional expression.</p>
-</div>
+<code class="sourceCode R"><span><span class="va">h5ad_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">h5ad_file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Wrote:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_file</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Wrote: 3.2 MB</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="export-to-h5ad">Export to h5ad<a class="anchor" aria-label="anchor" href="#export-to-h5ad"></a>
+<h2 id="read-back-into-seurat">Read back into Seurat<a class="anchor" aria-label="anchor" href="#read-back-into-seurat"></a>
 </h2>
-<p>scConvert writes Visium spatial data to h5ad using scanpy/squidpy
-conventions:</p>
-<table style="width:100%;" class="table">
-<colgroup>
-<col width="37%">
-<col width="33%">
-<col width="28%">
-</colgroup>
-<thead><tr class="header">
-<th>Seurat Component</th>
-<th>h5ad Location</th>
-<th>Description</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Tissue coordinates</td>
-<td><code>obsm/spatial</code></td>
-<td>Spot XY positions</td>
-</tr>
-<tr class="even">
-<td>Scale factors</td>
-<td><code>uns/spatial/{lib}/scalefactors</code></td>
-<td>
-<code>spot_diameter_fullres</code>,
-<code>tissue_hires_scalef</code>, etc.</td>
-</tr>
-<tr class="odd">
-<td>Tissue image (lowres)</td>
-<td><code>uns/spatial/{lib}/images/lowres</code></td>
-<td>Low-resolution H&amp;E image</td>
-</tr>
-<tr class="even">
-<td>Tissue image (hires)</td>
-<td><code>uns/spatial/{lib}/images/hires</code></td>
-<td>High-resolution H&amp;E image</td>
-</tr>
-</tbody>
-</table>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">h5ad_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"File size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; File size: 70 MB</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="validate-in-python-with-scanpy">Validate in Python with scanpy<a class="anchor" aria-label="anchor" href="#validate-in-python-with-scanpy"></a>
-</h2>
-<p>The exported h5ad is immediately usable in the scverse ecosystem — no
-extra configuration needed:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(r.h5ad_path)</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; AnnData object with n_obs × n_vars = 2696 × 31053</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt;     obs: 'orig.ident', 'nCount_Spatial', 'nFeature_Spatial', 'slice', 'region'</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt;     uns: 'spatial'</span></span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt;     obsm: 'spatial'</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">obsm keys: </span><span class="sc">{</span><span class="bu">list</span>(adata.obsm.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; obsm keys: ['spatial']</span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Spatial coords shape: </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>]<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; Spatial coords shape: (2696, 2)</span></span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Spatial coord range X: [</span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>][:,<span class="dv">0</span>]<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.1f}</span><span class="ss">, </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>][:,<span class="dv">0</span>]<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.1f}</span><span class="ss">]"</span>)</span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt; Spatial coord range X: [1480.0, 9533.0]</span></span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Spatial coord range Y: [</span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>][:,<span class="dv">1</span>]<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.1f}</span><span class="ss">, </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>][:,<span class="dv">1</span>]<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.1f}</span><span class="ss">]"</span>)</span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="co">#&gt; Spatial coord range Y: [2685.0, 10469.0]</span></span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"No NaN in coords: </span><span class="sc">{</span><span class="kw">not</span> np<span class="sc">.</span>isnan(adata.obsm[<span class="st">'spatial'</span>])<span class="sc">.</span><span class="bu">any</span>()<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt; No NaN in coords: True</span></span>
-<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a></span>
-<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co"># Verify uns/spatial structure matches scanpy convention</span></span>
-<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="cf">if</span> <span class="st">"spatial"</span> <span class="kw">in</span> adata.uns:</span>
-<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>    lib_ids <span class="op">=</span> <span class="bu">list</span>(adata.uns[<span class="st">"spatial"</span>].keys())</span>
-<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Spatial library IDs: </span><span class="sc">{</span>lib_ids<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>    <span class="cf">for</span> lib_id <span class="kw">in</span> lib_ids:</span>
-<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>        lib <span class="op">=</span> adata.uns[<span class="st">"spatial"</span>][lib_id]</span>
-<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>        <span class="cf">if</span> <span class="st">"images"</span> <span class="kw">in</span> lib:</span>
-<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>            <span class="cf">for</span> k, v <span class="kw">in</span> lib[<span class="st">"images"</span>].items():</span>
-<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>                <span class="bu">print</span>(<span class="ss">f"  Image '</span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">': shape </span><span class="sc">{</span>v<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">, dtype </span><span class="sc">{</span>v<span class="sc">.</span>dtype<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>        <span class="cf">if</span> <span class="st">"scalefactors"</span> <span class="kw">in</span> lib:</span>
-<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>            sf <span class="op">=</span> lib[<span class="st">"scalefactors"</span>]</span>
-<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  Scale factors: </span><span class="sc">{</span>sf<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>            <span class="co"># Verify standard keys exist</span></span>
-<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>            <span class="cf">for</span> key <span class="kw">in</span> [<span class="st">"spot_diameter_fullres"</span>, <span class="st">"tissue_hires_scalef"</span>, <span class="st">"tissue_lowres_scalef"</span>]:</span>
-<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>                <span class="bu">print</span>(<span class="ss">f"    </span><span class="sc">{</span>key<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span><span class="st">'present'</span> <span class="cf">if</span> key <span class="kw">in</span> sf <span class="cf">else</span> <span class="st">'MISSING'</span><span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co">#&gt; Spatial library IDs: ['anterior1']</span></span>
-<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="co">#&gt;   Image 'lowres': shape (599, 600, 3), dtype float64</span></span>
-<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="co">#&gt;   Scale factors: {'fiducial_diameter_fullres': np.float64(144.54121946972606), 'spot_diameter_fullres': np.float64(89.47789776697327), 'tissue_hires_scalef': np.float64(0.17211704), 'tissue_lowres_scalef': np.float64(0.051635113)}</span></span>
-<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="co">#&gt;     spot_diameter_fullres: present</span></span>
-<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="co">#&gt;     tissue_hires_scalef: present</span></span>
-<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a><span class="co">#&gt;     tissue_lowres_scalef: present</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="spatial-scatter-plot-with-squidpy">Spatial scatter plot with squidpy<a class="anchor" aria-label="anchor" href="#spatial-scatter-plot-with-squidpy"></a>
-</h3>
-<p>Because scConvert writes scale factors with the correct
-scanpy-convention names (<code>spot_diameter_fullres</code>,
-<code>tissue_hires_scalef</code>, etc.), squidpy plotting works out of
-the box:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="im">import</span> squidpy <span class="im">as</span> sq</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>sq.pl.spatial_scatter(adata, color<span class="op">=</span><span class="st">"Hpca"</span>, library_id<span class="op">=</span><span class="bu">list</span>(adata.uns[<span class="st">"spatial"</span>].keys())[<span class="dv">0</span>],</span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>                      img_res_key<span class="op">=</span><span class="st">"lowres"</span>, size<span class="op">=</span><span class="fl">1.5</span>, alpha<span class="op">=</span><span class="fl">0.7</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>                      title<span class="op">=</span><span class="st">"Hpca — squidpy spatial_scatter (from scConvert h5ad)"</span>)</span></code></pre></div>
-<p><img src="spatial-visium_files/figure-html/squidpy_scatter-1.png" class="r-plt" alt="" width="100%"></p>
-</div>
-<div class="section level3">
-<h3 id="scanpy-spatial-plot-coordinate-based">Scanpy spatial plot (coordinate-based)<a class="anchor" aria-label="anchor" href="#scanpy-spatial-plot-coordinate-based"></a>
-</h3>
-<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>coords <span class="op">=</span> adata.obsm[<span class="st">"spatial"</span>]</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>expr <span class="op">=</span> adata[:, <span class="st">"Hpca"</span>].X.toarray().flatten() <span class="cf">if</span> <span class="bu">hasattr</span>(adata[:, <span class="st">"Hpca"</span>].X, <span class="st">'toarray'</span>) <span class="cf">else</span> adata[:, <span class="st">"Hpca"</span>].X.flatten()</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">8</span>))</span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>sc_plot <span class="op">=</span> ax.scatter(coords[:, <span class="dv">0</span>], <span class="op">-</span>coords[:, <span class="dv">1</span>], c<span class="op">=</span>expr, s<span class="op">=</span><span class="dv">8</span>, cmap<span class="op">=</span><span class="st">"viridis"</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>plt.colorbar(sc_plot, ax<span class="op">=</span>ax, label<span class="op">=</span><span class="st">"Hpca expression"</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; &lt;matplotlib.colorbar.Colorbar object at 0x3aea2b9b0&gt;</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>ax.set_title(<span class="st">"Hpca — scanpy/matplotlib (from scConvert h5ad)"</span>)</span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>ax.set_aspect(<span class="st">"equal"</span>)</span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>ax.axis(<span class="st">"off"</span>)</span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; (np.float64(1077.35), np.float64(9935.65), np.float64(-10858.2), np.float64(-2295.8))</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>plt.show()</span></code></pre></div>
-<p><img src="spatial-visium_files/figure-html/scanpy_spatial_plot-3.png" class="r-plt" alt="" width="100%"></p>
-</div>
-<div class="section level3">
-<h3 id="spatial-analysis-morans-i">Spatial analysis: Moran’s I<a class="anchor" aria-label="anchor" href="#spatial-analysis-morans-i"></a>
-</h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="im">import</span> squidpy <span class="im">as</span> sq</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>sq.gr.spatial_neighbors(adata, coord_type<span class="op">=</span><span class="st">"generic"</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt;  [34mINFO     [0m Creating graph using `generic` coordinates and ` [3;35mNone [0m` transform and ` [1;36m1 [0m`</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt;          libraries.</span></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>genes <span class="op">=</span> <span class="bu">list</span>(adata.var_names[:<span class="dv">5</span>])</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>sq.gr.spatial_autocorr(adata, mode<span class="op">=</span><span class="st">"moran"</span>, genes<span class="op">=</span>genes)</span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Moran's I results:"</span>)</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; Moran's I results:</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="bu">print</span>(adata.uns[<span class="st">"moranI"</span>].head())</span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt;                 I  pval_norm  var_norm  pval_norm_fdr_bh</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Sox17    0.012438   0.123048  0.000122               NaN</span></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Rp1     -0.000371   0.500000  0.000122               NaN</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; Xkr4    -0.009214   0.211632  0.000122               NaN</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; Gm1992        NaN        NaN  0.000122               NaN</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co">#&gt; Gm37381       NaN        NaN  0.000122               NaN</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="load-h5ad-back-into-seurat">Load h5ad back into Seurat<a class="anchor" aria-label="anchor" href="#load-h5ad-back-into-seurat"></a>
-</h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Dimensions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Dimensions: 2696 cells x 31053 genes</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Images:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Images.html" class="external-link">Images</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Images: anterior1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Dims match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Dims match: TRUE</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip spots:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Roundtrip spots: 400</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Roundtrip genes: 1500</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Image:"</span>, <span class="fu">Images</span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Image: anterior1</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a>
+<h2 id="compare-original-and-roundtrip">Compare original and roundtrip<a class="anchor" aria-label="anchor" href="#compare-original-and-roundtrip"></a>
 </h2>
-<ul>
-<li>
-<strong>Image reconstruction</strong>: Tissue images stored in h5ad
-may require specific Seurat version compatibility for full
-<code><a href="https://satijalab.org/seurat/reference/SpatialPlot.html" class="external-link">SpatialFeaturePlot()</a></code> support. Coordinates and expression
-values are always preserved.</li>
-<li>
-<strong>Non-Visium spatial</strong>: For Slide-seq, MERFISH, Xenium,
-and other technologies, see the <a href="spatial-technologies.html">Spatial Technologies</a> vignette.</li>
-<li>
-<strong>Large images</strong>: High-resolution images increase file
-size substantially. Consider using <code>lowres</code> images for
-exploratory analysis.</li>
-</ul>
+<p>The spatial expression pattern is preserved through the h5ad
+roundtrip.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">SpatialFeaturePlot</span><span class="op">(</span><span class="va">brain_rt</span>, features <span class="op">=</span> <span class="st">"Hpca"</span>, pt.size.factor <span class="op">=</span> <span class="fl">1.6</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Hpca expression (after h5ad roundtrip)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spatial-visium_files/figure-html/plot-roundtrip-1.png" class="r-plt" alt="" width="672"></p>
+<p>Cluster assignments also survive conversion:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>        label <span class="op">=</span> <span class="cn">TRUE</span>, repel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"UMAP clusters (after h5ad roundtrip)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spatial-visium_files/figure-html/plot-clusters-1.png" class="r-plt" alt="" width="672"></p>
+<div class="section level3">
+<h3 id="verify-data-integrity">Verify data integrity<a class="anchor" aria-label="anchor" href="#verify-data-integrity"></a>
+</h3>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Dimensions match:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Dimensions match: TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Barcodes match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Barcodes match: TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Clusters match:"</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">brain</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span> <span class="op">==</span></span>
+<span>        <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Clusters match: TRUE</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="use-in-python-scanpysquidpy">Use in Python (scanpy/squidpy)<a class="anchor" aria-label="anchor" href="#use-in-python-scanpysquidpy"></a>
+</h2>
+<p>The exported h5ad works directly with scanpy and squidpy. Images,
+coordinates, and scale factors use standard scanpy conventions.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Requires Python with scanpy and squidpy installed</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"brain.h5ad"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Spatial coords shape: </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>]<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co"># Spatial scatter plot</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>sc.pl.spatial(adata, color<span class="op">=</span><span class="st">"seurat_clusters"</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># Squidpy spatial analysis</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="im">import</span> squidpy <span class="im">as</span> sq</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>sq.gr.spatial_neighbors(adata, coord_type<span class="op">=</span><span class="st">"generic"</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>sq.gr.spatial_autocorr(adata, mode<span class="op">=</span><span class="st">"moran"</span>, genes<span class="op">=</span>[<span class="st">"Hpca"</span>, <span class="st">"Ttr"</span>])</span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="cleanup">Cleanup<a class="anchor" aria-label="anchor" href="#cleanup"></a>
+</h2>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
 <span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>
@@ -337,13 +225,8 @@ exploratory analysis.</li>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt;  [1] ggplot2_4.0.2                 scConvert_0.1.0              </span></span>
-<span><span class="co">#&gt;  [3] Seurat_5.4.0                  SeuratObject_5.3.0           </span></span>
-<span><span class="co">#&gt;  [5] sp_2.2-1                      stxKidney.SeuratData_0.1.0   </span></span>
-<span><span class="co">#&gt;  [7] stxBrain.SeuratData_0.1.2     ssHippo.SeuratData_3.1.4     </span></span>
-<span><span class="co">#&gt;  [9] pbmcref.SeuratData_1.0.0      pbmcMultiome.SeuratData_0.1.4</span></span>
-<span><span class="co">#&gt; [11] pbmc3k.SeuratData_3.1.4       panc8.SeuratData_3.0.2       </span></span>
-<span><span class="co">#&gt; [13] cbmc.SeuratData_3.1.4         SeuratData_0.2.2.9002        </span></span>
+<span><span class="co">#&gt; [1] ggplot2_4.0.2      Seurat_5.4.0       SeuratObject_5.3.0 sp_2.2-1          </span></span>
+<span><span class="co">#&gt; [5] scConvert_0.1.0   </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        </span></span>
@@ -364,33 +247,33 @@ exploratory analysis.</li>
 <span><span class="co">#&gt;  [46] spatstat.sparse_3.1-0  httr_1.4.8             polyclip_1.10-7       </span></span>
 <span><span class="co">#&gt;  [49] abind_1.4-8            compiler_4.5.2         bit64_4.6.0-1         </span></span>
 <span><span class="co">#&gt;  [52] withr_3.0.2            S7_0.2.1               fastDummies_1.7.5     </span></span>
-<span><span class="co">#&gt;  [55] MASS_7.3-65            rappdirs_0.3.4         tools_4.5.2           </span></span>
-<span><span class="co">#&gt;  [58] lmtest_0.9-40          otel_0.2.0             httpuv_1.6.16         </span></span>
-<span><span class="co">#&gt;  [61] future.apply_1.20.2    goftest_1.2-3          glue_1.8.0            </span></span>
-<span><span class="co">#&gt;  [64] nlme_3.1-168           promises_1.5.0         grid_4.5.2            </span></span>
-<span><span class="co">#&gt;  [67] Rtsne_0.17             cluster_2.1.8.2        reshape2_1.4.5        </span></span>
-<span><span class="co">#&gt;  [70] generics_0.1.4         hdf5r_1.3.12           gtable_0.3.6          </span></span>
-<span><span class="co">#&gt;  [73] spatstat.data_3.1-9    tidyr_1.3.2            data.table_1.18.2.1   </span></span>
-<span><span class="co">#&gt;  [76] XVector_0.50.0         BiocGenerics_0.56.0    BPCells_0.2.0         </span></span>
-<span><span class="co">#&gt;  [79] spatstat.geom_3.7-0    RcppAnnoy_0.0.23       ggrepel_0.9.7         </span></span>
-<span><span class="co">#&gt;  [82] RANN_2.6.2             pillar_1.11.1          stringr_1.6.0         </span></span>
-<span><span class="co">#&gt;  [85] spam_2.11-3            RcppHNSW_0.6.0         later_1.4.8           </span></span>
-<span><span class="co">#&gt;  [88] splines_4.5.2          dplyr_1.2.0            lattice_0.22-9        </span></span>
-<span><span class="co">#&gt;  [91] bit_4.6.0              survival_3.8-6         deldir_2.0-4          </span></span>
-<span><span class="co">#&gt;  [94] tidyselect_1.2.1       miniUI_0.1.2           pbapply_1.7-4         </span></span>
-<span><span class="co">#&gt;  [97] knitr_1.51             gridExtra_2.3          Seqinfo_1.0.0         </span></span>
-<span><span class="co">#&gt; [100] IRanges_2.44.0         scattermore_1.2        stats4_4.5.2          </span></span>
-<span><span class="co">#&gt; [103] xfun_0.56              matrixStats_1.5.0      UCSC.utils_1.6.1      </span></span>
-<span><span class="co">#&gt; [106] stringi_1.8.7          lazyeval_0.2.2         yaml_2.3.12           </span></span>
-<span><span class="co">#&gt; [109] evaluate_1.0.5         codetools_0.2-20       tibble_3.3.1          </span></span>
-<span><span class="co">#&gt; [112] cli_3.6.5              uwot_0.2.4             xtable_1.8-8          </span></span>
-<span><span class="co">#&gt; [115] reticulate_1.45.0      systemfonts_1.3.1      jquerylib_0.1.4       </span></span>
-<span><span class="co">#&gt; [118] GenomeInfoDb_1.46.2    dichromat_2.0-0.1      Rcpp_1.1.1            </span></span>
-<span><span class="co">#&gt; [121] globals_0.19.1         spatstat.random_3.4-4  png_0.1-8             </span></span>
-<span><span class="co">#&gt; [124] spatstat.univar_3.1-6  parallel_4.5.2         pkgdown_2.2.0         </span></span>
-<span><span class="co">#&gt; [127] dotCall64_1.2          listenv_0.10.1         viridisLite_0.4.3     </span></span>
-<span><span class="co">#&gt; [130] scales_1.4.0           ggridges_0.5.7         purrr_1.2.1           </span></span>
-<span><span class="co">#&gt; [133] crayon_1.5.3           rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
+<span><span class="co">#&gt;  [55] MASS_7.3-65            tools_4.5.2            lmtest_0.9-40         </span></span>
+<span><span class="co">#&gt;  [58] otel_0.2.0             httpuv_1.6.16          future.apply_1.20.2   </span></span>
+<span><span class="co">#&gt;  [61] goftest_1.2-3          glue_1.8.0             nlme_3.1-168          </span></span>
+<span><span class="co">#&gt;  [64] promises_1.5.0         grid_4.5.2             Rtsne_0.17            </span></span>
+<span><span class="co">#&gt;  [67] cluster_2.1.8.2        reshape2_1.4.5         generics_0.1.4        </span></span>
+<span><span class="co">#&gt;  [70] hdf5r_1.3.12           gtable_0.3.6           spatstat.data_3.1-9   </span></span>
+<span><span class="co">#&gt;  [73] tidyr_1.3.2            data.table_1.18.2.1    XVector_0.50.0        </span></span>
+<span><span class="co">#&gt;  [76] BiocGenerics_0.56.0    BPCells_0.2.0          spatstat.geom_3.7-0   </span></span>
+<span><span class="co">#&gt;  [79] RcppAnnoy_0.0.23       ggrepel_0.9.7          RANN_2.6.2            </span></span>
+<span><span class="co">#&gt;  [82] pillar_1.11.1          stringr_1.6.0          spam_2.11-3           </span></span>
+<span><span class="co">#&gt;  [85] RcppHNSW_0.6.0         later_1.4.8            splines_4.5.2         </span></span>
+<span><span class="co">#&gt;  [88] dplyr_1.2.0            lattice_0.22-9         survival_3.8-6        </span></span>
+<span><span class="co">#&gt;  [91] bit_4.6.0              deldir_2.0-4           tidyselect_1.2.1      </span></span>
+<span><span class="co">#&gt;  [94] miniUI_0.1.2           pbapply_1.7-4          knitr_1.51            </span></span>
+<span><span class="co">#&gt;  [97] gridExtra_2.3          Seqinfo_1.0.0          IRanges_2.44.0        </span></span>
+<span><span class="co">#&gt; [100] scattermore_1.2        stats4_4.5.2           xfun_0.56             </span></span>
+<span><span class="co">#&gt; [103] matrixStats_1.5.0      UCSC.utils_1.6.1       stringi_1.8.7         </span></span>
+<span><span class="co">#&gt; [106] lazyeval_0.2.2         yaml_2.3.12            evaluate_1.0.5        </span></span>
+<span><span class="co">#&gt; [109] codetools_0.2-20       tibble_3.3.1           cli_3.6.5             </span></span>
+<span><span class="co">#&gt; [112] uwot_0.2.4             xtable_1.8-8           reticulate_1.45.0     </span></span>
+<span><span class="co">#&gt; [115] systemfonts_1.3.1      jquerylib_0.1.4        GenomeInfoDb_1.46.2   </span></span>
+<span><span class="co">#&gt; [118] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.1        </span></span>
+<span><span class="co">#&gt; [121] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 </span></span>
+<span><span class="co">#&gt; [124] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         </span></span>
+<span><span class="co">#&gt; [127] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          </span></span>
+<span><span class="co">#&gt; [130] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
+<span><span class="co">#&gt; [133] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

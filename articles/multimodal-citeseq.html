@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Multimodal: CITE-seq and Multiome • scConvert</title>
+<title>CITE-seq Analysis Workflow • scConvert</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Multimodal: CITE-seq and Multiome">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="CITE-seq Analysis Workflow">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -35,25 +35,25 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Conversions: h5Seurat and AnnData</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Saving and Loading Data from an h5Seurat File</a></li>
-    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface (CLI)</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
+    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-loom.html">Conversions: Seurat and Loom</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Conversions: Seurat and Zarr</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-soma.html">Converting Between Seurat and TileDB-SOMA</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
     <li><a class="dropdown-item" href="../articles/multimodal-h5mu.html">Multimodal Data with MuData (h5mu)</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat File Format Specification</a></li>
-    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Data Mapping Reference</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat Format Specification</a></li>
+    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Format Mapping Reference</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
-    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">Multimodal: CITE-seq and Multiome</a></li>
-    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion with Signac</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Spatial Transcriptomics: Visium</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies: Slide-seq, Visium HD, and Others</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">Working with SpatialData (.spatialdata.zarr)</a></li>
-    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire (TCR/BCR) Data with scConvert</a></li>
+    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">CITE-seq Analysis Workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Visium Spatial Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies Overview</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">SpatialData Zarr Stores</a></li>
+    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire Metadata Preservation</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -76,7 +76,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Multimodal: CITE-seq and Multiome</h1>
+      <h1>CITE-seq Analysis Workflow</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/HEAD/vignettes/multimodal-citeseq.Rmd" class="external-link"><code>vignettes/multimodal-citeseq.Rmd</code></a></small>
@@ -86,440 +86,230 @@
     
     
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>Multimodal single-cell experiments measure multiple data types from
-the same cells. This vignette demonstrates scConvert’s handling of:</p>
-<ol style="list-style-type: decimal">
+<p>CITE-seq (Cellular Indexing of Transcriptomes and Epitopes by
+Sequencing) measures RNA transcription and surface protein abundance
+from the same cells. This produces two assays per cell: RNA gene
+expression and ADT (antibody-derived tag) protein counts. scConvert
+handles both assays during format conversion, giving you two export
+options:</p>
+<ul>
 <li>
-<strong>CITE-seq</strong> (RNA + surface protein / ADT) via h5mu
-format</li>
+<strong>h5ad</strong>: Exports a single assay (RNA or ADT) per file,
+ideal for scanpy workflows</li>
 <li>
-<strong>Multiome</strong> (RNA + ATAC) via h5Seurat format</li>
-</ol>
-<p>The <strong>h5mu</strong> (MuData) format is the standard for
-multimodal data in the scverse ecosystem, storing each modality as a
-separate AnnData within a single file.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
+<strong>h5mu</strong>: Exports all assays in one file, ideal for
+muon/MuData workflows</li>
+</ul>
 </div>
 <div class="section level2">
-<h2 id="cite-seq-cbmc-dataset">CITE-seq: CBMC dataset<a class="anchor" aria-label="anchor" href="#cite-seq-cbmc-dataset"></a>
+<h2 id="load-cite-seq-data">Load CITE-seq data<a class="anchor" aria-label="anchor" href="#load-cite-seq-data"></a>
 </h2>
-<p>The CBMC (cord blood mononuclear cell) dataset contains RNA and ADT
-(antibody-derived tag) measurements from CITE-seq:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.satijalab.org/seurat" class="external-link">SeuratData</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"cbmc"</span>, package <span class="op">=</span> <span class="st">"cbmc.SeuratData"</span><span class="op">)</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/UpdateSeuratObject.html" class="external-link">UpdateSeuratObject</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span></span>
+<p>The shipped <code>citeseq_demo.rds</code> contains 500 cells with RNA
+(2000 genes) and ADT (10 antibodies: CD3, CD4, CD8, CD45RA, CD56, CD16,
+CD11c, CD14, CD19, CD34), pre-processed with PCA, UMAP, and
+clustering.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"citeseq_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cells: 8617</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Cells: 500</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Assays</span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Assays: RNA, ADT</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RNA features: 20501</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ADT features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ADT features: 10</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="process-and-cluster">Process and cluster<a class="anchor" aria-label="anchor" href="#process-and-cluster"></a>
-</h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">cbmc</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">cbmc</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span><span class="va">cbmc</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span><span class="va">cbmc</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/RunUMAP.html" class="external-link">RunUMAP</a></span><span class="op">(</span><span class="va">cbmc</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindNeighbors.html" class="external-link">FindNeighbors</a></span><span class="op">(</span><span class="va">cbmc</span>, dims <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">30</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">FindClusters</a></span><span class="op">(</span><span class="va">cbmc</span>, resolution <span class="op">=</span> <span class="fl">0.8</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; RNA features: 2000</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ADT features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ADT features: 10</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ADT markers:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ADT markers: CD3, CD4, CD8, CD45RA, CD56, CD16, CD11c, CD14, CD19, CD34</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="umap-visualization">UMAP visualization<a class="anchor" aria-label="anchor" href="#umap-visualization"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="section level2">
+<h2 id="visualize-rna-clusters">Visualize RNA clusters<a class="anchor" aria-label="anchor" href="#visualize-rna-clusters"></a>
+</h2>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">obj</span>, group.by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"RNA-based clusters"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="multimodal-citeseq_files/figure-html/dimplot-rna-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="visualize-protein-expression">Visualize protein expression<a class="anchor" aria-label="anchor" href="#visualize-protein-expression"></a>
+</h2>
+<p>ADT markers reveal cell-surface protein levels that complement the
+transcriptomic clusters. CD3 marks T cells; CD14 marks monocytes.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">cbmc</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"RNA clusters"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Normalize ADT</span></span>
-<span><span class="va">cbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">cbmc</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, normalization.method <span class="op">=</span> <span class="st">"CLR"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">cbmc</span>, features <span class="op">=</span> <span class="st">"adt_CD3"</span>, pt.size <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"CD3 protein (ADT)"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"ADT"</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD3"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"CD3 (T cells)"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"CD14 (Monocytes)"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"RNA"</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="multimodal-citeseq_files/figure-html/cbmc_umap-1.png" class="r-plt" alt="" width="100%"></p>
-</div>
+<p><img src="multimodal-citeseq_files/figure-html/featureplot-adt-1.png" class="r-plt" alt="" width="1152"></p>
 <div class="section level3">
-<h3 id="export-to-h5mu">Export to h5mu<a class="anchor" aria-label="anchor" href="#export-to-h5mu"></a>
+<h3 id="adt-expression-across-clusters">ADT expression across clusters<a class="anchor" aria-label="anchor" href="#adt-expression-across-clusters"></a>
 </h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"ADT"</span></span>
+<span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">obj</span>, features <span class="op">=</span> <span class="st">"CD3"</span>, group.by <span class="op">=</span> <span class="st">"seurat_clusters"</span>, pt.size <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"CD3 protein across clusters"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="multimodal-citeseq_files/figure-html/vlnplot-adt-1.png" class="r-plt" alt="" width="768"></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Remove overlapping features (h5mu requires unique names per modality)</span></span>
-<span><span class="va">overlap</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">overlap</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">adt_keep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="va">overlap</span><span class="op">)</span></span>
-<span>  <span class="va">cbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span>, features <span class="op">=</span> <span class="va">adt_keep</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Removed"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">overlap</span><span class="op">)</span>, <span class="st">"overlapping features from ADT\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt; Removed 4 overlapping features from ADT</span></span>
-<span></span>
-<span><span class="va">h5mu_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5mu"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">cbmc</span>, <span class="va">h5mu_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5mu file size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; h5mu file size: 44.9 MB</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="st">"RNA"</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="validate-h5mu-in-python">Validate h5mu in Python<a class="anchor" aria-label="anchor" href="#validate-h5mu-in-python"></a>
-</h3>
-<p>The exported h5mu file is directly compatible with the Python
-mudata/muon ecosystem:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="im">import</span> mudata <span class="im">as</span> md</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>mdata <span class="op">=</span> md.read_h5mu(r.h5mu_path)</span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="bu">print</span>(mdata)</span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; MuData object with n_obs × n_vars = 8617 × 20507</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt;   obs:   'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'nCount_ADT', 'nFeature_ADT', 'rna_annotations', 'protein_annotations', 'RNA_snn_res.0.8', 'seurat_clusters'</span></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt;   2 modalities</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt;     rna: 8617 x 20501</span></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt;       var:   'vst.mean', 'vst.variance', 'vst.variance.expected', 'vst.variance.standardized', 'vst.variable'</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt;       obsm:  'X_pca', 'X_umap'</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt;       layers:    'counts'</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt;       obsp:  'nn', 'snn'</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt;     prot:    8617 x 6</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt;       layers:    'counts'</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Modalities: </span><span class="sc">{</span><span class="bu">list</span>(mdata.mod.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt; Modalities: ['rna', 'prot']</span></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="cf">for</span> name, mod <span class="kw">in</span> mdata.mod.items():</span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>mod<span class="sc">.</span>n_obs<span class="sc">}</span><span class="ss"> cells x </span><span class="sc">{</span>mod<span class="sc">.</span>n_vars<span class="sc">}</span><span class="ss"> features"</span>)</span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>    <span class="cf">if</span> mod.X <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>        <span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>        x <span class="op">=</span> mod.X.toarray() <span class="cf">if</span> <span class="bu">hasattr</span>(mod.X, <span class="st">'toarray'</span>) <span class="cf">else</span> mod.X</span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"    X range: [</span><span class="sc">{</span>x<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.2f}</span><span class="ss">, </span><span class="sc">{</span>x<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.2f}</span><span class="ss">]"</span>)</span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;   rna: 8617 cells x 20501 features</span></span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;     X range: [0.00, 8.59]</span></span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt;   prot: 8617 cells x 6 features</span></span>
-<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt;     X range: [0.01, 5.03]</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>rna <span class="op">=</span> mdata.mod[<span class="st">"rna"</span>].copy()</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>sc.pp.normalize_total(rna)</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>sc.pp.log1p(rna)</span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>sc.pp.highly_variable_genes(rna, n_top_genes<span class="op">=</span><span class="dv">2000</span>)</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>sc.pp.pca(rna)</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>sc.pp.neighbors(rna)</span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>sc.tl.umap(rna)</span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>sc.tl.leiden(rna, flavor<span class="op">=</span><span class="st">"igraph"</span>)</span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">5</span>))</span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>sc.pl.umap(rna, color<span class="op">=</span><span class="st">"leiden"</span>, ax<span class="op">=</span>axes[<span class="dv">0</span>], show<span class="op">=</span><span class="va">False</span>, title<span class="op">=</span><span class="st">"RNA Leiden clusters"</span>)</span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>sc.pl.umap(rna, color<span class="op">=</span><span class="st">"n_counts"</span> <span class="cf">if</span> <span class="st">"n_counts"</span> <span class="kw">in</span> rna.obs <span class="cf">else</span> rna.obs.columns[<span class="dv">0</span>],</span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>           ax<span class="op">=</span>axes[<span class="dv">1</span>], show<span class="op">=</span><span class="va">False</span>, title<span class="op">=</span><span class="st">"RNA QC metric"</span>)</span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>plt.show()</span></code></pre></div>
-<p><img src="multimodal-citeseq_files/figure-html/scanpy_on_citeseq-1.png" class="r-plt" alt="" width="100%"></p>
 </div>
+<div class="section level2">
+<h2 id="export-to-h5ad-single-assay">Export to h5ad (single assay)<a class="anchor" aria-label="anchor" href="#export-to-h5ad-single-assay"></a>
+</h2>
+<p><code><a href="../reference/writeH5AD.html">writeH5AD()</a></code> writes one assay at a time. By default it
+writes the active assay (RNA). This is the right choice for standard
+scanpy workflows.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"citeseq_rna.h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5ad_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Wrote RNA to:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Wrote RNA to: citeseq_rna.h5ad</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"File size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; File size: 0.7 MB</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="export-to-h5mu-multi-assay">Export to h5mu (multi-assay)<a class="anchor" aria-label="anchor" href="#export-to-h5mu-multi-assay"></a>
+</h2>
+<p><code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> writes all assays into a single file, each
+as a separate modality. This preserves both RNA and ADT together.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">h5mu_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"citeseq.h5mu"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5mu_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Wrote RNA + ADT to:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/basename.html" class="external-link">basename</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Wrote RNA + ADT to: citeseq.h5mu</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"File size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; File size: 0.7 MB</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="reload-and-verify">Reload and verify<a class="anchor" aria-label="anchor" href="#reload-and-verify"></a>
+</h2>
 <div class="section level3">
-<h3 id="load-h5mu-back">Load h5mu back<a class="anchor" aria-label="anchor" href="#load-h5mu-back"></a>
+<h3 id="from-h5ad-rna-only">From h5ad (RNA only)<a class="anchor" aria-label="anchor" href="#from-h5ad-rna-only"></a>
 </h3>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cbmc_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cells: 8617</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Assays: ADT, RNA</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RNA features: 20501</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ADT features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ADT features: 6</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">loaded_h5ad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5ad loaded:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">loaded_h5ad</span><span class="op">)</span>, <span class="st">"cells x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">loaded_h5ad</span><span class="op">)</span>, <span class="st">"features\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; h5ad loaded: 500 cells x 2000 features</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Assays</span><span class="op">(</span><span class="va">loaded_h5ad</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Assays: RNA</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="verify-preservation">Verify preservation<a class="anchor" aria-label="anchor" href="#verify-preservation"></a>
+<h3 id="from-h5mu-rna-adt">From h5mu (RNA + ADT)<a class="anchor" aria-label="anchor" href="#from-h5mu-rna-adt"></a>
 </h3>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"=== Dimensions ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; === Dimensions ===</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Original:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span>, <span class="st">"cells,"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span><span class="op">)</span>, <span class="st">"assays\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Original: 8617 cells, 2 assays</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loaded:  "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">)</span>, <span class="st">"cells,"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">)</span><span class="op">)</span>, <span class="st">"assays\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loaded:   8617 cells, 2 assays</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assay match:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Assay match: TRUE</span></span>
-<span></span>
-<span><span class="va">common_c</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Barcodes ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Barcodes ===</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Shared:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_c</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Shared: 8617 / 8617</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== RNA preservation ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === RNA preservation ===</span></span>
-<span><span class="va">common_g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Features shared:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_g</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Features shared: 20501 / 20501</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span><span class="va">sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">common_c</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">300</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_c</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">sg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">common_g</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_g</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">rna_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">cbmc</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">sg</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">rna_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">cbmc_rt</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">sg</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Values identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">rna_orig</span>, <span class="va">rna_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Values identical: TRUE</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Max abs diff:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">rna_orig</span> <span class="op">-</span> <span class="va">rna_rt</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Max abs diff: 0</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== ADT preservation ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === ADT preservation ===</span></span>
-<span><span class="va">common_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Features shared:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_adt</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Features shared: 6 / 6</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_adt</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">adt_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">cbmc</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">common_adt</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="va">adt_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">cbmc_rt</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">common_adt</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Values identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">adt_orig</span>, <span class="va">adt_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Max abs diff:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">adt_orig</span> <span class="op">-</span> <span class="va">adt_rt</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt; Values identical: TRUE </span></span>
-<span><span class="co">#&gt; Max abs diff: 0</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"\n=== Metadata ===\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Metadata ===</span></span>
-<span><span class="va">shared_meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">cbmc_rt</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Columns preserved:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">shared_meta</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">cbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Columns preserved: 9 / 9</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">loaded_h5mu</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5mu loaded:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">)</span>, <span class="st">"cells\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; h5mu loaded: 500 cells</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Assays</span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Assays: ADT, RNA</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; RNA features: 2000</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ADT features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ADT features: 10</span></span></code></pre></div>
 </div>
-</div>
-<div class="section level2">
-<h2 id="multiome-rna-atac">Multiome: RNA + ATAC<a class="anchor" aria-label="anchor" href="#multiome-rna-atac"></a>
-</h2>
-<p>10x Genomics Multiome measures RNA and chromatin accessibility (ATAC)
-from the same cells. scConvert supports roundtripping both modalities
-via h5mu.</p>
+<div class="section level3">
+<h3 id="verify-expression-preservation">Verify expression preservation<a class="anchor" aria-label="anchor" href="#verify-expression-preservation"></a>
+</h3>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://www.satijalab.org/seurat" class="external-link">SeuratData</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">common_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Load both RNA and ATAC from PBMC Multiome</span></span>
-<span><span class="va">pbmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/LoadData.html" class="external-link">LoadData</a></span><span class="op">(</span><span class="st">"pbmcMultiome"</span>, <span class="st">"pbmc.rna"</span><span class="op">)</span></span>
-<span><span class="va">pbmc.atac</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/LoadData.html" class="external-link">LoadData</a></span><span class="op">(</span><span class="st">"pbmcMultiome"</span>, <span class="st">"pbmc.atac"</span><span class="op">)</span></span>
-<span><span class="va">pbmc.rna</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/UpdateSeuratObject.html" class="external-link">UpdateSeuratObject</a></span><span class="op">(</span><span class="va">pbmc.rna</span><span class="op">)</span></span>
-<span><span class="va">pbmc.atac</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/UpdateSeuratObject.html" class="external-link">UpdateSeuratObject</a></span><span class="op">(</span><span class="va">pbmc.atac</span><span class="op">)</span></span>
+<span><span class="co"># RNA counts</span></span>
+<span><span class="va">common_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">obj</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_genes</span>, <span class="fl">100</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">loaded_h5mu</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_genes</span>, <span class="fl">100</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA counts identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">orig</span>, <span class="va">rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; RNA counts identical: TRUE</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc.rna</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc.rna</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ATAC cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc.atac</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ATAC features (peaks):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc.atac</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="combine-rna-atac-into-a-single-object">Combine RNA + ATAC into a single object<a class="anchor" aria-label="anchor" href="#combine-rna-atac-into-a-single-object"></a>
-</h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Find shared cells</span></span>
-<span><span class="va">shared_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc.rna</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc.atac</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Shared cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">shared_cells</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Create combined object</span></span>
-<span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span></span>
-<span>  counts <span class="op">=</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">pbmc.rna</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span>, <span class="va">shared_cells</span><span class="op">]</span>,</span>
-<span>  assay <span class="op">=</span> <span class="st">"RNA"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">combined</span><span class="op">[[</span><span class="st">"ATAC"</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateAssay5Object.html" class="external-link">CreateAssay5Object</a></span><span class="op">(</span></span>
-<span>  counts <span class="op">=</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">pbmc.atac</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span>, <span class="va">shared_cells</span><span class="op">]</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Combined object:\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">combined</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">combined</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">combined</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  ATAC features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">combined</span><span class="op">[[</span><span class="st">"ATAC"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># ADT counts</span></span>
+<span><span class="va">common_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">obj</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">loaded_h5mu</span><span class="op">[[</span><span class="st">"ADT"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">orig_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">obj</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
+<span>  <span class="va">common_adt</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">rt_adt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">GetAssayData</span><span class="op">(</span><span class="va">loaded_h5mu</span>, assay <span class="op">=</span> <span class="st">"ADT"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span></span>
+<span>  <span class="va">common_adt</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">common_cells</span>, <span class="fl">100</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ADT counts identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">orig_adt</span>, <span class="va">rt_adt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ADT counts identical: TRUE</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="roundtrip-via-h5mu">Roundtrip via h5mu<a class="anchor" aria-label="anchor" href="#roundtrip-via-h5mu"></a>
-</h3>
-<p>The h5mu format stores each assay as a separate modality, making it
-ideal for multimodal data:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">h5mu_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5mu"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeH5MU.html">writeH5MU</a></span><span class="op">(</span><span class="va">combined</span>, <span class="va">h5mu_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5mu file size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Load back</span></span>
-<span><span class="va">combined_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5MU.html">readH5MU</a></span><span class="op">(</span><span class="va">h5mu_path</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip assays:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/ObjectAccess.html" class="external-link">Assays</a></span><span class="op">(</span><span class="va">combined_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip RNA features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">combined_rt</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip ATAC features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">combined_rt</span><span class="op">[[</span><span class="st">"ATAC"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="verify-preservation-of-both-modalities">Verify preservation of both modalities<a class="anchor" aria-label="anchor" href="#verify-preservation-of-both-modalities"></a>
-</h3>
+<div class="section level2">
+<h2 id="when-to-use-h5ad-vs-h5mu">When to use h5ad vs h5mu<a class="anchor" aria-label="anchor" href="#when-to-use-h5ad-vs-h5mu"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="28%">
+<col width="57%">
+<col width="14%">
+</colgroup>
+<thead><tr class="header">
+<th>Scenario</th>
+<th>Recommended format</th>
+<th>Why</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>scanpy RNA analysis</td>
+<td>h5ad</td>
+<td>scanpy expects single-AnnData input</td>
+</tr>
+<tr class="even">
+<td>Share with Python collaborator (multi-assay)</td>
+<td>h5mu</td>
+<td>Keeps RNA + ADT together in one file</td>
+</tr>
+<tr class="odd">
+<td>Archive a CITE-seq experiment</td>
+<td>h5mu</td>
+<td>Preserves all modalities</td>
+</tr>
+<tr class="even">
+<td>Feed into cellxgene</td>
+<td>h5ad</td>
+<td>cellxgene reads h5ad, not h5mu</td>
+</tr>
+<tr class="odd">
+<td>Downstream muon/MOFA+ analysis</td>
+<td>h5mu</td>
+<td>muon operates on MuData objects</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level2">
+<h2 id="python-interoperability">Python interoperability<a class="anchor" aria-label="anchor" href="#python-interoperability"></a>
+</h2>
+<p>Both exported files are directly readable in Python.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Requires Python: pip install scanpy</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"citeseq_rna.h5ad"</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>sc.pl.umap(adata, color<span class="op">=</span><span class="st">"seurat_clusters"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Requires Python: pip install mudata</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="im">import</span> mudata <span class="im">as</span> md</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>mdata <span class="op">=</span> md.read_h5mu(<span class="st">"citeseq.h5mu"</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="bu">print</span>(mdata)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="cf">for</span> name, mod <span class="kw">in</span> mdata.mod.items():</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>mod<span class="sc">.</span>n_obs<span class="sc">}</span><span class="ss"> cells x </span><span class="sc">{</span>mod<span class="sc">.</span>n_vars<span class="sc">}</span><span class="ss"> features"</span>)</span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="clean-up">Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
+</h2>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">common_c</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">combined</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">combined_rt</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells preserved:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_c</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">combined</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span><span class="va">sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">common_c</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">common_c</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># RNA</span></span>
-<span><span class="va">rna_genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">combined</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">combined_rt</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">sg</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">rna_genes</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rna_genes</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">rna_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">combined</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">sg</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">rna_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">combined_rt</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">sg</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA features preserved:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rna_genes</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">combined</span><span class="op">[[</span><span class="st">"RNA"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RNA values identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">rna_orig</span>, <span class="va">rna_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># ATAC</span></span>
-<span><span class="va">atac_peaks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">combined</span><span class="op">[[</span><span class="st">"ATAC"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">combined_rt</span><span class="op">[[</span><span class="st">"ATAC"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">sp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">atac_peaks</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">atac_peaks</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">atac_orig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">combined</span>, assay <span class="op">=</span> <span class="st">"ATAC"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">sp</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="va">atac_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">combined_rt</span>, assay <span class="op">=</span> <span class="st">"ATAC"</span>, layer <span class="op">=</span> <span class="st">"counts"</span><span class="op">)</span><span class="op">[</span><span class="va">sp</span>, <span class="va">sc</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ATAC features preserved:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">atac_peaks</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">combined</span><span class="op">[[</span><span class="st">"ATAC"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"ATAC values identical:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">atac_orig</span>, <span class="va">atac_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="convert-rna-component-to-h5ad">Convert RNA component to h5ad<a class="anchor" aria-label="anchor" href="#convert-rna-component-to-h5ad"></a>
-</h3>
-<p>The RNA component can also be exported independently via h5ad:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
-<span><span class="va">h5s_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">pbmc.rna</span>, <span class="va">h5s_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="va">h5s_path</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"\\.h5Seurat$"</span>, <span class="st">".h5ad"</span>, <span class="va">h5s_path</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">rna_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5ad roundtrip cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">rna_rt</span><span class="op">)</span>, <span class="st">"/"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc.rna</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="scatac-seq-notes">scATAC-seq notes<a class="anchor" aria-label="anchor" href="#scatac-seq-notes"></a>
-</h2>
-<p>For standalone scATAC-seq data (not part of Multiome):</p>
-<ul>
-<li>
-<strong>Peak matrices</strong> are stored as standard sparse
-matrices and convert normally via h5ad/h5Seurat</li>
-<li>
-<strong>Fragment files</strong> (<code>.tsv.gz</code>) are not part
-of the h5ad/h5Seurat format and must be transferred separately</li>
-<li>
-<strong>Signac ChromatinAssay</strong> objects: The expression
-matrix (peaks x cells) is preserved; Signac-specific slots (fragments,
-motifs, annotations) require separate handling</li>
-</ul>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Convert ATAC peak matrix</span></span>
-<span><span class="va">atac_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">peak_matrix</span>, assay <span class="op">=</span> <span class="st">"ATAC"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">atac_obj</span>, <span class="st">"atac.h5Seurat"</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"atac.h5Seurat"</span>, dest <span class="op">=</span> <span class="st">"h5ad"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Fragment files must be copied separately</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="st">"fragments.tsv.gz"</span>, <span class="st">"output_dir/fragments.tsv.gz"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="st">"fragments.tsv.gz.tbi"</span>, <span class="st">"output_dir/fragments.tsv.gz.tbi"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="data-mapping-for-multimodal-formats">Data mapping for multimodal formats<a class="anchor" aria-label="anchor" href="#data-mapping-for-multimodal-formats"></a>
-</h2>
-<div class="section level3">
-<h3 id="h5mu-modality-mapping">h5mu modality mapping<a class="anchor" aria-label="anchor" href="#h5mu-modality-mapping"></a>
-</h3>
-<table class="table">
-<thead><tr class="header">
-<th>Seurat Assay</th>
-<th>h5mu Modality</th>
-<th>Standard for</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>RNA</td>
-<td>rna</td>
-<td>Gene expression</td>
-</tr>
-<tr class="even">
-<td>ADT</td>
-<td>prot</td>
-<td>Surface proteins (CITE-seq)</td>
-</tr>
-<tr class="odd">
-<td>ATAC</td>
-<td>atac</td>
-<td>Chromatin accessibility</td>
-</tr>
-<tr class="even">
-<td>Spatial</td>
-<td>spatial</td>
-<td>Spatial gene expression</td>
-</tr>
-<tr class="odd">
-<td>SCT</td>
-<td>sct</td>
-<td>SCTransform-normalized</td>
-</tr>
-<tr class="even">
-<td>Custom</td>
-<td>lowercase name</td>
-<td>Any other assay</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="what-is-preserved-in-h5mu-roundtrip">What is preserved in h5mu roundtrip<a class="anchor" aria-label="anchor" href="#what-is-preserved-in-h5mu-roundtrip"></a>
-</h3>
-<table class="table">
-<thead><tr class="header">
-<th>Component</th>
-<th>Preserved</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Expression matrices</td>
-<td>Yes</td>
-<td>Per-modality</td>
-</tr>
-<tr class="even">
-<td>Cell metadata</td>
-<td>Yes</td>
-<td>Global obs + per-modality</td>
-</tr>
-<tr class="odd">
-<td>Feature metadata</td>
-<td>Yes</td>
-<td>Per-modality var</td>
-</tr>
-<tr class="even">
-<td>Dimensional reductions</td>
-<td>Partial</td>
-<td>Stored in modality obsm</td>
-</tr>
-<tr class="odd">
-<td>Neighbor graphs</td>
-<td>Partial</td>
-<td>Stored in modality obsp</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="section level2">
-<h2 id="see-also">See Also<a class="anchor" aria-label="anchor" href="#see-also"></a>
-</h2>
-<ul>
-<li>
-<a href="multimodal-h5mu.html">Multimodal: h5mu Format</a> – native
-h5mu read/write without external dependencies</li>
-<li>
-<a href="scatac-signac.html">scATAC-seq with Signac</a> – converting
-chromatin accessibility data</li>
-</ul>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">h5ad_path</span>, <span class="va">h5mu_path</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
 <span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>
@@ -539,57 +329,56 @@ chromatin accessibility data</li>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt;  [1] patchwork_1.3.2               future_1.69.0                </span></span>
-<span><span class="co">#&gt;  [3] ggplot2_4.0.2                 scConvert_0.1.0              </span></span>
-<span><span class="co">#&gt;  [5] Seurat_5.4.0                  SeuratObject_5.3.0           </span></span>
-<span><span class="co">#&gt;  [7] sp_2.2-1                      stxKidney.SeuratData_0.1.0   </span></span>
-<span><span class="co">#&gt;  [9] stxBrain.SeuratData_0.1.2     ssHippo.SeuratData_3.1.4     </span></span>
-<span><span class="co">#&gt; [11] pbmcref.SeuratData_1.0.0      pbmcMultiome.SeuratData_0.1.4</span></span>
-<span><span class="co">#&gt; [13] pbmc3k.SeuratData_3.1.4       panc8.SeuratData_3.0.2       </span></span>
-<span><span class="co">#&gt; [15] cbmc.SeuratData_3.1.4         SeuratData_0.2.2.9002        </span></span>
+<span><span class="co">#&gt; [1] patchwork_1.3.2    ggplot2_4.0.2      Seurat_5.4.0       SeuratObject_5.3.0</span></span>
+<span><span class="co">#&gt; [5] sp_2.2-1           scConvert_0.1.0   </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        </span></span>
-<span><span class="co">#&gt;   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.30        </span></span>
-<span><span class="co">#&gt;   [7] fs_1.6.7               ragg_1.5.0             vctrs_0.7.1           </span></span>
-<span><span class="co">#&gt;  [10] ROCR_1.0-12            spatstat.explore_3.7-0 htmltools_0.5.9       </span></span>
-<span><span class="co">#&gt;  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.46.1     </span></span>
-<span><span class="co">#&gt;  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     </span></span>
-<span><span class="co">#&gt;  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            </span></span>
-<span><span class="co">#&gt;  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          </span></span>
-<span><span class="co">#&gt;  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       </span></span>
-<span><span class="co">#&gt;  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              </span></span>
-<span><span class="co">#&gt;  [31] fastmap_1.2.0          fitdistrplus_1.2-6     shiny_1.13.0          </span></span>
-<span><span class="co">#&gt;  [34] digest_0.6.39          tensor_1.5.1           RSpectra_0.16-2       </span></span>
-<span><span class="co">#&gt;  [37] irlba_2.3.7            textshaping_1.0.4      labeling_0.4.3        </span></span>
-<span><span class="co">#&gt;  [40] progressr_0.18.0       spatstat.sparse_3.1-0  httr_1.4.8            </span></span>
-<span><span class="co">#&gt;  [43] polyclip_1.10-7        abind_1.4-8            compiler_4.5.2        </span></span>
-<span><span class="co">#&gt;  [46] bit64_4.6.0-1          withr_3.0.2            S7_0.2.1              </span></span>
-<span><span class="co">#&gt;  [49] fastDummies_1.7.5      MASS_7.3-65            rappdirs_0.3.4        </span></span>
-<span><span class="co">#&gt;  [52] tools_4.5.2            lmtest_0.9-40          otel_0.2.0            </span></span>
-<span><span class="co">#&gt;  [55] httpuv_1.6.16          future.apply_1.20.2    goftest_1.2-3         </span></span>
-<span><span class="co">#&gt;  [58] glue_1.8.0             nlme_3.1-168           promises_1.5.0        </span></span>
-<span><span class="co">#&gt;  [61] grid_4.5.2             Rtsne_0.17             cluster_2.1.8.2       </span></span>
-<span><span class="co">#&gt;  [64] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          </span></span>
-<span><span class="co">#&gt;  [67] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
-<span><span class="co">#&gt;  [70] data.table_1.18.2.1    spatstat.geom_3.7-0    RcppAnnoy_0.0.23      </span></span>
-<span><span class="co">#&gt;  [73] ggrepel_0.9.7          RANN_2.6.2             pillar_1.11.1         </span></span>
-<span><span class="co">#&gt;  [76] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        </span></span>
-<span><span class="co">#&gt;  [79] later_1.4.8            splines_4.5.2          dplyr_1.2.0           </span></span>
-<span><span class="co">#&gt;  [82] lattice_0.22-9         bit_4.6.0              survival_3.8-6        </span></span>
-<span><span class="co">#&gt;  [85] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          </span></span>
-<span><span class="co">#&gt;  [88] pbapply_1.7-4          knitr_1.51             gridExtra_2.3         </span></span>
-<span><span class="co">#&gt;  [91] scattermore_1.2        xfun_0.56              matrixStats_1.5.0     </span></span>
-<span><span class="co">#&gt;  [94] stringi_1.8.7          lazyeval_0.2.2         yaml_2.3.12           </span></span>
-<span><span class="co">#&gt;  [97] evaluate_1.0.5         codetools_0.2-20       tibble_3.3.1          </span></span>
-<span><span class="co">#&gt; [100] cli_3.6.5              uwot_0.2.4             xtable_1.8-8          </span></span>
-<span><span class="co">#&gt; [103] reticulate_1.45.0      systemfonts_1.3.1      jquerylib_0.1.4       </span></span>
-<span><span class="co">#&gt; [106] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.1        </span></span>
-<span><span class="co">#&gt; [109] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 </span></span>
-<span><span class="co">#&gt; [112] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         </span></span>
-<span><span class="co">#&gt; [115] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          </span></span>
-<span><span class="co">#&gt; [118] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
-<span><span class="co">#&gt; [121] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
+<span><span class="co">#&gt;   [4] ggbeeswarm_0.7.3       spatstat.utils_3.2-2   farver_2.1.2          </span></span>
+<span><span class="co">#&gt;   [7] rmarkdown_2.30         fs_1.6.7               ragg_1.5.0            </span></span>
+<span><span class="co">#&gt;  [10] vctrs_0.7.1            ROCR_1.0-12            spatstat.explore_3.7-0</span></span>
+<span><span class="co">#&gt;  [13] htmltools_0.5.9        sass_0.4.10            sctransform_0.4.3     </span></span>
+<span><span class="co">#&gt;  [16] parallelly_1.46.1      KernSmooth_2.23-26     bslib_0.10.0          </span></span>
+<span><span class="co">#&gt;  [19] htmlwidgets_1.6.4      desc_1.4.3             ica_1.0-3             </span></span>
+<span><span class="co">#&gt;  [22] plyr_1.8.9             plotly_4.12.0          zoo_1.8-15            </span></span>
+<span><span class="co">#&gt;  [25] cachem_1.1.0           igraph_2.2.2           mime_0.13             </span></span>
+<span><span class="co">#&gt;  [28] lifecycle_1.0.5        pkgconfig_2.0.3        Matrix_1.7-4          </span></span>
+<span><span class="co">#&gt;  [31] R6_2.6.1               fastmap_1.2.0          MatrixGenerics_1.22.0 </span></span>
+<span><span class="co">#&gt;  [34] fitdistrplus_1.2-6     future_1.69.0          shiny_1.13.0          </span></span>
+<span><span class="co">#&gt;  [37] digest_0.6.39          S4Vectors_0.48.0       tensor_1.5.1          </span></span>
+<span><span class="co">#&gt;  [40] RSpectra_0.16-2        irlba_2.3.7            GenomicRanges_1.62.1  </span></span>
+<span><span class="co">#&gt;  [43] textshaping_1.0.4      labeling_0.4.3         progressr_0.18.0      </span></span>
+<span><span class="co">#&gt;  [46] spatstat.sparse_3.1-0  httr_1.4.8             polyclip_1.10-7       </span></span>
+<span><span class="co">#&gt;  [49] abind_1.4-8            compiler_4.5.2         bit64_4.6.0-1         </span></span>
+<span><span class="co">#&gt;  [52] withr_3.0.2            S7_0.2.1               fastDummies_1.7.5     </span></span>
+<span><span class="co">#&gt;  [55] MASS_7.3-65            tools_4.5.2            vipor_0.4.7           </span></span>
+<span><span class="co">#&gt;  [58] lmtest_0.9-40          otel_0.2.0             beeswarm_0.4.0        </span></span>
+<span><span class="co">#&gt;  [61] httpuv_1.6.16          future.apply_1.20.2    goftest_1.2-3         </span></span>
+<span><span class="co">#&gt;  [64] glue_1.8.0             nlme_3.1-168           promises_1.5.0        </span></span>
+<span><span class="co">#&gt;  [67] grid_4.5.2             Rtsne_0.17             cluster_2.1.8.2       </span></span>
+<span><span class="co">#&gt;  [70] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          </span></span>
+<span><span class="co">#&gt;  [73] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
+<span><span class="co">#&gt;  [76] data.table_1.18.2.1    XVector_0.50.0         BiocGenerics_0.56.0   </span></span>
+<span><span class="co">#&gt;  [79] BPCells_0.2.0          spatstat.geom_3.7-0    RcppAnnoy_0.0.23      </span></span>
+<span><span class="co">#&gt;  [82] ggrepel_0.9.7          RANN_2.6.2             pillar_1.11.1         </span></span>
+<span><span class="co">#&gt;  [85] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        </span></span>
+<span><span class="co">#&gt;  [88] later_1.4.8            splines_4.5.2          dplyr_1.2.0           </span></span>
+<span><span class="co">#&gt;  [91] lattice_0.22-9         survival_3.8-6         bit_4.6.0             </span></span>
+<span><span class="co">#&gt;  [94] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          </span></span>
+<span><span class="co">#&gt;  [97] pbapply_1.7-4          knitr_1.51             gridExtra_2.3         </span></span>
+<span><span class="co">#&gt; [100] Seqinfo_1.0.0          IRanges_2.44.0         scattermore_1.2       </span></span>
+<span><span class="co">#&gt; [103] stats4_4.5.2           xfun_0.56              matrixStats_1.5.0     </span></span>
+<span><span class="co">#&gt; [106] UCSC.utils_1.6.1       stringi_1.8.7          lazyeval_0.2.2        </span></span>
+<span><span class="co">#&gt; [109] yaml_2.3.12            evaluate_1.0.5         codetools_0.2-20      </span></span>
+<span><span class="co">#&gt; [112] tibble_3.3.1           cli_3.6.5              uwot_0.2.4            </span></span>
+<span><span class="co">#&gt; [115] xtable_1.8-8           reticulate_1.45.0      systemfonts_1.3.1     </span></span>
+<span><span class="co">#&gt; [118] jquerylib_0.1.4        GenomeInfoDb_1.46.2    dichromat_2.0-0.1     </span></span>
+<span><span class="co">#&gt; [121] Rcpp_1.1.1             globals_0.19.1         spatstat.random_3.4-4 </span></span>
+<span><span class="co">#&gt; [124] png_0.1-8              ggrastr_1.0.2          spatstat.univar_3.1-6 </span></span>
+<span><span class="co">#&gt; [127] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         </span></span>
+<span><span class="co">#&gt; [130] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          </span></span>
+<span><span class="co">#&gt; [133] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
+<span><span class="co">#&gt; [136] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

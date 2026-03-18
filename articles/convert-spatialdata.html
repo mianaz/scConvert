@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Working with SpatialData (.spatialdata.zarr) • scConvert</title>
+<title>SpatialData Zarr Stores • scConvert</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Working with SpatialData (.spatialdata.zarr)">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="SpatialData Zarr Stores">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -35,25 +35,25 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Conversions: h5Seurat and AnnData</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Saving and Loading Data from an h5Seurat File</a></li>
-    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface (CLI)</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
+    <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
-    <li><a class="dropdown-item" href="../articles/convert-loom.html">Conversions: Seurat and Loom</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Conversions: Seurat and Zarr</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-soma.html">Converting Between Seurat and TileDB-SOMA</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
     <li><a class="dropdown-item" href="../articles/multimodal-h5mu.html">Multimodal Data with MuData (h5mu)</a></li>
-    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat File Format Specification</a></li>
-    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Data Mapping Reference</a></li>
+    <li><a class="dropdown-item" href="../articles/h5Seurat-spec.html">h5Seurat Format Specification</a></li>
+    <li><a class="dropdown-item" href="../articles/data-mapping-reference.html">Format Mapping Reference</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
-    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">Multimodal: CITE-seq and Multiome</a></li>
-    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion with Signac</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Spatial Transcriptomics: Visium</a></li>
-    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies: Slide-seq, Visium HD, and Others</a></li>
-    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">Working with SpatialData (.spatialdata.zarr)</a></li>
-    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire (TCR/BCR) Data with scConvert</a></li>
+    <li><a class="dropdown-item" href="../articles/multimodal-citeseq.html">CITE-seq Analysis Workflow</a></li>
+    <li><a class="dropdown-item" href="../articles/scatac-signac.html">scATAC-seq Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-visium.html">Visium Spatial Data Conversion</a></li>
+    <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies Overview</a></li>
+    <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">SpatialData Zarr Stores</a></li>
+    <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire Metadata Preservation</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -76,7 +76,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Working with SpatialData (.spatialdata.zarr)</h1>
+      <h1>SpatialData Zarr Stores</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/HEAD/vignettes/convert-spatialdata.Rmd" class="external-link"><code>vignettes/convert-spatialdata.Rmd</code></a></small>
@@ -86,276 +86,113 @@
     
     
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p><a href="https://spatialdata.scverse.org/" class="external-link">SpatialData</a> is the
-scverse standard for representing spatial omics data. It uses a
-Zarr-based directory layout that combines OME-NGFF images, geometric
-shapes, transcript-level point annotations, segmentation labels, and
-anndata expression tables into a single hierarchical store. Technologies
-such as Visium, MERFISH, Xenium, Slide-seq, CODEX, and Stereo-seq all
-have SpatialData representations, making it a unifying format across the
-spatial omics ecosystem.</p>
-<p>scConvert provides native R support for reading and writing
-SpatialData stores with no Python dependency, and includes direct pair
-converters for moving data between SpatialData and other formats (h5ad,
-h5Seurat, Zarr).</p>
+scverse standard for spatial omics data. A
+<code>.spatialdata.zarr</code> store combines expression tables, spatial
+coordinates, shapes, and tissue images in a single Zarr directory.
+Technologies like Visium, MERFISH, Xenium, Slide-seq, and CODEX all have
+SpatialData representations, making it a unifying format for the spatial
+transcriptomics ecosystem.</p>
+<p>scConvert provides <code><a href="../reference/readSpatialData.html">readSpatialData()</a></code> and
+<code><a href="../reference/writeSpatialData.html">writeSpatialData()</a></code> to move between SpatialData stores and
+Seurat objects, with no Python dependency.</p>
+</div>
+<div class="section level2">
+<h2 id="load-spatial-demo-data">Load spatial demo data<a class="anchor" aria-label="anchor" href="#load-spatial-demo-data"></a>
+</h2>
+<p>We use a 400-spot Visium mouse brain dataset that ships with
+scConvert. It includes a tissue image, PCA/UMAP embeddings, and 15
+clusters.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="spatialdata-store-layout">SpatialData store layout<a class="anchor" aria-label="anchor" href="#spatialdata-store-layout"></a>
-</h2>
-<p>A <code>.spatialdata.zarr</code> directory follows this
-structure:</p>
-<pre><code>sample.spatialdata.zarr/
-+-- .zattrs              # {"spatialdata_attrs": {"version": "0.2.0"}}
-+-- .zgroup              # {"zarr_format": 2}
-+-- images/              # OME-NGFF multiscale tissue images
-+-- labels/              # Segmentation masks (cell/nucleus outlines)
-+-- points/              # Point annotations (e.g., transcript coordinates)
-+-- shapes/              # Geometric shapes (spot positions with radii)
-+-- tables/              # AnnData expression tables (one or more)
-    +-- table/           # Default table (standard anndata zarr)</code></pre>
-<p>The <code>tables/table/</code> subdirectory is a standard anndata
-zarr store, so scConvert’s existing Zarr infrastructure handles the
-expression data, metadata, embeddings, and graphs. The
-SpatialData-specific elements (shapes, points, images, labels) are
-handled by dedicated readers and writers.</p>
-</div>
-<div class="section level2">
-<h2 id="create-a-demo-spatialdata-store">Create a demo SpatialData store<a class="anchor" aria-label="anchor" href="#create-a-demo-spatialdata-store"></a>
-</h2>
-<p>We create a Seurat object with spatial coordinates and write it as a
-SpatialData store using <code><a href="../reference/writeSpatialData.html">writeSpatialData()</a></code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Synthetic spatial expression data: 100 genes × 200 cells</span></span>
-<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/rsparsematrix.html" class="external-link">rsparsematrix</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">200</span>, density <span class="op">=</span> <span class="fl">0.05</span>, rand.x <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">5</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dimnames.html" class="external-link">dimnames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Gene"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Cell"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">200</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">demo</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">counts</span>, min.cells <span class="op">=</span> <span class="fl">0</span>, min.features <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Add spatial coordinates and metadata</span></span>
-<span><span class="va">demo</span><span class="op">$</span><span class="va">spatial_x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">0</span>, <span class="fl">1000</span><span class="op">)</span></span>
-<span><span class="va">demo</span><span class="op">$</span><span class="va">spatial_y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">0</span>, <span class="fl">1000</span><span class="op">)</span></span>
-<span><span class="va">demo</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Epithelial"</span>, <span class="st">"Stromal"</span>, <span class="st">"Immune"</span><span class="op">)</span>, <span class="fl">200</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">demo</span><span class="op">$</span><span class="va">region</span> <span class="op">&lt;-</span> <span class="st">"tissue_section"</span></span>
-<span></span>
-<span><span class="co"># Write as SpatialData</span></span>
-<span><span class="fu"><a href="../reference/writeSpatialData.html">writeSpatialData</a></span><span class="op">(</span><span class="va">demo</span>, <span class="st">"demo.spatialdata.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="reading-spatialdata">Reading SpatialData<a class="anchor" aria-label="anchor" href="#reading-spatialdata"></a>
-</h2>
-<p>Use <code><a href="../reference/readSpatialData.html">readSpatialData()</a></code> to load the store into a Seurat
-object:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="st">"demo.spatialdata.zarr"</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">obj</span></span>
+<code class="sourceCode R"><span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"spatial_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">brain</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
-<span><span class="co">#&gt; 100 features across 200 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: RNA (100 features, 0 variable features)</span></span>
-<span><span class="co">#&gt;  1 layer present: counts</span></span>
-<span><span class="co">#&gt;  1 spatial field of view present: spots</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="what-gets-preserved">What gets preserved<a class="anchor" aria-label="anchor" href="#what-gets-preserved"></a>
-</h3>
-<p>The reader extracts the following components:</p>
-<table class="table">
-<colgroup>
-<col width="42%">
-<col width="42%">
-<col width="14%">
-</colgroup>
-<thead><tr class="header">
-<th>SpatialData Element</th>
-<th>Seurat Destination</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>tables/table/</code></td>
-<td>Expression assay, metadata, reductions</td>
-<td>Via <code><a href="../reference/readZarr.html">readZarr()</a></code>
-</td>
-</tr>
-<tr class="even">
-<td><code>shapes/{region}/</code></td>
-<td>Spatial coordinates (FOV/image)</td>
-<td>x, y, radius columns</td>
-</tr>
-<tr class="odd">
-<td><code>points/{region}/</code></td>
-<td><code>misc$points_{name}</code></td>
-<td>Transcript-level data</td>
-</tr>
-<tr class="even">
-<td><code>images/{name}/</code></td>
-<td>Image object (if coords present)</td>
-<td>OME-NGFF, normalized to [0,1]</td>
-</tr>
-<tr class="odd">
-<td><code>labels/</code></td>
-<td><code>misc$__spatialdata_labels__</code></td>
-<td>Names only (see Limitations)</td>
-</tr>
-</tbody>
-</table>
-<p>SpatialData attributes (<code>region</code>, <code>region_key</code>,
-<code>instance_key</code>) are stored in
-<code>misc$__spatialdata_attrs__</code> and used during write-back to
-ensure round-trip fidelity.</p>
+<span><span class="co">#&gt; 1500 features across 400 samples within 1 assay </span></span>
+<span><span class="co">#&gt; Active assay: Spatial (1500 features, 1500 variable features)</span></span>
+<span><span class="co">#&gt;  2 layers present: counts, data</span></span>
+<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
+<span><span class="co">#&gt;  1 spatial field of view present: anterior1</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">SpatialFeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Hpca"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Hpca expression -- Original Visium data"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-spatialdata_files/figure-html/spatial-plot-original-1.png" class="r-plt" alt="" width="672"></p>
 </div>
+<div class="section level2">
+<h2 id="write-to-spatialdata">Write to SpatialData<a class="anchor" aria-label="anchor" href="#write-to-spatialdata"></a>
+</h2>
+<p>Save the Seurat object as a SpatialData Zarr store. The expression
+data, metadata, embeddings, spatial coordinates, and shapes are all
+written.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sd_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"brain.spatialdata.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeSpatialData.html">writeSpatialData</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">sd_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"SpatialData store written to:"</span>, <span class="va">sd_path</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; SpatialData store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpM9FOe4/brain.spatialdata.zarr</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="read-back-from-spatialdata">Read back from SpatialData<a class="anchor" aria-label="anchor" href="#read-back-from-spatialdata"></a>
+</h2>
+<p>Load the store back into a Seurat object.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="va">sd_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Cells: 400 | Genes: 1500</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Reductions</span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Reductions: pca, umap</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Images:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Images</span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Images: anterior1</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="compare-original-and-round-trip">Compare original and round-trip<a class="anchor" aria-label="anchor" href="#compare-original-and-round-trip"></a>
+</h2>
+<p>Side-by-side comparisons confirm that cluster assignments and gene
+expression patterns survive the SpatialData round-trip.</p>
 <div class="section level3">
-<h3 id="inspect-the-seurat-object">Inspect the Seurat object<a class="anchor" aria-label="anchor" href="#inspect-the-seurat-object"></a>
+<h3 id="cluster-umap">Cluster UMAP<a class="anchor" aria-label="anchor" href="#cluster-umap"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:    "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Cells:     200</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Features: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Features:  100</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Layers:   "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Layers.html" class="external-link">Layers</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Layers:    counts</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Images:   "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Images.html" class="external-link">Images</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Images:    spots</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># SpatialData metadata preserved for roundtrip</span></span>
-<span><span class="va">sd_attrs</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">@</span><span class="va">misc</span><span class="op">[[</span><span class="st">"__spatialdata_attrs__"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">sd_attrs</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Region:       "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">sd_attrs</span><span class="op">$</span><span class="va">region</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Region key:   "</span>, <span class="va">sd_attrs</span><span class="op">$</span><span class="va">region_key</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Instance key: "</span>, <span class="va">sd_attrs</span><span class="op">$</span><span class="va">instance_key</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="co">#&gt; Region:        spots </span></span>
-<span><span class="co">#&gt; Region key:    region </span></span>
-<span><span class="co">#&gt; Instance key:  instance_id</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Points stored in misc</span></span>
-<span><span class="va">point_keys</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^points_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">obj</span><span class="op">@</span><span class="va">misc</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">point_keys</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">pk</span> <span class="kw">in</span> <span class="va">point_keys</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Points ("</span>, <span class="va">pk</span>, <span class="st">"): "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">@</span><span class="va">misc</span><span class="op">[[</span><span class="va">pk</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">" entries\n"</span>, sep <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
-<span>  <span class="op">}</span></span>
-<span><span class="op">}</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"After SpatialData round-trip"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Label names</span></span>
-<span><span class="va">label_names</span> <span class="op">&lt;-</span> <span class="va">obj</span><span class="op">@</span><span class="va">misc</span><span class="op">[[</span><span class="st">"__spatialdata_labels__"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">label_names</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Labels:   "</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">label_names</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
+<p><img src="convert-spatialdata_files/figure-html/compare-dimplot-1.png" class="r-plt" alt="" width="1152"></p>
 </div>
 <div class="section level3">
-<h3 id="specifying-a-table">Specifying a table<a class="anchor" aria-label="anchor" href="#specifying-a-table"></a>
+<h3 id="gene-expression">Gene expression<a class="anchor" aria-label="anchor" href="#gene-expression"></a>
 </h3>
-<p>SpatialData stores can contain multiple tables. Use the
-<code>table</code> argument to select which one to read:</p>
+<p>Ttr (transthyretin) marks the choroid plexus in mouse brain.
+Expression patterns are identical before and after the round-trip.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Read the default table</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="st">"multi_table.spatialdata.zarr"</span>, table <span class="op">=</span> <span class="st">"table"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Read a specific table</span></span>
-<span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="st">"multi_table.spatialdata.zarr"</span>, table <span class="op">=</span> <span class="st">"rna_counts"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Ttr"</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Ttr -- Original"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">brain_rt</span>, features <span class="op">=</span> <span class="st">"Ttr"</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Ttr -- SpatialData round-trip"</span><span class="op">)</span></span>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
+<p><img src="convert-spatialdata_files/figure-html/compare-feature-1.png" class="r-plt" alt="" width="1152"></p>
 </div>
 <div class="section level3">
-<h3 id="skipping-images">Skipping images<a class="anchor" aria-label="anchor" href="#skipping-images"></a>
+<h3 id="quick-fidelity-check">Quick fidelity check<a class="anchor" aria-label="anchor" href="#quick-fidelity-check"></a>
 </h3>
-<p>For large stores where only the expression data and coordinates are
-needed, set <code>images = FALSE</code> to skip OME-NGFF image
-reading:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="st">"large_sample.spatialdata.zarr"</span>, images <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="writing-spatialdata">Writing SpatialData<a class="anchor" aria-label="anchor" href="#writing-spatialdata"></a>
-</h2>
-<p>Use <code><a href="../reference/writeSpatialData.html">writeSpatialData()</a></code> to write the Seurat object back
-as a SpatialData zarr store, completing the round trip:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/writeSpatialData.html">writeSpatialData</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"demo_roundtrip.spatialdata.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Written to: demo_roundtrip.spatialdata.zarr\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Written to: demo_roundtrip.spatialdata.zarr</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Store size: "</span>,</span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.info</a></span><span class="op">(</span></span>
-<span>      <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"demo_roundtrip.spatialdata.zarr"</span>,</span>
-<span>                 recursive <span class="op">=</span> <span class="cn">TRUE</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>    <span class="op">)</span><span class="op">$</span><span class="va">size</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">" MB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Store size:  0  MB</span></span></code></pre></div>
-<p>The writer creates the full SpatialData directory layout:</p>
-<table class="table">
-<colgroup>
-<col width="31%">
-<col width="53%">
-<col width="15%">
-</colgroup>
-<thead><tr class="header">
-<th>Seurat Source</th>
-<th>SpatialData Destination</th>
-<th>Notes</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Expression, metadata, reductions</td>
-<td><code>tables/table/</code></td>
-<td>Via <code><a href="../reference/writeZarr.html">writeZarr()</a></code>
-</td>
-</tr>
-<tr class="even">
-<td>Tissue coordinates</td>
-<td><code>shapes/{region}/</code></td>
-<td>DataFrame with x, y, radius</td>
-</tr>
-<tr class="odd">
-<td><code>misc$points_*</code></td>
-<td><code>points/{name}/</code></td>
-<td>Preserved from read</td>
-</tr>
-<tr class="even">
-<td>Image arrays</td>
-<td><code>images/{name}/</code></td>
-<td>OME-NGFF with multiscales metadata</td>
-</tr>
-</tbody>
-</table>
-<div class="section level3">
-<h3 id="verify-the-roundtrip">Verify the roundtrip<a class="anchor" aria-label="anchor" href="#verify-the-roundtrip"></a>
-</h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">obj_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="st">"demo_roundtrip.spatialdata.zarr"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Original cells:   "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Original cells:    200</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip cells:  "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Roundtrip cells:   200</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Original features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Original features: 100</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip features:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Roundtrip features: 100</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Dimensions match: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj_rt</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Dimensions match:  TRUE</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"All checks passed:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"spots x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"genes.\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; All checks passed: 400 spots x 1500 genes.</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
 <h2 id="direct-pair-converters">Direct pair converters<a class="anchor" aria-label="anchor" href="#direct-pair-converters"></a>
 </h2>
-<p>scConvert provides six direct conversion functions that combine
-reading and writing in a single call, without requiring you to manage
-intermediate Seurat objects.</p>
-<div class="section level3">
-<h3 id="spatialdata-to-h5ad">SpatialData to h5ad<a class="anchor" aria-label="anchor" href="#spatialdata-to-h5ad"></a>
-</h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/SpatialDataToH5AD.html">SpatialDataToH5AD</a></span><span class="op">(</span><span class="st">"demo.spatialdata.zarr"</span>, <span class="st">"demo_spatial.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"h5ad size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="st">"demo_spatial.h5ad"</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; h5ad size: 0.1 MB</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="all-six-converters">All six converters<a class="anchor" aria-label="anchor" href="#all-six-converters"></a>
-</h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<p>Convert between SpatialData and other formats in a single call:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># SpatialData &lt;-&gt; h5ad</span></span>
 <span><span class="fu"><a href="../reference/SpatialDataToH5AD.html">SpatialDataToH5AD</a></span><span class="op">(</span><span class="st">"sample.spatialdata.zarr"</span>, <span class="st">"sample.h5ad"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/H5ADToSpatialData.html">H5ADToSpatialData</a></span><span class="op">(</span><span class="st">"sample.h5ad"</span>, <span class="st">"sample.spatialdata.zarr"</span><span class="op">)</span></span>
@@ -364,91 +201,45 @@ intermediate Seurat objects.</p>
 <span><span class="fu"><a href="../reference/SpatialDataToH5Seurat.html">SpatialDataToH5Seurat</a></span><span class="op">(</span><span class="st">"sample.spatialdata.zarr"</span>, <span class="st">"sample.h5seurat"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/H5SeuratToSpatialData.html">H5SeuratToSpatialData</a></span><span class="op">(</span><span class="st">"sample.h5seurat"</span>, <span class="st">"sample.spatialdata.zarr"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># SpatialData &lt;-&gt; standard Zarr (anndata zarr without SpatialData wrapper)</span></span>
-<span><span class="fu"><a href="../reference/SpatialDataToZarr.html">SpatialDataToZarr</a></span><span class="op">(</span><span class="st">"sample.spatialdata.zarr"</span>, <span class="st">"sample.zarr"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/ZarrToSpatialData.html">ZarrToSpatialData</a></span><span class="op">(</span><span class="st">"sample.zarr"</span>, <span class="st">"sample.spatialdata.zarr"</span><span class="op">)</span></span></code></pre></div>
-<p>All six functions accept <code>overwrite = TRUE</code> and
-<code>verbose = TRUE/FALSE</code> arguments. The
-<code>SpatialDataToH5AD</code>, <code>SpatialDataToH5Seurat</code>, and
-<code>SpatialDataToZarr</code> functions also accept a
-<code>table</code> argument to specify which table to extract from the
-store.</p>
-<p>These converters also work through the <code>scConvert()</code>
-dispatcher:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"sample.spatialdata.zarr"</span>, dest <span class="op">=</span> <span class="st">"sample.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu">scConvert</span><span class="op">(</span><span class="st">"sample.h5ad"</span>, dest <span class="op">=</span> <span class="st">"output.spatialdata.zarr"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Or use the universal dispatcher</span></span>
+<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"sample.spatialdata.zarr"</span>, dest <span class="op">=</span> <span class="st">"sample.h5ad"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level2">
+<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
+</h2>
+<ul>
+<li>
+<strong>Images</strong>: Large OME-NGFF images (&gt;100M pixels) are
+skipped to avoid memory issues. Use <code>images = FALSE</code> to read
+coordinates only.</li>
+<li>
+<strong>Coordinate transforms</strong>: SpatialData supports affine
+transformations between elements. These are not currently applied during
+reading; coordinates are used as-is.</li>
+<li>
+<strong>Labels/segmentation</strong>: Cell and nucleus segmentation
+masks are recorded by name but not loaded (they have no natural Seurat
+representation).</li>
+<li>
+<strong>Multiple tables</strong>: Only one table is read per call.
+Use the <code>table</code> argument to select which one.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="python-interoperability">Python interoperability<a class="anchor" aria-label="anchor" href="#python-interoperability"></a>
 </h2>
-<p>SpatialData stores written by scConvert are readable by the Python <a href="https://spatialdata.scverse.org/" class="external-link">spatialdata</a> library and its
-ecosystem (squidpy, napari-spatialdata).</p>
-<div class="section level3">
-<h3 id="read-the-h5ad-output-in-python">Read the h5ad output in Python<a class="anchor" aria-label="anchor" href="#read-the-h5ad-output-in-python"></a>
-</h3>
-<p>The h5ad produced by <code><a href="../reference/SpatialDataToH5AD.html">SpatialDataToH5AD()</a></code> is a standard
-AnnData file readable by scanpy:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"demo_spatial.h5ad"</span>)</span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co">#&gt; AnnData object with n_obs × n_vars = 200 × 100</span></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt;     obs: 'orig.ident', 'nCount_RNA', 'nFeature_RNA', 'spatial_x', 'spatial_y', 'cell_type', 'region'</span></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt;     uns: '__spatialdata_version__', 'spatial'</span></span>
-<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt;     obsm: 'spatial'</span></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">obs columns: </span><span class="sc">{</span><span class="bu">list</span>(adata.obs.columns)<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; obs columns: ['orig.ident', 'nCount_RNA', 'nFeature_RNA', 'spatial_x', 'spatial_y', 'cell_type', 'region']</span></span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Cells: </span><span class="sc">{</span>adata<span class="sc">.</span>n_obs<span class="sc">}</span><span class="ss">, Genes: </span><span class="sc">{</span>adata<span class="sc">.</span>n_vars<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co">#&gt; Cells: 200, Genes: 100</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a>
-</h2>
-<ul>
-<li><p><strong>Labels/segmentation masks</strong>: scConvert records the
-names of label layers found in <code>labels/</code> but does not read
-the full mask arrays. These are typically large (cell/nucleus
-segmentation at pixel resolution) and have no natural representation in
-Seurat. Label names are preserved in
-<code>misc$__spatialdata_labels__</code> for metadata purposes.</p></li>
-<li><p><strong>Multiple tables</strong>: Only one table is read per
-call. If your SpatialData store contains multiple tables (e.g., separate
-RNA and protein assays), call <code><a href="../reference/readSpatialData.html">readSpatialData()</a></code> once per
-table and merge the resulting Seurat objects.</p></li>
-<li><p><strong>Large images</strong>: OME-NGFF images larger than 100
-million pixels are skipped to avoid memory issues. Use
-<code>images = FALSE</code> and work with coordinates only, or
-downsample the image externally before reading.</p></li>
-<li><p><strong>Coordinate transforms</strong>: SpatialData supports
-affine and sequence coordinate transformations between elements. These
-are not currently applied during reading; coordinates are used as-is
-from the zarr arrays.</p></li>
-</ul>
-</div>
-<div class="section level2">
-<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
-</h2>
-<ul>
-<li>
-<a href="spatial-visium.html">Spatial Transcriptomics: Visium</a> –
-Visium-specific workflows with tissue images and squidpy validation</li>
-<li>
-<a href="spatial-technologies.html">Spatial Technologies</a> –
-support for MERFISH, Slide-seq, Xenium, CODEX, and other platforms</li>
-<li>
-<a href="convert-zarr.html">Conversions: Seurat and Zarr</a> –
-general Zarr format details, streaming conversion, and Python
-interop</li>
-</ul>
+<p>SpatialData stores written by scConvert are readable by the Python <a href="https://spatialdata.scverse.org/" class="external-link">spatialdata</a> library.
+Requires Python with spatialdata installed.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="im">import</span> spatialdata <span class="im">as</span> sd</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>sdata <span class="op">=</span> sd.read_zarr(<span class="st">"brain.spatialdata.zarr"</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="bu">print</span>(sdata)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>sdata.pl.render_shapes().pl.show()</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
 <span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>
@@ -468,7 +259,8 @@ interop</li>
 <span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] scConvert_0.1.0    Seurat_5.4.0       SeuratObject_5.3.0 sp_2.2-1          </span></span>
+<span><span class="co">#&gt; [1] patchwork_1.3.2    ggplot2_4.0.2      Seurat_5.4.0       SeuratObject_5.3.0</span></span>
+<span><span class="co">#&gt; [5] sp_2.2-1           scConvert_0.1.0   </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
 <span><span class="co">#&gt;   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.4        </span></span>
@@ -481,41 +273,37 @@ interop</li>
 <span><span class="co">#&gt;  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          </span></span>
 <span><span class="co">#&gt;  [25] igraph_2.2.2           mime_0.13              lifecycle_1.0.5       </span></span>
 <span><span class="co">#&gt;  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              </span></span>
-<span><span class="co">#&gt;  [31] fastmap_1.2.0          MatrixGenerics_1.22.0  fitdistrplus_1.2-6    </span></span>
-<span><span class="co">#&gt;  [34] future_1.69.0          shiny_1.13.0           digest_0.6.39         </span></span>
-<span><span class="co">#&gt;  [37] S4Vectors_0.48.0       patchwork_1.3.2        tensor_1.5.1          </span></span>
-<span><span class="co">#&gt;  [40] RSpectra_0.16-2        irlba_2.3.7            GenomicRanges_1.62.1  </span></span>
-<span><span class="co">#&gt;  [43] textshaping_1.0.4      progressr_0.18.0       spatstat.sparse_3.1-0 </span></span>
-<span><span class="co">#&gt;  [46] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           </span></span>
-<span><span class="co">#&gt;  [49] compiler_4.5.2         bit64_4.6.0-1          withr_3.0.2           </span></span>
-<span><span class="co">#&gt;  [52] S7_0.2.1               fastDummies_1.7.5      MASS_7.3-65           </span></span>
-<span><span class="co">#&gt;  [55] tools_4.5.2            lmtest_0.9-40          otel_0.2.0            </span></span>
-<span><span class="co">#&gt;  [58] httpuv_1.6.16          future.apply_1.20.2    goftest_1.2-3         </span></span>
-<span><span class="co">#&gt;  [61] glue_1.8.0             nlme_3.1-168           promises_1.5.0        </span></span>
-<span><span class="co">#&gt;  [64] grid_4.5.2             Rtsne_0.17             cluster_2.1.8.2       </span></span>
-<span><span class="co">#&gt;  [67] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          </span></span>
-<span><span class="co">#&gt;  [70] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
-<span><span class="co">#&gt;  [73] data.table_1.18.2.1    XVector_0.50.0         BiocGenerics_0.56.0   </span></span>
-<span><span class="co">#&gt;  [76] BPCells_0.2.0          spatstat.geom_3.7-0    RcppAnnoy_0.0.23      </span></span>
-<span><span class="co">#&gt;  [79] ggrepel_0.9.7          RANN_2.6.2             pillar_1.11.1         </span></span>
-<span><span class="co">#&gt;  [82] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        </span></span>
-<span><span class="co">#&gt;  [85] later_1.4.8            splines_4.5.2          dplyr_1.2.0           </span></span>
-<span><span class="co">#&gt;  [88] lattice_0.22-9         survival_3.8-6         bit_4.6.0             </span></span>
-<span><span class="co">#&gt;  [91] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          </span></span>
-<span><span class="co">#&gt;  [94] pbapply_1.7-4          knitr_1.51             gridExtra_2.3         </span></span>
-<span><span class="co">#&gt;  [97] Seqinfo_1.0.0          IRanges_2.44.0         scattermore_1.2       </span></span>
-<span><span class="co">#&gt; [100] stats4_4.5.2           xfun_0.56              matrixStats_1.5.0     </span></span>
-<span><span class="co">#&gt; [103] UCSC.utils_1.6.1       stringi_1.8.7          lazyeval_0.2.2        </span></span>
-<span><span class="co">#&gt; [106] yaml_2.3.12            evaluate_1.0.5         codetools_0.2-20      </span></span>
-<span><span class="co">#&gt; [109] tibble_3.3.1           cli_3.6.5              uwot_0.2.4            </span></span>
-<span><span class="co">#&gt; [112] xtable_1.8-8           reticulate_1.45.0      systemfonts_1.3.1     </span></span>
-<span><span class="co">#&gt; [115] jquerylib_0.1.4        GenomeInfoDb_1.46.2    dichromat_2.0-0.1     </span></span>
-<span><span class="co">#&gt; [118] Rcpp_1.1.1             globals_0.19.1         spatstat.random_3.4-4 </span></span>
-<span><span class="co">#&gt; [121] png_0.1-8              spatstat.univar_3.1-6  parallel_4.5.2        </span></span>
-<span><span class="co">#&gt; [124] pkgdown_2.2.0          ggplot2_4.0.2          dotCall64_1.2         </span></span>
-<span><span class="co">#&gt; [127] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          </span></span>
-<span><span class="co">#&gt; [130] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
-<span><span class="co">#&gt; [133] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
+<span><span class="co">#&gt;  [31] fastmap_1.2.0          fitdistrplus_1.2-6     future_1.69.0         </span></span>
+<span><span class="co">#&gt;  [34] shiny_1.13.0           digest_0.6.39          tensor_1.5.1          </span></span>
+<span><span class="co">#&gt;  [37] RSpectra_0.16-2        irlba_2.3.7            textshaping_1.0.4     </span></span>
+<span><span class="co">#&gt;  [40] labeling_0.4.3         progressr_0.18.0       spatstat.sparse_3.1-0 </span></span>
+<span><span class="co">#&gt;  [43] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           </span></span>
+<span><span class="co">#&gt;  [46] compiler_4.5.2         bit64_4.6.0-1          withr_3.0.2           </span></span>
+<span><span class="co">#&gt;  [49] S7_0.2.1               fastDummies_1.7.5      MASS_7.3-65           </span></span>
+<span><span class="co">#&gt;  [52] tools_4.5.2            lmtest_0.9-40          otel_0.2.0            </span></span>
+<span><span class="co">#&gt;  [55] httpuv_1.6.16          future.apply_1.20.2    goftest_1.2-3         </span></span>
+<span><span class="co">#&gt;  [58] glue_1.8.0             nlme_3.1-168           promises_1.5.0        </span></span>
+<span><span class="co">#&gt;  [61] grid_4.5.2             Rtsne_0.17             cluster_2.1.8.2       </span></span>
+<span><span class="co">#&gt;  [64] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          </span></span>
+<span><span class="co">#&gt;  [67] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           </span></span>
+<span><span class="co">#&gt;  [70] data.table_1.18.2.1    spatstat.geom_3.7-0    RcppAnnoy_0.0.23      </span></span>
+<span><span class="co">#&gt;  [73] ggrepel_0.9.7          RANN_2.6.2             pillar_1.11.1         </span></span>
+<span><span class="co">#&gt;  [76] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        </span></span>
+<span><span class="co">#&gt;  [79] later_1.4.8            splines_4.5.2          dplyr_1.2.0           </span></span>
+<span><span class="co">#&gt;  [82] lattice_0.22-9         survival_3.8-6         bit_4.6.0             </span></span>
+<span><span class="co">#&gt;  [85] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2          </span></span>
+<span><span class="co">#&gt;  [88] pbapply_1.7-4          knitr_1.51             gridExtra_2.3         </span></span>
+<span><span class="co">#&gt;  [91] scattermore_1.2        xfun_0.56              matrixStats_1.5.0     </span></span>
+<span><span class="co">#&gt;  [94] stringi_1.8.7          lazyeval_0.2.2         yaml_2.3.12           </span></span>
+<span><span class="co">#&gt;  [97] evaluate_1.0.5         codetools_0.2-20       tibble_3.3.1          </span></span>
+<span><span class="co">#&gt; [100] cli_3.6.5              uwot_0.2.4             xtable_1.8-8          </span></span>
+<span><span class="co">#&gt; [103] reticulate_1.45.0      systemfonts_1.3.1      jquerylib_0.1.4       </span></span>
+<span><span class="co">#&gt; [106] dichromat_2.0-0.1      Rcpp_1.1.1             globals_0.19.1        </span></span>
+<span><span class="co">#&gt; [109] spatstat.random_3.4-4  png_0.1-8              spatstat.univar_3.1-6 </span></span>
+<span><span class="co">#&gt; [112] parallel_4.5.2         pkgdown_2.2.0          dotCall64_1.2         </span></span>
+<span><span class="co">#&gt; [115] listenv_0.10.1         viridisLite_0.4.3      scales_1.4.0          </span></span>
+<span><span class="co">#&gt; [118] ggridges_0.5.7         purrr_1.2.1            crayon_1.5.3          </span></span>
+<span><span class="co">#&gt; [121] rlang_1.1.7            cowplot_1.2.0</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
