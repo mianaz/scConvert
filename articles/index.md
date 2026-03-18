@@ -8,6 +8,8 @@
   Files](https://mianaz.github.io/scConvert/articles/h5Seurat-load.md):
 - [Command-Line
   Interface](https://mianaz.github.io/scConvert/articles/cli-usage.md):
+- [In-Memory vs On-Disk
+  Conversion](https://mianaz.github.io/scConvert/articles/conversion-modes.md):
 
 ### Format Guides
 
@@ -38,3 +40,5 @@
   Stores](https://mianaz.github.io/scConvert/articles/convert-spatialdata.md):
 - [Immune Repertoire Metadata
   Preservation](https://mianaz.github.io/scConvert/articles/immune-repertoire.md):
+- [Atlas-Scale Datasets with
+  BPCells](https://mianaz.github.io/scConvert/articles/atlas-bpcells.md):
