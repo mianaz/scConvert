@@ -743,7 +743,13 @@ SOMAToZarr <- function(source, dest, measurement = "RNA", overwrite = FALSE,
   mat <- tryCatch({
     iter <- x_layer$read()
     sp <- iter$sparse_matrix(zero_based = TRUE)
-    sp$concat()
+    result <- sp$concat()
+    # tiledbsoma 2.x returns matrixZeroBasedView R6; convert to standard sparse
+    if (inherits(result, "R6")) {
+      result$get_one_based_matrix()
+    } else {
+      result
+    }
   }, error = function(e) {
     stop("Failed to read X matrix: ", e$message, call. = FALSE)
   })
@@ -817,8 +823,15 @@ SOMAToZarr <- function(source, dest, measurement = "RNA", overwrite = FALSE,
     tryCatch({
       if (verbose) message("  Reading obsm: ", emb_name)
       emb_arr <- obsm_coll$get(emb_name)
-      emb_data <- emb_arr$read()$concat()
-      emb_mat <- as.matrix(as.data.frame(emb_data))
+      rd <- emb_arr$read()
+      # tiledbsoma 2.x: use sparse_matrix path for SOMASparseNDArray
+      emb_result <- if ("sparse_matrix" %in% ls(rd)) {
+        m <- rd$sparse_matrix(zero_based = TRUE)$concat()
+        if (inherits(m, "R6")) m$get_one_based_matrix() else m
+      } else {
+        rd$concat()
+      }
+      emb_mat <- as.matrix(emb_result)
 
       # Remove soma_joinid column if present
       if ("soma_joinid" %in% colnames(emb_mat)) {
@@ -880,7 +893,13 @@ SOMAToZarr <- function(source, dest, measurement = "RNA", overwrite = FALSE,
     tryCatch({
       if (verbose) message("  Reading obsp: ", graph_name)
       graph_arr <- obsp_coll$get(graph_name)
-      graph_data <- graph_arr$read()$sparse_matrix(zero_based = TRUE)$concat()
+      graph_result <- graph_arr$read()$sparse_matrix(zero_based = TRUE)$concat()
+      # tiledbsoma 2.x returns matrixZeroBasedView R6
+      graph_data <- if (inherits(graph_result, "R6")) {
+        graph_result$get_one_based_matrix()
+      } else {
+        graph_result
+      }
 
       # Coerce to dgCMatrix
       if (!inherits(graph_data, "dgCMatrix")) {

@@ -9,7 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(
-  eval = FALSE,
+  eval = TRUE,
   message = FALSE,
   warning = FALSE,
   collapse = TRUE,
@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
   out.width = "100%",
   purl = FALSE
 )
+has_tiledbsoma <- requireNamespace("tiledbsoma", quietly = TRUE)
 ```
 
 ## What is TileDB-SOMA?
@@ -40,24 +41,66 @@ scConvert provides `readSOMA()` and `writeSOMA()` for Seurat interoperability,
 plus pair converters for all supported formats. All SOMA functions require the
 [tiledbsoma](https://github.com/single-cell-data/TileDB-SOMA) R package.
 
-```{r install_deps}
-# Install tiledbsoma (required for SOMA support)
-install.packages("tiledbsoma")
-
+```{r packages, eval = has_tiledbsoma}
 library(scConvert)
 library(Seurat)
 ```
+
+## Writing a Seurat object to SOMA
+
+We start with the shipped `pbmc_small` dataset, write it to a SOMA experiment,
+then read it back to verify the roundtrip.
+
+```{r write_soma, eval = has_tiledbsoma}
+# Load the shipped demo data
+pbmc <- readRDS(system.file("testdata", "pbmc_small.rds", package = "scConvert"))
+pbmc
+```
+
+Use `writeSOMA()` to save any Seurat object as a SOMA experiment:
+
+```{r write_soma_run, eval = has_tiledbsoma}
+soma_uri <- file.path(tempdir(), "pbmc_small.soma")
+
+# Ensure graphs have a valid DefaultAssay (required by tiledbsoma)
+for (gn in names(pbmc@graphs)) {
+  if (length(DefaultAssay(pbmc@graphs[[gn]])) == 0) {
+    DefaultAssay(pbmc@graphs[[gn]]) <- DefaultAssay(pbmc)
+  }
+}
+
+writeSOMA(pbmc, uri = soma_uri, overwrite = TRUE)
+cat("SOMA experiment written to:", soma_uri, "\n")
+```
+
+`writeSOMA()` delegates to `tiledbsoma::write_soma()`, which converts all
+assays, metadata, embeddings, and graphs. Each Seurat assay becomes a separate
+SOMA measurement.
 
 ## Reading from SOMA
 
 Use `readSOMA()` to load a SOMA experiment as a Seurat object:
 
-```{r read_basic}
-# Read a local SOMA experiment
-obj <- readSOMA("path/to/experiment")
+```{r read_soma, eval = has_tiledbsoma}
+obj <- readSOMA(soma_uri)
+obj
+```
 
-# Read a specific measurement (default is "RNA")
-obj <- readSOMA("path/to/experiment", measurement = "ATAC")
+### Verify roundtrip fidelity
+
+```{r verify_roundtrip, eval = has_tiledbsoma}
+# Cell and gene counts match
+cat("Original cells:", ncol(pbmc), " Roundtrip cells:", ncol(obj), "\n")
+cat("Original genes:", nrow(pbmc), " Roundtrip genes:", nrow(obj), "\n")
+stopifnot(ncol(obj) == ncol(pbmc))
+stopifnot(nrow(obj) == nrow(pbmc))
+
+# Metadata columns are preserved
+orig_meta_cols <- sort(names(pbmc@meta.data))
+rt_meta_cols <- sort(names(obj@meta.data))
+shared_cols <- intersect(orig_meta_cols, rt_meta_cols)
+cat("Shared metadata columns:", length(shared_cols), "/", length(orig_meta_cols), "\n")
+cat("Columns:", paste(shared_cols, collapse = ", "), "\n")
 ```
 
 ### Filtering cells and features
@@ -65,13 +108,16 @@ obj <- readSOMA("path/to/experiment", measurement = "ATAC")
 `readSOMA()` supports server-side filtering via value filter queries, which is
 particularly useful for large atlases:
 
-```{r read_filtered}
+```{r read_filtered, eval = FALSE}
 # Filter by cell type and tissue
 obj <- readSOMA(
   "path/to/experiment",
   obs_query = "cell_type == 'T cell' & tissue == 'blood' & disease == 'normal'",
   obs_column_names = c("cell_type", "tissue", "donor_id")
 )
+
+# Read a specific measurement (default is "RNA")
+obj <- readSOMA("path/to/experiment", measurement = "ATAC")
 ```
 
 ### What gets read
@@ -85,26 +131,10 @@ obj <- readSOMA(
 | `ms[measurement]/X/data` | Default assay counts | Expression matrix (sparse) |
 | `ms[measurement]/obsm/*` | `reductions` | PCA, UMAP, etc. |
 | `ms[measurement]/obsp/*` | `graphs` | Neighbor graphs (SNN, distances) |
-| Other measurements | Additional assays | Multi-modal data (ATAC, protein) |
+| Other measurements | Additional assays | Multi-modal support |
 
 The `soma_joinid` column (internal to TileDB-SOMA) is automatically removed
 from cell and feature metadata.
-
-## Writing to SOMA
-
-Use `writeSOMA()` to save a Seurat object as a SOMA experiment:
-
-```{r write_basic}
-# Write to a local SOMA experiment
-writeSOMA(seurat_obj, uri = "output.soma")
-
-# Overwrite an existing experiment
-writeSOMA(seurat_obj, uri = "output.soma", overwrite = TRUE)
-```
-
-`writeSOMA()` delegates to `tiledbsoma::write_soma()`, which converts all
-assays, metadata, embeddings, and graphs. Each Seurat assay becomes a separate
-SOMA measurement.
 
 ## Direct pair converters
 
@@ -113,22 +143,47 @@ supported formats. All route through a Seurat intermediate.
 
 ### SOMA and h5ad
 
-```{r pair_h5ad}
+```{r pair_h5ad, eval = has_tiledbsoma}
+h5ad_path <- file.path(tempdir(), "demo.h5ad")
+soma_from_h5ad <- file.path(tempdir(), "from_h5ad.soma")
+h5ad_from_soma <- file.path(tempdir(), "from_soma.h5ad")
+
+# Write pbmc_small to h5ad first
+writeH5AD(pbmc, filename = h5ad_path, overwrite = TRUE)
+
 # h5ad -> SOMA
-H5ADToSOMA("data.h5ad", "data.soma")
+H5ADToSOMA(h5ad_path, soma_from_h5ad, overwrite = TRUE)
 
 # SOMA -> h5ad
-SOMAToH5AD("data.soma", "output.h5ad")
+SOMAToH5AD(soma_from_h5ad, h5ad_from_soma, overwrite = TRUE)
+```
+
+Verify the h5ad roundtrip:
+
+```{r verify_h5ad_roundtrip, eval = has_tiledbsoma}
+rt <- readH5AD(h5ad_from_soma)
+cat("h5ad -> SOMA -> h5ad roundtrip:\n")
+cat("  Cells:", ncol(rt), " Genes:", nrow(rt), "\n")
+stopifnot(ncol(rt) == ncol(pbmc))
+stopifnot(nrow(rt) == nrow(pbmc))
 ```
 
 ### SOMA and h5Seurat
 
-```{r pair_h5seurat}
-# h5Seurat -> SOMA
-H5SeuratToSOMA("data.h5seurat", "data.soma")
+```{r pair_h5seurat, eval = has_tiledbsoma}
+h5seurat_path <- file.path(tempdir(), "demo.h5seurat")
+soma_from_h5s <- file.path(tempdir(), "from_h5seurat.soma")
+h5s_from_soma <- file.path(tempdir(), "from_soma.h5seurat")
 
-# SOMA -> h5Seurat
-SOMAToH5Seurat("data.soma", "output.h5seurat")
+# Write to h5Seurat, then convert through SOMA
+writeH5Seurat(pbmc, filename = h5seurat_path, overwrite = TRUE)
+H5SeuratToSOMA(h5seurat_path, soma_from_h5s, overwrite = TRUE)
+SOMAToH5Seurat(soma_from_h5s, h5s_from_soma, overwrite = TRUE)
+
+rt2 <- readH5Seurat(h5s_from_soma)
+cat("h5Seurat -> SOMA -> h5Seurat roundtrip:\n")
+cat("  Cells:", ncol(rt2), " Genes:", nrow(rt2), "\n")
+stopifnot(ncol(rt2) == ncol(pbmc))
 ```
 
 ### Other format pairs
@@ -136,7 +191,7 @@ SOMAToH5Seurat("data.soma", "output.h5seurat")
 Converters also exist for Loom, Zarr, and h5mu -- each follows the same
 `{Format}ToSOMA()` / `SOMATo{Format}()` pattern:
 
-```{r pair_others}
+```{r pair_others, eval = FALSE}
 LoomToSOMA("data.loom", "data.soma")    # Loom -> SOMA
 ZarrToSOMA("data.zarr", "data.soma")    # Zarr -> SOMA
 H5MUToSOMA("data.h5mu", "data.soma")    # h5mu -> SOMA
@@ -147,10 +202,12 @@ SOMAToH5MU("data.soma", "output.h5mu")  # SOMA -> h5mu
 
 ## CLI and dispatcher usage
 
-Both `scConvert_cli()` and the universal `scConvert()` dispatcher auto-detect
-SOMA from the `.soma` extension:
+The C CLI binary handles HDF5-to-HDF5 conversions only, so SOMA is not
+supported in the compiled binary. However, the R-level `scConvert_cli()` and
+the universal `scConvert()` dispatcher auto-detect SOMA from the `.soma`
+extension and route through the R hub:
 
-```{r cli}
+```{r cli, eval = FALSE}
 # scConvert_cli auto-dispatches
 scConvert_cli("data.h5ad", "data.soma")
 scConvert_cli("data.soma", "output.h5ad")
@@ -166,7 +223,7 @@ scConvert("data.soma", dest = "output.h5seurat", overwrite = TRUE)
 61M+ cells as a single SOMA experiment. Query it with `readSOMA()`, then
 convert the result to any format:
 
-```{r census}
+```{r census, eval = FALSE}
 library(cellxgene.census)
 
 census <- open_soma(census_version = "stable")
@@ -215,6 +272,23 @@ for more details on the Census API.
 - `vignette("convert-anndata")` -- Converting between Seurat and h5ad format
 - `vignette("cli-usage")` -- Command-line interface for batch conversions
 - `vignette("convert-zarr")` -- Converting between Seurat and Zarr format
+
+```{r cleanup, include = FALSE, purl = FALSE}
+# Remove temporary files created during this vignette
+cleanup_paths <- c(
+  file.path(tempdir(), "pbmc_small.soma"),
+  file.path(tempdir(), "demo.h5ad"),
+  file.path(tempdir(), "from_h5ad.soma"),
+  file.path(tempdir(), "from_soma.h5ad"),
+  file.path(tempdir(), "demo.h5seurat"),
+  file.path(tempdir(), "from_h5seurat.soma"),
+  file.path(tempdir(), "from_soma.h5seurat")
+)
+for (p in cleanup_paths) {
+  if (dir.exists(p)) unlink(p, recursive = TRUE)
+  if (file.exists(p)) file.remove(p)
+}
+```
 
 ## Session Info
 

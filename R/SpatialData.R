@@ -62,13 +62,22 @@ readSpatialData <- function(path, table = "table", images = TRUE,
     stop("SpatialData store not found: ", path, call. = FALSE)
   }
 
-  # Validate root .zgroup
-  if (!file.exists(file.path(path, ".zgroup"))) {
-    stop("Not a valid zarr store (missing .zgroup): ", path, call. = FALSE)
+  # Validate root zarr metadata (v2: .zgroup, v3: zarr.json)
+  is_zarr_v2 <- file.exists(file.path(path, ".zgroup"))
+  is_zarr_v3 <- file.exists(file.path(path, "zarr.json"))
+  if (!is_zarr_v2 && !is_zarr_v3) {
+    stop("Not a valid zarr store (missing .zgroup or zarr.json): ", path, call. = FALSE)
   }
 
   # Check for spatialdata_attrs
-  root_attrs <- .zarr_read_json(file.path(path, ".zattrs"))
+  zattrs_path <- file.path(path, ".zattrs")
+  if (!file.exists(zattrs_path) && is_zarr_v3) {
+    # zarr v3: attrs may be in zarr.json
+    zj <- .zarr_read_json(file.path(path, "zarr.json"))
+    root_attrs <- zj$attributes %||% list()
+  } else {
+    root_attrs <- .zarr_read_json(zattrs_path)
+  }
   sd_version <- root_attrs$spatialdata_attrs$version
   if (verbose) {
     if (!is.null(sd_version)) {

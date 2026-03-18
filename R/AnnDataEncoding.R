@@ -707,13 +707,9 @@ SeuratLayerToAnnData <- function(name) {
     flat_data <- data
     order <- "C"
   }
-  # Cap chunk size to avoid single-chunk arrays that prevent streaming reads
-  chunk_cap <- 65536L
-  if (is.matrix(data)) {
-    chunks <- c(min(shape[1], max(1L, chunk_cap %/% shape[2])), shape[2])
-  } else {
-    chunks <- min(shape, chunk_cap)
-  }
+  # Single chunk per array — our zarr writer only writes one chunk file.
+  # Multi-chunk would require writing separate chunk files (0, 1, 2, ...).
+  chunks <- shape
 
   # Write .zarray metadata
   meta <- list(

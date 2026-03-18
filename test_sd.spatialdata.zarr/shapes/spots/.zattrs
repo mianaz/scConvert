@@ -1,0 +1,6 @@
+{
+  "encoding-type": "dataframe",
+  "encoding-version": "0.2.0",
+  "_index": "_index",
+  "column-order": ["x", "y", "radius"]
+}

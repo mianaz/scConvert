@@ -9,13 +9,34 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-  eval = FALSE,
+  eval = TRUE,
   collapse = TRUE,
   comment = "#>",
   message = FALSE,
   warning = FALSE,
-  out.width = "100%"
+  out.width = "100%",
+  dev = "png",
+  fig.width = 8,
+  fig.height = 6,
+  purl = FALSE
 )
+# SpatialData zarr I/O is pure R — always available
+has_spatialdata <- TRUE
+has_scanpy <- FALSE
+if (requireNamespace("reticulate", quietly = TRUE)) {
+  scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
+  if (dir.exists(scverse_path)) {
+    reticulate::use_condaenv("scverse", required = FALSE)
+    Sys.setenv(
+      OMP_NUM_THREADS = "1", OPENBLAS_NUM_THREADS = "1",
+      MKL_NUM_THREADS = "1", NUMBA_THREADING_LAYER = "tbb"
+    )
+    has_scanpy <- reticulate::py_module_available("scanpy")
+    if (has_scanpy) {
+      reticulate::py_run_string("import matplotlib; matplotlib.use('Agg')")
+    }
+  }
+}
 ```
 
 ## Overview
@@ -32,7 +53,7 @@ scConvert provides native R support for reading and writing SpatialData stores
 with no Python dependency, and includes direct pair converters for moving data
 between SpatialData and other formats (h5ad, h5Seurat, Zarr).
 
-```{r packages}
+```{r packages, eval = has_spatialdata}
 library(Seurat)
 library(scConvert)
 ```
@@ -58,14 +79,40 @@ scConvert's existing Zarr infrastructure handles the expression data, metadata,
 embeddings, and graphs. The SpatialData-specific elements (shapes, points,
 images, labels) are handled by dedicated readers and writers.
 
+## Create a demo SpatialData store
+
+We create a Seurat object with spatial coordinates and write it as a
+SpatialData store using `writeSpatialData()`:
+
+```{r create_demo, eval = has_spatialdata}
+library(Seurat)
+set.seed(42)
+
+# Synthetic spatial expression data: 100 genes × 200 cells
+counts <- Matrix::rsparsematrix(100, 200, density = 0.05, rand.x = function(n) rpois(n, 5) + 1)
+dimnames(counts) <- list(paste0("Gene", seq_len(100)), paste0("Cell", seq_len(200)))
+demo <- CreateSeuratObject(counts = counts, min.cells = 0, min.features = 0)
+
+# Add spatial coordinates and metadata
+demo$spatial_x <- runif(200, 0, 1000)
+demo$spatial_y <- runif(200, 0, 1000)
+demo$cell_type <- factor(sample(c("Epithelial", "Stromal", "Immune"), 200, replace = TRUE))
+demo$region <- "tissue_section"
+
+# Write as SpatialData
+writeSpatialData(demo, "demo.spatialdata.zarr", overwrite = TRUE, verbose = TRUE)
+```
+
 ## Reading SpatialData
 
-Use `readSpatialData()` to load a SpatialData zarr store into a Seurat object:
+Use `readSpatialData()` to load the store into a Seurat object:
 
-```{r read_basic}
-obj <- readSpatialData("visium.spatialdata.zarr")
+```{r read_basic, eval = has_spatialdata}
+obj <- readSpatialData("demo.spatialdata.zarr", verbose = TRUE)
 obj
 ```
+
+### What gets preserved
 
 The reader extracts the following components:
 
@@ -81,12 +128,43 @@ SpatialData attributes (`region`, `region_key`, `instance_key`) are stored in
 `misc$__spatialdata_attrs__` and used during write-back to ensure round-trip
 fidelity.
 
+### Inspect the Seurat object
+
+```{r inspect, eval = has_spatialdata}
+cat("Cells:    ", ncol(obj), "\n")
+cat("Features: ", nrow(obj), "\n")
+cat("Layers:   ", paste(Layers(obj), collapse = ", "), "\n")
+cat("Images:   ", paste(Images(obj), collapse = ", "), "\n")
+
+# SpatialData metadata preserved for roundtrip
+sd_attrs <- obj@misc[["__spatialdata_attrs__"]]
+if (!is.null(sd_attrs)) {
+  cat("Region:       ", paste(sd_attrs$region, collapse = ", "), "\n")
+  cat("Region key:   ", sd_attrs$region_key, "\n")
+  cat("Instance key: ", sd_attrs$instance_key, "\n")
+}
+
+# Points stored in misc
+point_keys <- grep("^points_", names(obj@misc), value = TRUE)
+if (length(point_keys) > 0) {
+  for (pk in point_keys) {
+    cat("Points (", pk, "): ", nrow(obj@misc[[pk]]), " entries\n", sep = "")
+  }
+}
+
+# Label names
+label_names <- obj@misc[["__spatialdata_labels__"]]
+if (!is.null(label_names)) {
+  cat("Labels:   ", paste(label_names, collapse = ", "), "\n")
+}
+```
+
 ### Specifying a table
 
 SpatialData stores can contain multiple tables. Use the `table` argument to
 select which one to read:
 
-```{r read_table}
+```{r read_table, eval = FALSE}
 # Read the default table
 obj <- readSpatialData("multi_table.spatialdata.zarr", table = "table")
 
@@ -99,16 +177,23 @@ obj <- readSpatialData("multi_table.spatialdata.zarr", table = "rna_counts")
 For large stores where only the expression data and coordinates are needed,
 set `images = FALSE` to skip OME-NGFF image reading:
 
-```{r read_no_images}
+```{r read_no_images, eval = FALSE}
 obj <- readSpatialData("large_sample.spatialdata.zarr", images = FALSE)
 ```
 
 ## Writing SpatialData
 
-Use `writeSpatialData()` to write a Seurat object as a SpatialData zarr store:
+Use `writeSpatialData()` to write the Seurat object back as a SpatialData zarr
+store, completing the round trip:
 
-```{r write_basic}
-writeSpatialData(obj, "output.spatialdata.zarr", overwrite = TRUE)
+```{r write_basic, eval = has_spatialdata}
+writeSpatialData(obj, "demo_roundtrip.spatialdata.zarr", overwrite = TRUE)
+cat("Written to: demo_roundtrip.spatialdata.zarr\n")
+cat("Store size: ",
+    round(sum(file.info(
+      list.files("demo_roundtrip.spatialdata.zarr",
+                 recursive = TRUE, full.names = TRUE)
+    )$size) / 1024^2, 1), " MB\n")
 ```
 
 The writer creates the full SpatialData directory layout:
@@ -120,24 +205,34 @@ The writer creates the full SpatialData directory layout:
 | `misc$points_*` | `points/{name}/` | Preserved from read |
 | Image arrays | `images/{name}/` | OME-NGFF with multiscales metadata |
 
-The region name is auto-detected from the Seurat image name, or you can set it
-explicitly:
+### Verify the roundtrip
 
-```{r write_region}
-writeSpatialData(obj, "output.spatialdata.zarr",
-                 region = "spots", overwrite = TRUE)
+```{r verify_roundtrip, eval = has_spatialdata}
+obj_rt <- readSpatialData("demo_roundtrip.spatialdata.zarr", verbose = FALSE)
+
+cat("Original cells:   ", ncol(obj), "\n")
+cat("Roundtrip cells:  ", ncol(obj_rt), "\n")
+cat("Original features:", nrow(obj), "\n")
+cat("Roundtrip features:", nrow(obj_rt), "\n")
+cat("Dimensions match: ", ncol(obj) == ncol(obj_rt) && nrow(obj) == nrow(obj_rt), "\n")
 ```
-
-If the object has metadata columns `spatial_x` and `spatial_y` but no Seurat
-image object, `writeSpatialData()` uses those as the shape coordinates.
 
 ## Direct pair converters
 
 scConvert provides six direct conversion functions that combine reading and
 writing in a single call, without requiring you to manage intermediate Seurat
-objects:
+objects.
 
-```{r direct_converters}
+### SpatialData to h5ad
+
+```{r direct_to_h5ad, eval = has_spatialdata}
+SpatialDataToH5AD("demo.spatialdata.zarr", "demo_spatial.h5ad", overwrite = TRUE)
+cat("h5ad size:", round(file.size("demo_spatial.h5ad") / 1024^2, 1), "MB\n")
+```
+
+### All six converters
+
+```{r direct_converters, eval = FALSE}
 # SpatialData <-> h5ad
 SpatialDataToH5AD("sample.spatialdata.zarr", "sample.h5ad")
 H5ADToSpatialData("sample.h5ad", "sample.spatialdata.zarr")
@@ -158,7 +253,7 @@ table to extract from the store.
 
 These converters also work through the `scConvert()` dispatcher:
 
-```{r scconvert_dispatch}
+```{r scconvert_dispatch, eval = FALSE}
 scConvert("sample.spatialdata.zarr", dest = "sample.h5ad", overwrite = TRUE)
 scConvert("sample.h5ad", dest = "output.spatialdata.zarr", overwrite = TRUE)
 ```
@@ -167,23 +262,21 @@ scConvert("sample.h5ad", dest = "output.spatialdata.zarr", overwrite = TRUE)
 
 SpatialData stores written by scConvert are readable by the Python
 [spatialdata](https://spatialdata.scverse.org/) library and its ecosystem
-(squidpy, napari-spatialdata):
+(squidpy, napari-spatialdata).
 
-```python
-import spatialdata as sd
+### Read the h5ad output in Python
 
-sdata = sd.read_zarr("output.spatialdata.zarr")
-print(sdata)
-print(sdata.tables)    # Expression tables
-print(sdata.shapes)    # Spot/cell geometries
+The h5ad produced by `SpatialDataToH5AD()` is a standard AnnData file readable
+by scanpy:
 
-# Visualize with spatialdata-plot
-sdata.pl.render_shapes().pl.show()
+```{python verify_h5ad_py, eval = has_scanpy}
+import scanpy as sc
+
+adata = sc.read_h5ad("demo_spatial.h5ad")
+print(adata)
+print(f"\nobs columns: {list(adata.obs.columns)}")
+print(f"Cells: {adata.n_obs}, Genes: {adata.n_vars}")
 ```
-
-Conversely, SpatialData stores created by the Python `spatialdata` library
-(e.g., from `squidpy.datasets` or `spatialdata-io` readers) can be loaded
-directly with `readSpatialData()`.
 
 ## Known limitations
 
@@ -218,4 +311,10 @@ directly with `readSpatialData()`.
 
 ```{r session, eval = TRUE}
 sessionInfo()
+```
+
+```{r cleanup, echo = FALSE, results = "hide"}
+unlink("demo.spatialdata.zarr", recursive = TRUE)
+unlink("demo_roundtrip.spatialdata.zarr", recursive = TRUE)
+unlink("demo_spatial.h5ad")
 ```
