@@ -1,0 +1,238 @@
+#!/bin/sh
+# configure — detect HDF5 and generate src/Makevars for scConvert
+#
+# Called automatically by R CMD INSTALL. Writes src/Makevars from
+# src/Makevars.in with detected HDF5 compiler/linker flags.
+#
+# Detection order:
+#   1. HDF5_CFLAGS / HDF5_LIBS environment variables (user override)
+#   2. pkg-config hdf5
+#   3. Homebrew (macOS)
+#   4. Common system paths (/usr/local, /opt/homebrew/opt/hdf5, /usr)
+#
+# Fails with a clear message if HDF5 is not found.
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+echo_status() {
+    echo "* $1"
+}
+
+die() {
+    echo ""
+    echo "ERROR: $1" >&2
+    echo ""
+    echo "HDF5 is required to compile scConvert. Install it with:" >&2
+    echo "  macOS:   brew install hdf5" >&2
+    echo "  Debian:  sudo apt-get install libhdf5-dev" >&2
+    echo "  RHEL:    sudo yum install hdf5-devel" >&2
+    echo "  Fedora:  sudo dnf install hdf5-devel" >&2
+    echo "  Conda:   conda install -c conda-forge hdf5" >&2
+    echo "" >&2
+    echo "Or set HDF5_CFLAGS and HDF5_LIBS environment variables manually." >&2
+    exit 1
+}
+
+# Check that hdf5.h is actually at the given include path
+check_header() {
+    _incdir="$1"
+    # Strip leading -I if present
+    _incdir=$(echo "$_incdir" | sed 's/^-I//' | sed 's/^ *//' | sed 's/ *$//')
+
+    # Handle multiple -I flags: check each
+    for _flag in $_incdir; do
+        _d=$(echo "$_flag" | sed 's/^-I//')
+        if [ -f "$_d/hdf5.h" ]; then
+            return 0
+        fi
+    done
+
+    # Also check if it's a bare directory path
+    if [ -f "$_incdir/hdf5.h" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Check that libhdf5 is actually at the given lib path
+check_lib() {
+    _libdir="$1"
+    _libdir=$(echo "$_libdir" | sed 's/^-L//' | sed 's/^ *//' | sed 's/ *$//')
+
+    for _flag in $_libdir; do
+        _d=$(echo "$_flag" | sed 's/^-L//')
+        if [ -f "$_d/libhdf5.dylib" ] || [ -f "$_d/libhdf5.so" ] || [ -f "$_d/libhdf5.a" ]; then
+            return 0
+        fi
+    done
+
+    if [ -f "$_libdir/libhdf5.dylib" ] || [ -f "$_libdir/libhdf5.so" ] || [ -f "$_libdir/libhdf5.a" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+# ── Detection ────────────────────────────────────────────────────────────────
+
+HDF5_CFLAGS_FOUND=""
+HDF5_LIBS_FOUND=""
+
+echo "------------------------------------------------------------"
+echo "Configuring scConvert — detecting HDF5 installation"
+echo "------------------------------------------------------------"
+
+# Method 0: Match hdf5r's HDF5 library (highest priority — avoids symbol conflicts)
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    echo_status "Trying to match hdf5r's HDF5 library..."
+    _hdf5r_lib=$(${R_HOME:-$(R RHOME)}/bin/Rscript -e \
+        'p <- system.file("libs", paste0("hdf5r", .Platform$dynlib.ext), package="hdf5r"); if (nzchar(p)) cat(p)' 2>/dev/null)
+    if [ -n "$_hdf5r_lib" ] && [ -f "$_hdf5r_lib" ]; then
+        # Extract HDF5 library path from hdf5r's linked libraries
+        _hdf5_dylib=$(otool -L "$_hdf5r_lib" 2>/dev/null | grep -o '/[^ ]*libhdf5\.[^ ]*' | head -1)
+        if [ -z "$_hdf5_dylib" ]; then
+            _hdf5_dylib=$(ldd "$_hdf5r_lib" 2>/dev/null | grep -o '/[^ ]*libhdf5\.[^ ]*' | head -1)
+        fi
+        if [ -n "$_hdf5_dylib" ]; then
+            _hdf5r_libdir=$(dirname "$_hdf5_dylib")
+            _hdf5r_prefix=$(dirname "$_hdf5r_libdir")
+            if [ -f "$_hdf5r_prefix/include/hdf5.h" ]; then
+                echo_status "  Matched hdf5r -> $_hdf5r_prefix"
+                HDF5_CFLAGS_FOUND="-I${_hdf5r_prefix}/include"
+                HDF5_LIBS_FOUND="-L${_hdf5r_libdir} -lhdf5 -lz"
+            fi
+        fi
+    fi
+fi
+
+# Method 1: Environment variables (user override)
+if [ -z "$HDF5_CFLAGS_FOUND" ] && [ -n "$HDF5_CFLAGS" ] && [ -n "$HDF5_LIBS" ]; then
+    echo_status "Using HDF5_CFLAGS and HDF5_LIBS from environment"
+    HDF5_CFLAGS_FOUND="$HDF5_CFLAGS"
+    HDF5_LIBS_FOUND="$HDF5_LIBS"
+fi
+
+# Method 2: pkg-config
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    if command -v pkg-config > /dev/null 2>&1; then
+        echo_status "Trying pkg-config..."
+        _pc_cflags=$(pkg-config --cflags hdf5 2>/dev/null)
+        _pc_libs=$(pkg-config --libs hdf5 2>/dev/null)
+        if [ -n "$_pc_libs" ]; then
+            echo_status "  pkg-config found HDF5"
+            HDF5_CFLAGS_FOUND="$_pc_cflags"
+            HDF5_LIBS_FOUND="$_pc_libs"
+        else
+            echo_status "  pkg-config did not find HDF5"
+        fi
+    else
+        echo_status "pkg-config not available"
+    fi
+fi
+
+# Method 3: Homebrew (macOS)
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    if command -v brew > /dev/null 2>&1; then
+        echo_status "Trying Homebrew..."
+        _brew_prefix=$(brew --prefix hdf5 2>/dev/null)
+        if [ -n "$_brew_prefix" ] && [ -d "$_brew_prefix/include" ]; then
+            echo_status "  Homebrew HDF5 found at $_brew_prefix"
+            HDF5_CFLAGS_FOUND="-I${_brew_prefix}/include"
+            HDF5_LIBS_FOUND="-L${_brew_prefix}/lib -lhdf5 -lz"
+        else
+            echo_status "  Homebrew HDF5 not found"
+        fi
+    fi
+fi
+
+# Method 4: Common system paths
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    echo_status "Trying common system paths..."
+    for _prefix in /opt/homebrew/opt/hdf5 /usr/local /usr/local/opt/hdf5 /usr; do
+        if [ -f "$_prefix/include/hdf5.h" ]; then
+            echo_status "  Found hdf5.h at $_prefix/include"
+            HDF5_CFLAGS_FOUND="-I${_prefix}/include"
+            HDF5_LIBS_FOUND="-L${_prefix}/lib -lhdf5 -lz"
+            break
+        fi
+    done
+fi
+
+# Method 5: hdf5-specific pkg-config names (some distros use hdf5-serial)
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    if command -v pkg-config > /dev/null 2>&1; then
+        for _name in hdf5-serial hdf5-openmpi hdf5-mpich; do
+            echo_status "Trying pkg-config $_name..."
+            _pc_cflags=$(pkg-config --cflags "$_name" 2>/dev/null)
+            _pc_libs=$(pkg-config --libs "$_name" 2>/dev/null)
+            if [ -n "$_pc_libs" ]; then
+                echo_status "  pkg-config found $_name"
+                HDF5_CFLAGS_FOUND="$_pc_cflags"
+                HDF5_LIBS_FOUND="$_pc_libs"
+                break
+            fi
+        done
+    fi
+fi
+
+# Method 6: Conda environments
+if [ -z "$HDF5_CFLAGS_FOUND" ] && [ -n "$CONDA_PREFIX" ]; then
+    echo_status "Trying Conda environment ($CONDA_PREFIX)..."
+    if [ -f "$CONDA_PREFIX/include/hdf5.h" ]; then
+        echo_status "  Found HDF5 in Conda environment"
+        HDF5_CFLAGS_FOUND="-I${CONDA_PREFIX}/include"
+        HDF5_LIBS_FOUND="-L${CONDA_PREFIX}/lib -lhdf5 -lz"
+    fi
+fi
+
+# ── Validation ───────────────────────────────────────────────────────────────
+
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    die "Could not find HDF5 library."
+fi
+
+# Verify hdf5.h is actually reachable
+if ! check_header "$HDF5_CFLAGS_FOUND"; then
+    echo_status "WARNING: hdf5.h not found at detected include path."
+    echo_status "  HDF5_CFLAGS = $HDF5_CFLAGS_FOUND"
+    echo_status "  Proceeding anyway — compilation may fail."
+fi
+
+# Ensure -lz is present (needed for gzip compression in HDF5 and our code)
+case "$HDF5_LIBS_FOUND" in
+    *-lz*) ;;
+    *)
+        HDF5_LIBS_FOUND="$HDF5_LIBS_FOUND -lz"
+        echo_status "  Appended -lz (required for gzip support)"
+        ;;
+esac
+
+echo_status "HDF5_CFLAGS = $HDF5_CFLAGS_FOUND"
+echo_status "HDF5_LIBS   = $HDF5_LIBS_FOUND"
+
+# ── Generate src/Makevars ────────────────────────────────────────────────────
+
+if [ ! -f src/Makevars.in ]; then
+    die "src/Makevars.in not found. Is the package source complete?"
+fi
+
+echo_status "Writing src/Makevars"
+
+sed -e "s|@HDF5_CFLAGS@|${HDF5_CFLAGS_FOUND}|g" \
+    -e "s|@HDF5_LIBS@|${HDF5_LIBS_FOUND}|g" \
+    src/Makevars.in > src/Makevars
+
+# R CMD INSTALL uses Makefile if present (ignoring Makevars).
+# Move the CLI Makefile aside so R uses Makevars for the shared library.
+if [ -f src/Makefile ]; then
+    echo_status "Moving src/Makefile -> src/Makefile.cli (so R uses Makevars)"
+    mv src/Makefile src/Makefile.cli
+fi
+
+# Clean stale .o files from CLI builds (different compiler flags)
+rm -f src/*.o
+
+echo "------------------------------------------------------------"
+echo "Configuration complete."
+echo "------------------------------------------------------------"

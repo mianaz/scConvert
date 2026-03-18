@@ -4530,6 +4530,7 @@ writeH5AD <- function(
   overwrite = FALSE,
   verbose = TRUE,
   standardize = FALSE,
+  gzip = NULL,
   ...
 ) {
   if (!inherits(x = object, what = 'Seurat')) {
@@ -4541,8 +4542,88 @@ writeH5AD <- function(
   if (!grepl(pattern = '\\.h5ad$', x = filename, ignore.case = TRUE)) {
     filename <- paste0(filename, '.h5ad')
   }
+  # Optimization 3: configurable gzip level (0 = no compression, ~50-70% faster writes)
+  if (!is.null(gzip)) {
+    old_gzip <- getOption("scConvert.compression.level")
+    on.exit(options("scConvert.compression.level" = old_gzip), add = TRUE)
+    options("scConvert.compression.level" = as.integer(gzip))
+  }
   scConvert(source = object, dest = filename, assay = assay,
           overwrite = overwrite, verbose = verbose, standardize = standardize, ...)
+}
+
+#' Fast C-based h5ad writer
+#'
+#' Writes a Seurat object directly to h5ad format using native C HDF5 routines.
+#' Exploits the zero-copy CSC↔CSR reinterpretation: dgCMatrix(genes×cells) CSC
+#' is identical to h5ad's cells×genes CSR with relabeled arrays.
+#'
+#' @param object Seurat object
+#' @param filename Output file path
+#' @param overwrite Allow overwriting
+#' @param verbose Show progress
+#'
+#' @return TRUE on success, FALSE on failure
+#' @keywords internal
+#'
+.writeH5AD_c <- function(object, filename, overwrite = FALSE, verbose = TRUE) {
+  if (file.exists(filename)) {
+    if (overwrite) file.remove(filename)
+    else stop("File '", filename, "' already exists", call. = FALSE)
+  }
+
+  assay_name <- DefaultAssay(object)
+  if (length(Assays(object)) > 1) return(FALSE)
+
+  assay_obj <- object[[assay_name]]
+  mat <- NULL
+  for (ln in c("counts", "data")) {
+    tryCatch({
+      m <- GetAssayData(assay_obj, layer = ln)
+      if (inherits(m, "dgCMatrix") && length(m@x) > 0) { mat <- m; break }
+    }, error = function(e) NULL)
+  }
+  if (is.null(mat)) return(FALSE)
+
+  mat_list <- list(
+    i = mat@i, p = mat@p, x = mat@x,
+    dim = dim(mat),
+    rownames = rownames(mat),
+    colnames = colnames(mat)
+  )
+
+  meta <- as.list(object@meta.data)
+
+  reductions <- list()
+  for (rname in names(object@reductions)) {
+    reduc <- object@reductions[[rname]]
+    emb <- Embeddings(reduc)
+    attr(emb, "key") <- Key(reduc)
+    reductions[[rname]] <- emb
+  }
+
+  graphs <- list()
+  for (gname in names(object@graphs)) {
+    g <- object@graphs[[gname]]
+    if (inherits(g, "dgCMatrix") || inherits(g, "Graph")) {
+      gmat <- as(g, "dgCMatrix")
+      graphs[[gname]] <- list(i = gmat@i, p = gmat@p, x = gmat@x, dim = dim(gmat))
+    }
+  }
+
+  gzip_level <- GetCompressionLevel()
+  if (verbose) message("Writing h5ad (C writer): ", filename)
+
+  result <- .Call("C_write_h5ad",
+    filename, mat_list, meta, reductions, graphs,
+    assay_name, as.integer(gzip_level),
+    PACKAGE = "scConvert"
+  )
+
+  if (isTRUE(result) && verbose) {
+    message("  Written: ", ncol(mat), " cells, ", nrow(mat), " features")
+  }
+  return(isTRUE(result))
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

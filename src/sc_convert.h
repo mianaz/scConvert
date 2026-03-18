@@ -16,6 +16,25 @@
 #include <stdio.h>
 #include <stdint.h>
 
+/* ── HDF5 version compatibility ────────────────────────────────────────────── */
+
+/* HDF5 1.12+ introduced new API variants; provide shims for 1.10.x */
+#if H5_VERSION_GE(1,12,0)
+  /* H5Treclaim, H5Oget_info3, H5O_info2_t, etc. are available natively */
+#else
+  #define H5Treclaim(type, space, plist, buf) H5Dvlen_reclaim(type, space, plist, buf)
+  typedef H5O_info_t H5O_info2_t;
+  #ifndef H5O_INFO_BASIC
+    #define H5O_INFO_BASIC  0
+  #endif
+  #ifndef H5O_INFO_NUM_ATTRS
+    #define H5O_INFO_NUM_ATTRS 0
+  #endif
+  #define H5Oget_info3(loc, info, fields)  H5Oget_info(loc, info)
+  #define H5Oget_info_by_name3(loc, name, info, fields, lapl) \
+          H5Oget_info_by_name(loc, name, info, lapl)
+#endif
+
 /* ── Constants ──────────────────────────────────────────────────────────────── */
 
 #define SC_CHUNK_SIZE       (1 << 20)   /* 1M elements per streaming chunk */

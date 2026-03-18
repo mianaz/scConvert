@@ -1114,6 +1114,20 @@ SafeSetLayerData <- function(object, layer, value) {
     if (file.exists(filename) && !overwrite) {
       stop("File '", filename, "' already exists; set overwrite = TRUE", call. = FALSE)
     }
+    # Fast path: Direct C h5ad writer (no h5seurat intermediate, no transpose)
+    # Enable with options(scConvert.use_c_writer = TRUE) — ~6x faster for gzip=0
+    c_h5ad <- isTRUE(getOption("scConvert.use_c_writer")) &&
+              is.loaded("C_write_h5ad", PACKAGE = "scConvert") &&
+              length(Assays(object)) == 1
+    if (c_h5ad) {
+      c_ok <- tryCatch(
+        .writeH5AD_c(object, filename = filename, overwrite = overwrite,
+                      verbose = verbose),
+        error = function(e) FALSE
+      )
+      if (isTRUE(c_ok)) return(invisible(filename))
+      if (verbose) message("C h5ad writer failed, falling back to R writer")
+    }
     tryCatch({
       DirectSeuratToH5AD(object = object, filename = filename,
                          assay = assay_name, overwrite = overwrite,

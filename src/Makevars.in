@@ -1,0 +1,10 @@
+# R package shared library build — compiles all .c except main.c
+# The standalone CLI binary is built separately via 'make' using Makefile
+#
+# PKG_CFLAGS and PKG_LIBS are filled in by ../configure from this template
+
+PKG_CFLAGS = @HDF5_CFLAGS@
+PKG_LIBS = @HDF5_LIBS@
+
+OBJECTS = init.o sc_rcall.o sc_sparse.o sc_dataframe.o sc_groups.o sc_util.o \
+          sc_h5ad.o sc_h5mu.o sc_loom.o sc_zarr.o sc_json.o sc_modality.o

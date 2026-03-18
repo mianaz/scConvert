@@ -191,7 +191,6 @@ h5s_path <- tempfile(fileext = ".h5Seurat")
 h5ad_path <- tempfile(fileext = ".h5ad")
 writeH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
 scConvert_cli(h5s_path, h5ad_path, verbose = FALSE)
-#> Validating h5Seurat file
 #> [1] TRUE
 
 # Load the CLI-produced h5ad
@@ -258,8 +257,6 @@ h5ad_src <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
 # h5ad → h5seurat via CLI
 h5s_path <- tempfile(fileext = ".h5Seurat")
 scConvert_cli(h5ad_src, h5s_path, overwrite = TRUE, verbose = FALSE)
-#> Adding X_pca as cell embeddings for pca
-#> Adding X_umap as cell embeddings for umap
 #> [1] TRUE
 loaded <- readH5Seurat(h5s_path, verbose = FALSE)
 #> Validating h5Seurat file
@@ -318,8 +315,6 @@ library(ggplot2)
 
 h5s_test <- tempfile(fileext = ".h5Seurat")
 scConvert_cli(h5ad_src, h5s_test, overwrite = TRUE, verbose = FALSE)
-#> Adding X_pca as cell embeddings for pca
-#> Adding X_umap as cell embeddings for umap
 #> [1] TRUE
 obj_test <- readH5Seurat(h5s_test, verbose = FALSE)
 #> Validating h5Seurat file

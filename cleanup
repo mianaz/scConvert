@@ -1,0 +1,9 @@
+#!/bin/sh
+# Standard R package cleanup — remove configure-generated files
+
+rm -f src/Makevars
+
+# Restore CLI Makefile if it was moved aside by configure
+if [ -f src/Makefile.cli ] && [ ! -f src/Makefile ]; then
+    mv src/Makefile.cli src/Makefile
+fi

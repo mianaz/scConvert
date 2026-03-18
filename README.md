@@ -116,17 +116,22 @@ Three conversion tiers provide optimal speed for each format pair:
 
 ## Performance
 
-Benchmarked against 9 competing tools on datasets from 100 to 1,000,000
-cells (Apple M4 Max, 48 GB RAM):
+Synthetic sparse h5ad (20K genes, 5% density), median of 3 runs:
 
 | Operation              | 100K cells | 500K cells | Comparison                    |
 |------------------------|------------|------------|-------------------------------|
-| Read h5ad              | 2.84 s     | 9.69 s     | 3–9x faster than alternatives |
-| Write h5ad             | 21.3 s     | –          | Comparable to anndataR        |
-| BPCells load           | 2.55 s     | 6.24 s     | 87% less memory               |
-| CLI (h5ad to h5seurat) | 0.12 s     | 0.59 s     | Streaming, constant memory    |
+| Read h5ad              | 2.48 s     | 12.44 s    | Native C reader + Seurat      |
+| Write h5ad (gzip=0)    | 1.62 s     | –          | C writer, 6× faster           |
+| Write h5ad (gzip=1)    | 6.10 s     | –          | C writer, compressed          |
+| Write h5ad (old R)     | 10.42 s    | –          | R/hdf5r, gzip=4              |
+| CLI (h5ad ↔ h5seurat)  | 0.12 s     | 0.63 s     | Streaming, constant memory    |
 
-Benchmarked on Apple M4 Max, 48 GB RAM.
+The C writer writes h5ad directly via `.Call()`, using the zero-copy
+CSC↔CSR reinterpretation (no sparse transpose needed). Use `gzip = 0` for
+local/temporary files (6× faster), `gzip = 1` for a good speed/size balance
+(252 MB vs 1.2 GB at 100K cells). BPCells on-disk loading (`use.bpcells`)
+reduces memory by ~87% at atlas scale. Benchmarked on Apple M4 Max, 128 GB
+RAM.
 
 ## Command-Line Interface
 

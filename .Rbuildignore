@@ -43,5 +43,9 @@
 ^SCHOLAR_EVALUATION.*\.md$
 ^codecov\.yml$
 
-# C CLI (standalone tool, not R extension)
-^src$
+# C CLI artifacts (standalone binary and its Makefile — not part of R package)
+^src/Makefile$
+^src/scconvert$
+^src/main\.c$
+^src/main\.o$
+^src/.*\.o$

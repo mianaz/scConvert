@@ -57,9 +57,12 @@ vignettes/*.html
 vignettes/*.zarr/
 knitted_vignettes/
 
-# Compiled C CLI
+# Compiled C code
 src/scconvert
 src/*.o
+src/Makevars
+src/*.so
+src/*.dll
 
 # Manuscript (separate repo at ~/Desktop/scConvert-manuscript)
 manuscript/

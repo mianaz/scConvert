@@ -77,7 +77,9 @@ Collate:
     'V5Compatibility.R'
     'V5LayerSupport.R'
     'h5Seurat_bindings.R'
+NeedsCompilation: yes
 Suggests:
+    arrow,
     BiocGenerics,
     blosc,
     BPCells,
