@@ -8,12 +8,17 @@ backend behind [CELLxGENE
 Census](https://chanzuckerberg.github.io/cellxgene-census/), which hosts
 61M+ cells across 900+ datasets. SOMA supports efficient slicing by
 cells or features without loading the full dataset, making it ideal for
-working with large atlases. scConvert provides
+working with large atlases.
+
+scConvert provides
 [`writeSOMA()`](https://mianaz.github.io/scConvert/reference/writeSOMA.md)
 and
 [`readSOMA()`](https://mianaz.github.io/scConvert/reference/readSOMA.md)
 for Seurat interoperability. Both functions require the
 [tiledbsoma](https://github.com/single-cell-data/TileDB-SOMA) R package.
+SOMA experiments are database-like stores rather than single files, so
+they cannot easily be shipped as package demo data. Instead, we start
+from the shipped RDS and demonstrate the round-trip.
 
 ## Load demo data
 
@@ -58,7 +63,7 @@ for (gn in names(pbmc@graphs)) {
 
 writeSOMA(pbmc, uri = soma_uri, overwrite = TRUE)
 cat("SOMA experiment written to:", soma_uri, "\n")
-#> SOMA experiment written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp4v2wXP/pbmc_demo.soma
+#> SOMA experiment written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpQHNr1a/pbmc_demo.soma
 ```
 
 ## Read back from SOMA
@@ -94,6 +99,8 @@ p1 + p2
 
 ![](convert-soma_files/figure-html/compare-dimplot-1.png)
 
+### Violin plot
+
 LYZ is a strong monocyte marker – the violin plot below shows its
 expression distribution across all 9 cell types loaded from the SOMA
 store.
@@ -107,7 +114,7 @@ VlnPlot(pbmc_rt, features = "LYZ", pt.size = 0) +
 
 ![](convert-soma_files/figure-html/vlnplot-1.png)
 
-### Quick fidelity check
+### Fidelity check
 
 ``` r
 

@@ -86,96 +86,73 @@
     
     
 <p>The <a href="http://loompy.org/" class="external-link">Loom format</a> is an HDF5-based
-file format used by loompy and velocyto/scVelo for RNA velocity
-workflows. scConvert provides <code><a href="../reference/writeLoom.html">writeLoom()</a></code> and
-<code><a href="../reference/readLoom.html">readLoom()</a></code> for converting Seurat objects to and from Loom
-with no external dependencies.</p>
+file format used by loompy and RNA velocity tools (velocyto, scVelo).
+scConvert provides <code><a href="../reference/readLoom.html">readLoom()</a></code> and <code><a href="../reference/writeLoom.html">writeLoom()</a></code>
+for round-trip conversion between Seurat objects and Loom files with no
+external dependencies.</p>
 <div class="section level2">
-<h2 id="load-the-demo-data">Load the demo data<a class="anchor" aria-label="anchor" href="#load-the-demo-data"></a>
+<h2 id="read-a-loom-file">Read a Loom file<a class="anchor" aria-label="anchor" href="#read-a-loom-file"></a>
 </h2>
-<p>We use the shipped 500-cell PBMC demo dataset with PCA, UMAP,
-clusters, and nine annotated cell types.</p>
+<p>scConvert ships a 500-cell PBMC dataset in Loom format.
+<code><a href="../reference/readLoom.html">readLoom()</a></code> loads it directly into a Seurat object.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">loom_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.loom"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="va">loom_file</span><span class="op">)</span></span>
 <span><span class="va">pbmc</span></span>
-<span><span class="co">#&gt; An object of class Seurat </span></span>
-<span><span class="co">#&gt; 2000 features across 500 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: RNA (2000 features, 2000 variable features)</span></span>
-<span><span class="co">#&gt;  2 layers present: counts, data</span></span>
-<span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="convert-loom_files/figure-html/dimplot-original-1.png" class="r-plt" alt="" width="672"></p>
-<p>Let us also look at CD14, a marker for monocytes, before
-conversion:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
-<p><img src="convert-loom_files/figure-html/featureplot-original-1.png" class="r-plt" alt="" width="672"></p>
-</div>
-<div class="section level2">
-<h2 id="write-to-loom">Write to Loom<a class="anchor" aria-label="anchor" href="#write-to-loom"></a>
-</h2>
-<p><code><a href="../reference/writeLoom.html">writeLoom()</a></code> saves the default assay’s expression data as
-the main matrix, with cell metadata as column attributes and gene
-metadata as row attributes. Dimensional reductions are stored as
-additional column attributes.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">loom_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".loom"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeLoom.html">writeLoom</a></span><span class="op">(</span><span class="va">pbmc</span>, filename <span class="op">=</span> <span class="va">loom_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loom file size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">loom_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e6</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loom file size: 2.3 MB</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="read-it-back">Read it back<a class="anchor" aria-label="anchor" href="#read-it-back"></a>
-</h2>
-<p><code><a href="../reference/readLoom.html">readLoom()</a></code> loads the Loom file as a Seurat object. The
-<code>cells</code> and <code>features</code> parameters control which
-column/row attributes are used for cell and gene names (defaults:
-<code>"CellID"</code> and <code>"Gene"</code>).</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="va">loom_path</span><span class="op">)</span></span>
-<span><span class="va">pbmc_rt</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 2000 features across 500 samples within 1 assay </span></span>
 <span><span class="co">#&gt; Active assay: RNA (2000 features, 0 variable features)</span></span>
 <span><span class="co">#&gt;  2 layers present: counts, data</span></span>
 <span><span class="co">#&gt;  1 dimensional reduction calculated: umap</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Original:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="st">"cells,"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Original: 500 cells, 2000 genes</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loaded:  "</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="st">"cells,"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="st">"genes\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loaded:   500 cells, 2000 genes</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Metadata preserved:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Metadata preserved: orig.ident, nCount_RNA, nFeature_RNA, seurat_annotations, percent.mt, RNA_snn_res.0.5, seurat_clusters</span></span></code></pre></div>
+<p>The reader reconstructs cell metadata, gene metadata, and dimensional
+reductions from the Loom column and row attributes:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Cells: 500</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Genes: 2000</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Reductions</span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Reductions: umap</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Metadata columns:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">[[</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, RNA_snn_res.0.5, percent.mt, seurat_annotations, seurat_clusters, pca</span></span></code></pre></div>
+<p>The nine annotated cell types are preserved:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-loom_files/figure-html/dimplot-1.png" class="r-plt" alt="" width="672"></p>
+<p>Expression data is fully available. LYZ is a monocyte marker:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-loom_files/figure-html/featureplot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="compare-expression">Compare expression<a class="anchor" aria-label="anchor" href="#compare-expression"></a>
+<h2 id="write-a-seurat-object-to-loom">Write a Seurat object to Loom<a class="anchor" aria-label="anchor" href="#write-a-seurat-object-to-loom"></a>
 </h2>
-<p>Expression values and cell metadata are preserved through the
-round-trip. Loom stores dimensional reductions as column attributes, so
-UMAP and PCA coordinates are available after loading.</p>
+<p><code><a href="../reference/writeLoom.html">writeLoom()</a></code> saves the default assay’s expression data as
+the main matrix, with cell metadata as column attributes and gene
+metadata as row attributes. Dimensional reductions are stored as
+additional column attributes.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_seurat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">loom_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".loom"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeLoom.html">writeLoom</a></span><span class="op">(</span><span class="va">pbmc_seurat</span>, filename <span class="op">=</span> <span class="va">loom_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Loom file size:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">loom_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e6</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Loom file size: 2.3 MB</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="verify-the-round-trip">Verify the round-trip<a class="anchor" aria-label="anchor" href="#verify-the-round-trip"></a>
+</h2>
+<p>Read the written Loom file back and compare the UMAP projections.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pbmc_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readLoom.html">readLoom</a></span><span class="op">(</span><span class="va">loom_path</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_seurat</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original (.rds)"</span><span class="op">)</span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
-<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"From Loom"</span><span class="op">)</span></span>
+<span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Round-trip (.loom)"</span><span class="op">)</span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-loom_files/figure-html/compare-dimplot-1.png" class="r-plt" alt="" width="960"></p>
-<p>The LYZ expression pattern (a monocyte marker) is identical before
-and after conversion:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ - Original"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ - From Loom"</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-loom_files/figure-html/featureplot-compare-1.png" class="r-plt" alt="" width="960"></p>
-<p>A violin plot confirms the per-cluster distribution is preserved:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, features <span class="op">=</span> <span class="st">"CD14"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>, pt.size <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="convert-loom_files/figure-html/vlnplot-1.png" class="r-plt" alt="" width="672"></p>
+<p><img src="convert-loom_files/figure-html/roundtrip-compare-1.png" class="r-plt" alt="" width="960"></p>
 </div>
 <div class="section level2">
 <h2 id="what-is-preserved">What is preserved<a class="anchor" aria-label="anchor" href="#what-is-preserved"></a>
@@ -231,41 +208,36 @@ what round-trips and what does not:</p>
 </table>
 </div>
 <div class="section level2">
-<h2 id="using-scconvert-for-format-conversion">Using scConvert() for format conversion<a class="anchor" aria-label="anchor" href="#using-scconvert-for-format-conversion"></a>
+<h2 id="per-cluster-expression">Per-cluster expression<a class="anchor" aria-label="anchor" href="#per-cluster-expression"></a>
 </h2>
-<p>You can also convert Loom files to other formats using the
-<code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> dispatcher without loading into R:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="va">loom_path</span>, dest <span class="op">=</span> <span class="va">h5ad_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Converted Loom to h5ad:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e6</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Converted Loom to h5ad: 0.9 MB</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">h5ad_path</span><span class="op">)</span></span></code></pre></div>
+<p>A violin plot confirms that per-cluster expression distributions are
+preserved through Loom conversion:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>, pt.size <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-loom_files/figure-html/vlnplot-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="python-interop-optional">Python interop (optional)<a class="anchor" aria-label="anchor" href="#python-interop-optional"></a>
 </h2>
-<p>If you have Python with loompy installed, you can read the Loom file
-directly.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Requires Python with loompy installed</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="im">import</span> loompy</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="cf">with</span> loompy.<span class="ex">connect</span>(<span class="st">"pbmc.loom"</span>) <span class="im">as</span> ds:</span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Shape: </span><span class="sc">{</span>ds<span class="sc">.</span>shape[<span class="dv">0</span>]<span class="sc">}</span><span class="ss"> genes x </span><span class="sc">{</span>ds<span class="sc">.</span>shape[<span class="dv">1</span>]<span class="sc">}</span><span class="ss"> cells"</span>)</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Row attributes: </span><span class="sc">{</span><span class="bu">list</span>(ds.ra.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Column attributes: </span><span class="sc">{</span><span class="bu">list</span>(ds.ca.keys())[:<span class="dv">10</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Layers: </span><span class="sc">{</span><span class="bu">list</span>(ds.layers.keys())<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div>
-<p>You can also load Loom files into scanpy as AnnData objects:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Requires Python with scanpy installed</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>adata <span class="op">=</span> sc.read_loom(<span class="st">"pbmc.loom"</span>, sparse<span class="op">=</span><span class="va">True</span>, cleanup<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span></code></pre></div>
+<p>The Loom files produced by <code><a href="../reference/writeLoom.html">writeLoom()</a></code> are compatible
+with loompy, scanpy, and scVelo.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="im">import</span> loompy</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="cf">with</span> loompy.<span class="ex">connect</span>(<span class="st">"pbmc_demo.loom"</span>) <span class="im">as</span> ds:</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Shape: </span><span class="sc">{</span>ds<span class="sc">.</span>shape[<span class="dv">0</span>]<span class="sc">}</span><span class="ss"> genes x </span><span class="sc">{</span>ds<span class="sc">.</span>shape[<span class="dv">1</span>]<span class="sc">}</span><span class="ss"> cells"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Row attributes: </span><span class="sc">{</span><span class="bu">list</span>(ds.ra.keys())<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Column attributes: </span><span class="sc">{</span><span class="bu">list</span>(ds.ca.keys())[:<span class="dv">10</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Layers: </span><span class="sc">{</span><span class="bu">list</span>(ds.layers.keys())<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>adata <span class="op">=</span> sc.read_loom(<span class="st">"pbmc_demo.loom"</span>, sparse<span class="op">=</span><span class="va">True</span>, cleanup<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="bu">print</span>(adata)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="clean-up">Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">loom_path</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

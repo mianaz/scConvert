@@ -93,10 +93,13 @@ is a cloud-native, array-based format for single-cell data. It is the
 storage backend behind <a href="https://chanzuckerberg.github.io/cellxgene-census/" class="external-link">CELLxGENE
 Census</a>, which hosts 61M+ cells across 900+ datasets. SOMA supports
 efficient slicing by cells or features without loading the full dataset,
-making it ideal for working with large atlases. scConvert provides
-<code><a href="../reference/writeSOMA.html">writeSOMA()</a></code> and <code><a href="../reference/readSOMA.html">readSOMA()</a></code> for Seurat
-interoperability. Both functions require the <a href="https://github.com/single-cell-data/TileDB-SOMA" class="external-link">tiledbsoma</a> R
-package.</p>
+making it ideal for working with large atlases.</p>
+<p>scConvert provides <code><a href="../reference/writeSOMA.html">writeSOMA()</a></code> and
+<code><a href="../reference/readSOMA.html">readSOMA()</a></code> for Seurat interoperability. Both functions
+require the <a href="https://github.com/single-cell-data/TileDB-SOMA" class="external-link">tiledbsoma</a> R
+package. SOMA experiments are database-like stores rather than single
+files, so they cannot easily be shipped as package demo data. Instead,
+we start from the shipped RDS and demonstrate the round-trip.</p>
 </div>
 <div class="section level2">
 <h2 id="load-demo-data">Load demo data<a class="anchor" aria-label="anchor" href="#load-demo-data"></a>
@@ -134,7 +137,7 @@ installed, this section shows the code without running it.</p>
 <span></span>
 <span><span class="fu"><a href="../reference/writeSOMA.html">writeSOMA</a></span><span class="op">(</span><span class="va">pbmc</span>, uri <span class="op">=</span> <span class="va">soma_uri</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"SOMA experiment written to:"</span>, <span class="va">soma_uri</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; SOMA experiment written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp4v2wXP/pbmc_demo.soma</span></span></code></pre></div>
+<span><span class="co">#&gt; SOMA experiment written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpQHNr1a/pbmc_demo.soma</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="read-back-from-soma">Read back from SOMA<a class="anchor" aria-label="anchor" href="#read-back-from-soma"></a>
@@ -164,6 +167,9 @@ survive the SOMA round-trip.</p>
 <span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
 <p><img src="convert-soma_files/figure-html/compare-dimplot-1.png" class="r-plt" alt="" width="1152"></p>
+<div class="section level3">
+<h3 id="violin-plot">Violin plot<a class="anchor" aria-label="anchor" href="#violin-plot"></a>
+</h3>
 <p>LYZ is a strong monocyte marker – the violin plot below shows its
 expression distribution across all 9 cell types loaded from the SOMA
 store.</p>
@@ -172,8 +178,9 @@ store.</p>
 <span><span class="fu">VlnPlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ expression by cell type (from SOMA)"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="convert-soma_files/figure-html/vlnplot-1.png" class="r-plt" alt="" width="672"></p>
+</div>
 <div class="section level3">
-<h3 id="quick-fidelity-check">Quick fidelity check<a class="anchor" aria-label="anchor" href="#quick-fidelity-check"></a>
+<h3 id="fidelity-check">Fidelity check<a class="anchor" aria-label="anchor" href="#fidelity-check"></a>
 </h3>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>

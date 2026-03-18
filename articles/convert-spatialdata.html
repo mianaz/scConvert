@@ -100,42 +100,46 @@ transcriptomics ecosystem.</p>
 Seurat objects, with no Python dependency.</p>
 </div>
 <div class="section level2">
-<h2 id="load-spatial-demo-data">Load spatial demo data<a class="anchor" aria-label="anchor" href="#load-spatial-demo-data"></a>
+<h2 id="read-spatial-data-from-h5ad">Read spatial data from h5ad<a class="anchor" aria-label="anchor" href="#read-spatial-data-from-h5ad"></a>
 </h2>
-<p>We use a 400-spot Visium mouse brain dataset that ships with
-scConvert. It includes a tissue image, PCA/UMAP embeddings, and 15
-clusters.</p>
+<p>We start by reading a 400-spot Visium mouse brain dataset shipped
+with scConvert as an h5ad file. This dataset includes spatial
+coordinates, a tissue image, PCA/UMAP embeddings, and 15 clusters across
+1500 genes.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"spatial_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"spatial_demo.h5ad"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
+<span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">brain</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 1500 features across 400 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: Spatial (1500 features, 1500 variable features)</span></span>
+<span><span class="co">#&gt; Active assay: RNA (1500 features, 1500 variable features)</span></span>
 <span><span class="co">#&gt;  2 layers present: counts, data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span>
 <span><span class="co">#&gt;  1 spatial field of view present: anterior1</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">SpatialFeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Hpca"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Hpca expression -- Original Visium data"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">SpatialFeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Ttr"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Ttr expression -- Visium mouse brain (from h5ad)"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="convert-spatialdata_files/figure-html/spatial-plot-original-1.png" class="r-plt" alt="" width="672"></p>
+<p>Ttr (transthyretin) marks the choroid plexus. The spatial expression
+pattern confirms the data was loaded correctly from the h5ad file.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Cluster assignments (from h5ad)"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-spatialdata_files/figure-html/dimplot-original-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="write-to-spatialdata">Write to SpatialData<a class="anchor" aria-label="anchor" href="#write-to-spatialdata"></a>
+<h2 id="write-to-spatialdata-and-read-back">Write to SpatialData and read back<a class="anchor" aria-label="anchor" href="#write-to-spatialdata-and-read-back"></a>
 </h2>
-<p>Save the Seurat object as a SpatialData Zarr store. The expression
-data, metadata, embeddings, spatial coordinates, and shapes are all
-written.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>SpatialData stores have a complex directory structure with separate
+groups for tables, shapes, images, and coordinate systems. We write the
+Seurat object to a SpatialData Zarr store and read it back to verify the
+round-trip.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sd_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"brain.spatialdata.zarr"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/writeSpatialData.html">writeSpatialData</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">sd_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"SpatialData store written to:"</span>, <span class="va">sd_path</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; SpatialData store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpM9FOe4/brain.spatialdata.zarr</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="read-back-from-spatialdata">Read back from SpatialData<a class="anchor" aria-label="anchor" href="#read-back-from-spatialdata"></a>
-</h2>
-<p>Load the store back into a Seurat object.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; SpatialData store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpD6izHU/brain.spatialdata.zarr</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSpatialData.html">readSpatialData</a></span><span class="op">(</span><span class="va">sd_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Cells: 400 | Genes: 1500</span></span>
@@ -147,38 +151,17 @@ written.</p>
 <div class="section level2">
 <h2 id="compare-original-and-round-trip">Compare original and round-trip<a class="anchor" aria-label="anchor" href="#compare-original-and-round-trip"></a>
 </h2>
-<p>Side-by-side comparisons confirm that cluster assignments and gene
-expression patterns survive the SpatialData round-trip.</p>
-<div class="section level3">
-<h3 id="cluster-umap">Cluster UMAP<a class="anchor" aria-label="anchor" href="#cluster-umap"></a>
-</h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"After SpatialData round-trip"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-spatialdata_files/figure-html/compare-dimplot-1.png" class="r-plt" alt="" width="1152"></p>
-</div>
-<div class="section level3">
-<h3 id="gene-expression">Gene expression<a class="anchor" aria-label="anchor" href="#gene-expression"></a>
-</h3>
-<p>Ttr (transthyretin) marks the choroid plexus in mouse brain.
-Expression patterns are identical before and after the round-trip.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Ttr"</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Ttr -- Original"</span><span class="op">)</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Ttr"</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Ttr -- Original (h5ad)"</span><span class="op">)</span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">brain_rt</span>, features <span class="op">=</span> <span class="st">"Ttr"</span>, pt.size <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Ttr -- SpatialData round-trip"</span><span class="op">)</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Ttr -- After SpatialData round-trip"</span><span class="op">)</span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
 <p><img src="convert-spatialdata_files/figure-html/compare-feature-1.png" class="r-plt" alt="" width="1152"></p>
-</div>
 <div class="section level3">
-<h3 id="quick-fidelity-check">Quick fidelity check<a class="anchor" aria-label="anchor" href="#quick-fidelity-check"></a>
+<h3 id="fidelity-check">Fidelity check<a class="anchor" aria-label="anchor" href="#fidelity-check"></a>
 </h3>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span><span class="op">)</span></span>

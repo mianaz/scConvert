@@ -98,62 +98,55 @@ following the AnnData on-disk specification, with no Python
 dependency.</p>
 </div>
 <div class="section level2">
-<h2 id="load-demo-data">Load demo data<a class="anchor" aria-label="anchor" href="#load-demo-data"></a>
+<h2 id="read-a-zarr-store">Read a Zarr store<a class="anchor" aria-label="anchor" href="#read-a-zarr-store"></a>
 </h2>
-<p>We start with a 500-cell PBMC dataset that ships with scConvert. It
-has PCA, UMAP, cluster labels, and neighbor graphs already computed.</p>
+<p>We start by reading a 500-cell PBMC dataset shipped as a Zarr store
+with scConvert. This dataset has 2000 genes, PCA/UMAP embeddings,
+neighbor graphs, and 9 annotated cell types.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">zarr_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.zarr"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
+<span><span class="va">pbmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="va">zarr_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">pbmc</span></span>
 <span><span class="co">#&gt; An object of class Seurat </span></span>
 <span><span class="co">#&gt; 2000 features across 500 samples within 1 assay </span></span>
-<span><span class="co">#&gt; Active assay: RNA (2000 features, 2000 variable features)</span></span>
+<span><span class="co">#&gt; Active assay: RNA (2000 features, 0 variable features)</span></span>
 <span><span class="co">#&gt;  2 layers present: counts, data</span></span>
 <span><span class="co">#&gt;  2 dimensional reductions calculated: pca, umap</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
 <span>        label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original PBMC data"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/dimplot-original-1.png" class="r-plt" alt="" width="672"></p>
-</div>
-<div class="section level2">
-<h2 id="write-to-zarr">Write to Zarr<a class="anchor" aria-label="anchor" href="#write-to-zarr"></a>
-</h2>
-<p>Save the Seurat object as a Zarr store with <code><a href="../reference/writeZarr.html">writeZarr()</a></code>.
-Expression data, metadata, embeddings, and graphs are all preserved.</p>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"PBMC data read from Zarr"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-zarr_files/figure-html/dimplot-zarr-1.png" class="r-plt" alt="" width="672"></p>
+<p>LYZ is a strong monocyte marker. We can verify that expression values
+were loaded correctly from the Zarr store.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">zarr_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc.zarr"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">pbmc</span>, <span class="va">zarr_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Zarr store written to:"</span>, <span class="va">zarr_path</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Zarr store written to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpY170FZ/pbmc.zarr</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ expression (from Zarr)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="convert-zarr_files/figure-html/featureplot-lyz-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">
-<h2 id="read-back-from-zarr">Read back from Zarr<a class="anchor" aria-label="anchor" href="#read-back-from-zarr"></a>
+<h2 id="write-to-zarr-and-read-back">Write to Zarr and read back<a class="anchor" aria-label="anchor" href="#write-to-zarr-and-read-back"></a>
 </h2>
-<p>Load the Zarr store back into a Seurat object with
-<code><a href="../reference/readZarr.html">readZarr()</a></code>.</p>
+<p>Now we load the same dataset from its RDS representation, write it to
+Zarr, and read it back to verify round-trip fidelity.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pbmc_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="va">zarr_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">pbmc_rds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">rt_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc_roundtrip.zarr"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeZarr.html">writeZarr</a></span><span class="op">(</span><span class="va">pbmc_rds</span>, <span class="va">rt_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">pbmc_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readZarr.html">readZarr</a></span><span class="op">(</span><span class="va">rt_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Cells: 500 | Genes: 2000</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Reductions</span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Reductions: pca, umap</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="compare-original-and-round-trip">Compare original and round-trip<a class="anchor" aria-label="anchor" href="#compare-original-and-round-trip"></a>
-</h2>
-<p>The UMAP coordinates, cluster labels, and expression values are
-preserved exactly through the Zarr round-trip. We verify this with
-side-by-side visualizations.</p>
 <div class="section level3">
-<h3 id="cluster-labels">Cluster labels<a class="anchor" aria-label="anchor" href="#cluster-labels"></a>
+<h3 id="compare-original-and-round-trip">Compare original and round-trip<a class="anchor" aria-label="anchor" href="#compare-original-and-round-trip"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_rds</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
 <span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Original (RDS)"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NoLegend</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">DimPlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span>,</span>
 <span>              label <span class="op">=</span> <span class="cn">TRUE</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
@@ -163,33 +156,20 @@ side-by-side visualizations.</p>
 <p><img src="convert-zarr_files/figure-html/compare-dimplot-1.png" class="r-plt" alt="" width="1152"></p>
 </div>
 <div class="section level3">
-<h3 id="gene-expression">Gene expression<a class="anchor" aria-label="anchor" href="#gene-expression"></a>
+<h3 id="fidelity-check">Fidelity check<a class="anchor" aria-label="anchor" href="#fidelity-check"></a>
 </h3>
-<p>Expression patterns are also preserved – here we compare LYZ (a
-monocyte marker) across the original and round-tripped objects.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ -- Original"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">pbmc_rt</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, pt.size <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ -- Zarr round-trip"</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
-<p><img src="convert-zarr_files/figure-html/compare-featureplot-1.png" class="r-plt" alt="" width="1152"></p>
-</div>
-<div class="section level3">
-<h3 id="quick-fidelity-check">Quick fidelity check<a class="anchor" aria-label="anchor" href="#quick-fidelity-check"></a>
-</h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Dimensions match</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">pbmc_rds</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">pbmc_rds</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Barcodes and features match</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">pbmc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rds</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">pbmc_rds</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># PCA coordinates are exact</span></span>
 <span><span class="va">pca_diff</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span></span>
-<span>  <span class="fu">Embeddings</span><span class="op">(</span><span class="va">pbmc</span>, <span class="st">"pca"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="op">]</span> <span class="op">-</span></span>
+<span>  <span class="fu">Embeddings</span><span class="op">(</span><span class="va">pbmc_rds</span>, <span class="st">"pca"</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">pbmc_rt</span><span class="op">)</span>, <span class="op">]</span> <span class="op">-</span></span>
 <span>  <span class="fu">Embeddings</span><span class="op">(</span><span class="va">pbmc_rt</span>, <span class="st">"pca"</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">pca_diff</span> <span class="op">&lt;</span> <span class="fl">1e-10</span><span class="op">)</span></span>
@@ -203,7 +183,7 @@ monocyte marker) across the original and round-tripped objects.</p>
 <p>For converting between file formats without loading data into R,
 scConvert provides streaming converters that copy fields directly
 between backends:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># h5ad &lt;-&gt; Zarr (no Seurat intermediate)</span></span>
 <span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, <span class="st">"data.zarr"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/ZarrToH5AD.html">ZarrToH5AD</a></span><span class="op">(</span><span class="st">"data.zarr"</span>, <span class="st">"data.h5ad"</span><span class="op">)</span></span>
@@ -223,17 +203,17 @@ the full Seurat object would be expensive.</p>
 <p>Zarr stores produced by <code><a href="../reference/writeZarr.html">writeZarr()</a></code> are directly
 readable by Python’s <code>anndata.read_zarr()</code> and scanpy.
 Requires Python with anndata installed.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>adata <span class="op">=</span> ad.read_zarr(<span class="st">"pbmc.zarr"</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>sc.pl.umap(adata, color<span class="op">=</span><span class="st">"seurat_annotations"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="im">import</span> anndata <span class="im">as</span> ad</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>adata <span class="op">=</span> ad.read_zarr(<span class="st">"pbmc.zarr"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>sc.pl.umap(adata, color<span class="op">=</span><span class="st">"seurat_annotations"</span>)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
 <span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>

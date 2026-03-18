@@ -5,29 +5,30 @@
 CITE-seq (Cellular Indexing of Transcriptomes and Epitopes by
 Sequencing) measures RNA transcription and surface protein abundance
 from the same cells. This produces two assays per cell: RNA gene
-expression and ADT (antibody-derived tag) protein counts. scConvert
-handles both assays during format conversion, giving you two export
-options:
+expression and ADT (antibody-derived tag) protein counts. The h5mu
+format is ideal for storing both modalities in a single file. scConvert
+handles both assays during format conversion, and provides two export
+paths:
 
-- **h5ad**: Exports a single assay (RNA or ADT) per file, ideal for
-  scanpy workflows
-- **h5mu**: Exports all assays in one file, ideal for muon/MuData
+- **h5ad**: Exports a single assay (RNA or ADT) per file, for scanpy
   workflows
+- **h5mu**: Exports all assays in one file, for muon/MuData workflows
 
-## Load CITE-seq data
+## Read CITE-seq data from h5mu
 
-The shipped `citeseq_demo.rds` contains 500 cells with RNA (2000 genes)
-and ADT (10 antibodies: CD3, CD4, CD8, CD45RA, CD56, CD16, CD11c, CD14,
-CD19, CD34), pre-processed with PCA, UMAP, and clustering.
+The shipped `citeseq_demo.h5mu` contains 500 cells with RNA (2,000
+genes) and ADT (10 antibodies: CD3, CD4, CD8, CD45RA, CD56, CD16, CD11c,
+CD14, CD19, CD34), pre-processed with PCA, UMAP, and clustering.
 
 ``` r
 
-obj <- readRDS(system.file("extdata", "citeseq_demo.rds", package = "scConvert"))
+h5mu_file <- system.file("extdata", "citeseq_demo.h5mu", package = "scConvert")
+obj <- readH5MU(h5mu_file)
 
 cat("Cells:", ncol(obj), "\n")
 #> Cells: 500
 cat("Assays:", paste(Assays(obj), collapse = ", "), "\n")
-#> Assays: RNA, ADT
+#> Assays: ADT, RNA
 cat("RNA features:", nrow(obj[["RNA"]]), "\n")
 #> RNA features: 2000
 cat("ADT features:", nrow(obj[["ADT"]]), "\n")
@@ -49,17 +50,22 @@ DimPlot(obj, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
 ## Visualize protein expression
 
 ADT markers reveal cell-surface protein levels that complement the
-transcriptomic clusters. CD3 marks T cells; CD14 marks monocytes.
+transcriptomic clusters. After reading h5mu, the ADT assay contains only
+raw counts, so we normalize with CLR before plotting. CD3 marks T cells;
+CD14 marks monocytes.
+
+``` r
+
+DefaultAssay(obj) <- "ADT"
+obj <- NormalizeData(obj, normalization.method = "CLR", margin = 2, verbose = FALSE)
+```
 
 ``` r
 
 library(patchwork)
 
-DefaultAssay(obj) <- "ADT"
 p1 <- FeaturePlot(obj, features = "CD3", pt.size = 0.8) + ggtitle("CD3 (T cells)")
 p2 <- FeaturePlot(obj, features = "CD14", pt.size = 0.8) + ggtitle("CD14 (Monocytes)")
-DefaultAssay(obj) <- "RNA"
-
 p1 + p2
 ```
 
@@ -69,7 +75,6 @@ p1 + p2
 
 ``` r
 
-DefaultAssay(obj) <- "ADT"
 VlnPlot(obj, features = "CD3", group.by = "seurat_clusters", pt.size = 0.1) +
   ggtitle("CD3 protein across clusters") +
   NoLegend()
@@ -77,12 +82,9 @@ VlnPlot(obj, features = "CD3", group.by = "seurat_clusters", pt.size = 0.1) +
 
 ![](multimodal-citeseq_files/figure-html/vlnplot-adt-1.png)
 
-``` r
+## Export: h5ad vs h5mu
 
-DefaultAssay(obj) <- "RNA"
-```
-
-## Export to h5ad (single assay)
+### h5ad – single assay
 
 [`writeH5AD()`](https://mianaz.github.io/scConvert/reference/writeH5AD.md)
 writes one assay at a time. By default it writes the active assay (RNA).
@@ -98,18 +100,18 @@ cat("File size:", round(file.size(h5ad_path) / 1024^2, 1), "MB\n")
 #> File size: 0.7 MB
 ```
 
-## Export to h5mu (multi-assay)
+### h5mu – all assays
 
 [`writeH5MU()`](https://mianaz.github.io/scConvert/reference/writeH5MU.md)
-writes all assays into a single file, each as a separate modality. This
-preserves both RNA and ADT together.
+writes every assay as a separate modality, keeping RNA and ADT together
+in a single file.
 
 ``` r
 
-h5mu_path <- file.path(tempdir(), "citeseq.h5mu")
+h5mu_path <- file.path(tempdir(), "citeseq_roundtrip.h5mu")
 writeH5MU(obj, h5mu_path, overwrite = TRUE)
 cat("Wrote RNA + ADT to:", basename(h5mu_path), "\n")
-#> Wrote RNA + ADT to: citeseq.h5mu
+#> Wrote RNA + ADT to: citeseq_roundtrip.h5mu
 cat("File size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
 #> File size: 0.7 MB
 ```
@@ -146,20 +148,20 @@ cat("ADT features:", nrow(loaded_h5mu[["ADT"]]), "\n")
 
 ``` r
 
-common_cells <- intersect(colnames(obj), colnames(loaded_h5mu))
+# Compare against the original h5mu-loaded object
+orig <- readH5MU(h5mu_file)
+common_cells <- intersect(colnames(orig), colnames(loaded_h5mu))
 
-# RNA counts
-common_genes <- intersect(rownames(obj[["RNA"]]), rownames(loaded_h5mu[["RNA"]]))
-orig <- as.numeric(GetAssayData(obj, assay = "RNA", layer = "counts")[
+common_genes <- intersect(rownames(orig[["RNA"]]), rownames(loaded_h5mu[["RNA"]]))
+orig_rna <- as.numeric(GetAssayData(orig, assay = "RNA", layer = "counts")[
   head(common_genes, 100), head(common_cells, 100)])
-rt <- as.numeric(GetAssayData(loaded_h5mu, assay = "RNA", layer = "counts")[
+rt_rna <- as.numeric(GetAssayData(loaded_h5mu, assay = "RNA", layer = "counts")[
   head(common_genes, 100), head(common_cells, 100)])
-cat("RNA counts identical:", identical(orig, rt), "\n")
+cat("RNA counts identical:", identical(orig_rna, rt_rna), "\n")
 #> RNA counts identical: TRUE
 
-# ADT counts
-common_adt <- intersect(rownames(obj[["ADT"]]), rownames(loaded_h5mu[["ADT"]]))
-orig_adt <- as.numeric(GetAssayData(obj, assay = "ADT", layer = "counts")[
+common_adt <- intersect(rownames(orig[["ADT"]]), rownames(loaded_h5mu[["ADT"]]))
+orig_adt <- as.numeric(GetAssayData(orig, assay = "ADT", layer = "counts")[
   common_adt, head(common_cells, 100)])
 rt_adt <- as.numeric(GetAssayData(loaded_h5mu, assay = "ADT", layer = "counts")[
   common_adt, head(common_cells, 100)])

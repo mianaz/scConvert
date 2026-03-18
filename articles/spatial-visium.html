@@ -95,13 +95,15 @@ factors, and all associated metadata so the data is immediately usable
 in both R (Seurat) and Python (scanpy/squidpy) ecosystems.</p>
 </div>
 <div class="section level2">
-<h2 id="load-the-demo-visium-dataset">Load the demo Visium dataset<a class="anchor" aria-label="anchor" href="#load-the-demo-visium-dataset"></a>
+<h2 id="read-spatial-data-from-h5ad">Read spatial data from h5ad<a class="anchor" aria-label="anchor" href="#read-spatial-data-from-h5ad"></a>
 </h2>
-<p>The shipped demo contains 400 mouse brain Visium spots with 1,500
-genes, PCA/UMAP reductions, and 15 clusters.</p>
+<p>The shipped <code>spatial_demo.h5ad</code> contains 400 mouse brain
+Visium spots with 1,500 genes, PCA/UMAP reductions, and cluster labels.
+<code><a href="../reference/readH5AD.html">readH5AD()</a></code> rebuilds the full Seurat spatial object,
+including the tissue image.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">spatial_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"spatial_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
-<span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">spatial_path</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">h5ad_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"spatial_demo.h5ad"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span></span>
+<span><span class="va">brain</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Spots:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Spots: 400</span></span>
@@ -109,64 +111,61 @@ genes, PCA/UMAP reductions, and 15 clusters.</p>
 <span><span class="co">#&gt; Genes: 1500</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Image:"</span>, <span class="fu">Images</span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Image: anterior1</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Clusters:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nlevels.html" class="external-link">nlevels</a></span><span class="op">(</span><span class="va">brain</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Clusters: 15</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Assay:"</span>, <span class="fu">Assays</span><span class="op">(</span><span class="va">brain</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Assay: RNA</span></span></code></pre></div>
 <div class="section level3">
-<h3 id="visualize-a-brain-marker-gene">Visualize a brain marker gene<a class="anchor" aria-label="anchor" href="#visualize-a-brain-marker-gene"></a>
+<h3 id="spatial-expression-of-a-brain-marker">Spatial expression of a brain marker<a class="anchor" aria-label="anchor" href="#spatial-expression-of-a-brain-marker"></a>
 </h3>
 <p>Hpca (Hippocalcin) marks hippocampal neurons and shows clear regional
 expression in the mouse brain.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">SpatialFeaturePlot</span><span class="op">(</span><span class="va">brain</span>, features <span class="op">=</span> <span class="st">"Hpca"</span>, pt.size.factor <span class="op">=</span> <span class="fl">1.6</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Hpca expression (original)"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatial-visium_files/figure-html/plot-original-1.png" class="r-plt" alt="" width="672"></p>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Hpca expression (loaded from h5ad)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spatial-visium_files/figure-html/spatialplot-hpca-1.png" class="r-plt" alt="" width="672"></p>
 </div>
-</div>
-<div class="section level2">
-<h2 id="convert-to-h5ad">Convert to h5ad<a class="anchor" aria-label="anchor" href="#convert-to-h5ad"></a>
-</h2>
-<p>Write the Visium object to h5ad format. scConvert automatically
-exports spot coordinates to <code>obsm/spatial</code>, tissue images and
-scale factors to <code>uns/spatial</code>, and all metadata to
-<code>obs</code>.</p>
+<div class="section level3">
+<h3 id="cluster-overview">Cluster overview<a class="anchor" aria-label="anchor" href="#cluster-overview"></a>
+</h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">h5ad_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">h5ad_file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Wrote:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_file</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Wrote: 3.2 MB</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
+<span>        label <span class="op">=</span> <span class="cn">TRUE</span>, repel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"UMAP clusters (loaded from h5ad)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spatial-visium_files/figure-html/dimplot-clusters-1.png" class="r-plt" alt="" width="672"></p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="read-back-into-seurat">Read back into Seurat<a class="anchor" aria-label="anchor" href="#read-back-into-seurat"></a>
+<h2 id="write-and-read-roundtrip">Write-and-read roundtrip<a class="anchor" aria-label="anchor" href="#write-and-read-roundtrip"></a>
 </h2>
+<p>Write the spatial object to a new h5ad file, read it back, and
+confirm that coordinates, images, scale factors, and expression values
+are all preserved.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_file</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">h5ad_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"spatial_roundtrip.h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">brain</span>, <span class="va">h5ad_rt</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Wrote:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5ad_rt</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>, <span class="st">"MB\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Wrote: 3.2 MB</span></span>
 <span></span>
+<span><span class="va">brain_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_rt</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip spots:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Roundtrip spots: 400</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Roundtrip genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Roundtrip genes: 1500</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Image:"</span>, <span class="fu">Images</span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Image: anterior1</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="compare-original-and-roundtrip">Compare original and roundtrip<a class="anchor" aria-label="anchor" href="#compare-original-and-roundtrip"></a>
-</h2>
-<p>The spatial expression pattern is preserved through the h5ad
+<div class="section level3">
+<h3 id="compare-spatial-plots">Compare spatial plots<a class="anchor" aria-label="anchor" href="#compare-spatial-plots"></a>
+</h3>
+<p>The spatial expression pattern should be identical after
 roundtrip.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">SpatialFeaturePlot</span><span class="op">(</span><span class="va">brain_rt</span>, features <span class="op">=</span> <span class="st">"Hpca"</span>, pt.size.factor <span class="op">=</span> <span class="fl">1.6</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Hpca expression (after h5ad roundtrip)"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatial-visium_files/figure-html/plot-roundtrip-1.png" class="r-plt" alt="" width="672"></p>
-<p>Cluster assignments also survive conversion:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">brain_rt</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_clusters"</span>,</span>
-<span>        label <span class="op">=</span> <span class="cn">TRUE</span>, repel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"UMAP clusters (after h5ad roundtrip)"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spatial-visium_files/figure-html/plot-clusters-1.png" class="r-plt" alt="" width="672"></p>
+<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Hpca expression (after h5ad roundtrip)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spatial-visium_files/figure-html/spatialplot-roundtrip-1.png" class="r-plt" alt="" width="672"></p>
+</div>
 <div class="section level3">
 <h3 id="verify-data-integrity">Verify data integrity<a class="anchor" aria-label="anchor" href="#verify-data-integrity"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Dimensions match:"</span>,</span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">brain_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Dimensions match: TRUE</span></span>
@@ -179,33 +178,80 @@ roundtrip.</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="what-gets-preserved">What gets preserved<a class="anchor" aria-label="anchor" href="#what-gets-preserved"></a>
+</h2>
+<p>scConvert maintains full fidelity for Visium spatial data during
+conversion:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Component</th>
+<th>h5ad location</th>
+<th>Preserved</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Expression matrix</td>
+<td>
+<code>X</code> / <code>raw/X</code>
+</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>Spot coordinates</td>
+<td><code>obsm/spatial</code></td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>Tissue image</td>
+<td><code>uns/spatial/*/images</code></td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>Scale factors</td>
+<td><code>uns/spatial/*/scalefactors</code></td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>Cell metadata</td>
+<td><code>obs</code></td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>Reductions (PCA, UMAP)</td>
+<td><code>obsm</code></td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level2">
 <h2 id="use-in-python-scanpysquidpy">Use in Python (scanpy/squidpy)<a class="anchor" aria-label="anchor" href="#use-in-python-scanpysquidpy"></a>
 </h2>
 <p>The exported h5ad works directly with scanpy and squidpy. Images,
 coordinates, and scale factors use standard scanpy conventions.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Requires Python with scanpy and squidpy installed</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"brain.h5ad"</span>)</span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Spatial coords shape: </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>]<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co"># Spatial scatter plot</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>sc.pl.spatial(adata, color<span class="op">=</span><span class="st">"seurat_clusters"</span>)</span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># Squidpy spatial analysis</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="im">import</span> squidpy <span class="im">as</span> sq</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>sq.gr.spatial_neighbors(adata, coord_type<span class="op">=</span><span class="st">"generic"</span>)</span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>sq.gr.spatial_autocorr(adata, mode<span class="op">=</span><span class="st">"moran"</span>, genes<span class="op">=</span>[<span class="st">"Hpca"</span>, <span class="st">"Ttr"</span>])</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Requires Python with scanpy and squidpy installed</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>adata <span class="op">=</span> sc.read_h5ad(<span class="st">"spatial_demo.h5ad"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="bu">print</span>(adata)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Spatial coords shape: </span><span class="sc">{</span>adata<span class="sc">.</span>obsm[<span class="st">'spatial'</span>]<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># Spatial scatter plot</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>sc.pl.spatial(adata, color<span class="op">=</span><span class="st">"seurat_clusters"</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co"># Squidpy spatial analysis</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="im">import</span> squidpy <span class="im">as</span> sq</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>sq.gr.spatial_neighbors(adata, coord_type<span class="op">=</span><span class="st">"generic"</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>sq.gr.spatial_autocorr(adata, mode<span class="op">=</span><span class="st">"moran"</span>, genes<span class="op">=</span>[<span class="st">"Hpca"</span>, <span class="st">"Ttr"</span>])</span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="cleanup">Cleanup<a class="anchor" aria-label="anchor" href="#cleanup"></a>
+<h2 id="clean-up">Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
 </div>
 <div class="section level2">
 <h2 id="session-info">Session Info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; R version 4.5.2 (2025-10-31)</span></span>
 <span><span class="co">#&gt; Platform: aarch64-apple-darwin20</span></span>

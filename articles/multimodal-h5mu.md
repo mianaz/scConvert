@@ -14,38 +14,68 @@ reads and writes h5mu natively – no Python or MuDataSeurat required.
 | **h5ad** | Single-modality (RNA only)                |
 | **h5mu** | Multi-modal (RNA + ADT, RNA + ATAC, etc.) |
 
-## Load CITE-seq demo data
+## Read h5mu directly
 
-The shipped `citeseq_demo.rds` contains 500 CITE-seq cells with two
-assays: RNA (2000 genes) and ADT (10 surface protein antibodies).
+The shipped `citeseq_demo.h5mu` contains 500 CITE-seq cells with two
+modalities: RNA (2,000 genes) and ADT (10 surface protein antibodies).
+[`readH5MU()`](https://mianaz.github.io/scConvert/reference/readH5MU.md)
+loads it into a Seurat object with both assays intact.
 
 ``` r
 
-obj <- readRDS(system.file("extdata", "citeseq_demo.rds", package = "scConvert"))
+h5mu_file <- system.file("extdata", "citeseq_demo.h5mu", package = "scConvert")
+obj <- readH5MU(h5mu_file)
 
 cat("Cells:", ncol(obj), "\n")
 #> Cells: 500
 cat("Assays:", paste(Assays(obj), collapse = ", "), "\n")
-#> Assays: RNA, ADT
+#> Assays: ADT, RNA
 cat("RNA features:", nrow(obj[["RNA"]]), "\n")
 #> RNA features: 2000
 cat("ADT features:", nrow(obj[["ADT"]]), "\n")
 #> ADT features: 10
 ```
 
+### UMAP of RNA clusters
+
 ``` r
 
 DimPlot(obj, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
-  ggtitle("CITE-seq clusters (original)")
+  ggtitle("CITE-seq clusters (loaded from h5mu)")
 ```
 
-![](multimodal-h5mu_files/figure-html/dimplot-original-1.png)
+![](multimodal-h5mu_files/figure-html/dimplot-h5mu-1.png)
 
-## Export to h5mu
+### Protein expression
+
+After reading h5mu, the ADT assay contains only raw counts. Normalize
+with CLR (centered log-ratio) before plotting protein markers.
+
+``` r
+
+DefaultAssay(obj) <- "ADT"
+obj <- NormalizeData(obj, normalization.method = "CLR", margin = 2, verbose = FALSE)
+FeaturePlot(obj, features = "CD3", pt.size = 0.8) +
+  ggtitle("CD3 protein (ADT) -- loaded from h5mu")
+```
+
+![](multimodal-h5mu_files/figure-html/featureplot-adt-1.png)
+
+``` r
+
+DefaultAssay(obj) <- "RNA"
+```
+
+## Write and roundtrip
+
+Load the same dataset from its Seurat `.rds` form, write to h5mu, then
+read back and compare. This demonstrates that scConvert preserves both
+assays through a full write/read cycle.
+
+### Modality name mapping
 
 [`writeH5MU()`](https://mianaz.github.io/scConvert/reference/writeH5MU.md)
-saves every assay as a separate modality. Seurat assay names are
-automatically mapped to standard MuData conventions:
+automatically maps Seurat assay names to standard MuData conventions:
 
 | Seurat Assay | h5mu Modality  |
 |--------------|----------------|
@@ -54,51 +84,31 @@ automatically mapped to standard MuData conventions:
 | ATAC         | atac           |
 | Other        | lowercase name |
 
-``` r
-
-h5mu_path <- file.path(tempdir(), "citeseq.h5mu")
-writeH5MU(obj, h5mu_path, overwrite = TRUE)
-cat("Wrote:", h5mu_path, "\n")
-#> Wrote: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp0H0CE5/citeseq.h5mu
-cat("File size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
-#> File size: 0.7 MB
-```
-
-## Load h5mu back into R
-
 [`readH5MU()`](https://mianaz.github.io/scConvert/reference/readH5MU.md)
-reverses the mapping, restoring standard Seurat assay names:
-
-| h5mu Modality | Seurat Assay |
-|---------------|--------------|
-| rna           | RNA          |
-| prot          | ADT          |
-| atac          | ATAC         |
+reverses the mapping when loading.
 
 ``` r
+
+orig <- readRDS(system.file("extdata", "citeseq_demo.rds", package = "scConvert"))
+
+h5mu_path <- file.path(tempdir(), "citeseq_roundtrip.h5mu")
+writeH5MU(orig, h5mu_path, overwrite = TRUE)
+cat("Wrote:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
+#> Wrote: 0.7 MB
 
 loaded <- readH5MU(h5mu_path)
-
-cat("Cells:", ncol(loaded), "\n")
-#> Cells: 500
-cat("Assays:", paste(Assays(loaded), collapse = ", "), "\n")
-#> Assays: ADT, RNA
-cat("RNA features:", nrow(loaded[["RNA"]]), "\n")
-#> RNA features: 2000
-cat("ADT features:", nrow(loaded[["ADT"]]), "\n")
-#> ADT features: 10
+cat("Loaded:", ncol(loaded), "cells,", paste(Assays(loaded), collapse = ", "), "\n")
+#> Loaded: 500 cells, ADT, RNA
 ```
 
-## Compare original and roundtripped data
-
-### Side-by-side DimPlot
+### Side-by-side comparison
 
 ``` r
 
 library(patchwork)
 
-p1 <- DimPlot(obj, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
-  ggtitle("Original") + NoLegend()
+p1 <- DimPlot(orig, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
+  ggtitle("Original (.rds)") + NoLegend()
 p2 <- DimPlot(loaded, group.by = "seurat_clusters", label = TRUE, pt.size = 0.8) +
   ggtitle("After h5mu roundtrip") + NoLegend()
 p1 + p2
@@ -106,81 +116,54 @@ p1 + p2
 
 ![](multimodal-h5mu_files/figure-html/dimplot-compare-1.png)
 
-### ADT protein expression
+### Verify data integrity
 
 ``` r
 
-DefaultAssay(loaded) <- "ADT"
-loaded <- NormalizeData(loaded, normalization.method = "CLR", margin = 2, verbose = FALSE)
-FeaturePlot(loaded, features = "CD3", pt.size = 0.8) +
-  ggtitle("CD3 protein (ADT) -- loaded from h5mu")
-```
-
-![](multimodal-h5mu_files/figure-html/featureplot-adt-1.png)
-
-``` r
-
-DefaultAssay(loaded) <- "RNA"
-```
-
-### Verify expression values
-
-``` r
-
-cat("=== Dimensions ===\n")
-#> === Dimensions ===
-cat("Cells match:", ncol(obj) == ncol(loaded), "\n")
-#> Cells match: TRUE
-cat("Assays match:", identical(sort(Assays(obj)), sort(Assays(loaded))), "\n")
+cat("Cell count match:", ncol(orig) == ncol(loaded), "\n")
+#> Cell count match: TRUE
+cat("Assays match:", identical(sort(Assays(orig)), sort(Assays(loaded))), "\n")
 #> Assays match: TRUE
 
-# RNA counts
-common_cells <- intersect(colnames(obj), colnames(loaded))
-common_genes <- intersect(rownames(obj[["RNA"]]), rownames(loaded[["RNA"]]))
-orig_rna <- as.numeric(GetAssayData(obj, assay = "RNA", layer = "counts")[
+common_cells <- intersect(colnames(orig), colnames(loaded))
+common_genes <- intersect(rownames(orig[["RNA"]]), rownames(loaded[["RNA"]]))
+orig_rna <- as.numeric(GetAssayData(orig, assay = "RNA", layer = "counts")[
   head(common_genes, 100), head(common_cells, 100)])
 rt_rna <- as.numeric(GetAssayData(loaded, assay = "RNA", layer = "counts")[
   head(common_genes, 100), head(common_cells, 100)])
-cat("\n=== RNA counts ===\n")
-#> 
-#> === RNA counts ===
-cat("Values identical:", identical(orig_rna, rt_rna), "\n")
-#> Values identical: TRUE
+cat("RNA counts identical:", identical(orig_rna, rt_rna), "\n")
+#> RNA counts identical: TRUE
 
-# ADT counts
-common_adt <- intersect(rownames(obj[["ADT"]]), rownames(loaded[["ADT"]]))
-orig_adt <- as.numeric(GetAssayData(obj, assay = "ADT", layer = "counts")[
+common_adt <- intersect(rownames(orig[["ADT"]]), rownames(loaded[["ADT"]]))
+orig_adt <- as.numeric(GetAssayData(orig, assay = "ADT", layer = "counts")[
   common_adt, head(common_cells, 100)])
 rt_adt <- as.numeric(GetAssayData(loaded, assay = "ADT", layer = "counts")[
   common_adt, head(common_cells, 100)])
-cat("\n=== ADT counts ===\n")
-#> 
-#> === ADT counts ===
-cat("Values identical:", identical(orig_adt, rt_adt), "\n")
-#> Values identical: TRUE
+cat("ADT counts identical:", identical(orig_adt, rt_adt), "\n")
+#> ADT counts identical: TRUE
 ```
 
 ## Custom modality name mapping
 
-You can override the default mapping when reading back with the
-`assay.names` argument:
+You can override the default mapping when reading with the `assay.names`
+argument:
 
 ``` r
 
-custom <- readH5MU(h5mu_path, assay.names = c(rna = "RNA", prot = "Protein"))
+custom <- readH5MU(h5mu_file, assay.names = c(rna = "RNA", prot = "Protein"))
 cat("Assays with custom mapping:", paste(Assays(custom), collapse = ", "), "\n")
 #> Assays with custom mapping: Protein, RNA
 ```
 
 ## Python interoperability
 
-The exported h5mu file is directly compatible with muon in Python.
+The h5mu file is directly compatible with muon in Python.
 
 ``` python
 # Requires Python: pip install mudata
 import mudata as md
 
-mdata = md.read_h5mu("citeseq.h5mu")
+mdata = md.read_h5mu("citeseq_demo.h5mu")
 print(mdata)
 print("Modalities:", list(mdata.mod.keys()))
 for name, mod in mdata.mod.items():
