@@ -296,8 +296,17 @@ ClosestVersion <- function(
 #' }
 #'
 FileType <- function(file) {
+  # URI schemes (e.g. soma://collection/measurement)
+  if (grepl("^[a-zA-Z][a-zA-Z0-9+.-]*://", file)) {
+    return(tolower(sub("://.*", "", file)))
+  }
+  # Multi-part extensions (e.g. .spatialdata.zarr)
+  bn <- basename(file)
+  if (grepl("\\.spatialdata\\.zarr$", bn, ignore.case = TRUE)) {
+    return("spatialdata.zarr")
+  }
   ext <- file_ext(x = file)
-  ext <- ifelse(test = nchar(x = ext), yes = ext, no = basename(path = file))
+  ext <- ifelse(test = nchar(x = ext), yes = ext, no = bn)
   return(tolower(x = ext))
 }
 

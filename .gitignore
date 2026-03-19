@@ -22,6 +22,7 @@ docs/*
 .DS_Store
 
 # Development files
+review.md
 FUNCTION_INDEX.md
 CLAUDE.md
 README.html

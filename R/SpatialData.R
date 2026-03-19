@@ -141,7 +141,7 @@ readSpatialData <- function(path, table = "table", images = TRUE,
     for (region_name in region) {
       # Try shapes first
       shapes_path <- file.path(path, "shapes", region_name)
-      if (dir.exists(shapes_path) && !coords_added) {
+      if (dir.exists(shapes_path)) {
         if (verbose) message("Reading shapes: shapes/", region_name)
         shape_data <- .read_spatialdata_shapes(shapes_path, verbose = verbose)
         if (!is.null(shape_data)) {
@@ -151,12 +151,13 @@ readSpatialData <- function(path, table = "table", images = TRUE,
             instance_key = instance_key, verbose = verbose
           )
           coords_added <- TRUE
+          next
         }
       }
 
-      # Try points
+      # Try points (only if shapes not found for this region)
       points_path <- file.path(path, "points", region_name)
-      if (dir.exists(points_path) && !coords_added) {
+      if (dir.exists(points_path)) {
         if (verbose) message("Reading points: points/", region_name)
         point_data <- .read_spatialdata_points(points_path, verbose = verbose)
         if (!is.null(point_data)) {
@@ -176,7 +177,6 @@ readSpatialData <- function(path, table = "table", images = TRUE,
       shape_names <- list.dirs(shapes_dir, recursive = FALSE,
                                full.names = FALSE)
       for (sn in shape_names) {
-        if (coords_added) break
         if (verbose) message("Reading shapes: shapes/", sn)
         shape_data <- .read_spatialdata_shapes(file.path(shapes_dir, sn),
                                                verbose = verbose)

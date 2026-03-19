@@ -745,6 +745,7 @@ static int sc_csc_to_coo(hid_t src_grp, hid_t dst_grp, int gzip_level)
 
 int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     const char *assay = opts->assay_name ? opts->assay_name : "RNA";
+    char assay_buf[SC_MAX_NAME_LEN] = {0};
     int gzip = opts->gzip_level > 0 ? opts->gzip_level : SC_GZIP_LEVEL;
     int rc = SC_OK;
 
@@ -769,12 +770,9 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* Check for SEURAT_ASSAY attribute on root (written by scConvert) */
-    {
-        char assay_buf[SC_MAX_NAME_LEN] = {0};
-        if (sc_get_str_attr(src, "SEURAT_ASSAY", assay_buf, sizeof(assay_buf)) == SC_OK
-            && assay_buf[0] != '\0') {
-            assay = assay_buf;
-        }
+    if (sc_get_str_attr(src, "SEURAT_ASSAY", assay_buf, sizeof(assay_buf)) == SC_OK
+        && assay_buf[0] != '\0') {
+        assay = assay_buf;
     }
 
     /* Set h5seurat root attributes */

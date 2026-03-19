@@ -128,7 +128,8 @@ scConvert.character <- function(
   standardize = FALSE,
   ...
 ) {
-  if (!file.exists(source)) {
+  is_uri <- grepl("^[a-zA-Z][a-zA-Z0-9+.-]*://", source)
+  if (!is_uri && !file.exists(source) && !dir.exists(source)) {
     stop("Source file not found: ", source, call. = FALSE)
   }
   stype <- FileType(file = source)
@@ -6982,7 +6983,8 @@ scConvert_cli <- function(
   overwrite = FALSE,
   verbose = TRUE
 ) {
-  if (!file.exists(input)) {
+  is_uri <- grepl("^[a-zA-Z][a-zA-Z0-9+.-]*://", input)
+  if (!is_uri && !file.exists(input) && !dir.exists(input)) {
     stop("Input file not found: ", input, call. = FALSE)
   }
 
@@ -7025,8 +7027,8 @@ scConvert_cli <- function(
         FALSE
       })
 
-      if (!result && file.exists(output)) {
-        try(file.remove(output), silent = TRUE)
+      if (!result && (file.exists(output) || dir.exists(output))) {
+        try(unlink(output, recursive = TRUE), silent = TRUE)
       }
       if (result) return(TRUE)
       if (verbose) message("C binary failed, falling back to R streaming")

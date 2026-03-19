@@ -91,12 +91,31 @@ readH5MU <- function(file,
           n_cols <- if (length(indices) > 0) max(indices) + 1L else 0L
         }
 
+        # Sort row indices within each column for valid dgCMatrix
+        # (scipy CSR/CSC may have unsorted indices)
+        .sort_dgc <- function(i, p, x) {
+          n_col <- length(p) - 1L
+          for (ci in seq_len(n_col)) {
+            start <- p[ci] + 1L
+            end <- p[ci + 1L]
+            if (end > start && is.unsorted(i[start:end])) {
+              seg <- start:end
+              ord <- order(i[seg])
+              i[seg] <- i[seg][ord]
+              x[seg] <- x[seg][ord]
+            }
+          }
+          list(i = i, x = x)
+        }
+
         if (transpose) {
           # Zero-copy CSR->CSC: CSR of (n_rows x n_cols) == CSC of (n_cols x n_rows)
+          sorted <- .sort_dgc(as.integer(indices), as.integer(indptr),
+                              as.numeric(data_vals))
           mat <- new("dgCMatrix",
-            i = as.integer(indices),
+            i = sorted$i,
             p = as.integer(indptr),
-            x = as.numeric(data_vals),
+            x = sorted$x,
             Dim = c(as.integer(n_cols), as.integer(n_rows))
           )
         } else {
