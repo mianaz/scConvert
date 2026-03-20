@@ -6007,9 +6007,10 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     `encoding-version` = "0.1.0"
   ))
 
-  # Read cell names
+  # Read cell names (SeuratDisk may store as Nx1 2D dataset)
   cell_names <- if (h5$exists("cell.names")) {
-    as.character(h5[["cell.names"]][])
+    cn_ds <- h5[["cell.names"]]
+    if (length(cn_ds$dims) == 2L) as.character(cn_ds[, 1]) else as.character(cn_ds[])
   } else {
     NULL
   }
@@ -6020,7 +6021,13 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
   if (h5$exists(assay_path)) {
     ag <- h5[[assay_path]]
     if (ag$exists("features")) {
-      feature_names <- as.character(ag[["features"]][])
+      feat_ds <- ag[["features"]]
+      # SeuratDisk may store features as Nx1 (2D), handle both 1D and 2D
+      feature_names <- if (length(feat_ds$dims) == 2L) {
+        as.character(feat_ds[, 1])
+      } else {
+        as.character(feat_ds[])
+      }
     }
   }
 
@@ -6218,6 +6225,16 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
               paste0(assay_path, "/counts"))) {
     if (h5$exists(p)) { counts_path <- p; break }
   }
+
+  # If no data layer exists but counts does, also write counts as X
+  # so that anndata.read_zarr() puts data in adata.X (not just adata.raw.X)
+  if (is.null(x_path) && !is.null(counts_path)) {
+    if (verbose) message("Streaming X (from counts: ", counts_path, ")...")
+    counts_obj <- h5[[counts_path]]
+    .stream_h5seurat_matrix_to_zarr(counts_obj, file.path(zarr_path, "X"),
+                                     compressor, transpose = TRUE)
+  }
+
   .zarr_create_group(file.path(zarr_path, "layers"))
   if (!is.null(counts_path) && !identical(counts_path, x_path)) {
     if (verbose) message("Streaming raw/X (", counts_path, ")...")
