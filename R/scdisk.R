@@ -262,7 +262,7 @@ GetSCDisk <- function(r6class = NULL) {
 #' }
 #'
 RegisterSCDisk <- function(r6class) {
-  if (isTRUE(x = IsSCDisk(r6class = scdisk))) {
+  if (isTRUE(x = IsSCDisk(r6class = r6class))) {
     r6pkg <- environmentName(env = r6class$parent_env)
     scpkg <- environmentName(env = scdisk$parent_env)
     # Ensure unique scdisk classes

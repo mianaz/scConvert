@@ -1114,6 +1114,11 @@ SafeSetLayerData <- function(object, layer, value) {
           attr_name = "_index", robj = "_index",
           dtype = CachedGuessDType("_index"), space = ScalarSpace()
         )
+        h5[["raw/var"]]$create_attr(
+          attr_name = "column-order",
+          robj = character(0),
+          dtype = StringType('utf8')
+        )
         h5$close_all()
       }
 
@@ -1145,7 +1150,7 @@ SafeSetLayerData <- function(object, layer, value) {
       if (verbose) message("Direct pipeline failed (", e$message, "), falling back to two-pass")
       if (file.exists(filename)) try(file.remove(filename), silent = TRUE)
       temp <- tempfile(fileext = '.h5Seurat')
-      on.exit(unlink(temp), add = TRUE)
+      on.exit(unlink(temp, force = TRUE), add = TRUE)
       writeH5Seurat(object = object, filename = temp, overwrite = TRUE, verbose = FALSE)
       # Use CLI for the h5seurat→h5ad step if available (much faster)
       if (isTRUE(getOption("scConvert.use_cli"))) {
@@ -1301,8 +1306,10 @@ SafeSetLayerData <- function(object, layer, value) {
   # Auto-detect CLI binary and notify user
   cli_bin <- tryCatch(sc_find_cli(), error = function(e) NULL)
   if (!is.null(cli_bin)) {
-    # CLI binary found — enable for scConvert_cli() and direct paths
-    options("scConvert.use_cli" = TRUE)
+    # CLI binary found — enable unless user explicitly pre-set to FALSE
+    if (!isFALSE(getOption("scConvert.use_cli"))) {
+      options("scConvert.use_cli" = TRUE)
+    }
   } else {
     packageStartupMessage(
       "scConvert: C binary not found. Run `cd ", system.file("src", package = pkgname),

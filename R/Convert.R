@@ -198,7 +198,7 @@ scConvert.character <- function(
       dest <- paste(file_path_sans_ext(x = source), dtype, sep = '.')
     }
     hfile <- scConnect(filename = source, force = TRUE)
-    on.exit(expr = hfile$close_all())
+    on.exit(expr = hfile$close_all(), add = TRUE)
     dfile <- direct_fn(
       source = hfile, dest = dest, assay = assay,
       overwrite = overwrite, verbose = verbose,
@@ -207,7 +207,7 @@ scConvert.character <- function(
     if (is.character(x = dfile)) {
       return(invisible(x = dfile))
     }
-    dfile$close_all()
+    on.exit(expr = tryCatch(dfile$close_all(), error = function(e) NULL), add = TRUE)
     return(invisible(x = dfile$filename))
   }
 
@@ -516,17 +516,49 @@ WriteCSRGroup <- function(h5parent, group_name, mat, gzip = GetCompressionLevel(
   # single-chunk which forces entire array into memory at once
   chunk_size <- 65536L
   grp$create_dataset("data", robj = csr$data,
-                     chunk_dims = min(length(csr$data), chunk_size), gzip_level = gzip)
+                     chunk_dims = max(1L, min(length(csr$data), chunk_size)), gzip_level = gzip)
   grp$create_dataset("indices", robj = csr$indices,
-                     chunk_dims = min(length(csr$indices), chunk_size), gzip_level = gzip)
+                     chunk_dims = max(1L, min(length(csr$indices), chunk_size)), gzip_level = gzip)
   grp$create_dataset("indptr", robj = csr$indptr,
-                     chunk_dims = min(length(csr$indptr), chunk_size), gzip_level = gzip)
+                     chunk_dims = max(1L, min(length(csr$indptr), chunk_size)), gzip_level = gzip)
   grp$create_attr(attr_name = 'encoding-type', robj = 'csr_matrix',
                   dtype = CachedGuessDType('csr_matrix'), space = ScalarSpace())
   grp$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
                   dtype = CachedGuessDType('0.1.0'), space = ScalarSpace())
   grp$create_attr(attr_name = 'shape', robj = csr$shape,
                   dtype = GuessDType(csr$shape))
+  invisible(grp)
+}
+
+# Write a sparse matrix as CSC group in HDF5 (for obsp graphs)
+#
+# Writes dgCMatrix directly as CSC without shape reversal.
+# Use this for obsp matrices to avoid transposing non-symmetric graphs.
+#
+# @param h5parent H5Group parent
+# @param group_name Name for the new group
+# @param mat Sparse matrix (dgCMatrix or coercible)
+# @param gzip Gzip compression level
+#
+# @keywords internal
+#
+WriteCscGroup <- function(h5parent, group_name, mat, gzip = GetCompressionLevel()) {
+  mat <- ConvertBPCellsMatrix(mat)
+  mat <- as(mat, "dgCMatrix")
+  grp <- h5parent$create_group(group_name)
+  chunk_size <- 65536L
+  grp$create_dataset("data", robj = mat@x,
+                     chunk_dims = max(1L, min(length(mat@x), chunk_size)), gzip_level = gzip)
+  grp$create_dataset("indices", robj = mat@i,
+                     chunk_dims = max(1L, min(length(mat@i), chunk_size)), gzip_level = gzip)
+  grp$create_dataset("indptr", robj = mat@p,
+                     chunk_dims = max(1L, min(length(mat@p), chunk_size)), gzip_level = gzip)
+  grp$create_attr(attr_name = 'encoding-type', robj = 'csc_matrix',
+                  dtype = CachedGuessDType('csc_matrix'), space = ScalarSpace())
+  grp$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
+                  dtype = CachedGuessDType('0.1.0'), space = ScalarSpace())
+  grp$create_attr(attr_name = 'shape', robj = as.integer(dim(mat)),
+                  dtype = GuessDType(as.integer(dim(mat))))
   invisible(grp)
 }
 
@@ -877,166 +909,65 @@ H5ADToH5Seurat <- function(
     assign(cache_key, feature_names, envir = .categorical_cache)
     return(feature_names)
   }
-  # Read compound HDF5 dataset using Python h5py
+  # Read compound HDF5 dataset using hdf5r
   #
-  # Some h5ad files store obs/var as compound HDF5 datasets that hdf5r cannot read.
-  # This function uses Python's h5py library as a fallback to read these datasets.
+  # Some older h5ad files store obs/var as compound HDF5 datasets (a single flat
+  # table rather than a group with sub-datasets). hdf5r reads these natively.
   #
   # @param h5file Path to the h5ad file
   # @param dataset_path Path to the dataset within the file (e.g., 'obs', 'var')
   #
-  # @return A data.frame with the dataset contents, or NULL if Python is not available
+  # @return A data.frame with the dataset contents, or NULL on failure
   #
   ReadCompoundDataset <- function(h5file, dataset_path) {
-    # Check if Python with h5py and pandas is available
-    python_cmd <- tryCatch({
-      system2("python3", c("-c", shQuote("import h5py, pandas")),
-              stdout = FALSE, stderr = FALSE)
-      "python3"
-    }, error = function(e) {
-      tryCatch({
-        system2("python", c("-c", shQuote("import h5py, pandas")),
-                stdout = FALSE, stderr = FALSE)
-        "python"
-      }, error = function(e) {
-        if (verbose) {
-          message("  Warning: Python with h5py/pandas not available, cannot read compound dataset")
-        }
-        return(NULL)
-      })
-    })
-
-    if (is.null(python_cmd)) {
-      return(NULL)
-    }
-
-    # Create a temporary file for the CSV output
-    temp_csv <- tempfile(fileext = ".csv")
-    on.exit(unlink(temp_csv), add = TRUE)
-
-    # Python script to read compound dataset and save as CSV
-    # This script handles categorical columns by decoding integer codes to category labels
-    # sprintf arguments: h5file, dataset_path (for reading data), dataset_path (for __categories path), temp_csv
-    python_script <- sprintf('
-import h5py
-import pandas as pd
-import sys
-import numpy as np
-import json
-
-try:
-    with h5py.File("%s", "r") as f:
-        data = f["%s"][:]
-        df = pd.DataFrame(data)
-
-        # Decode bytes to strings if needed
-        for col in df.columns:
-            if df[col].dtype == object:
-                try:
-                    df[col] = df[col].str.decode("utf-8")
-                except:
-                    pass
-
-        # Handle categorical columns stored in __categories
-        categories_path = "%s/__categories"
-        if categories_path in f:
-            categories_group = f[categories_path]
-            for col in categories_group.keys():
-                if col in df.columns:
-                    # Read the categories (labels)
-                    categories = categories_group[col][:]
-                    # Decode bytes to strings if needed (handle bytes, ASCII, and Unicode strings)
-                    if categories.dtype == object or categories.dtype.kind in ("S", "U"):
-                        categories = np.array([c.decode("utf-8") if isinstance(c, bytes) else str(c) for c in categories])
-                    else:
-                        categories = categories.astype(str)
-
-                    # Get the codes (integer indices) from the dataframe
-                    codes = df[col].values
-
-                    # Map codes to categories using vectorized operations (codes are 0-based indices)
-                    # Handle -1 or out-of-range codes as missing/NA
-                    valid_mask = (codes >= 0) & (codes < len(categories))
-                    decoded = np.empty(len(codes), dtype=object)
-                    decoded[valid_mask] = categories[codes[valid_mask]]
-                    decoded[~valid_mask] = None  # Will be NA in R
-
-                    df[col] = decoded
-
-        # Handle list/dict columns by converting to JSON or semicolon-delimited strings
-        for col in df.columns:
-            if df[col].dtype == object:
-                # Check if any non-null value is a list or dict
-                non_null = df[col].dropna()
-                if len(non_null) > 0:
-                    sample = non_null.iloc[0]
-                    if isinstance(sample, (list, tuple)):
-                        # Convert lists to semicolon-delimited or JSON strings
-                        def convert_list(x):
-                            if x is None or (isinstance(x, float) and np.isnan(x)):
-                                return ""
-                            if isinstance(x, (list, tuple)):
-                                # Simple list of primitives: semicolon-delimited
-                                if all(isinstance(i, (str, int, float, type(None))) for i in x):
-                                    return ";".join(str(i) for i in x if i is not None)
-                                # Complex nested structure: JSON
-                                return json.dumps(x)
-                            return str(x)
-                        df[col] = df[col].apply(convert_list)
-                    elif isinstance(sample, dict):
-                        # Convert dicts to JSON strings
-                        def convert_dict(x):
-                            if x is None or (isinstance(x, float) and np.isnan(x)):
-                                return ""
-                            if isinstance(x, dict):
-                                return json.dumps(x)
-                            return str(x)
-                        df[col] = df[col].apply(convert_dict)
-
-        df.to_csv("%s", index=False)
-except Exception as e:
-    sys.stderr.write(str(e))
-    sys.exit(1)
-', h5file, dataset_path, dataset_path, temp_csv)
-
-    # Execute Python script
-    result <- tryCatch({
-      system2(python_cmd, c("-c", shQuote(python_script)),
-              stdout = TRUE, stderr = TRUE)
-    }, error = function(e) {
-      if (verbose) {
-        message("  Warning: Failed to read compound dataset with Python: ", conditionMessage(e))
-      }
-      return(NULL)
-    })
-
-    # Check if CSV was created
-    if (!file.exists(temp_csv) || file.size(temp_csv) == 0) {
-      if (verbose) {
-        message("  Warning: Python failed to read compound dataset")
-        if (length(result) > 0) {
-          message("  Python error: ", paste(result, collapse = "\n"))
-        }
-      }
-      return(NULL)
-    }
-
-    # Read the CSV
     tryCatch({
-      df <- read.csv(temp_csv, stringsAsFactors = FALSE, check.names = FALSE)
-      return(df)
+      h5 <- H5File$new(h5file, mode = "r")
+      on.exit(h5$close_all(), add = TRUE)
+      if (!h5$exists(dataset_path)) return(NULL)
+      ds <- h5[[dataset_path]]
+      if (!inherits(ds, "H5D")) return(NULL)
+
+      data <- ds$read()
+      if (is.list(data)) {
+        # Compound dataset returns a named list; convert to data.frame
+        df <- as.data.frame(data, stringsAsFactors = FALSE)
+        # Decode raw/bytes columns to character
+        for (col in names(df)) {
+          if (is.raw(df[[col]]) || is.list(df[[col]])) next
+          if (is.character(df[[col]])) next
+          # Leave numeric columns as-is
+        }
+
+        # Handle __categories if present (old-style categorical encoding)
+        cats_path <- paste0(dataset_path, "/__categories")
+        if (h5$exists(cats_path)) {
+          cats_grp <- h5[[cats_path]]
+          for (col in names(cats_grp)) {
+            if (col %in% names(df)) {
+              categories <- as.character(cats_grp[[col]]$read())
+              codes <- as.integer(df[[col]])
+              decoded <- rep(NA_character_, length(codes))
+              valid <- !is.na(codes) & codes >= 0L & codes < length(categories)
+              decoded[valid] <- categories[codes[valid] + 1L]
+              df[[col]] <- decoded
+            }
+          }
+        }
+        return(df)
+      }
+      NULL
     }, error = function(e) {
       if (verbose) {
-        message("  Warning: Failed to read CSV from Python: ", conditionMessage(e))
+        message("  Warning: Failed to read compound dataset: ", conditionMessage(e))
       }
-      return(NULL)
+      NULL
     })
   }
-  # Copy LZF-compressed sparse matrix using Python to temporary file
+  # Read LZF-compressed sparse matrix and write decompressed to temp file
   #
-  # Some h5ad files use LZF compression which hdf5r cannot read.
-  # This function uses Python to read LZF-compressed sparse matrices and
-  # write them decompressed to a temporary file, which can then be copied.
+  # Some older h5ad files use LZF compression. hdf5r reads these natively
+  # when the HDF5 library has LZF filter support (standard on modern installs).
+  # The data is read and rewritten uncompressed so H5Ocopy can work downstream.
   #
   # @param src_file Path to source h5ad file
   # @param src_path Path to sparse matrix group in source (e.g., 'X')
@@ -1044,80 +975,42 @@ except Exception as e:
   # @return Path to temporary H5 file with decompressed data, or NULL if failed
   #
   CopySparseMatrixDecompressed <- function(src_file, src_path) {
-    # Check if Python with h5py is available
-    python_cmd <- tryCatch({
-      system2("python3", c("-c", shQuote("import h5py, numpy")),
-              stdout = FALSE, stderr = FALSE)
-      "python3"
-    }, error = function(e) {
-      tryCatch({
-        system2("python", c("-c", shQuote("import h5py, numpy")),
-                stdout = FALSE, stderr = FALSE)
-        "python"
-      }, error = function(e) {
-        if (verbose) {
-          message("  Warning: Python with h5py not available for LZF decompression")
-        }
-        return(NULL)
-      })
-    })
-
-    if (is.null(python_cmd)) {
-      return(NULL)
-    }
-
-    # Create temporary file
     temp_file <- tempfile(fileext = ".h5")
+    tryCatch({
+      src_h5 <- H5File$new(src_file, mode = "r")
+      on.exit(src_h5$close_all(), add = TRUE)
+      dst_h5 <- H5File$new(temp_file, mode = "w")
+      on.exit(dst_h5$close_all(), add = TRUE)
 
-    # Python script to copy sparse matrix to temp file without LZF compression
-    python_script <- sprintf('
-import h5py
-import numpy as np
-import sys
+      src_grp <- src_h5[[src_path]]
+      dst_grp <- dst_h5$create_group("matrix")
 
-try:
-    # Open source file and create temp file
-    with h5py.File("%s", "r") as src, h5py.File("%s", "w") as dst:
-        # Read the sparse matrix components
-        src_grp = src["%s"]
+      # Read each component (hdf5r handles LZF decompression if HDF5 supports it)
+      for (comp in c("data", "indices", "indptr")) {
+        if (src_grp$exists(comp)) {
+          vals <- src_grp[[comp]]$read()
+          dst_grp$create_dataset(comp, robj = vals)
+        }
+      }
 
-        # Create group at root
-        dst_grp = dst.create_group("matrix")
+      # Copy attributes
+      for (attr_name in h5attr_names(src_grp)) {
+        attr_val <- h5attr(src_grp, attr_name)
+        dst_grp$create_attr(
+          attr_name = attr_name, robj = attr_val,
+          dtype = GuessDType(x = if (length(attr_val) > 0) attr_val[1] else attr_val)
+        )
+      }
 
-        # Copy each component without LZF compression
-        for comp in ["data", "indices", "indptr"]:
-            if comp in src_grp:
-                data = src_grp[comp][:]
-                # Write without compression
-                dst_grp.create_dataset(comp, data=data, compression=None)
-
-        # Copy attributes
-        for attr_name, attr_value in src_grp.attrs.items():
-            dst_grp.attrs[attr_name] = attr_value
-
-        sys.exit(0)
-except Exception as e:
-    sys.stderr.write(str(e))
-    sys.exit(1)
-', src_file, temp_file, src_path)
-
-    # Execute Python script
-    result <- system2(python_cmd, c("-c", shQuote(python_script)),
-                     stdout = TRUE, stderr = TRUE)
-
-    if (!is.null(attr(result, "status")) && attr(result, "status") != 0) {
+      return(temp_file)
+    }, error = function(e) {
       if (verbose) {
-        message("  Warning: Python LZF decompression failed: ", paste(result, collapse = "\n"))
+        message("  Warning: LZF decompression failed: ", conditionMessage(e),
+                "\n  Ensure HDF5 was built with LZF filter support")
       }
       unlink(temp_file)
       return(NULL)
-    }
-
-    if (!file.exists(temp_file)) {
-      return(NULL)
-    }
-
-    return(temp_file)
+    })
   }
   ColToFactor <- function(dfgroup) {
     if (dfgroup$exists(name = '__categories')) {
@@ -1763,9 +1656,11 @@ except Exception as e:
         if (!'values' %in% sub_names) {
           codes_0based <- col_obj[['codes']]$read()
           codes_dtype <- col_obj[['codes']]$get_type()
+          values_1based <- codes_0based + 1L
+          values_1based[codes_0based == -1L] <- NA_integer_
           col_obj$create_dataset(
             name = 'values',
-            robj = codes_0based + 1L,
+            robj = values_1based,
             dtype = codes_dtype
           )
           col_obj$link_delete(name = 'codes')
@@ -3698,7 +3593,7 @@ H5SeuratToH5AD <- function(
         }
 
         # Add encoding attributes
-        encoding.info <- c('type' = 'dataframe', 'version' = '0.1.0')
+        encoding.info <- c('type' = 'dataframe', 'version' = '0.2.0')
         names(x = encoding.info) <- paste0('encoding-', names(x = encoding.info))
         for (i in seq_along(along.with = encoding.info)) {
           attr.name <- names(x = encoding.info)[i]
@@ -4688,6 +4583,9 @@ DirectSeuratToH5AD <- function(
   write_csr_group <- function(h5parent, group_name, mat) {
     WriteCSRGroup(h5parent, group_name, mat, gzip = gzip)
   }
+  write_csc_group <- function(h5parent, group_name, mat) {
+    WriteCscGroup(h5parent, group_name, mat, gzip = gzip)
+  }
   write_df_group <- function(h5parent, group_name, df, index_values) {
     WriteDFGroup(h5parent, group_name, df, index_values, gzip = gzip)
   }
@@ -4785,7 +4683,7 @@ DirectSeuratToH5AD <- function(
     for (graph_name in graphs) {
       graph_mat <- tryCatch(object[[graph_name]], error = function(e) NULL)
       if (!is.null(graph_mat) && inherits(graph_mat, "Graph")) {
-        write_csr_group(obsp_grp, graph_name, graph_mat)
+        write_csc_group(obsp_grp, graph_name, graph_mat)
       }
     }
   }
@@ -5134,6 +5032,9 @@ writeH5MU <- function(
   write_csr_group <- function(h5parent, group_name, mat) {
     WriteCSRGroup(h5parent, group_name, mat, gzip = gzip)
   }
+  write_csc_group <- function(h5parent, group_name, mat) {
+    WriteCscGroup(h5parent, group_name, mat, gzip = gzip)
+  }
   write_df_group <- function(h5parent, group_name, df, index_values) {
     WriteDFGroup(h5parent, group_name, df, index_values, gzip = gzip)
   }
@@ -5255,7 +5156,7 @@ writeH5MU <- function(
         graph_mat <- object[[graph_name]]
         # Strip assay prefix if present (e.g. "RNA_snn" → "snn")
         clean_name <- sub(paste0("^", assay_name, "_"), "", graph_name)
-        write_csr_group(obsp_grp, clean_name, graph_mat)
+        write_csc_group(obsp_grp, clean_name, graph_mat)
       }
     }
 
@@ -6498,19 +6399,22 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
       compressor = compressor
     )
   } else if (inherits(h5_obj, "H5D")) {
-    # Check dimensionality: 1D datasets need [] not [,]
     ndims <- length(h5_obj$dims)
-    mat <- if (ndims == 1L) {
-      matrix(h5_obj[], ncol = 1L)
+    if (ndims == 1L) {
+      # 1D dense: likely an embedding or a single feature.
+      # Cannot reliably determine (rows, cols) from a 1D vector alone,
+      # so skip rather than write a wrong-shape matrix.
+      warning("Skipping 1D dense dataset in H5SeuratToZarr: ",
+              "cannot determine matrix dimensions from 1D data")
     } else {
-      h5_obj[,]
+      mat <- h5_obj[,]
+      if (transpose) mat <- t(mat)
+      .zarr_write_numeric(
+        dir = zarr_mat_path, data = mat, dtype = "<f8",
+        compressor = compressor,
+        attrs = list(`encoding-type` = "array", `encoding-version` = "0.2.0")
+      )
     }
-    if (transpose) mat <- t(mat)
-    .zarr_write_numeric(
-      dir = zarr_mat_path, data = mat, dtype = "<f8",
-      compressor = compressor,
-      attrs = list(`encoding-type` = "array", `encoding-version` = "0.2.0")
-    )
   }
 }
 

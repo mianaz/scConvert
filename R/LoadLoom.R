@@ -483,7 +483,7 @@ LoadLoom3.0 <- function(
                 loadings <- loadings[features.valid, , drop = FALSE]
               }
             }
-            reduc.obj <- Loadings(object = reduc.obj) <- loadings
+            Loadings(object = reduc.obj) <- loadings
           }
           if (Exists(x = reduc.group, name = 'stdev')) {
             # Use slot assignment for stdev as Stdev<- may not be exported

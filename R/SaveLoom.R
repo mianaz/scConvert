@@ -286,7 +286,7 @@ as.loom.Seurat <- function(
     }
   )
   assays.write <- unlist(x = Filter(f = Negate(f = is.null), x = assays.write))
-  assays.write <- setdiff(x = DefaultAssay(object = x), assays.write)
+  assays.write <- setdiff(x = assays.write, y = DefaultAssay(object = x))
   # Get data layer, fall back to counts if data is empty
   main_matrix <- tryCatch(
     GetAssayData(object = x, layer = 'data'),

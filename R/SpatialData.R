@@ -737,9 +737,16 @@ writeSpatialData <- function(object, path, table = "table",
 .ome_ngff_to_hwc <- function(arr, shape, axes_names = NULL) {
   ndim <- length(shape)
 
+  # Convert C-order flat vector to R array with correct element layout.
+  # Zarr C-order: last dim varies fastest; R column-major: first dim varies fastest.
+  # Fix: reverse dims for fill, then reverse back with aperm.
+  img <- array(arr, dim = rev(shape))
+  img <- aperm(img, rev(seq_len(ndim)))
+  # Now img[i1, i2, ...] correctly maps to the logical zarr element
+
   if (ndim == 2) {
     # Grayscale: (Y, X) -> (Y, X, 1)
-    img <- array(arr, dim = c(shape[1], shape[2], 1L))
+    dim(img) <- c(shape[1], shape[2], 1L)
     return(img)
   }
 
@@ -752,8 +759,6 @@ writeSpatialData <- function(object, path, table = "table",
       x_pos <- which(axes_names == "x")
 
       if (length(c_pos) == 1 && length(y_pos) == 1 && length(x_pos) == 1) {
-        img <- array(arr, dim = shape)
-        # Permute to (Y, X, C)
         img <- aperm(img, c(y_pos, x_pos, c_pos))
         return(img)
       }
@@ -761,39 +766,39 @@ writeSpatialData <- function(object, path, table = "table",
 
     # Heuristic: if first dim is small (1-4), assume (C, Y, X)
     if (shape[1] <= 4) {
-      img <- array(arr, dim = shape)
       img <- aperm(img, c(2, 3, 1))
       return(img)
     }
 
     # If last dim is small (1-4), assume (Y, X, C)
     if (shape[3] <= 4) {
-      return(array(arr, dim = shape))
+      return(img)
     }
 
     # Default: assume (C, Y, X)
-    img <- array(arr, dim = shape)
     img <- aperm(img, c(2, 3, 1))
     return(img)
   }
 
   if (ndim == 4) {
     # (T, C, Y, X) or (C, Z, Y, X) -- take first T/Z slice
-    # Assume first dim is T or Z, second is C
-    img <- array(arr, dim = shape)
-    # Take first slice along dim 1
     slice <- img[1, , , , drop = FALSE]
-    slice <- array(slice, dim = shape[-1])
-    return(.ome_ngff_to_hwc(as.vector(slice), shape[-1], NULL))
+    slice_shape <- shape[-1]
+    slice <- array(slice, dim = slice_shape)
+    # Apply 3D -> HWC permutation
+    if (slice_shape[1] <= 4) return(aperm(slice, c(2, 3, 1)))
+    if (slice_shape[3] <= 4) return(slice)
+    return(aperm(slice, c(2, 3, 1)))
   }
 
   if (ndim == 5) {
     # (T, C, Z, Y, X) -- take first T and Z slice
-    img <- array(arr, dim = shape)
     slice <- img[1, , 1, , , drop = FALSE]
     slice_shape <- c(shape[2], shape[4], shape[5])
     slice <- array(slice, dim = slice_shape)
-    return(.ome_ngff_to_hwc(as.vector(slice), slice_shape, NULL))
+    if (slice_shape[1] <= 4) return(aperm(slice, c(2, 3, 1)))
+    if (slice_shape[3] <= 4) return(slice)
+    return(aperm(slice, c(2, 3, 1)))
   }
 
   NULL
@@ -1040,14 +1045,8 @@ writeSpatialData <- function(object, path, table = "table",
         chunk_data <- padded
       }
 
-      # Flatten in C order (row-major)
-      flat <- as.vector(aperm(chunk_data, c(3, 2, 1)))
-      # Reverse: C order for 3D is [dim3 varies fastest] = x, y, c
-      # Actually for C order: last index varies fastest
-      flat <- as.vector(chunk_data)  # R stores column-major, but zarr C order
-      # For correct C-order: iterate c(slow), y(mid), x(fast)
-      # R array indexing with as.vector goes column-major: c(fast), y(mid), x(slow)
-      # We need to reorder
+      # Flatten to C order (row-major): for (C, Y, X), X varies fastest
+      # R column-major as.vector makes dim[1] fastest; aperm(c(3,2,1)) puts X first
       flat <- as.double(as.vector(aperm(chunk_data, c(3, 2, 1))))
 
       raw_data <- writeBin(flat, raw(), size = 8L, endian = "little")

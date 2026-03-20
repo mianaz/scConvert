@@ -448,7 +448,8 @@ ReadH5ImageDataset <- function(dataset) {
   # Reorder dimensions if needed
   # HDF5 image stored as (h, w, 3); hdf5r reverses to R dims (3, w, h).
   # Need aperm to get Seurat's expected (h, w, 3).
-  if (length(dims) == 3L && dims[1] <= 4L) {
+  d <- dim(arr)
+  if (length(d) == 3L && d[1] <= 4L) {
     arr <- aperm(arr, c(3L, 2L, 1L))
   }
 
@@ -551,7 +552,7 @@ AddVisiumSpatialData <- function(seurat_obj, coords, visium_data, h5ad,
       lowres = as.numeric(lowres_sf %||% NA_real_)
     )
 
-    radius <- as.numeric(scales[['spot']])
+    radius <- as.numeric(scales[['spot']]) / 2.0
     if (!is.finite(radius)) {
       radius <- 1
     }

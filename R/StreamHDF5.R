@@ -186,7 +186,9 @@ NULL
             col_obj$exists("categories") && col_obj$exists("codes")) {
           cats <- as.character(col_obj[["categories"]]$read())
           codes <- col_obj[["codes"]]$read()
-          values_1based <- as.integer(codes) + 1L
+          codes_int <- as.integer(codes)
+          values_1based <- codes_int + 1L
+          values_1based[codes_int == -1L] <- NA_integer_
 
           fac_grp <- md_grp$create_group(col)
           fac_grp$create_dataset("levels", robj = cats,
@@ -202,7 +204,9 @@ NULL
           # Legacy categorical
           codes <- col_obj$read()
           cats <- as.character(cats_grp[[col]]$read())
-          values_1based <- as.integer(codes) + 1L
+          codes_int <- as.integer(codes)
+          values_1based <- codes_int + 1L
+          values_1based[codes_int == -1L] <- NA_integer_
 
           fac_grp <- md_grp$create_group(col)
           fac_grp$create_dataset("levels", robj = cats,

@@ -118,12 +118,23 @@ writeZarr <- function(object, filename, assay = DefaultAssay(object),
     if (verbose) message("Writing layers...")
     .zarr_create_group(file.path(filename, "layers"))
 
+    # Get X dimensions for layer validation
+    x_dims <- dim(x_data)  # (genes, cells) in R; anndata stores as (cells, genes)
+
     for (ln in extra_layers) {
       if (verbose) message("  Writing layer: ", ln)
       tryCatch({
         layer_data <- GetAssayData(object, assay = assay, layer = ln)
         layer_data <- ConvertBPCellsMatrix(layer_data, verbose = verbose)
         if (!is.null(layer_data) && !IsMatrixEmpty(layer_data)) {
+          # AnnData requires all layers to have the same shape as X.
+          # scale.data only covers HVGs and will be smaller — skip it.
+          if (!identical(dim(layer_data), x_dims)) {
+            if (verbose) message("    Skipping layer '", ln,
+                                 "': shape ", paste(dim(layer_data), collapse = "x"),
+                                 " != X shape ", paste(x_dims, collapse = "x"))
+            next
+          }
           anndata_name <- SeuratLayerToAnnData(ln)
           .zarr_write_anndata_matrix(
             filename, file.path("layers", anndata_name),
