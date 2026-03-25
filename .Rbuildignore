@@ -42,8 +42,17 @@
 ^SESSION_SUMMARY\.md$
 ^SCHOLAR_EVALUATION.*\.md$
 ^codecov\.yml$
+^CLAUDE\.md$
+^review\.md$
+^Rplots\.pdf$
 
-# C CLI artifacts (standalone binary and its Makefile — not part of R package)
+# Large test data (not used by testthat; for local/integration testing only)
+^tests/testdata/spatial$
+
+# Vignette data artifacts (generated at build time or not needed)
+^vignettes/blobs\.spatialdata\.zarr$
+
+# C CLI artifacts (standalone binary and its Makefile -- not part of R package)
 ^src/Makefile$
 ^src/scconvert$
 ^src/main\.c$

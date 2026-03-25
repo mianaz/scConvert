@@ -1,0 +1,178 @@
+---
+title: "Getting Started with scConvert"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with scConvert}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  message = FALSE,
+  warning = FALSE
+)
+```
+
+```{r libraries}
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+})
+```
+
+scConvert converts between single-cell data formats entirely in R, with no
+Python dependency. This vignette walks through installation, basic conversion,
+and file I/O in under five minutes.
+
+## Installation
+
+Install scConvert from GitHub:
+
+```{r install, eval = FALSE}
+remotes::install_github("mianaz/scConvert")
+```
+
+## Quick conversion with scConvert()
+
+The `scConvert()` function is a universal dispatcher: give it a source and a
+destination, and it picks the fastest conversion path automatically. File
+formats are detected from extensions.
+
+```{r quick-convert, eval = TRUE}
+h5ad_file <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
+
+h5seurat_out <- file.path(tempdir(), "pbmc.h5seurat")
+scConvert(h5ad_file, dest = h5seurat_out, overwrite = TRUE)
+
+zarr_out <- file.path(tempdir(), "pbmc.zarr")
+scConvert(h5ad_file, dest = zarr_out, overwrite = TRUE)
+```
+
+`scConvert()` works for any supported format pair -- h5ad, h5Seurat, Zarr,
+Loom, RDS, and more.
+
+## Loading files into Seurat
+
+When you need to work with the data in R, use the format-specific readers.
+Each returns a standard Seurat object.
+
+### From h5ad
+
+```{r read-h5ad, eval = TRUE}
+obj <- readH5AD(h5ad_file)
+obj
+```
+
+```{r inspect, eval = TRUE}
+dim(obj)
+head(obj[[]], n = 4)
+```
+
+### From h5Seurat
+
+```{r read-h5seurat, eval = TRUE}
+obj2 <- readH5Seurat(h5seurat_out)
+obj2
+```
+
+### From Zarr
+
+```{r read-zarr, eval = TRUE}
+obj3 <- readZarr(zarr_out)
+obj3
+```
+
+## Writing files from Seurat
+
+Starting from any Seurat object, write to the format your collaborators or
+downstream tools need.
+
+```{r write-files, eval = TRUE}
+h5ad_out <- file.path(tempdir(), "output.h5ad")
+writeH5AD(obj, h5ad_out, verbose = FALSE)
+
+h5s_out <- file.path(tempdir(), "output.h5seurat")
+writeH5Seurat(obj, h5s_out, overwrite = TRUE, verbose = FALSE)
+
+zarr_out2 <- file.path(tempdir(), "output.zarr")
+writeZarr(obj, zarr_out2, verbose = FALSE)
+```
+
+```{r file-sizes, eval = TRUE}
+sizes <- data.frame(
+  Format = c("h5ad", "h5Seurat", "Zarr"),
+  Size_MB = round(c(
+    file.size(h5ad_out),
+    file.size(h5s_out),
+    sum(file.info(list.files(zarr_out2, recursive = TRUE, full.names = TRUE))$size)
+  ) / 1024^2, 2)
+)
+knitr::kable(sizes, col.names = c("Format", "Size (MB)"))
+```
+
+## Supported formats
+
+| Format | Extension | Ecosystem | Read | Write |
+|--------|-----------|-----------|:----:|:-----:|
+| AnnData | `.h5ad` | scanpy, CELLxGENE | yes | yes |
+| h5Seurat | `.h5seurat` | Seurat | yes | yes |
+| MuData | `.h5mu` | muon (multimodal) | yes | yes |
+| Loom | `.loom` | loompy, HCA | yes | yes |
+| Zarr | `.zarr` | cloud AnnData | yes | yes |
+| TileDB-SOMA | `soma://` | CELLxGENE Census | yes | yes |
+| SpatialData | `.zarr` | scverse spatial | yes | yes |
+| RDS | `.rds` | R native | yes | yes |
+| SingleCellExperiment | in-memory | Bioconductor | yes | -- |
+
+**When to use which format:**
+
+- **h5ad** -- sharing with Python users or submitting to CELLxGENE.
+- **h5Seurat** -- archiving a Seurat object with selective loading support.
+- **Zarr** -- cloud-friendly, chunk-based access (e.g., S3 / GCS).
+- **Loom** -- interoperability with loompy, velocyto, or legacy pipelines.
+- **RDS** -- quick local save/load within R (no HDF5 dependency).
+
+## Verifying a conversion
+
+After converting, a quick sanity check confirms that dimensions and cell
+identifiers are preserved.
+
+```{r verify, eval = TRUE}
+original <- readH5AD(h5ad_file)
+converted <- readH5Seurat(h5seurat_out)
+
+stopifnot(identical(dim(original), dim(converted)))
+stopifnot(identical(sort(colnames(original)), sort(colnames(converted))))
+
+cat("Dimensions match:", paste(dim(original), collapse = " x "), "\n")
+cat("Cell names match:", length(colnames(original)), "cells verified\n")
+```
+
+## Next steps
+
+- **[Convert Between Seurat and AnnData](convert-anndata.html)** -- layer
+  mapping, Python interop, and round-trip verification.
+- **[In-Memory vs On-Disk Conversion](conversion-modes.html)** -- hub path,
+  streaming, and the C binary for large datasets.
+- **[Direct H5AD Loading](h5Seurat-load.html)** -- selective loading and
+  BPCells for atlas-scale data.
+- **[Multimodal H5MU](multimodal-h5mu.html)** -- CITE-seq and ATAC+RNA via
+  MuData.
+- **[Zarr Format](convert-zarr.html)** -- cloud-native storage and streaming
+  converters.
+- **[Spatial Technologies](spatial-technologies.html)** -- Visium, MERFISH,
+  and SpatialData support.
+- **[CLI Usage](cli-usage.html)** -- the standalone C binary for batch
+  conversion without R.
+
+## Clean up
+
+```{r cleanup, include = FALSE}
+unlink(c(h5seurat_out, h5ad_out, h5s_out), recursive = FALSE)
+unlink(c(zarr_out, zarr_out2), recursive = TRUE)
+```

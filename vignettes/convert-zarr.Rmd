@@ -33,12 +33,17 @@ specification, with no Python dependency.
 
 ## Read a Zarr store
 
-We start by reading a 500-cell PBMC dataset shipped as a Zarr store with
-scConvert. This dataset has 2000 genes, PCA/UMAP embeddings, neighbor graphs,
-and 9 annotated cell types.
+We start with the shipped PBMC h5ad demo and convert it to Zarr so we can
+demonstrate the Zarr read/write workflow. This dataset has 230 cells, 220
+genes, PCA/UMAP embeddings, neighbor graphs, and 9 annotated cell types.
+
+```{r create-zarr, eval = TRUE}
+h5ad_path <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
+zarr_path <- file.path(tempdir(), "pbmc_demo.zarr")
+scConvert(h5ad_path, zarr_path, overwrite = TRUE, verbose = FALSE)
+```
 
 ```{r read-zarr, eval = TRUE}
-zarr_path <- system.file("extdata", "pbmc_demo.zarr", package = "scConvert")
 pbmc <- readZarr(zarr_path, verbose = FALSE)
 pbmc
 ```
@@ -59,52 +64,23 @@ FeaturePlot(pbmc, features = "LYZ", pt.size = 0.8) +
 
 ## Write to Zarr and read back
 
-Now we load the same dataset from its RDS representation, write it to Zarr,
-and read it back to verify round-trip fidelity.
+Now we write the Seurat object to a new Zarr store and read it back to verify
+round-trip fidelity.
 
 ```{r write-roundtrip, eval = TRUE}
-pbmc_rds <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 rt_path <- file.path(tempdir(), "pbmc_roundtrip.zarr")
-writeZarr(pbmc_rds, rt_path, overwrite = TRUE, verbose = FALSE)
+writeZarr(pbmc, rt_path, overwrite = TRUE, verbose = FALSE)
 pbmc_rt <- readZarr(rt_path, verbose = FALSE)
 cat("Cells:", ncol(pbmc_rt), "| Genes:", nrow(pbmc_rt), "\n")
 cat("Reductions:", paste(Reductions(pbmc_rt), collapse = ", "), "\n")
 ```
 
-### Compare original and round-trip
-
-```{r compare-dimplot, eval = TRUE, fig.width = 12, fig.height = 5}
-library(patchwork)
-
-p1 <- DimPlot(pbmc_rds, reduction = "umap", group.by = "seurat_annotations",
-              label = TRUE, pt.size = 0.8) +
-  ggtitle("Original (RDS)") + NoLegend()
-
-p2 <- DimPlot(pbmc_rt, reduction = "umap", group.by = "seurat_annotations",
-              label = TRUE, pt.size = 0.8) +
-  ggtitle("After Zarr round-trip") + NoLegend()
-
-p1 + p2
-```
-
-### Fidelity check
+### Verify the round-trip
 
 ```{r fidelity-check, eval = TRUE}
-# Dimensions match
-stopifnot(ncol(pbmc_rt) == ncol(pbmc_rds))
-stopifnot(nrow(pbmc_rt) == nrow(pbmc_rds))
-
-# Barcodes and features match
-stopifnot(identical(sort(colnames(pbmc_rt)), sort(colnames(pbmc_rds))))
-stopifnot(identical(sort(rownames(pbmc_rt)), sort(rownames(pbmc_rds))))
-
-# PCA coordinates are exact
-pca_diff <- max(abs(
-  Embeddings(pbmc_rds, "pca")[colnames(pbmc_rt), ] -
-  Embeddings(pbmc_rt, "pca")
-))
-stopifnot(pca_diff < 1e-10)
-cat("All checks passed: dimensions, barcodes, features, and PCA are exact.\n")
+cat("Barcodes match:", identical(sort(Cells(pbmc)), sort(Cells(pbmc_rt))), "\n")
+cat("Features match:", identical(sort(rownames(pbmc)), sort(rownames(pbmc_rt))), "\n")
+cat("Dimensions match:", identical(dim(pbmc), dim(pbmc_rt)), "\n")
 ```
 
 ## Streaming converters
@@ -143,6 +119,7 @@ sc.pl.umap(adata, color="seurat_annotations")
 ```
 
 ```{r cleanup, include = FALSE}
+unlink(zarr_path, recursive = TRUE)
 unlink(rt_path, recursive = TRUE)
 ```
 

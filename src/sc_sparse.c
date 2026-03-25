@@ -429,7 +429,7 @@ int sc_copy_2d_transposed(hid_t src_dset, hid_t dst_grp,
 
     /* Overflow guard: total * elem_size must fit in size_t */
     if (elem_size > 0 && total > (hsize_t)(SIZE_MAX / elem_size)) {
-        fprintf(stderr, "Error: matrix too large for transpose (%llu x %llu)\n",
+        SC_MSG("Error: matrix too large for transpose (%llu x %llu)\n",
                 (unsigned long long)M, (unsigned long long)N);
         H5Tclose(mem_type); H5Tclose(src_type); H5Sclose(src_space);
         return SC_ERR;
@@ -588,7 +588,7 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
 
     /* Overflow guard: total * elem_size must fit in size_t */
     if (elem_size > 0 && total > (hsize_t)(SIZE_MAX / elem_size)) {
-        fprintf(stderr, "Error: 2D dataset too large for copy (%llu x %llu)\n",
+        SC_MSG("Error: 2D dataset too large for copy (%llu x %llu)\n",
                 (unsigned long long)dims2[0], (unsigned long long)dims2[1]);
         H5Tclose(mem_type); H5Tclose(src_type); H5Sclose(src_space);
         return SC_ERR;

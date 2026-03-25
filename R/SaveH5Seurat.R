@@ -20,6 +20,7 @@ NULL
 #' @param overwrite Logical; if \code{TRUE}, overwrite an existing file with the
 #'   same name. Default is \code{FALSE}.
 #' @param verbose Show progress updates during save. Default is \code{TRUE}.
+#' @param gzip Integer gzip compression level (0-9), or NULL to use the package default.
 #' @param ... Arguments passed to other methods
 #'
 #' @return \code{writeH5Seurat}: Invisibly returns the filename of the saved file

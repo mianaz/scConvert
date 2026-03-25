@@ -4383,6 +4383,7 @@ readH5AD_obsm <- function(file) {
 #' @param verbose Logical; show progress messages. Default TRUE.
 #' @param standardize Logical; convert Seurat metadata names to scanpy conventions.
 #'   Default FALSE.
+#' @param gzip Integer gzip compression level (0-9), or NULL to use the package default.
 #' @param ... Additional arguments passed to writeH5Seurat and Convert.
 #'
 #' @return Invisibly returns the path to the created H5AD file.
@@ -4451,8 +4452,8 @@ writeH5AD <- function(
 #' Fast C-based h5ad writer
 #'
 #' Writes a Seurat object directly to h5ad format using native C HDF5 routines.
-#' Exploits the zero-copy CSC↔CSR reinterpretation: dgCMatrix(genes×cells) CSC
-#' is identical to h5ad's cells×genes CSR with relabeled arrays.
+#' Exploits the zero-copy CSC<->CSR reinterpretation: dgCMatrix(genesxcells) CSC
+#' is identical to h5ad's cellsxgenes CSR with relabeled arrays.
 #'
 #' @param object Seurat object
 #' @param filename Output file path
@@ -4862,15 +4863,8 @@ H5SeuratToH5MU <- function(
 }
 
 
-#' Convert H5MU files to H5AD files (extract single modality)
-#'
-#' @inheritParams scConvert
-#' @param modality Name of modality to extract from h5mu file
-#'
-#' @return Returns a handle to \code{dest} as an \code{\link[hdf5r]{H5File}} object
-#'
-#' @keywords internal
-#'
+# Internal H5MU to H5AD converter (hub path, overridden by StreamHDF5.R)
+# @noRd
 H5MUToH5AD <- function(
   source,
   dest,
@@ -5154,7 +5148,7 @@ writeH5MU <- function(
                            dtype = CachedGuessDType('0.1.0'), space = ScalarSpace())
       for (graph_name in assay_graphs) {
         graph_mat <- object[[graph_name]]
-        # Strip assay prefix if present (e.g. "RNA_snn" → "snn")
+        # Strip assay prefix if present (e.g. "RNA_snn" -> "snn")
         clean_name <- sub(paste0("^", assay_name, "_"), "", graph_name)
         write_csc_group(obsp_grp, clean_name, graph_mat)
       }
@@ -5439,8 +5433,8 @@ H5ADToZarr <- function(source, dest, overwrite = FALSE, gzip = 4L,
       }
 
       if (transpose && is_csr) {
-        # CSR cells×genes -> reinterpret as CSC genes×cells -> write back as CSR cells×genes
-        # Just copy directly — the data is already in cells×genes CSR
+        # CSR cellsxgenes -> reinterpret as CSC genesxcells -> write back as CSR cellsxgenes
+        # Just copy directly -- the data is already in cellsxgenes CSR
         out_encoding <- "csr_matrix"
         out_shape <- as.integer(shape)
       } else if (!transpose) {
@@ -5482,7 +5476,7 @@ H5ADToZarr <- function(source, dest, overwrite = FALSE, gzip = 4L,
         compressor = compressor
       )
     } else if (inherits(h5_obj, "H5D")) {
-      # Dense — check dimensionality: 1D datasets need [] not [,]
+      # Dense -- check dimensionality: 1D datasets need [] not [,]
       ndims <- length(h5_obj$dims)
       mat <- if (ndims == 1L) {
         matrix(h5_obj[], ncol = 1L)
@@ -5551,7 +5545,7 @@ H5ADToZarr <- function(source, dest, overwrite = FALSE, gzip = 4L,
           .stream_h5_matrix_to_zarr(item, file.path(zarr_path, "obsm", rn),
                                      transpose = FALSE)
         } else {
-          # Dense: read and write as-is (already cells × dims in h5ad)
+          # Dense: read and write as-is (already cells x dims in h5ad)
           ndims_item <- length(item$dims)
           emb <- if (ndims_item == 1L) {
             matrix(item[], ncol = 1L)
@@ -6034,7 +6028,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
   n_cells <- length(cell_names)
   n_features <- length(feature_names)
 
-  # --- obs (meta.data → AnnData DataFrame) ---
+  # --- obs (meta.data -> AnnData DataFrame) ---
   if (verbose) message("Streaming obs (meta.data)...")
   if (h5$exists("meta.data")) {
     md <- h5[["meta.data"]]
@@ -6072,11 +6066,11 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
 
       tryCatch({
         if (inherits(col_obj, "H5Group")) {
-          # Factor: levels/values (1-based) → categories/codes (0-based)
+          # Factor: levels/values (1-based) -> categories/codes (0-based)
           if (col_obj$exists("levels") && col_obj$exists("values")) {
             levs <- as.character(col_obj[["levels"]][])
             vals <- col_obj[["values"]][]
-            codes <- as.integer(vals) - 1L  # 1-based → 0-based
+            codes <- as.integer(vals) - 1L  # 1-based -> 0-based
 
             .zarr_create_group(col_dir, attrs = list(
               `encoding-type` = "categorical",
@@ -6133,7 +6127,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
   }
 
-  # --- var (features → AnnData DataFrame) ---
+  # --- var (features -> AnnData DataFrame) ---
   if (verbose) message("Streaming var...")
   var_cols <- character(0)
   if (h5$exists("var")) {
@@ -6205,7 +6199,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
   }
 
-  # --- X (expression matrix: genes×cells CSC → cells×genes CSR) ---
+  # --- X (expression matrix: genesxcells CSC -> cellsxgenes CSR) ---
   # Try v5 path first, then v4
   x_path <- NULL
   for (p in c(paste0(assay_path, "/layers/data"),
@@ -6219,7 +6213,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
                                      compressor, transpose = TRUE)
   }
 
-  # --- layers (counts → raw/X if separate from data) ---
+  # --- layers (counts -> raw/X if separate from data) ---
   counts_path <- NULL
   for (p in c(paste0(assay_path, "/layers/counts"),
               paste0(assay_path, "/counts"))) {
@@ -6257,7 +6251,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
   }
 
-  # --- obsm (reductions → obsm/X_{name}) ---
+  # --- obsm (reductions -> obsm/X_{name}) ---
   .zarr_create_group(file.path(zarr_path, "obsm"))
   if (h5$exists("reductions")) {
     reduc_grp <- h5[["reductions"]]
@@ -6275,7 +6269,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
               emb[,]
             }
             # hdf5r reads h5seurat cell.embeddings as [n_cells, n_comp]
-            # zarr AnnData also needs [n_cells, n_comp] — no transpose needed
+            # zarr AnnData also needs [n_cells, n_comp] -- no transpose needed
             # Only fix if dimensions are unexpectedly swapped
             if (nrow(mat) != n_cells && ncol(mat) == n_cells) {
               mat <- t(mat)
@@ -6293,7 +6287,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
   }
 
-  # --- obsp (graphs → obsp/{name}) ---
+  # --- obsp (graphs -> obsp/{name}) ---
   .zarr_create_group(file.path(zarr_path, "obsp"))
   if (h5$exists("graphs")) {
     graph_grp <- h5[["graphs"]]
@@ -6338,7 +6332,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
   }
 
-  # --- uns (misc → uns) ---
+  # --- uns (misc -> uns) ---
   .zarr_create_group(file.path(zarr_path, "uns"))
   if (h5$exists("misc")) {
     misc_grp <- h5[["misc"]]
@@ -6369,7 +6363,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
 #' Stream h5seurat sparse matrix to zarr
 #'
 #' h5seurat stores CSC (genes x cells). If transpose=TRUE, reinterprets as
-#' CSR (cells x genes) using the zero-copy CSC↔CSR duality.
+#' CSR (cells x genes) using the zero-copy CSC<->CSR duality.
 #'
 #' @keywords internal
 #' @noRd
@@ -6389,7 +6383,7 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
 
     if (transpose) {
-      # CSC of (genes × cells) == CSR of (cells × genes) — zero-copy
+      # CSC of (genes x cells) == CSR of (cells x genes) -- zero-copy
       out_shape <- as.integer(rev(shape))  # [n_cells, n_genes]
       .zarr_create_group(zarr_mat_path, attrs = list(
         `encoding-type` = "csr_matrix",
@@ -6511,7 +6505,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
                       chunk_dims = length(cell_names), gzip_level = gzip)
   }
 
-  # --- meta.data (obs → meta.data with levels/values factors) ---
+  # --- meta.data (obs -> meta.data with levels/values factors) ---
   if (verbose) message("Streaming meta.data (obs)...")
   obs_attrs <- .zarr_read_attrs(zarr_path, "obs")
   obs_cols <- obs_attrs[["column-order"]]
@@ -6595,7 +6589,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
                          chunk_dims = length(feature_names), gzip_level = gzip)
   }
 
-  # --- X → layers/data (transpose CSR cells×genes → CSC genes×cells) ---
+  # --- X -> layers/data (transpose CSR cellsxgenes -> CSC genesxcells) ---
   layers_grp <- a_grp$create_group("layers")
   if (.zarr_node_type(zarr_path, "X") != "missing") {
     if (verbose) message("Streaming X -> layers/data...")
@@ -6603,7 +6597,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
                                      gzip, transpose = TRUE)
   }
 
-  # --- raw/X or layers/counts → layers/counts ---
+  # --- raw/X or layers/counts -> layers/counts ---
   counts_src <- NULL
   if (.zarr_node_type(zarr_path, "raw/X") != "missing") {
     counts_src <- "raw/X"
@@ -6617,7 +6611,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
                                      "counts", gzip, transpose = TRUE)
   }
 
-  # --- reductions (obsm → reductions) ---
+  # --- reductions (obsm -> reductions) ---
   reductions_grp <- h5$create_group("reductions")
   if (.zarr_node_type(zarr_path, "obsm") == "group") {
     for (rn in .zarr_list_children(zarr_path, "obsm")) {
@@ -6640,7 +6634,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
           # zarr stores [n_cells, n_comp] in C order.
           # hdf5r writes R matrices in Fortran order, so writing [n_cells, n_comp]
           # from R produces the same HDF5 layout as writeH5Seurat (which writes
-          # Embeddings() directly — also [n_cells, n_comp] in R).
+          # Embeddings() directly -- also [n_cells, n_comp] in R).
           # No transpose needed.
           if (is.matrix(emb) && nrow(emb) != n_cells && ncol(emb) == n_cells) {
             emb <- t(emb)  # fix only if dimensions are swapped
@@ -6648,7 +6642,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
           r_grp$create_dataset("cell.embeddings", robj = emb,
                                chunk_dims = dim(emb), gzip_level = gzip)
         } else if (node_type == "group") {
-          # Sparse embedding — read and densify
+          # Sparse embedding -- read and densify
           mat <- .zarr_read_anndata_matrix(zarr_path, file.path("obsm", rn),
                                             transpose = FALSE)
           mat <- as.matrix(mat)
@@ -6663,7 +6657,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
   }
 
-  # --- graphs (obsp → graphs) ---
+  # --- graphs (obsp -> graphs) ---
   graphs_grp <- h5$create_group("graphs")
   if (.zarr_node_type(zarr_path, "obsp") == "group") {
     for (gn in .zarr_list_children(zarr_path, "obsp")) {
@@ -6681,7 +6675,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
           if (is.list(shape)) shape <- unlist(shape)
 
           if (enc == "csr_matrix") {
-            # CSR → CSC: need actual conversion via dgCMatrix
+            # CSR -> CSC: need actual conversion via dgCMatrix
             mat <- Matrix::sparseMatrix(
               i = rep(seq_len(shape[1]), diff(as.integer(indptr))),
               j = as.integer(indices) + 1L,
@@ -6702,7 +6696,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
             g_grp$create_attr(attr_name = "dims", robj = dim(mat),
                               dtype = GuessDType(dim(mat)))
           } else {
-            # CSC — direct copy (same as h5seurat native format)
+            # CSC -- direct copy (same as h5seurat native format)
             g_grp <- graphs_grp$create_group(gn)
             g_grp$create_dataset("data", robj = as.numeric(data_vals),
                                  chunk_dims = min(length(data_vals), 65536L),
@@ -6726,7 +6720,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
     }
   }
 
-  # --- misc (uns → misc) ---
+  # --- misc (uns -> misc) ---
   misc_grp <- h5$create_group("misc")
   if (.zarr_node_type(zarr_path, "uns") == "group") {
     for (un in .zarr_list_children(zarr_path, "uns")) {
@@ -6771,7 +6765,7 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
 #' Stream zarr sparse or dense matrix to h5seurat format
 #'
 #' AnnData stores cells x genes (CSR). h5seurat needs genes x cells (CSC).
-#' CSR of (cells x genes) == CSC of (genes x cells) — zero-copy reinterpretation.
+#' CSR of (cells x genes) == CSC of (genes x cells) -- zero-copy reinterpretation.
 #'
 #' @keywords internal
 #' @noRd
@@ -6798,10 +6792,10 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
       if (is.list(shape)) shape <- unlist(shape)
 
       if (transpose && enc == "csr_matrix") {
-        # CSR(cells × genes) == CSC(genes × cells) — zero-copy
+        # CSR(cells x genes) == CSC(genes x cells) -- zero-copy
         dims <- as.integer(rev(shape))
       } else if (transpose && enc == "csc_matrix") {
-        # CSC already, but we need to transpose → build dgCMatrix + reinterpret
+        # CSC already, but we need to transpose -> build dgCMatrix + reinterpret
         mat <- Matrix::sparseMatrix(
           i = as.integer(indices) + 1L, p = as.integer(indptr),
           x = as.numeric(data_vals), dims = as.integer(shape), repr = "C"
@@ -6878,7 +6872,7 @@ sc_find_cli <- function() {
 #' Performs file-to-file format conversion with three tiers:
 #' \enumerate{
 #'   \item \strong{C binary}: HDF5 format pairs (h5ad, h5seurat, h5mu)
-#'   \item \strong{Streaming}: zarr pairs (h5ad/h5seurat \eqn{\leftrightarrow}{<->} zarr) — copies
+#'   \item \strong{Streaming}: zarr pairs (h5ad/h5seurat \eqn{\leftrightarrow}{<->} zarr) -- copies
 #'     fields directly without creating a Seurat intermediate
 #'   \item \strong{R hub}: all other format pairs via \code{scConvert()}
 #' }
@@ -6963,25 +6957,25 @@ scConvert_cli <- function(
     "zarr|h5ad"      = function() ZarrToH5AD(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5seurat|zarr"  = function() H5SeuratToZarr(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "zarr|h5seurat"  = function() ZarrToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # h5mu ↔ zarr
+    # h5mu <-> zarr
     "h5mu|zarr"      = function() H5MUToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "zarr|h5mu"      = function() ZarrToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ zarr
+    # loom <-> zarr
     "loom|zarr"      = function() LoomToZarr(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "zarr|loom"      = function() ZarrToLoom(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # h5mu ↔ h5seurat (R streaming)
+    # h5mu <-> h5seurat (R streaming)
     "h5mu|h5seurat"  = function() H5MUToH5Seurat(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    "h5seurat|h5mu"  = function() H5SeuratToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ h5seurat (R streaming)
+    "h5seurat|h5mu"  = function() H5SeuratToH5MU(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
+    # loom <-> h5seurat (R streaming)
     "loom|h5seurat"  = function() LoomToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5seurat|loom"  = function() H5SeuratToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # h5mu ↔ h5ad (R streaming via h5seurat)
+    # h5mu <-> h5ad (R streaming via h5seurat)
     "h5mu|h5ad"      = function() H5MUToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5ad|h5mu"      = function() H5ADToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ h5ad (R streaming via h5seurat)
+    # loom <-> h5ad (R streaming via h5seurat)
     "loom|h5ad"      = function() LoomToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5ad|loom"      = function() H5ADToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom ↔ h5mu (R streaming via h5seurat)
+    # loom <-> h5mu (R streaming via h5seurat)
     "loom|h5mu"      = function() LoomToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5mu|loom"      = function() H5MUToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose)
   )
@@ -6993,7 +6987,7 @@ scConvert_cli <- function(
       TRUE
     }, error = function(e) {
       if (verbose) message("R streaming failed: ", e$message,
-                           " — falling back to R hub")
+                           " -- falling back to R hub")
       FALSE
     })
     if (result) return(TRUE)

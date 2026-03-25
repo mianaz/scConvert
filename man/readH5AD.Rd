@@ -4,7 +4,14 @@
 \alias{readH5AD}
 \title{Load an AnnData H5AD file as a Seurat object}
 \usage{
-readH5AD(file, assay.name = "RNA", use.bpcells = NULL, verbose = TRUE)
+readH5AD(
+  file,
+  assay.name = "RNA",
+  use.bpcells = NULL,
+  components = NULL,
+  use.c = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{file}{Path to H5AD file}
@@ -16,6 +23,15 @@ expression matrix on disk. Requires the BPCells package. The resulting Seurat
 object will reference the on-disk matrix instead of loading it into memory,
 enabling analysis of datasets larger than available RAM.}
 
+\item{components}{Character vector of h5ad components to load. Default loads
+everything. Use \code{c("X")} for matrix-only (fastest), or any subset of
+\code{c("X", "obs", "var", "obsm", "obsp", "varp", "layers", "uns")}.
+The file path is stored in \code{misc[[".__h5ad_path__"]]} for deferred
+loading via \code{\link{scLoadMeta}}.}
+
+\item{use.c}{Use compiled C reader when available (default: TRUE). Set to
+FALSE to force the pure-R hdf5r path.}
+
 \item{verbose}{Show progress messages}
 }
 \value{
@@ -25,5 +41,6 @@ A \code{Seurat} object. If \code{use.bpcells} is set, the count matrix
 \description{
 Direct conversion from H5AD format to Seurat object without intermediate h5Seurat.
 Supports optional BPCells on-disk matrix loading for large datasets that exceed
-available memory.
+available memory. When compiled C routines are available, uses a fast native
+reader (typically 2-3x faster than the pure-R path).
 }

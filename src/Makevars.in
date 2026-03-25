@@ -3,7 +3,7 @@
 #
 # PKG_CFLAGS and PKG_LIBS are filled in by ../configure from this template
 
-PKG_CFLAGS = @HDF5_CFLAGS@
+PKG_CFLAGS = -DBUILDING_R_PACKAGE @HDF5_CFLAGS@
 PKG_LIBS = @HDF5_LIBS@
 
 OBJECTS = init.o sc_rcall.o sc_sparse.o sc_dataframe.o sc_groups.o sc_util.o \

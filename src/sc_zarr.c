@@ -336,7 +336,7 @@ static void *zarr_read_numeric(const char *arr_dir, int64_t *out_n) {
         }
     } else {
         /* ndim > 2: not expected in AnnData; return what we have (zeros) */
-        fprintf(stderr, "Warning: zarr_read_numeric: ndim=%d not fully supported\n",
+        SC_MSG("Warning: zarr_read_numeric: ndim=%d not fully supported\n",
                 meta.ndim);
     }
 
@@ -862,7 +862,7 @@ static int zarr_df_to_h5seurat_md(const char *zarr_df_dir, hid_t h5_md_grp,
 
 int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (zarr → h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (zarr → h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     const char *store = opts->input_path;
@@ -876,7 +876,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
     int64_t n_cells = 0, n_genes = 0;
 
     /* ── 1. X → assays/{assay}/layers/data ─────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [1/6] Transferring X...\n");
+    if (opts->verbose) SC_MSG("  [1/6] Transferring X...\n");
     {
         char assay_path[512];
         snprintf(assay_path, sizeof(assay_path), "assays/%s", assay);
@@ -927,7 +927,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
         char raw_x[2048];
         snprintf(raw_x, sizeof(raw_x), "%s/raw/X", store);
         if (zarr_exists(store, "raw/X")) {
-            if (opts->verbose) fprintf(stderr, "  [1b] Transferring raw/X...\n");
+            if (opts->verbose) SC_MSG("  [1b] Transferring raw/X...\n");
             char raw_enc[64] = "csr_matrix";
             char raw_attrs_path[2048];
             snprintf(raw_attrs_path, sizeof(raw_attrs_path), "%s/.zattrs", raw_x);
@@ -972,7 +972,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 2. obs → cell.names + meta.data ───────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [2/6] Transferring obs...\n");
+    if (opts->verbose) SC_MSG("  [2/6] Transferring obs...\n");
     {
         /* Read cell names */
         char idx_dir[2048];
@@ -1006,12 +1006,12 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 3. var metadata ───────────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [3/6] Transferring var...\n");
+    if (opts->verbose) SC_MSG("  [3/6] Transferring var...\n");
     /* Variable features etc. are stored in var columns — skip for now,
      * they'll be in the assay already from features above */
 
     /* ── 4. obsm → reductions ──────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [4/6] Transferring obsm...\n");
+    if (opts->verbose) SC_MSG("  [4/6] Transferring obsm...\n");
     {
         hid_t red_grp = H5Gcreate2(dst, "reductions", H5P_DEFAULT,
                                      H5P_DEFAULT, H5P_DEFAULT);
@@ -1087,7 +1087,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 5. obsp → graphs ──────────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [5/6] Transferring obsp...\n");
+    if (opts->verbose) SC_MSG("  [5/6] Transferring obsp...\n");
     {
         hid_t graphs_grp = H5Gcreate2(dst, "graphs", H5P_DEFAULT,
                                         H5P_DEFAULT, H5P_DEFAULT);
@@ -1128,7 +1128,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 6. scaffold ───────────────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [6/6] Writing scaffold...\n");
+    if (opts->verbose) SC_MSG("  [6/6] Writing scaffold...\n");
     {
         sc_set_str_attr(dst, "active.assay", assay);
         sc_set_str_attr(dst, "project", "SeuratProject");
@@ -1177,7 +1177,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
     }
 
     H5Fclose(dst);
-    if (opts->verbose) fprintf(stderr, "[scConvert] Done.\n");
+    if (opts->verbose) SC_MSG("[scConvert] Done.\n");
     return SC_OK;
 }
 
@@ -1438,14 +1438,17 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
         return SC_ERR;
     }
     char *jp = json;
-    jp += sprintf(jp, "{\"encoding-type\": \"dataframe\", "
-                       "\"encoding-version\": \"0.2.0\", "
-                       "\"_index\": \"_index\", \"column-order\": [");
+    size_t rem = json_sz;
+    int w;
+    w = snprintf(jp, rem, "{\"encoding-type\": \"dataframe\", "
+                           "\"encoding-version\": \"0.2.0\", "
+                           "\"_index\": \"_index\", \"column-order\": [");
+    jp += w; rem -= (size_t)w;
     for (hsize_t i = 0; i < n_cols; i++) {
-        if (i > 0) jp += sprintf(jp, ", ");
-        jp += sprintf(jp, "\"%s\"", col_names[i]);
+        if (i > 0) { w = snprintf(jp, rem, ", "); jp += w; rem -= (size_t)w; }
+        w = snprintf(jp, rem, "\"%s\"", col_names[i]); jp += w; rem -= (size_t)w;
     }
-    jp += sprintf(jp, "]}");
+    snprintf(jp, rem, "]}");
     sc_json_write_zattrs_str(zarr_dir, json);
     free(json);
 
@@ -1460,7 +1463,7 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
 
 int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5seurat → zarr)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5seurat → zarr)\n",
                 opts->input_path, opts->output_path);
 
     const char *assay = opts->assay_name;
@@ -1485,7 +1488,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     int64_t n_cells = 0, n_genes = 0;
 
     /* ── 1. X (layers/data → X as CSR) ─────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [1/6] Transferring X...\n");
+    if (opts->verbose) SC_MSG("  [1/6] Transferring X...\n");
     {
         char data_path[256];
         snprintf(data_path, sizeof(data_path), "assays/%s/layers/data", assay);
@@ -1512,7 +1515,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
             snprintf(counts_path, sizeof(counts_path), "assays/%s/counts", assay);
 
         if (sc_has_group(src, counts_path)) {
-            if (opts->verbose) fprintf(stderr, "  [1b] Transferring raw/X...\n");
+            if (opts->verbose) SC_MSG("  [1b] Transferring raw/X...\n");
             hid_t grp = H5Gopen2(src, counts_path, H5P_DEFAULT);
 
             char raw_dir[2048], raw_x_dir[2048];
@@ -1558,7 +1561,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     }
 
     /* ── 2. obs ────────────────────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [2/6] Transferring obs...\n");
+    if (opts->verbose) SC_MSG("  [2/6] Transferring obs...\n");
     {
         /* Read cell names */
         char **cells = NULL;
@@ -1601,7 +1604,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     }
 
     /* ── 3. var ────────────────────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [3/6] Transferring var...\n");
+    if (opts->verbose) SC_MSG("  [3/6] Transferring var...\n");
     {
         char feat_path[256];
         snprintf(feat_path, sizeof(feat_path), "assays/%s/features", assay);
@@ -1635,7 +1638,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     }
 
     /* ── 4. obsm (reductions) ──────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [4/6] Transferring obsm...\n");
+    if (opts->verbose) SC_MSG("  [4/6] Transferring obsm...\n");
     {
         char obsm_dir[2048];
         snprintf(obsm_dir, sizeof(obsm_dir), "%s/obsm", out);
@@ -1692,7 +1695,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     }
 
     /* ── 5. obsp (graphs) ──────────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [5/6] Transferring obsp...\n");
+    if (opts->verbose) SC_MSG("  [5/6] Transferring obsp...\n");
     {
         char obsp_dir[2048];
         snprintf(obsp_dir, sizeof(obsp_dir), "%s/obsp", out);
@@ -1729,7 +1732,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     }
 
     /* ── 6. Empty groups ───────────────────────────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [6/6] Writing empty groups...\n");
+    if (opts->verbose) SC_MSG("  [6/6] Writing empty groups...\n");
     {
         const char *empty[] = {"layers", "uns", "varm", "varp"};
         for (int i = 0; i < 4; i++) {
@@ -1740,7 +1743,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
     }
 
     H5Fclose(src);
-    if (opts->verbose) fprintf(stderr, "[scConvert] Done.\n");
+    if (opts->verbose) SC_MSG("[scConvert] Done.\n");
     return SC_OK;
 }
 
@@ -1768,7 +1771,7 @@ static int sc_convert_via_temp_h5seurat_zarr(
 
 int sc_zarr_to_h5ad(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (zarr → h5ad via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (zarr → h5ad via h5seurat)\n",
                 opts->input_path, opts->output_path);
     return sc_convert_via_temp_h5seurat_zarr(opts,
                                               sc_zarr_to_h5seurat,
@@ -1777,7 +1780,7 @@ int sc_zarr_to_h5ad(const sc_opts_t *opts) {
 
 int sc_h5ad_to_zarr(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5ad → zarr via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5ad → zarr via h5seurat)\n",
                 opts->input_path, opts->output_path);
     return sc_convert_via_temp_h5seurat_zarr(opts,
                                               sc_h5ad_to_h5seurat,
@@ -1786,7 +1789,7 @@ int sc_h5ad_to_zarr(const sc_opts_t *opts) {
 
 int sc_zarr_to_h5mu(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (zarr → h5mu via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (zarr → h5mu via h5seurat)\n",
                 opts->input_path, opts->output_path);
     return sc_convert_via_temp_h5seurat_zarr(opts,
                                               sc_zarr_to_h5seurat,
@@ -1795,7 +1798,7 @@ int sc_zarr_to_h5mu(const sc_opts_t *opts) {
 
 int sc_h5mu_to_zarr(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5mu → zarr via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5mu → zarr via h5seurat)\n",
                 opts->input_path, opts->output_path);
     return sc_convert_via_temp_h5seurat_zarr(opts,
                                               sc_h5mu_to_h5seurat,
@@ -1804,7 +1807,7 @@ int sc_h5mu_to_zarr(const sc_opts_t *opts) {
 
 int sc_zarr_to_loom(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (zarr → loom via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (zarr → loom via h5seurat)\n",
                 opts->input_path, opts->output_path);
     return sc_convert_via_temp_h5seurat_zarr(opts,
                                               sc_zarr_to_h5seurat,
@@ -1813,7 +1816,7 @@ int sc_zarr_to_loom(const sc_opts_t *opts) {
 
 int sc_loom_to_zarr(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (loom → zarr via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (loom → zarr via h5seurat)\n",
                 opts->input_path, opts->output_path);
     return sc_convert_via_temp_h5seurat_zarr(opts,
                                               sc_loom_to_h5seurat,

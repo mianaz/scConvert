@@ -750,13 +750,13 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     int rc = SC_OK;
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (loom → h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (loom → h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     /* Open loom file (read-only) */
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
@@ -764,7 +764,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT,
                             H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Fclose(src);
         return SC_ERR_IO;
     }
@@ -797,11 +797,11 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     if (opts->verbose)
-        fprintf(stderr, "  Matrix dimensions: %llu genes × %llu cells\n",
+        SC_MSG("  Matrix dimensions: %llu genes × %llu cells\n",
                 (unsigned long long)n_genes, (unsigned long long)n_cells);
 
     /* ── 1. Transfer /matrix → assays/{assay}/layers/data (dense → CSC) ── */
-    if (opts->verbose) fprintf(stderr, "  [1/6] Converting matrix to sparse...\n");
+    if (opts->verbose) SC_MSG("  [1/6] Converting matrix to sparse...\n");
     if (n_genes > 0 && n_cells > 0) {
         hid_t assays = sc_create_or_open_group(dst, "assays");
         hid_t assay_grp = sc_create_or_open_group(assays, assay);
@@ -852,7 +852,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 2. Transfer /row_attrs/Gene → assays/{assay}/features ─────────── */
-    if (opts->verbose) fprintf(stderr, "  [2/6] Transferring features...\n");
+    if (opts->verbose) SC_MSG("  [2/6] Transferring features...\n");
     {
         hid_t assays = sc_create_or_open_group(dst, "assays");
         hid_t assay_grp = sc_create_or_open_group(assays, assay);
@@ -901,7 +901,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 3. Transfer /col_attrs/CellID → cell.names ────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [3/6] Transferring cell names...\n");
+    if (opts->verbose) SC_MSG("  [3/6] Transferring cell names...\n");
     if (sc_has_group(src, "col_attrs")) {
         hid_t ca = H5Gopen2(src, "col_attrs", H5P_DEFAULT);
 
@@ -941,7 +941,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 4. Transfer /col_attrs → meta.data ────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [4/6] Transferring cell metadata...\n");
+    if (opts->verbose) SC_MSG("  [4/6] Transferring cell metadata...\n");
     if (sc_has_group(src, "col_attrs")) {
         hid_t ca = H5Gopen2(src, "col_attrs", H5P_DEFAULT);
         hid_t meta = sc_create_or_open_group(dst, "meta.data");
@@ -993,7 +993,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 5. Transfer /col_graphs → graphs ──────────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [5/6] Transferring graphs...\n");
+    if (opts->verbose) SC_MSG("  [5/6] Transferring graphs...\n");
     if (sc_has_group(src, "col_graphs")) {
         hid_t cg = H5Gopen2(src, "col_graphs", H5P_DEFAULT);
         hid_t graphs = sc_create_or_open_group(dst, "graphs");
@@ -1041,7 +1041,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* ── 6. Transfer /reductions → reductions (scConvert extension) ────── */
-    if (opts->verbose) fprintf(stderr, "  [6/6] Transferring reductions...\n");
+    if (opts->verbose) SC_MSG("  [6/6] Transferring reductions...\n");
     if (sc_has_group(src, "reductions")) {
         /* scConvert loom extension: /reductions/{name}/embeddings */
         int copy_rc = sc_copy_group_h5ocopy(src, "reductions", dst, "reductions");
@@ -1061,7 +1061,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
         H5Gget_num_objs(src_layers, &n_members);
 
         if (n_members > 0 && opts->verbose)
-            fprintf(stderr, "  [+] Transferring %llu additional layers...\n",
+            SC_MSG("  [+] Transferring %llu additional layers...\n",
                     (unsigned long long)n_members);
 
         hid_t assays = sc_create_or_open_group(dst, "assays");
@@ -1171,7 +1171,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
     }
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
 cleanup:
     H5Fclose(dst);
@@ -1189,19 +1189,19 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     int rc = SC_OK;
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5seurat → loom)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5seurat → loom)\n",
                 opts->input_path, opts->output_path);
 
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT,
                             H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Fclose(src);
         return SC_ERR_IO;
     }
@@ -1243,11 +1243,11 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     }
 
     if (opts->verbose)
-        fprintf(stderr, "  Matrix dimensions: %llu genes × %llu cells\n",
+        SC_MSG("  Matrix dimensions: %llu genes × %llu cells\n",
                 (unsigned long long)n_genes, (unsigned long long)n_cells);
 
     /* ── 1. Transfer expression matrix → /matrix (CSC → dense) ─────────── */
-    if (opts->verbose) fprintf(stderr, "  [1/7] Converting sparse to dense matrix...\n");
+    if (opts->verbose) SC_MSG("  [1/7] Converting sparse to dense matrix...\n");
     {
         /* Find sparse data group — try v5 path first, then v4 */
         char data_path[512];
@@ -1319,7 +1319,7 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     }
 
     /* ── 2. Transfer cell.names → /col_attrs/CellID ────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [2/7] Writing cell names...\n");
+    if (opts->verbose) SC_MSG("  [2/7] Writing cell names...\n");
     {
         hid_t col_attrs = sc_create_or_open_group(dst, "col_attrs");
 
@@ -1333,7 +1333,7 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     }
 
     /* ── 3. Transfer features → /row_attrs/Gene ────────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [3/7] Writing feature names...\n");
+    if (opts->verbose) SC_MSG("  [3/7] Writing feature names...\n");
     {
         hid_t row_attrs = sc_create_or_open_group(dst, "row_attrs");
 
@@ -1349,7 +1349,7 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     }
 
     /* ── 4. Transfer meta.data → /col_attrs (each column as dataset) ──── */
-    if (opts->verbose) fprintf(stderr, "  [4/7] Writing cell metadata...\n");
+    if (opts->verbose) SC_MSG("  [4/7] Writing cell metadata...\n");
     if (sc_has_group(src, "meta.data")) {
         hid_t meta = H5Gopen2(src, "meta.data", H5P_DEFAULT);
         hid_t col_attrs = sc_create_or_open_group(dst, "col_attrs");
@@ -1468,7 +1468,7 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     }
 
     /* ── 5. Transfer graphs → /col_graphs (CSC → COO) ─────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [5/7] Transferring graphs...\n");
+    if (opts->verbose) SC_MSG("  [5/7] Transferring graphs...\n");
     if (sc_has_group(src, "graphs")) {
         hid_t graphs = H5Gopen2(src, "graphs", H5P_DEFAULT);
         hid_t col_graphs = sc_create_or_open_group(dst, "col_graphs");
@@ -1519,7 +1519,7 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     }
 
     /* ── 6. Transfer reductions → /reductions (scConvert extension) ────── */
-    if (opts->verbose) fprintf(stderr, "  [6/7] Transferring reductions...\n");
+    if (opts->verbose) SC_MSG("  [6/7] Transferring reductions...\n");
     if (sc_has_group(src, "reductions")) {
         int copy_rc = sc_copy_group_h5ocopy(src, "reductions", dst, "reductions");
         if (copy_rc != SC_OK) {
@@ -1532,7 +1532,7 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     }
 
     /* ── 7. Transfer additional layers → /layers ───────────────────────── */
-    if (opts->verbose) fprintf(stderr, "  [7/7] Transferring layers...\n");
+    if (opts->verbose) SC_MSG("  [7/7] Transferring layers...\n");
     {
         hid_t layers_dst = sc_create_or_open_group(dst, "layers");
 
@@ -1599,7 +1599,7 @@ int sc_h5seurat_to_loom(const sc_opts_t *opts) {
     sc_set_str_attr(dst, "SEURAT_ASSAY", assay);
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
 cleanup_loom:
     H5Fclose(dst);
@@ -1613,7 +1613,7 @@ cleanup_loom:
 
 int sc_loom_to_h5ad(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (loom → h5ad via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (loom → h5ad via h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     return sc_convert_via_temp_h5seurat(opts,
@@ -1623,7 +1623,7 @@ int sc_loom_to_h5ad(const sc_opts_t *opts) {
 
 int sc_h5ad_to_loom(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5ad → loom via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5ad → loom via h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     return sc_convert_via_temp_h5seurat(opts,
@@ -1633,7 +1633,7 @@ int sc_h5ad_to_loom(const sc_opts_t *opts) {
 
 int sc_loom_to_h5mu(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (loom → h5mu via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (loom → h5mu via h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     return sc_convert_via_temp_h5seurat(opts,
@@ -1643,7 +1643,7 @@ int sc_loom_to_h5mu(const sc_opts_t *opts) {
 
 int sc_h5mu_to_loom(const sc_opts_t *opts) {
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5mu → loom via h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5mu → loom via h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     return sc_convert_via_temp_h5seurat(opts,

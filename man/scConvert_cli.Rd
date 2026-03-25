@@ -33,7 +33,7 @@ TRUE on success, FALSE on failure
 Performs file-to-file format conversion with three tiers:
 \enumerate{
   \item \strong{C binary}: HDF5 format pairs (h5ad, h5seurat, h5mu)
-  \item \strong{Streaming}: zarr pairs (h5ad/h5seurat \eqn{\leftrightarrow}{<->} zarr) — copies
+  \item \strong{Streaming}: zarr pairs (h5ad/h5seurat \eqn{\leftrightarrow}{<->} zarr) -- copies
     fields directly without creating a Seurat intermediate
   \item \strong{R hub}: all other format pairs via \code{scConvert()}
 }

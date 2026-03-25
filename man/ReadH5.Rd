@@ -63,5 +63,5 @@ the data from the HDF5 dataset
 Read data from HDF5 files
 }
 \seealso{
-\code{\link{as.sparse}}
+\code{\link[Seurat]{as.sparse}}
 }

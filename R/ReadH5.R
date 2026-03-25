@@ -10,7 +10,7 @@
 #' @name ReadH5
 #' @rdname ReadH5
 #'
-#' @seealso \code{\link{as.sparse}}
+#' @seealso \code{\link[Seurat]{as.sparse}}
 #'
 NULL
 

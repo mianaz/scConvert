@@ -51,7 +51,6 @@ NULL
 #'  }
 #' }
 #'
-#' @aliases scConvert
 #'
 "_PACKAGE"
 
@@ -272,11 +271,6 @@ ClosestVersion <- function(
   return(as.character(x = targets[index]))
 }
 
-#' Convert an HDF5 compound dataset to a group (legacy version)
-#'
-#' @param src An HDF5 dataset
-#' @param dest An HDF5 file or group
-#' @param dst.name Name of group in \code{dest}
 # CompoundToGroup moved to ReadH5.R (single implementation with name_map_fn support)
 
 #' Determine a filetype based on its extension
@@ -997,6 +991,25 @@ SafeSetLayerData <- function(object, layer, value) {
 }
 
 
+# Helper: create CLI-first direct path with R streaming fallback
+# Defined outside .onLoad to avoid R CMD check NOTE about message() in startup
+.make_cli_direct <- function(r_fallback_fn) {
+  function(source, dest, assay = 'RNA', overwrite = FALSE, verbose = TRUE, ...) {
+    if (isTRUE(getOption("scConvert.use_cli"))) {
+      src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
+      cli_ok <- tryCatch(
+        scConvert_cli(input = src_path, output = dest, assay = assay,
+                      overwrite = overwrite, verbose = verbose),
+        error = function(e) FALSE
+      )
+      if (isTRUE(cli_ok)) return(dest)
+      if (verbose) message("CLI unavailable, using R streaming")
+    }
+    r_fallback_fn(source, dest, assay = assay, overwrite = overwrite,
+                  verbose = verbose, ...)
+  }
+}
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Format converter functions (defined outside .onLoad to avoid R CMD check NOTE)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1129,7 +1142,7 @@ SafeSetLayerData <- function(object, layer, value) {
       stop("File '", filename, "' already exists; set overwrite = TRUE", call. = FALSE)
     }
     # Fast path: Direct C h5ad writer (no h5seurat intermediate, no transpose)
-    # Enable with options(scConvert.use_c_writer = TRUE) — ~6x faster for gzip=0
+    # Enable with options(scConvert.use_c_writer = TRUE) -- ~6x faster for gzip=0
     c_h5ad <- isTRUE(getOption("scConvert.use_c_writer")) &&
               is.loaded("C_write_h5ad", PACKAGE = "scConvert") &&
               length(Assays(object)) == 1
@@ -1152,7 +1165,7 @@ SafeSetLayerData <- function(object, layer, value) {
       temp <- tempfile(fileext = '.h5Seurat')
       on.exit(unlink(temp, force = TRUE), add = TRUE)
       writeH5Seurat(object = object, filename = temp, overwrite = TRUE, verbose = FALSE)
-      # Use CLI for the h5seurat→h5ad step if available (much faster)
+      # Use CLI for the h5seurat->h5ad step if available (much faster)
       if (isTRUE(getOption("scConvert.use_cli"))) {
         cli_ok <- tryCatch(
           scConvert_cli(input = temp, output = filename, assay = assay_name,
@@ -1306,7 +1319,7 @@ SafeSetLayerData <- function(object, layer, value) {
   # Auto-detect CLI binary and notify user
   cli_bin <- tryCatch(sc_find_cli(), error = function(e) NULL)
   if (!is.null(cli_bin)) {
-    # CLI binary found — enable unless user explicitly pre-set to FALSE
+    # CLI binary found -- enable unless user explicitly pre-set to FALSE
     if (!isFALSE(getOption("scConvert.use_cli"))) {
       options("scConvert.use_cli" = TRUE)
     }
@@ -1325,29 +1338,11 @@ SafeSetLayerData <- function(object, layer, value) {
   RegisterFormat(ext = 'rds', loader = .rds_loader, saver = .rds_saver)
   RegisterFormat(ext = 'zarr', loader = .zarr_loader, saver = .zarr_saver)
 
-  # Register direct HDF5-level conversion paths (h5ad ↔ h5seurat)
+  # Register direct HDF5-level conversion paths (h5ad <-> h5seurat)
   RegisterDirectPath('h5ad', 'h5seurat', .h5ad_to_h5seurat_direct)
   RegisterDirectPath('h5seurat', 'h5ad', .h5seurat_to_h5ad_direct)
 
-  # Helper: create CLI-first direct path with R streaming fallback
-  .make_cli_direct <- function(r_fallback_fn) {
-    function(source, dest, assay = 'RNA', overwrite = FALSE, verbose = TRUE, ...) {
-      if (isTRUE(getOption("scConvert.use_cli"))) {
-        src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-        cli_ok <- tryCatch(
-          scConvert_cli(input = src_path, output = dest, assay = assay,
-                        overwrite = overwrite, verbose = verbose),
-          error = function(e) FALSE
-        )
-        if (isTRUE(cli_ok)) return(dest)
-        if (verbose) message("CLI unavailable, using R streaming")
-      }
-      r_fallback_fn(source, dest, assay = assay, overwrite = overwrite,
-                    verbose = verbose, ...)
-    }
-  }
-
-  # Register streaming HDF5 paths (h5mu ↔ h5seurat, loom ↔ h5seurat)
+  # Register streaming HDF5 paths (h5mu <-> h5seurat, loom <-> h5seurat)
   # CLI binary is tried first when available
   RegisterDirectPath('h5mu', 'h5seurat', .make_cli_direct(
     function(source, dest, ...) H5MUToH5Seurat(source, dest, stream = TRUE, ...)

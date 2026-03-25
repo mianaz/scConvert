@@ -136,7 +136,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
             mat <- Matrix::t(mat)
           }
         } else if (transpose) {
-          # CSR→CSC reinterpretation: CSR of (n_rows × n_cols) == CSC of (n_cols × n_rows)
+          # CSR->CSC reinterpretation: CSR of (n_rows x n_cols) == CSC of (n_cols x n_rows)
           # h5ad CSR indices become dgCMatrix @i (row indices in transposed view).
           # scipy CSR may have unsorted column indices within rows, so we must
           # sort after reinterpretation to produce a valid dgCMatrix.
@@ -281,7 +281,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
            "Install with: remotes::install_github('bnprks/BPCells')", call. = FALSE)
     }
 
-    # Prefer raw/X (raw counts) over X (often normalized) — matches non-BPCells path
+    # Prefer raw/X (raw counts) over X (often normalized) -- matches non-BPCells path
     has_raw <- h5ad$exists("raw") && h5ad[["raw"]]$exists("X")
     bp_group <- if (has_raw) "raw/X" else "X"
     if (verbose) {
@@ -392,13 +392,13 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
         common_features <- intersect(feature.names, raw_features)
         if (length(common_features) > 0) {
           raw_subset <- raw_matrix[common_features, , drop = FALSE]
-          # raw/X → counts layer (actual raw counts)
+          # raw/X -> counts layer (actual raw counts)
           seurat_obj[[assay.name]] <- SetAssayData(
             object = seurat_obj[[assay.name]],
             layer = "counts",
             new.data = raw_subset
           )
-          # X (already loaded as counts in step 4) → data layer (normalized)
+          # X (already loaded as counts in step 4) -> data layer (normalized)
           # expr_matrix contains the X values which are normalized when raw exists
           x_subset <- expr_matrix[common_features, , drop = FALSE]
           seurat_obj[[assay.name]] <- SetAssayData(
@@ -568,7 +568,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
       # Modern format: obsm is an H5Group with named datasets
       for (reduc_name in names(obsm_obj)) {
         clean_name <- gsub("^X_", "", reduc_name)
-        # Skip 'spatial' — handled separately in step 12
+        # Skip 'spatial' -- handled separately in step 12
         if (clean_name == "spatial") next
         if (verbose) message("  Adding reduction: ", clean_name)
 
@@ -845,7 +845,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
 scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
   path <- object@misc[[".__h5ad_path__"]]
   if (is.null(path)) {
-    stop("No h5ad source path stored — object was not created with partial components",
+    stop("No h5ad source path stored -- object was not created with partial components",
          call. = FALSE)
   }
   if (!file.exists(path)) {
@@ -892,16 +892,6 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
 # C-accelerated h5ad reader (Optimization 1)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Fast C-based h5ad reader
-#'
-#' @param file Path to h5ad file
-#' @param assay.name Assay name
-#' @param components Character vector of components to load
-#' @param verbose Show progress
-#'
-#' @return Seurat object
-#' @keywords internal
-#'
 #' Fast Seurat object constructor (bypass CreateSeuratObject validation)
 #'
 #' Constructs a Seurat object directly from a pre-validated sparse matrix,
@@ -1091,7 +1081,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
                 Dim = c(as.integer(length(raw_features)), as.integer(length(cell.names)))
               )
             } else {
-              # CSR of (n_cells × n_features) == CSC of (n_features × n_cells)
+              # CSR of (n_cells x n_features) == CSC of (n_features x n_cells)
               raw_matrix <- new("dgCMatrix",
                 i = as.integer(indices), p = as.integer(indptr), x = as.numeric(data_vals),
                 Dim = c(as.integer(length(raw_features)), as.integer(length(cell.names)))
@@ -1125,7 +1115,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
           layer_obj <- h5ad[["layers"]][[layer_name]]
           if (inherits(layer_obj, "H5Group") && layer_obj$exists("data")) {
             ld <- layer_obj[["data"]][]; li <- layer_obj[["indices"]][]; lp <- layer_obj[["indptr"]][]
-            # CSR of (cells × features) == CSC of (features × cells)
+            # CSR of (cells x features) == CSC of (features x cells)
             layer_matrix <- new("dgCMatrix", i = as.integer(li), p = as.integer(lp),
                                 x = as.numeric(ld), Dim = c(as.integer(length(feature.names)),
                                                              as.integer(length(cell.names))))

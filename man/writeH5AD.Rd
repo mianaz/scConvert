@@ -11,6 +11,7 @@ writeH5AD(
   overwrite = FALSE,
   verbose = TRUE,
   standardize = FALSE,
+  gzip = NULL,
   ...
 )
 }
@@ -28,6 +29,8 @@ with .h5ad extension.}
 
 \item{standardize}{Logical; convert Seurat metadata names to scanpy conventions.
 Default FALSE.}
+
+\item{gzip}{Integer gzip compression level (0-9), or NULL to use the package default.}
 
 \item{...}{Additional arguments passed to writeH5Seurat and Convert.}
 }

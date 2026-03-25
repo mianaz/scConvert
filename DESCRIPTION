@@ -98,9 +98,9 @@ Suggests:
     SingleCellExperiment,
     SummarizedExperiment,
     testthat (>= 3.0.0),
-    tiledbsoma
+    tiledbsoma,
+    ggplot2
 Additional_repositories:
     https://satijalab.r-universe.dev
-Conflicts: SeuratDisk
 Config/testthat/edition: 3
 VignetteBuilder: knitr

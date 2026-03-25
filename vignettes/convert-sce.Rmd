@@ -1,0 +1,156 @@
+---
+title: "Convert Between Seurat and SingleCellExperiment"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Convert Between Seurat and SingleCellExperiment}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+has_sce <- requireNamespace("SingleCellExperiment", quietly = TRUE) &&
+  requireNamespace("SummarizedExperiment", quietly = TRUE)
+library(scConvert)
+library(Seurat)
+```
+
+Many Bioconductor workflows -- scran normalization, scater quality control,
+slingshot trajectory inference -- operate on the SingleCellExperiment (SCE)
+container. Seurat provides built-in converters (`as.SingleCellExperiment()` and
+`as.Seurat()`) that make it straightforward to move data between the two
+ecosystems. scConvert extends this by letting you route SCE objects to any file
+format (h5ad, h5Seurat, loom, zarr, rds) through its hub architecture.
+
+## Load demo data
+
+scConvert ships a small PBMC dataset. We start by reading it into a Seurat
+object.
+
+```{r load-data}
+pbmc <- readH5AD(system.file("extdata", "pbmc_demo.h5ad", package = "scConvert"))
+pbmc
+```
+
+## Seurat to SingleCellExperiment
+
+Convert the Seurat object to SCE. Counts, normalized data, dimensional
+reductions, and cell metadata are all transferred.
+
+```{r seurat-to-sce, eval = has_sce}
+library(SingleCellExperiment)
+
+sce <- as.SingleCellExperiment(pbmc)
+sce
+```
+
+Inspect what was carried over:
+
+```{r inspect-sce, eval = has_sce}
+cat("Assays:", paste(assayNames(sce), collapse = ", "), "\n")
+cat("Reduced dims:", paste(reducedDimNames(sce), collapse = ", "), "\n")
+cat("colData columns:", paste(colnames(colData(sce)), collapse = ", "), "\n")
+```
+
+## SingleCellExperiment to Seurat
+
+Convert the SCE back to a Seurat object with `as.Seurat()`. The converter
+detects which assays exist (counts, logcounts) and maps them to the appropriate
+Seurat layers.
+
+```{r sce-to-seurat, eval = has_sce}
+seurat_rt <- as.Seurat(sce, counts = "counts", data = "logcounts")
+seurat_rt
+```
+
+## Verify the round-trip
+
+Confirm that expression values, cell barcodes, and embeddings survive the
+Seurat -> SCE -> Seurat round-trip.
+
+```{r roundtrip-check, eval = has_sce}
+# Cell barcodes
+cat("Barcodes match:", identical(Cells(pbmc), Cells(seurat_rt)), "\n")
+
+# Gene names
+cat("Features match:", identical(rownames(pbmc), rownames(seurat_rt)), "\n")
+
+# Count matrix values
+orig_counts <- GetAssayData(pbmc, layer = "counts")
+rt_counts <- GetAssayData(seurat_rt, layer = "counts")
+cat("Counts identical:", identical(orig_counts, rt_counts), "\n")
+
+# Dimensionality reductions (SCE stores these in reducedDims)
+cat("Reductions in original:", paste(Reductions(pbmc), collapse = ", "), "\n")
+cat("Reductions after round-trip:", paste(Reductions(seurat_rt), collapse = ", "), "\n")
+```
+
+## SCE to h5ad via scConvert
+
+To share an SCE dataset with Python collaborators, pass it directly to
+`scConvert()`. The SCE is converted to Seurat internally, then written to the
+target format -- no manual intermediate step needed.
+
+```{r sce-to-h5ad, eval = has_sce}
+h5ad_path <- tempfile(fileext = ".h5ad")
+scConvert(sce, dest = h5ad_path, overwrite = TRUE)
+cat("h5ad file size:", round(file.size(h5ad_path) / 1e6, 1), "MB\n")
+```
+
+Read it back to confirm the data survived the full SCE -> Seurat -> h5ad
+-> Seurat chain:
+
+```{r h5ad-roundtrip, eval = has_sce}
+pbmc_h5ad <- readH5AD(h5ad_path)
+cat("Cells:", ncol(pbmc_h5ad), "\n")
+cat("Genes:", nrow(pbmc_h5ad), "\n")
+cat("Reductions:", paste(Reductions(pbmc_h5ad), collapse = ", "), "\n")
+```
+
+## Seurat to SCE via scConvert
+
+The reverse also works. Use `dest = "sce"` to get a SingleCellExperiment
+directly from any Seurat object:
+
+```{r seurat-to-sce-scconvert, eval = has_sce}
+sce2 <- scConvert(pbmc, dest = "sce")
+cat("Class:", class(sce2), "\n")
+cat("Dimensions:", nrow(sce2), "x", ncol(sce2), "\n")
+```
+
+## Practical example: Bioconductor QC on SCE, then back to Seurat
+
+A common workflow is to use Bioconductor tools for quality control or
+normalization, then bring the result back into Seurat for downstream analysis.
+Here we compute log-library-size and detected-feature counts using base R
+(the same quantities that `scater::addPerCellQCMetrics` would compute).
+
+```{r practical-example, eval = has_sce}
+# Compute QC metrics on the SCE
+sce_qc <- as.SingleCellExperiment(pbmc)
+counts_mat <- assay(sce_qc, "counts")
+colData(sce_qc)$log_library_size <- log1p(Matrix::colSums(counts_mat))
+colData(sce_qc)$detected_features <- Matrix::colSums(counts_mat > 0)
+
+cat("Added QC columns:",
+    paste(c("log_library_size", "detected_features"), collapse = ", "), "\n")
+
+# Convert back to Seurat -- the new colData columns become metadata
+seurat_qc <- as.Seurat(sce_qc, counts = "counts", data = "logcounts")
+cat("Seurat metadata columns:",
+    paste(colnames(seurat_qc[[]]), collapse = ", "), "\n")
+```
+
+The new QC columns (`log_library_size`, `detected_features`) are now available
+as Seurat metadata for filtering or visualization.
+
+## Clean up
+
+```{r cleanup, eval = has_sce}
+unlink(h5ad_path)
+```

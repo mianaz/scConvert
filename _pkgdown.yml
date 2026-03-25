@@ -188,6 +188,7 @@ articles:
   - title: "Getting Started"
     navbar: "Getting Started"
     contents:
+      - getting-started
       - convert-anndata
       - h5Seurat-load
       - cli-usage
@@ -196,6 +197,7 @@ articles:
   - title: "Format Guides"
     navbar: "Format Guides"
     contents:
+      - convert-sce
       - convert-loom
       - convert-zarr
       - convert-soma

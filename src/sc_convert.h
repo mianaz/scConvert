@@ -10,6 +10,7 @@
 #ifndef SC_CONVERT_H
 #define SC_CONVERT_H
 
+#include "sc_compat.h"
 #include <hdf5.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,14 +55,14 @@
 
 #define SC_CHECK_HDF(expr, msg) do { \
     if ((expr) < 0) { \
-        fprintf(stderr, "HDF5 error: %s\n", msg); \
+        SC_MSG("HDF5 error: %s\n", msg); \
         return SC_ERR_HDF; \
     } \
 } while(0)
 
 #define SC_CHECK_HDF_GOTO(expr, msg, label) do { \
     if ((expr) < 0) { \
-        fprintf(stderr, "HDF5 error: %s\n", msg); \
+        SC_MSG("HDF5 error: %s\n", msg); \
         goto label; \
     } \
 } while(0)

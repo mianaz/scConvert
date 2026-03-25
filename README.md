@@ -157,8 +157,8 @@ Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`,
 
 - [Conversions: h5Seurat and
   AnnData](https://mianaz.github.io/scConvert/articles/convert-anndata.html)
-- [Direct H5AD
-  Loading](https://mianaz.github.io/scConvert/articles/direct-h5ad-loading.html)
+- [Getting
+  Started](https://mianaz.github.io/scConvert/articles/getting-started.html)
 - [Multimodal
   H5MU](https://mianaz.github.io/scConvert/articles/multimodal-h5mu.html)
 - [Loom

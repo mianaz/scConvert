@@ -10,7 +10,14 @@
 \alias{as.h5Seurat.Seurat}
 \title{Save a Seurat object to an h5Seurat file}
 \usage{
-writeH5Seurat(object, filename, overwrite = FALSE, verbose = TRUE, ...)
+writeH5Seurat(
+  object,
+  filename,
+  overwrite = FALSE,
+  verbose = TRUE,
+  gzip = NULL,
+  ...
+)
 
 as.h5Seurat(x, ...)
 
@@ -21,6 +28,7 @@ as.h5Seurat(x, ...)
   filename = paste0(Project(object = object), ".h5Seurat"),
   overwrite = FALSE,
   verbose = TRUE,
+  gzip = NULL,
   ...
 )
 
@@ -47,6 +55,8 @@ if not present.}
 same name. Default is \code{FALSE}.}
 
 \item{verbose}{Show progress updates during save. Default is \code{TRUE}.}
+
+\item{gzip}{Integer gzip compression level (0-9), or NULL to use the package default.}
 
 \item{...}{Arguments passed to other methods}
 }

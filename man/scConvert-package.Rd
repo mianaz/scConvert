@@ -3,7 +3,6 @@
 \docType{package}
 \name{scConvert-package}
 \alias{scConvert-package}
-\alias{scConvert}
 \title{scConvert: Universal Single-Cell Format Conversion for R}
 \description{
 Universal single-cell format conversion for R. Converts between h5ad
@@ -51,6 +50,7 @@ these with \code{\link[base]{options}}:
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://mianaz.github.io/scConvert/}
   \item \url{https://github.com/mianaz/scConvert}
   \item Report bugs at \url{https://github.com/mianaz/scConvert/issues}
 }

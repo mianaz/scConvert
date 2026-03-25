@@ -16,20 +16,20 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
     int rc = SC_OK;
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5ad → h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5ad → h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     /* Open source h5ad (read-only) */
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
     /* Create destination h5seurat */
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Fclose(src);
         return SC_ERR_IO;
     }
@@ -40,7 +40,7 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
     sc_set_str_attr(dst, "active.assay", assay);
 
     /* 1. Transfer X (expression matrix) */
-    if (opts->verbose) fprintf(stderr, "  [1/6] Transferring X...\n");
+    if (opts->verbose) SC_MSG("  [1/6] Transferring X...\n");
     int has_raw = sc_has_group(src, "raw");
     if (sc_has_group(src, "X")) {
         /* X is a sparse group (CSR) */
@@ -104,7 +104,7 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
         /* X is a dense dataset — store in layers/data (or layers/counts
          * if no raw/X present, since it may be the only expression layer) */
         if (opts->verbose)
-            fprintf(stderr, "  Note: dense X matrix detected\n");
+            SC_MSG("  Note: dense X matrix detected\n");
         hid_t assays = sc_create_or_open_group(dst, "assays");
         hid_t assay_grp = sc_create_or_open_group(assays, assay);
 
@@ -134,7 +134,7 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
 
     /* 2. Transfer raw/X (counts) if present */
     if (sc_has_group(src, "raw")) {
-        if (opts->verbose) fprintf(stderr, "  [1b] Transferring raw/X...\n");
+        if (opts->verbose) SC_MSG("  [1b] Transferring raw/X...\n");
         hid_t raw = H5Gopen2(src, "raw", H5P_DEFAULT);
         if (sc_has_group(raw, "X")) {
             /* Sparse raw/X */
@@ -184,27 +184,27 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* 3. Transfer obs → meta.data */
-    if (opts->verbose) fprintf(stderr, "  [2/6] Transferring obs...\n");
+    if (opts->verbose) SC_MSG("  [2/6] Transferring obs...\n");
     rc = sc_stream_obs_h5ad_to_h5seurat(src, dst, assay);
     if (rc != SC_OK) goto cleanup;
 
     /* 4. Transfer var → assays/<assay>/features */
-    if (opts->verbose) fprintf(stderr, "  [3/6] Transferring var...\n");
+    if (opts->verbose) SC_MSG("  [3/6] Transferring var...\n");
     rc = sc_stream_var_h5ad_to_h5seurat(src, dst, assay);
     if (rc != SC_OK) goto cleanup;
 
     /* 5. Transfer obsm → reductions */
-    if (opts->verbose) fprintf(stderr, "  [4/6] Transferring obsm...\n");
+    if (opts->verbose) SC_MSG("  [4/6] Transferring obsm...\n");
     rc = sc_stream_obsm(src, dst, SC_H5AD_TO_H5SEURAT);
     if (rc != SC_OK) goto cleanup;
 
     /* 6. Transfer obsp → graphs */
-    if (opts->verbose) fprintf(stderr, "  [5/6] Transferring obsp...\n");
+    if (opts->verbose) SC_MSG("  [5/6] Transferring obsp...\n");
     rc = sc_stream_obsp(src, dst, SC_H5AD_TO_H5SEURAT, assay);
     if (rc != SC_OK) goto cleanup;
 
     /* 7. Transfer uns → misc */
-    if (opts->verbose) fprintf(stderr, "  [6/6] Transferring uns...\n");
+    if (opts->verbose) SC_MSG("  [6/6] Transferring uns...\n");
     rc = sc_stream_uns(src, dst, SC_H5AD_TO_H5SEURAT);
     if (rc != SC_OK) goto cleanup;
 
@@ -278,7 +278,7 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
     }
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
 cleanup:
     H5Fclose(dst);
@@ -294,18 +294,18 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
     int rc = SC_OK;
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5seurat → h5ad)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5seurat → h5ad)\n",
                 opts->input_path, opts->output_path);
 
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Fclose(src);
         return SC_ERR_IO;
     }
@@ -315,7 +315,7 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
     sc_set_str_attr(dst, "encoding-version", "0.1.0");
 
     /* 1. Transfer X (expression matrix) */
-    if (opts->verbose) fprintf(stderr, "  [1/6] Transferring X...\n");
+    if (opts->verbose) SC_MSG("  [1/6] Transferring X...\n");
     {
         /* Seurat v5 stores layers under assays/{assay}/layers/{name},
          * Seurat v4 stores directly under assays/{assay}/{name}.
@@ -361,7 +361,7 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
         } else if (sc_has_dataset(src, data_path)) {
             /* Dense data layer — copy as dense X dataset */
             if (opts->verbose)
-                fprintf(stderr, "  Note: dense data layer detected\n");
+                SC_MSG("  Note: dense data layer detected\n");
             hid_t src_data = H5Dopen2(src, data_path, H5P_DEFAULT);
             rc = sc_copy_dataset_chunked(src_data, dst, "X", gzip);
             H5Dclose(src_data);
@@ -391,7 +391,7 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
         }
         if (counts_path[0] != '\0' && counts_is_sparse) {
             if (opts->verbose)
-                fprintf(stderr, "  [1b] Transferring counts → raw/X...\n");
+                SC_MSG("  [1b] Transferring counts → raw/X...\n");
             hid_t raw = sc_create_or_open_group(dst, "raw");
             hid_t src_counts = H5Gopen2(src, counts_path, H5P_DEFAULT);
             hid_t dst_raw_x = H5Gcreate2(raw, "X", H5P_DEFAULT,
@@ -451,7 +451,7 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
         } else if (counts_path[0] != '\0' && !counts_is_sparse) {
             /* Dense counts — copy as dense dataset to raw/X */
             if (opts->verbose)
-                fprintf(stderr, "  [1b] Transferring dense counts → raw/X...\n");
+                SC_MSG("  [1b] Transferring dense counts → raw/X...\n");
             hid_t raw = sc_create_or_open_group(dst, "raw");
             hid_t src_counts = H5Dopen2(src, counts_path, H5P_DEFAULT);
             rc = sc_copy_dataset_chunked(src_counts, raw, "X", gzip);
@@ -462,27 +462,27 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
     }
 
     /* 2. Transfer obs */
-    if (opts->verbose) fprintf(stderr, "  [2/6] Transferring obs...\n");
+    if (opts->verbose) SC_MSG("  [2/6] Transferring obs...\n");
     rc = sc_stream_obs_h5seurat_to_h5ad(src, dst, assay);
     if (rc != SC_OK) goto cleanup;
 
     /* 3. Transfer var */
-    if (opts->verbose) fprintf(stderr, "  [3/6] Transferring var...\n");
+    if (opts->verbose) SC_MSG("  [3/6] Transferring var...\n");
     rc = sc_stream_var_h5seurat_to_h5ad(src, dst, assay);
     if (rc != SC_OK) goto cleanup;
 
     /* 4. Transfer obsm (reductions → obsm) */
-    if (opts->verbose) fprintf(stderr, "  [4/6] Transferring obsm...\n");
+    if (opts->verbose) SC_MSG("  [4/6] Transferring obsm...\n");
     rc = sc_stream_obsm(src, dst, SC_H5SEURAT_TO_H5AD);
     if (rc != SC_OK) goto cleanup;
 
     /* 5. Transfer obsp (graphs → obsp) */
-    if (opts->verbose) fprintf(stderr, "  [5/6] Transferring obsp...\n");
+    if (opts->verbose) SC_MSG("  [5/6] Transferring obsp...\n");
     rc = sc_stream_obsp(src, dst, SC_H5SEURAT_TO_H5AD, NULL);
     if (rc != SC_OK) goto cleanup;
 
     /* 6. Transfer uns */
-    if (opts->verbose) fprintf(stderr, "  [6/6] Transferring uns...\n");
+    if (opts->verbose) SC_MSG("  [6/6] Transferring uns...\n");
     rc = sc_stream_uns(src, dst, SC_H5SEURAT_TO_H5AD);
     if (rc != SC_OK) goto cleanup;
 
@@ -494,7 +494,7 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
     rc = sc_ensure_empty_groups(dst, SC_H5SEURAT_TO_H5AD);
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
 cleanup:
     H5Fclose(dst);

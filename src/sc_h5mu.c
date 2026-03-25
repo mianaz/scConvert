@@ -94,7 +94,7 @@ static int sc_stream_modality_to_assay(
     /* X → assays/{assay}/data */
     if (sc_has_group(mod_grp, "X")) {
         if (verbose)
-            fprintf(stderr, "    X → assays/%s/data\n", assay_name);
+            SC_MSG("    X → assays/%s/data\n", assay_name);
         hid_t src_x = H5Gopen2(mod_grp, "X", H5P_DEFAULT);
         hid_t dst_data = sc_create_or_open_group(assay_grp, "data");
 
@@ -111,7 +111,7 @@ static int sc_stream_modality_to_assay(
         if (rc != SC_OK) goto done;
     } else if (sc_has_dataset(mod_grp, "X")) {
         if (verbose)
-            fprintf(stderr, "    X (dense) → assays/%s/layers/data\n", assay_name);
+            SC_MSG("    X (dense) → assays/%s/layers/data\n", assay_name);
         hid_t layers_grp = sc_create_or_open_group(assay_grp, "layers");
         hid_t src_x = H5Dopen2(mod_grp, "X", H5P_DEFAULT);
         rc = sc_copy_dataset_chunked(src_x, layers_grp, "data", gzip);
@@ -125,7 +125,7 @@ static int sc_stream_modality_to_assay(
         hid_t layers = H5Gopen2(mod_grp, "layers", H5P_DEFAULT);
         if (sc_has_group(layers, "counts")) {
             if (verbose)
-                fprintf(stderr, "    layers/counts → assays/%s/counts\n", assay_name);
+                SC_MSG("    layers/counts → assays/%s/counts\n", assay_name);
             hid_t src_counts = H5Gopen2(layers, "counts", H5P_DEFAULT);
             hid_t dst_counts = sc_create_or_open_group(assay_grp, "counts");
 
@@ -148,7 +148,7 @@ static int sc_stream_modality_to_assay(
         hid_t var_grp = H5Gopen2(mod_grp, "var", H5P_DEFAULT);
         if (sc_has_dataset(var_grp, "_index")) {
             if (verbose)
-                fprintf(stderr, "    var/_index → assays/%s/features\n", assay_name);
+                SC_MSG("    var/_index → assays/%s/features\n", assay_name);
             hid_t src_idx = H5Dopen2(var_grp, "_index", H5P_DEFAULT);
             sc_copy_dataset_chunked(src_idx, assay_grp, "features", gzip);
             H5Dclose(src_idx);
@@ -175,7 +175,7 @@ static int sc_stream_modality_to_assay(
                     red_name = name + 2;
 
                 if (verbose)
-                    fprintf(stderr, "    obsm/%s → reductions/%s\n", name, red_name);
+                    SC_MSG("    obsm/%s → reductions/%s\n", name, red_name);
 
                 hid_t red_grp = sc_create_or_open_group(dst_reducs, red_name);
                 hid_t src_dset = H5Dopen2(src_obsm, name, H5P_DEFAULT);
@@ -235,7 +235,7 @@ static int sc_stream_modality_to_assay(
                 /* Prefix with assay name: e.g. "connectivities" → "RNA_snn" */
                 snprintf(path_buf, sizeof(path_buf), "%s_%s", assay_name, name);
                 if (verbose)
-                    fprintf(stderr, "    obsp/%s → graphs/%s\n", name, path_buf);
+                    SC_MSG("    obsp/%s → graphs/%s\n", name, path_buf);
 
                 hid_t src_child = H5Gopen2(src_obsp, name, H5P_DEFAULT);
                 hid_t dst_child = sc_create_or_open_group(dst_graphs, path_buf);
@@ -282,7 +282,7 @@ static int sc_stream_assay_to_modality(
     snprintf(path_buf, sizeof(path_buf), "assays/%s/data", assay_name);
     if (sc_has_group(h5seurat, path_buf)) {
         if (verbose)
-            fprintf(stderr, "    assays/%s/data → mod/%s/X\n", assay_name, modality);
+            SC_MSG("    assays/%s/data → mod/%s/X\n", assay_name, modality);
         hid_t src_data = H5Gopen2(h5seurat, path_buf, H5P_DEFAULT);
         hid_t dst_x = H5Gcreate2(mod_grp, "X", H5P_DEFAULT,
                                    H5P_DEFAULT, H5P_DEFAULT);
@@ -306,7 +306,7 @@ static int sc_stream_assay_to_modality(
     snprintf(path_buf, sizeof(path_buf), "assays/%s/counts", assay_name);
     if (sc_has_group(h5seurat, path_buf)) {
         if (verbose)
-            fprintf(stderr, "    assays/%s/counts → mod/%s/layers/counts\n",
+            SC_MSG("    assays/%s/counts → mod/%s/layers/counts\n",
                     assay_name, modality);
         hid_t layers = sc_create_or_open_group(mod_grp, "layers");
         sc_set_str_attr(layers, "encoding-type", "dict");
@@ -341,7 +341,7 @@ static int sc_stream_assay_to_modality(
         snprintf(path_buf, sizeof(path_buf), "assays/%s/features", assay_name);
         if (sc_has_dataset(h5seurat, path_buf)) {
             if (verbose)
-                fprintf(stderr, "    assays/%s/features → mod/%s/var/_index\n",
+                SC_MSG("    assays/%s/features → mod/%s/var/_index\n",
                         assay_name, modality);
             hid_t src_feat = H5Dopen2(h5seurat, path_buf, H5P_DEFAULT);
             sc_copy_dataset_chunked(src_feat, var, "_index", gzip);
@@ -394,7 +394,7 @@ static int sc_stream_assay_to_modality(
                     snprintf(dst_name, sizeof(dst_name), "X_%s", name);
 
                     if (verbose)
-                        fprintf(stderr, "    reductions/%s → mod/%s/obsm/%s\n",
+                        SC_MSG("    reductions/%s → mod/%s/obsm/%s\n",
                                 name, modality, dst_name);
 
                     hid_t src_emb = H5Dopen2(red_grp, "cell.embeddings",
@@ -446,7 +446,7 @@ static int sc_stream_assay_to_modality(
                 }
 
                 if (verbose)
-                    fprintf(stderr, "    graphs/%s → mod/%s/obsp/%s\n",
+                    SC_MSG("    graphs/%s → mod/%s/obsp/%s\n",
                             name, modality, dst_name);
 
                 hid_t dst_child = sc_create_or_open_group(dst_obsp, dst_name);
@@ -493,12 +493,12 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts) {
     int rc = SC_OK;
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5mu → h5seurat)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5mu → h5seurat)\n",
                 opts->input_path, opts->output_path);
 
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
@@ -508,14 +508,14 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts) {
         sc_get_str_attr(src, "encoding-type", enc, sizeof(enc));
         if (enc[0] != '\0' && strcmp(enc, "MuData") != 0 &&
             strcmp(enc, "mudata") != 0) {
-            fprintf(stderr, "Warning: expected MuData encoding, got '%s'\n", enc);
+            SC_MSG("Warning: expected MuData encoding, got '%s'\n", enc);
         }
     }
 
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT,
                             H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Fclose(src);
         return SC_ERR_IO;
     }
@@ -524,16 +524,16 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts) {
     char *mod_names[SC_MAX_MODALITIES];
     int n_mod = sc_enumerate_modalities(src, mod_names, SC_MAX_MODALITIES);
     if (n_mod == 0) {
-        fprintf(stderr, "Error: no modalities found in /mod/\n");
+        SC_MSG("Error: no modalities found in /mod/\n");
         rc = SC_ERR_ARG;
         goto cleanup;
     }
 
     if (opts->verbose) {
-        fprintf(stderr, "  Found %d modalities:", n_mod);
+        SC_MSG("  Found %d modalities:", n_mod);
         for (int i = 0; i < n_mod; i++)
-            fprintf(stderr, " %s", mod_names[i]);
-        fprintf(stderr, "\n");
+            SC_MSG(" %s", mod_names[i]);
+        SC_MSG("\n");
     }
 
     /* Determine active assay: prefer "rna", else first modality */
@@ -558,14 +558,14 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts) {
         const char *assay = sc_modality_to_assay(mod_names[i]);
 
         if (opts->verbose)
-            fprintf(stderr, "  [%d/%d] Modality '%s' → assay '%s'\n",
+            SC_MSG("  [%d/%d] Modality '%s' → assay '%s'\n",
                     i + 1, n_mod, mod_names[i], assay);
 
         char mod_path[512];
         snprintf(mod_path, sizeof(mod_path), "mod/%s", mod_names[i]);
         hid_t mod_grp = H5Gopen2(src, mod_path, H5P_DEFAULT);
         if (mod_grp < 0) {
-            fprintf(stderr, "Warning: cannot open modality '%s'\n", mod_names[i]);
+            SC_MSG("Warning: cannot open modality '%s'\n", mod_names[i]);
             continue;
         }
 
@@ -576,7 +576,7 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts) {
     }
 
     /* Global obs → meta.data */
-    if (opts->verbose) fprintf(stderr, "  Transferring global obs → meta.data\n");
+    if (opts->verbose) SC_MSG("  Transferring global obs → meta.data\n");
     if (sc_has_group(src, "obs")) {
         hid_t src_obs = H5Gopen2(src, "obs", H5P_DEFAULT);
         hid_t dst_meta = sc_create_or_open_group(dst, "meta.data");
@@ -655,7 +655,7 @@ int sc_h5mu_to_h5seurat(const sc_opts_t *opts) {
     }
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
 cleanup:
     H5Fclose(dst);
@@ -674,19 +674,19 @@ int sc_h5seurat_to_h5mu(const sc_opts_t *opts) {
     int rc = SC_OK;
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5seurat → h5mu)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5seurat → h5mu)\n",
                 opts->input_path, opts->output_path);
 
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT,
                             H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Fclose(src);
         return SC_ERR_IO;
     }
@@ -717,16 +717,16 @@ int sc_h5seurat_to_h5mu(const sc_opts_t *opts) {
     }
 
     if (n_assays == 0) {
-        fprintf(stderr, "Error: no assays found in /assays/\n");
+        SC_MSG("Error: no assays found in /assays/\n");
         rc = SC_ERR_ARG;
         goto cleanup;
     }
 
     if (opts->verbose) {
-        fprintf(stderr, "  Found %d assays:", n_assays);
+        SC_MSG("  Found %d assays:", n_assays);
         for (int i = 0; i < n_assays; i++)
-            fprintf(stderr, " %s", assay_names[i]);
-        fprintf(stderr, "\n");
+            SC_MSG(" %s", assay_names[i]);
+        SC_MSG("\n");
     }
 
     /* Create /mod/ group with mod-order attribute */
@@ -747,7 +747,7 @@ int sc_h5seurat_to_h5mu(const sc_opts_t *opts) {
         const char *modality = sc_assay_to_modality(assay_names[i]);
 
         if (opts->verbose)
-            fprintf(stderr, "  [%d/%d] Assay '%s' → modality '%s'\n",
+            SC_MSG("  [%d/%d] Assay '%s' → modality '%s'\n",
                     i + 1, n_assays, assay_names[i], modality);
 
         char mod_path[512];
@@ -762,7 +762,7 @@ int sc_h5seurat_to_h5mu(const sc_opts_t *opts) {
     }
 
     /* Global obs from meta.data */
-    if (opts->verbose) fprintf(stderr, "  Transferring meta.data → global obs\n");
+    if (opts->verbose) SC_MSG("  Transferring meta.data → global obs\n");
     {
         hid_t obs = sc_create_or_open_group(dst, "obs");
         sc_set_str_attr(obs, "encoding-type", "dataframe");
@@ -793,7 +793,7 @@ int sc_h5seurat_to_h5mu(const sc_opts_t *opts) {
     }
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
 cleanup:
     H5Fclose(dst);
@@ -820,13 +820,13 @@ int sc_h5mu_to_h5ad(const sc_opts_t *opts) {
     }
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5mu → h5ad, modality: %s)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5mu → h5ad, modality: %s)\n",
                 opts->input_path, opts->output_path,
                 target_mod ? target_mod : "auto");
 
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
@@ -834,7 +834,7 @@ int sc_h5mu_to_h5ad(const sc_opts_t *opts) {
     char *mod_names[SC_MAX_MODALITIES];
     int n_mod = sc_enumerate_modalities(src, mod_names, SC_MAX_MODALITIES);
     if (n_mod == 0) {
-        fprintf(stderr, "Error: no modalities found\n");
+        SC_MSG("Error: no modalities found\n");
         H5Fclose(src);
         return SC_ERR_ARG;
     }
@@ -860,14 +860,14 @@ int sc_h5mu_to_h5ad(const sc_opts_t *opts) {
     }
 
     if (target_idx < 0) {
-        fprintf(stderr, "Error: modality '%s' not found in h5mu file\n", target_mod);
+        SC_MSG("Error: modality '%s' not found in h5mu file\n", target_mod);
         for (int i = 0; i < n_mod; i++) free(mod_names[i]);
         H5Fclose(src);
         return SC_ERR_ARG;
     }
 
     if (opts->verbose)
-        fprintf(stderr, "  Extracting modality '%s'\n", mod_names[target_idx]);
+        SC_MSG("  Extracting modality '%s'\n", mod_names[target_idx]);
 
     /* Open modality group and copy as complete h5ad */
     char mod_path[512];
@@ -877,7 +877,7 @@ int sc_h5mu_to_h5ad(const sc_opts_t *opts) {
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT,
                             H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Gclose(mod_grp);
         H5Fclose(src);
         for (int i = 0; i < n_mod; i++) free(mod_names[i]);
@@ -934,7 +934,7 @@ int sc_h5mu_to_h5ad(const sc_opts_t *opts) {
     rc = sc_ensure_empty_groups(dst, SC_H5SEURAT_TO_H5AD);
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
     H5Gclose(mod_grp);
     H5Fclose(dst);
@@ -956,19 +956,19 @@ int sc_h5ad_to_h5mu(const sc_opts_t *opts) {
     const char *modality = sc_assay_to_modality(assay);
 
     if (opts->verbose)
-        fprintf(stderr, "[scConvert] Converting %s → %s (h5ad → h5mu, modality: %s)\n",
+        SC_MSG("[scConvert] Converting %s → %s (h5ad → h5mu, modality: %s)\n",
                 opts->input_path, opts->output_path, modality);
 
     hid_t src = H5Fopen(opts->input_path, H5F_ACC_RDONLY, H5P_DEFAULT);
     if (src < 0) {
-        fprintf(stderr, "Error: cannot open input file: %s\n", opts->input_path);
+        SC_MSG("Error: cannot open input file: %s\n", opts->input_path);
         return SC_ERR_IO;
     }
 
     hid_t dst = H5Fcreate(opts->output_path, H5F_ACC_TRUNC, H5P_DEFAULT,
                             H5P_DEFAULT);
     if (dst < 0) {
-        fprintf(stderr, "Error: cannot create output file: %s\n", opts->output_path);
+        SC_MSG("Error: cannot create output file: %s\n", opts->output_path);
         H5Fclose(src);
         return SC_ERR_IO;
     }
@@ -989,7 +989,7 @@ int sc_h5ad_to_h5mu(const sc_opts_t *opts) {
                                  H5P_DEFAULT, H5P_DEFAULT);
 
     if (opts->verbose)
-        fprintf(stderr, "  Copying h5ad → mod/%s\n", modality);
+        SC_MSG("  Copying h5ad → mod/%s\n", modality);
 
     rc = sc_copy_group_recursive(src, mod_grp, gzip);
     H5Gclose(mod_grp);
@@ -1019,7 +1019,7 @@ int sc_h5ad_to_h5mu(const sc_opts_t *opts) {
     }
 
     if (opts->verbose && rc == SC_OK)
-        fprintf(stderr, "[scConvert] Done.\n");
+        SC_MSG("[scConvert] Done.\n");
 
     H5Fclose(dst);
     H5Fclose(src);
