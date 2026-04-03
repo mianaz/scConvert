@@ -1165,7 +1165,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
         result <- list()
         for (item in names(grp)) {
           tryCatch({
-            if (inherits(grp[[item]], "H5D")) result[[item]] <- grp[[item]][]
+            if (inherits(grp[[item]], "H5D")) result[[item]] <- grp[[item]]$read()
             else if (inherits(grp[[item]], "H5Group")) result[[item]] <- .read_uns_group(grp[[item]])
           }, error = function(e) NULL)
         }
@@ -1173,7 +1173,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
       }
       for (item in names(h5ad[["uns"]])) {
         tryCatch({
-          if (inherits(h5ad[["uns"]][[item]], "H5D")) seurat_obj@misc[[item]] <- h5ad[["uns"]][[item]][]
+          if (inherits(h5ad[["uns"]][[item]], "H5D")) seurat_obj@misc[[item]] <- h5ad[["uns"]][[item]]$read()
           else if (inherits(h5ad[["uns"]][[item]], "H5Group"))
             seurat_obj@misc[[item]] <- .read_uns_group(h5ad[["uns"]][[item]])
         }, error = function(e) NULL)

@@ -2292,13 +2292,24 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
             char obsm_key[128];
             snprintf(obsm_key, sizeof(obsm_key), "X_%s", red_name);
 
-            /* Store as HDF5 [n_dims, n_cells] so that R column-major
-             * [n_cells, n_dims] maps to C row-major [n_cells, n_dims]
-             * which is what anndata expects */
-            hsize_t dims2[2] = { (hsize_t)embed_ncol, (hsize_t)embed_nrow };
+            /* R stores column-major [n_cells, n_dims].  anndata expects
+             * C row-major [n_cells, n_dims].  Transpose the buffer so
+             * that HDF5 dims are [n_cells, n_dims] and values are in
+             * row-major order. */
+            hsize_t dims2[2] = { (hsize_t)embed_nrow, (hsize_t)embed_ncol };
             hsize_t chunks2[2];
-            chunks2[0] = dims2[0];
-            chunks2[1] = dims2[1] < (1 << 16) ? dims2[1] : (1 << 16);
+            chunks2[0] = dims2[0] < (1 << 16) ? dims2[0] : (1 << 16);
+            chunks2[1] = dims2[1];
+
+            /* Column-major → row-major transpose */
+            R_xlen_t total = (R_xlen_t)embed_nrow * embed_ncol;
+            double *tbuf = (double *)R_alloc(total, sizeof(double));
+            const double *src = REAL(embedding);
+            for (int c = 0; c < embed_ncol; c++) {
+                for (int r = 0; r < embed_nrow; r++) {
+                    tbuf[r * embed_ncol + c] = src[c * embed_nrow + r];
+                }
+            }
 
             hid_t space = H5Screate_simple(2, dims2, NULL);
             hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
@@ -2309,7 +2320,7 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
                                       space, H5P_DEFAULT, dcpl, H5P_DEFAULT);
             if (dset >= 0) {
                 H5Dwrite(dset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
-                         H5P_DEFAULT, REAL(embedding));
+                         H5P_DEFAULT, tbuf);
                 set_str_attr_ascii(dset, "encoding-type", "array");
                 set_str_attr_ascii(dset, "encoding-version", "0.2.0");
                 H5Dclose(dset);
