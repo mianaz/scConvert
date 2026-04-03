@@ -539,10 +539,9 @@ as.h5Seurat.Seurat <- function(
   gzip_level <- GetCompressionLevel()
   if (verbose) message("Writing h5Seurat (C writer): ", filename)
 
-  result <- .Call("C_write_h5seurat",
+  result <- .Call(C_write_h5seurat,
     filename, mat_list, meta, reductions, graphs,
-    assay_name, as.integer(gzip_level),
-    PACKAGE = "scConvert"
+    assay_name, as.integer(gzip_level)
   )
 
   if (isTRUE(result) && verbose) {

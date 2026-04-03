@@ -771,7 +771,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
       for (item in names(grp)) {
         tryCatch({
           if (inherits(grp[[item]], "H5D")) {
-            result[[item]] <- grp[[item]][]
+            result[[item]] <- grp[[item]]$read()
           } else if (inherits(grp[[item]], "H5Group")) {
             result[[item]] <- .read_uns_group(grp[[item]])
           }
@@ -785,7 +785,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     for (item in names(uns_group)) {
       tryCatch({
         if (inherits(uns_group[[item]], "H5D")) {
-          seurat_obj@misc[[item]] <- uns_group[[item]][]
+          seurat_obj@misc[[item]] <- uns_group[[item]]$read()
         } else if (inherits(uns_group[[item]], "H5Group")) {
           if (verbose) message("  Reading complex uns item: ", item)
           seurat_obj@misc[[item]] <- .read_uns_group(uns_group[[item]])
@@ -913,7 +913,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
   if (verbose) message("Loading H5AD file (C reader): ", file)
 
   # Call C reader for requested components
-  result <- .Call("C_read_h5ad", file, components, PACKAGE = "scConvert")
+  result <- .Call(C_read_h5ad, file, components)
   if (is.null(result)) {
     if (verbose) message("C reader failed, falling back to R reader")
     return(readH5AD(file, assay.name = assay.name, components = components,

@@ -567,6 +567,71 @@ WriteCscGroup <- function(h5parent, group_name, mat, gzip = GetCompressionLevel(
 # @param h5parent H5Group parent
 # @param group_name Name for the new group
 # @param df Data frame to write
+# Recursive writer: R object -> anndata-compatible HDF5 dataset/group in uns.
+# Handles scalars, vectors, matrices, sparse matrices, data frames, factors,
+# and named lists (recursed as HDF5 groups). Called from both the C writer
+# post-processing path (zzz.R) and the R writer (DirectSeuratToH5AD).
+#
+# @param parent H5Group to write into
+# @param name Dataset/group name
+# @param value R object to write
+# @param gzip Gzip compression level
+#
+# @keywords internal
+#
+WriteUnsItem <- function(parent, name, value, gzip = GetCompressionLevel()) {
+  if (is.null(value)) return(invisible(NULL))
+
+  if (is.data.frame(value)) {
+    WriteDFGroup(parent, name, value,
+                 rownames(value) %||% as.character(seq_len(nrow(value))),
+                 gzip = gzip)
+  } else if (is.list(value) && !is.null(names(value))) {
+    grp <- parent$create_group(name)
+    for (sub_name in names(value)) {
+      tryCatch(
+        WriteUnsItem(grp, sub_name, value[[sub_name]], gzip),
+        error = function(e) NULL
+      )
+    }
+  } else if (inherits(value, c("dgCMatrix", "dgRMatrix", "dgTMatrix"))) {
+    WriteCSRGroup(parent, name, value, gzip = gzip)
+  } else if (is.matrix(value)) {
+    parent$create_dataset(name, robj = value,
+                          chunk_dims = dim(value), gzip_level = gzip)
+  } else if (is.character(value)) {
+    parent$create_dataset(name, robj = value, dtype = CachedUtf8Type(),
+                          chunk_dims = max(1L, length(value)), gzip_level = gzip)
+    if (length(value) > 1) AddAnndataEncoding(parent[[name]], "string-array")
+  } else if (is.logical(value)) {
+    parent$create_dataset(name, robj = BoolToInt(value),
+                          chunk_dims = max(1L, length(value)), gzip_level = gzip)
+    if (length(value) > 1) AddAnndataEncoding(parent[[name]], "array")
+  } else if (is.numeric(value) || is.integer(value)) {
+    if (length(value) == 1) {
+      parent$create_dataset(name, robj = value)
+    } else {
+      parent$create_dataset(name, robj = value,
+                            chunk_dims = max(1L, length(value)), gzip_level = gzip)
+      AddAnndataEncoding(parent[[name]], "array")
+    }
+  } else if (is.factor(value)) {
+    enc <- EncodeCategorical(value)
+    cat_grp <- parent$create_group(name)
+    cat_grp$create_dataset("codes", robj = enc$codes,
+                           chunk_dims = max(1L, length(enc$codes)), gzip_level = gzip)
+    cat_grp$create_dataset("categories", robj = enc$categories,
+                           dtype = CachedUtf8Type(),
+                           chunk_dims = max(1L, length(enc$categories)),
+                           gzip_level = gzip)
+    cat_grp$create_attr("encoding-type", robj = "categorical",
+                        dtype = CachedGuessDType("categorical"), space = ScalarSpace())
+    cat_grp$create_attr("encoding-version", robj = "0.2.0",
+                        dtype = CachedGuessDType("0.2.0"), space = ScalarSpace())
+  }
+  invisible(NULL)
+}
+
 # @param index_values Character vector of row names / index
 # @param gzip Gzip compression level
 #
@@ -4511,10 +4576,9 @@ writeH5AD <- function(
   gzip_level <- GetCompressionLevel()
   if (verbose) message("Writing h5ad (C writer): ", filename)
 
-  result <- .Call("C_write_h5ad",
+  result <- .Call(C_write_h5ad,
     filename, mat_list, meta, reductions, graphs,
-    assay_name, as.integer(gzip_level),
-    PACKAGE = "scConvert"
+    assay_name, as.integer(gzip_level)
   )
 
   if (isTRUE(result) && verbose) {
@@ -4594,24 +4658,32 @@ DirectSeuratToH5AD <- function(
   # ========== X (primary expression matrix) ==========
   if (verbose) message("  Writing X...")
   # Retrieve each layer ONCE (GetAssayData materializes the full matrix each call)
-  data_mat <- tryCatch({
+  # Sequential layer write: load one matrix at a time to halve peak RAM.
+  # Detect which layers exist without materializing them.
+  has_data <- tryCatch({
     d <- GetAssayData(object, assay = assay, layer = 'data')
-    if (!is.null(d) && prod(dim(d)) > 0) d else NULL
-  }, error = function(e) NULL)
+    !is.null(d) && prod(dim(d)) > 0
+  }, error = function(e) FALSE)
 
-  counts_mat <- tryCatch({
+  has_counts <- tryCatch({
     d <- GetAssayData(object, assay = assay, layer = 'counts')
-    if (!is.null(d) && prod(dim(d)) > 0) d else NULL
-  }, error = function(e) NULL)
+    !is.null(d) && prod(dim(d)) > 0
+  }, error = function(e) FALSE)
 
-  if (!is.null(data_mat)) {
+  if (has_data) {
+    data_mat <- GetAssayData(object, assay = assay, layer = 'data')
     write_csr_group(dfile, "X", data_mat)
-    if (!is.null(counts_mat)) {
+    rm(data_mat); gc(verbose = FALSE)
+    if (has_counts) {
+      counts_mat <- GetAssayData(object, assay = assay, layer = 'counts')
       raw_grp <- dfile$create_group("raw")
       write_csr_group(raw_grp, "X", counts_mat)
+      rm(counts_mat); gc(verbose = FALSE)
     }
-  } else if (!is.null(counts_mat)) {
+  } else if (has_counts) {
+    counts_mat <- GetAssayData(object, assay = assay, layer = 'counts')
     write_csr_group(dfile, "X", counts_mat)
+    rm(counts_mat); gc(verbose = FALSE)
   }
 
   # ========== obs (cell metadata) ==========
@@ -4725,21 +4797,22 @@ DirectSeuratToH5AD <- function(
     if (verbose) message("  Writing uns...")
     uns_grp <- dfile$create_group("uns")
 
-    # Write misc items (exclude __varp__ which is written to the varp group)
+    # Internal keys managed separately (varp, lazy-load bookkeeping)
+    skip_keys <- c("__varp__", ".__h5ad_path__", ".__h5ad_loaded__")
+    skip_keys <- c(skip_keys, grep("^__varp__\\.", names(misc), value = TRUE))
+
+    gzip <- GetCompressionLevel()
     for (item_name in names(misc)) {
-      if (item_name == "__varp__") next
-      item <- misc[[item_name]]
-      if (is.null(item)) next
-      if (is.character(item) && length(item) == 1) {
-        uns_grp$create_dataset(item_name, robj = item, dtype = CachedUtf8Type())
-      } else if (is.numeric(item) && length(item) == 1) {
-        uns_grp$create_dataset(item_name, robj = item)
-      } else if (is.data.frame(item)) {
-        write_df_group(uns_grp, item_name, item, rownames(item) %||% as.character(seq_len(nrow(item))))
-      }
+      if (item_name %in% skip_keys) next
+      tryCatch(
+        WriteUnsItem(uns_grp, item_name, misc[[item_name]], gzip),
+        error = function(e) {
+          if (verbose) message("  Could not write uns/", item_name, ": ", e$message)
+        }
+      )
     }
 
-    # Delegate spatial data
+    # Delegate spatial data (images, coordinates, scale factors)
     if (length(images) > 0) {
       tryCatch({
         SeuratSpatialToH5AD(object, dfile, verbose = verbose)

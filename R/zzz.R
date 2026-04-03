@@ -3,6 +3,7 @@
 #' @importFrom methods setOldClass is
 #' @importFrom stats na.omit
 #' @importFrom utils data read.csv
+#' @useDynLib scConvert, .registration = TRUE
 #'
 NULL
 
@@ -1142,8 +1143,9 @@ SafeSetLayerData <- function(object, layer, value) {
       stop("File '", filename, "' already exists; set overwrite = TRUE", call. = FALSE)
     }
     # Fast path: Direct C h5ad writer (no h5seurat intermediate, no transpose)
-    # Enable with options(scConvert.use_c_writer = TRUE) -- ~6x faster for gzip=0
-    c_h5ad <- isTRUE(getOption("scConvert.use_c_writer")) &&
+    # Enabled by default when compiled code is available. Disable with
+    # options(scConvert.use_c_writer = FALSE)
+    c_h5ad <- !isFALSE(getOption("scConvert.use_c_writer")) &&
               is.loaded("C_write_h5ad", PACKAGE = "scConvert") &&
               length(Assays(object)) == 1
     if (c_h5ad) {
@@ -1152,7 +1154,58 @@ SafeSetLayerData <- function(object, layer, value) {
                       verbose = verbose),
         error = function(e) FALSE
       )
-      if (isTRUE(c_ok)) return(invisible(filename))
+      if (isTRUE(c_ok)) {
+        # C writer handles matrix/meta/reductions/graphs but not misc/uns.
+        # Append misc and spatial data via R if present.
+        misc <- tryCatch(Misc(object), error = function(e) list())
+        images <- tryCatch(Images(object), error = function(e) character(0))
+        skip_keys <- c("__varp__", ".__h5ad_path__", ".__h5ad_loaded__")
+        skip_keys <- c(skip_keys, grep("^__varp__\\.", names(misc), value = TRUE))
+        misc_to_write <- misc[!names(misc) %in% skip_keys]
+        misc_to_write <- misc_to_write[!vapply(misc_to_write, is.null, logical(1))]
+        has_varp <- !is.null(tryCatch(Misc(object)[["__varp__"]], error = function(e) NULL))
+        if (length(misc_to_write) > 0 || length(images) > 0 || has_varp) {
+          h5 <- hdf5r::H5File$new(filename, mode = "r+")
+          on.exit(h5$close_all(), add = TRUE)
+          if (!h5$exists("uns")) h5$create_group("uns")
+          uns_grp <- h5[["uns"]]
+          gzip <- GetCompressionLevel()
+          for (item_name in names(misc_to_write)) {
+            tryCatch(
+              WriteUnsItem(uns_grp, item_name, misc_to_write[[item_name]], gzip),
+              error = function(e) {
+                if (verbose) message("  Could not write uns/", item_name, ": ", e$message)
+              }
+            )
+          }
+          if (length(images) > 0) {
+            tryCatch(
+              SeuratSpatialToH5AD(object, h5, verbose = verbose),
+              error = function(e) {
+                if (verbose) message("Spatial data conversion failed: ", e$message)
+              }
+            )
+          }
+          # Write varp if present
+          varp_data <- tryCatch(Misc(object)[["__varp__"]], error = function(e) NULL)
+          if (!is.null(varp_data) && is.list(varp_data) && length(varp_data) > 0) {
+            if (!h5$exists("varp")) h5$create_group("varp")
+            varp_grp <- h5[["varp"]]
+            for (vn in names(varp_data)) {
+              tryCatch({
+                v <- varp_data[[vn]]
+                if (inherits(v, c("dgCMatrix", "dgRMatrix", "dgTMatrix"))) {
+                  WriteCSRGroup(varp_grp, vn, v, gzip = gzip)
+                } else if (is.matrix(v)) {
+                  varp_grp$create_dataset(vn, robj = v,
+                                          chunk_dims = dim(v), gzip_level = gzip)
+                }
+              }, error = function(e) NULL)
+            }
+          }
+        }
+        return(invisible(filename))
+      }
       if (verbose) message("C h5ad writer failed, falling back to R writer")
     }
     tryCatch({
