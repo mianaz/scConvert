@@ -49,8 +49,13 @@ jobs:
           cache-version: 1
 
       - name: Build site
-        run: pkgdown::build_site(new_process = FALSE)
         shell: Rscript {0}
+        # clean_site() wipes the checked-in docs/ directory (which holds a
+        # stale pre-built site). Without it, pkgdown::build_site() aborts
+        # because it refuses to overwrite a directory it did not create.
+        run: |
+          pkgdown::clean_site(force = TRUE)
+          pkgdown::build_site(new_process = FALSE)
 
       - name: Deploy to GitHub pages
         uses: JamesIves/github-pages-deploy-action@v4.6.8
