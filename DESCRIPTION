@@ -100,9 +100,15 @@ Suggests:
     SingleCellExperiment,
     SummarizedExperiment,
     testthat (>= 3.0.0),
-    tiledbsoma,
     ggplot2
+Enhances:
+    tiledbsoma
 Additional_repositories:
-    https://satijalab.r-universe.dev
+    https://satijalab.r-universe.dev,
+    https://tiledb-inc.r-universe.dev
+Remotes:
+    BPCells=github::bnprks/BPCells/r,
+    MuDataSeurat=github::PMBio/MuDataSeurat,
+    SeuratData=github::satijalab/seurat-data
 Config/testthat/edition: 3
 VignetteBuilder: knitr

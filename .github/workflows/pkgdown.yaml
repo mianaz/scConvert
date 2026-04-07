@@ -14,6 +14,7 @@ jobs:
       group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      _R_CHECK_FORCE_SUGGESTS_: false
     permissions:
       contents: write
     steps:
@@ -30,7 +31,8 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          dependencies: '"all"'
+          # See r-cmd-check.yaml for the rationale behind excluding Enhances.
+          dependencies: 'c("Depends", "Imports", "LinkingTo", "Suggests")'
           extra-packages: any::pkgdown
           cache-version: 1
 

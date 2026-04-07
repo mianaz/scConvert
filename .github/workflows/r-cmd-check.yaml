@@ -24,6 +24,10 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      # Accept missing Suggests at check time. Some (tiledbsoma) need a heavy
+      # system TileDB C++ stack that may not install on every runner; the R
+      # code gates every optional Suggest via requireNamespace() anyway.
+      _R_CHECK_FORCE_SUGGESTS_: false
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +47,11 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          dependencies: '"all"'
+          # "all" would pull in Enhances (tiledbsoma), which needs a heavy
+          # TileDB C++ stack that is not available on all runners. The R
+          # code gates tiledbsoma behind requireNamespace() so Enhances is
+          # the right place for it.
+          dependencies: 'c("Depends", "Imports", "LinkingTo", "Suggests")'
           extra-packages: any::rcmdcheck
           cache-version: 1
 
