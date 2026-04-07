@@ -94,3 +94,73 @@ test_that("varp is not written when not present", {
   }
   h5$close_all()
 })
+
+# Round-trip varp through the C CLI binary: h5ad (with varp) -> h5seurat
+# (misc/__varp__) -> h5ad. Closes the manuscript limitation
+# "CLI does not preserve varp".
+test_that("varp survives a CLI h5ad -> h5seurat -> h5ad round-trip", {
+  cli_path <- file.path("..", "..", "..", "src", "scconvert")
+  if (!file.exists(cli_path)) {
+    # Also try relative to the package source tree during devtools::test.
+    cli_path <- system.file("../src/scconvert", package = "scConvert")
+  }
+  if (!nzchar(cli_path) || !file.exists(cli_path)) {
+    skip("scconvert CLI binary not built; run `cd src && make`")
+  }
+
+  set.seed(7)
+  ngenes <- 30L
+  ncells <- 40L
+  mat <- sparseMatrix(
+    i = sample.int(ngenes, 120, replace = TRUE),
+    j = sample.int(ncells, 120, replace = TRUE),
+    x = as.double(rpois(120, 5) + 1),
+    dims = c(ngenes, ncells),
+    dimnames = list(paste0("Gene", seq_len(ngenes)),
+                    paste0("Cell", seq_len(ncells)))
+  )
+  obj <- CreateSeuratObject(counts = mat, project = "varp_cli")
+
+  # Build a symmetric dense varp (gene x gene) with deterministic values.
+  varp_mat <- matrix(seq_len(ngenes * ngenes), nrow = ngenes, ncol = ngenes)
+  varp_mat <- (varp_mat + t(varp_mat)) / 2
+  dimnames(varp_mat) <- list(rownames(mat), rownames(mat))
+  obj@misc[["__varp__"]] <- list(gene_corr = varp_mat)
+
+  h5ad_in  <- tempfile(fileext = ".h5ad")
+  h5s_mid  <- tempfile(fileext = ".h5seurat")
+  h5ad_out <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(c(h5ad_in, h5s_mid, h5ad_out)), add = TRUE)
+
+  writeH5AD(obj, h5ad_in, overwrite = TRUE, verbose = FALSE)
+
+  # Step 1: h5ad -> h5seurat via CLI.
+  rc1 <- system2(cli_path, c(h5ad_in, h5s_mid, "--overwrite", "--quiet"),
+                  stdout = FALSE, stderr = FALSE)
+  expect_equal(rc1, 0, info = "CLI h5ad -> h5seurat should succeed")
+
+  # Verify misc/__varp__ group was written by the CLI.
+  h5 <- hdf5r::H5File$new(h5s_mid, mode = "r")
+  expect_true(h5$exists("misc/__varp__"),
+               info = "CLI must write misc/__varp__ in h5seurat")
+  expect_true("gene_corr" %in% names(h5[["misc/__varp__"]]))
+  h5$close_all()
+
+  # Step 2: h5seurat -> h5ad via CLI.
+  rc2 <- system2(cli_path, c(h5s_mid, h5ad_out, "--overwrite", "--quiet"),
+                  stdout = FALSE, stderr = FALSE)
+  expect_equal(rc2, 0, info = "CLI h5seurat -> h5ad should succeed")
+
+  # Verify varp group is populated in the output h5ad.
+  h5 <- hdf5r::H5File$new(h5ad_out, mode = "r")
+  expect_true(h5$exists("varp"))
+  expect_true("gene_corr" %in% names(h5[["varp"]]))
+  h5$close_all()
+
+  # Step 3: load the final h5ad via R and check the values round-trip.
+  obj_rt <- readH5AD(h5ad_out, verbose = FALSE)
+  expect_false(is.null(obj_rt@misc[["__varp__"]]))
+  rt_mat <- obj_rt@misc[["__varp__"]][["gene_corr"]]
+  expect_equal(dim(rt_mat), dim(varp_mat))
+  expect_equal(as.numeric(rt_mat), as.numeric(varp_mat), tolerance = 1e-9)
+})

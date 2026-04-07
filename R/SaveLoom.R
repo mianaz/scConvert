@@ -402,8 +402,54 @@ as.loom.Seurat <- function(
   }
   # Add metadata
   lfile$add_attribute(x = colnames(x = x), name = 'CellID', type = 'col')
+  # Track factor columns so we can preserve their levels; the default
+  # loom col_attrs encoding collapses factors to character and drops level
+  # ordering. We restore the original factor on read via the sibling group
+  # col_attrs/__factor_levels__/{name}. Read directly from @meta.data —
+  # x[[md, drop = TRUE]] unsets the 'ordered' class attribute.
+  factor_levels_cache <- list()
+  meta_df <- x@meta.data
   for (md in names(x = x[[]])) {
-    lfile$add_attribute(x = x[[md, drop = TRUE]], name = md, type = 'col')
+    col_value <- meta_df[[md]]
+    if (is.factor(col_value)) {
+      factor_levels_cache[[md]] <- list(
+        levels  = levels(col_value),
+        ordered = is.ordered(col_value)
+      )
+    }
+    lfile$add_attribute(x = col_value, name = md, type = 'col')
+  }
+  if (length(factor_levels_cache) > 0) {
+    # Factor levels live OUTSIDE col_attrs: the Loom spec restricts
+    # col_attrs children to 1-D datasets, and loompy / scanpy raise
+    # AttributeError on any sub-group under col_attrs. Use a top-level
+    # scConvert-specific extension namespace instead.
+    tryCatch({
+      ext_path <- 'scConvert_extensions/col_factor_levels'
+      if (!lfile$exists('scConvert_extensions')) {
+        lfile$create_group('scConvert_extensions')
+      }
+      if (!lfile$exists(ext_path)) {
+        lfile$create_group(ext_path)
+      }
+      lv_root <- lfile[[ext_path]]
+      for (fname in names(factor_levels_cache)) {
+        fl <- factor_levels_cache[[fname]]
+        if (lv_root$exists(fname)) lv_root$link_delete(fname)
+        fgrp <- lv_root$create_group(fname)
+        fgrp$create_dataset(name = 'levels',
+                             robj = as.character(fl$levels))
+        fgrp$create_dataset(name = 'ordered',
+                             robj = as.integer(isTRUE(fl$ordered)))
+      }
+      if (verbose) {
+        message("Preserved factor levels for ",
+                length(factor_levels_cache), " meta.data column(s)")
+      }
+    }, error = function(e) {
+      warning("Could not write factor levels to loom file: ",
+              conditionMessage(e), call. = FALSE)
+    })
   }
   # Add feature-level metadata
   lfile$add_attribute(x = rownames(x = x), name = 'Gene', type = 'row')

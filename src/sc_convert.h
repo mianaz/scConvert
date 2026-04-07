@@ -209,6 +209,7 @@ int sc_stream_df_group(hid_t src_grp, hid_t dst_grp, int gzip_level);
 int sc_stream_obsm(hid_t src, hid_t dst, sc_direction_t dir);
 int sc_stream_obsp(hid_t src, hid_t dst, sc_direction_t dir,
                     const char *assay);
+int sc_stream_varp(hid_t src, hid_t dst, sc_direction_t dir);
 int sc_stream_layers(hid_t src, hid_t dst, sc_direction_t dir, int gzip_level);
 int sc_stream_uns(hid_t src, hid_t dst, sc_direction_t dir);
 int sc_ensure_empty_groups(hid_t file, sc_direction_t dir);
@@ -236,5 +237,15 @@ int sc_has_dataset(hid_t loc, const char *name);
 hid_t sc_create_or_open_group(hid_t loc, const char *name);
 int sc_get_encoding_type(hid_t loc, char *buf, size_t buflen);
 int sc_copy_group_attrs(hid_t src, hid_t dst);
+
+/* Overflow-checked allocation helpers (sc_util.c).
+ * sc_xmalloc / sc_xcalloc / sc_xrealloc return NULL on failure (and on n == 0
+ * for sc_xmalloc); they emit a diagnostic to stderr on ENOMEM so callers only
+ * need to propagate SC_ERR. sc_check_mul_size guards multiplications against
+ * size_t overflow; returns SC_OK with *out set, or SC_ERR on overflow. */
+int   sc_check_mul_size(size_t a, size_t b, size_t *out);
+void *sc_xmalloc(size_t n);
+void *sc_xcalloc(size_t nelem, size_t elem_size);
+void *sc_xrealloc(void *ptr, size_t n);
 
 #endif /* SC_CONVERT_H */

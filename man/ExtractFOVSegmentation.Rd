@@ -2,17 +2,21 @@
 % Please edit documentation in R/SpatialFOV.R
 \name{ExtractFOVSegmentation}
 \alias{ExtractFOVSegmentation}
-\title{Extract segmentation boundaries from FOV object}
+\title{Extract segmentation boundaries from an FOV object}
 \usage{
 ExtractFOVSegmentation(fov_obj)
 }
 \arguments{
-\item{fov_obj}{FOV object from Seurat}
+\item{fov_obj}{FOV object}
 }
 \value{
-List with segmentation data or NULL
+named list or NULL
 }
 \description{
-Extract segmentation boundaries from FOV object
+Walks \code{fov_obj@boundaries}; returns a list keyed by boundary name.
+Each element is a list with fields \code{type} ("Segmentation" or
+"Centroids"), \code{cell_ids}, \code{coords} (n_vertices x 2 numeric) and
+\code{polygon_offsets} (CSR-style row pointers, length n_cells + 1; present
+only for Segmentation).
 }
 \keyword{internal}

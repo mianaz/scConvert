@@ -134,12 +134,17 @@ static int sc_dense_to_csc(hid_t src_dset, hid_t dst_grp,
         return SC_OK;
     }
 
-    /* Allocate column buffer */
-    col_buf = (double *)malloc(n_rows * sizeof(double));
+    /* Allocate column buffer (overflow-checked) */
+    {
+        size_t col_bytes;
+        if (sc_check_mul_size((size_t)n_rows, sizeof(double), &col_bytes) != SC_OK)
+            return SC_ERR;
+        col_buf = (double *)sc_xmalloc(col_bytes);
+    }
     if (!col_buf) return SC_ERR;
 
     /* Allocate nnz_per_col for pass 1 */
-    nnz_per_col = (int64_t *)calloc(n_cols, sizeof(int64_t));
+    nnz_per_col = (int64_t *)sc_xcalloc((size_t)n_cols, sizeof(int64_t));
     if (!nnz_per_col) { free(col_buf); return SC_ERR; }
 
     hid_t fspace = H5Dget_space(src_dset);

@@ -711,7 +711,7 @@ static int zarr_categorical_to_h5seurat(const char *cat_dir, hid_t h5_grp,
 
     /* Write values (int32 array, 1-based) */
     {
-        int32_t *vals = (int32_t *)malloc((size_t)n_codes * sizeof(int32_t));
+        int32_t *vals = (int32_t *)sc_xcalloc((size_t)n_codes, sizeof(int32_t));
         if (!vals) { free_strings(cats, n_cats); free(codes_raw); return SC_ERR; }
         for (int64_t i = 0; i < n_codes; i++) {
             int32_t code;
@@ -806,7 +806,7 @@ static int zarr_df_to_h5seurat_md(const char *zarr_df_dir, hid_t h5_md_grp,
             int64_t nn;
             void *raw = zarr_read_numeric(col_dir, &nn);
             if (raw) {
-                int32_t *ivals = (int32_t *)malloc((size_t)nn * sizeof(int32_t));
+                int32_t *ivals = (int32_t *)sc_xcalloc((size_t)nn, sizeof(int32_t));
                 if (!ivals) { free(raw); sc_json_free_str_array(col_order, n_cols); return SC_ERR; }
                 int8_t *b = (int8_t *)raw;
                 for (int64_t k = 0; k < nn; k++) ivals[k] = (int32_t)b[k];
@@ -1040,7 +1040,13 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
 
                 /* Transpose: zarr C [n_cells, n_comp] → h5seurat [n_comp, n_cells] */
                 int64_t nr = emb_meta.shape[0], nc_e = emb_meta.shape[1];
-                double *transposed = (double *)malloc((size_t)(nr * nc_e) * sizeof(double));
+                size_t emb_total, emb_bytes;
+                if (nr < 0 || nc_e < 0 ||
+                    sc_check_mul_size((size_t)nr, (size_t)nc_e, &emb_total) != SC_OK ||
+                    sc_check_mul_size(emb_total, sizeof(double), &emb_bytes) != SC_OK) {
+                    free(flat); continue;
+                }
+                double *transposed = (double *)sc_xmalloc(emb_bytes);
                 if (!transposed) { free(flat); continue; }
                 double *src = (double *)flat;
                 for (int64_t r = 0; r < nr; r++)
@@ -1665,13 +1671,20 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
                 /* h5seurat stores as HDF5 [n_comp, n_cells] */
                 int64_t n_comp = (int64_t)dims[0];
                 int64_t n_obs = (int64_t)dims[1];
-                double *flat = (double *)malloc((size_t)(n_comp * n_obs) * sizeof(double));
+                size_t emb_total, emb_bytes;
+                if (sc_check_mul_size((size_t)n_comp, (size_t)n_obs, &emb_total) != SC_OK ||
+                    sc_check_mul_size(emb_total, sizeof(double), &emb_bytes) != SC_OK) {
+                    H5Dclose(ds); continue;
+                }
+                double *flat = (double *)sc_xmalloc(emb_bytes);
                 if (!flat) { H5Dclose(ds); continue; }
-                H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, flat);
+                if (H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, flat) < 0) {
+                    free(flat); H5Dclose(ds); continue;
+                }
                 H5Dclose(ds);
 
                 /* Transpose [n_comp, n_obs] → [n_obs, n_comp] C-order */
-                double *transposed = (double *)malloc((size_t)(n_comp * n_obs) * sizeof(double));
+                double *transposed = (double *)sc_xmalloc(emb_bytes);
                 if (!transposed) { free(flat); continue; }
                 for (int64_t r = 0; r < n_comp; r++)
                     for (int64_t c = 0; c < n_obs; c++)

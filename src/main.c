@@ -20,6 +20,10 @@
 #include "sc_convert.h"
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <dirent.h>
+#include <limits.h>
+#include <errno.h>
 
 static void print_usage(const char *prog) {
     fprintf(stderr,
@@ -73,6 +77,180 @@ static int is_supported_format(const char *path) {
            has_extension(path, ".h5mu") ||
            has_extension(path, ".loom") ||
            has_extension(path, ".zarr");
+}
+
+/* Detect a CosMx SMI flat-file bundle. Accepts any directory that contains
+ * at least 2 of the canonical NanoString CosMx CSV filenames. */
+static int is_cosmx_dir(const char *path) {
+    struct stat st;
+    if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode)) return 0;
+    DIR *d = opendir(path);
+    if (!d) return 0;
+    int hits_expr = 0, hits_meta = 0, hits_fov = 0, hits_tx = 0;
+    struct dirent *ent;
+    while ((ent = readdir(d)) != NULL) {
+        if (strstr(ent->d_name, "exprMat_file"))     hits_expr = 1;
+        else if (strstr(ent->d_name, "metadata_file"))     hits_meta = 1;
+        else if (strstr(ent->d_name, "fov_positions_file")) hits_fov  = 1;
+        else if (strstr(ent->d_name, "tx_file"))           hits_tx   = 1;
+    }
+    closedir(d);
+    return (hits_expr + hits_meta + hits_fov + hits_tx) >= 2;
+}
+
+/* Detect vendor raw formats that must be processed via the R backend. */
+static int needs_r_delegation(const char *input) {
+    if (has_extension(input, ".gef")) return 1;
+    if (has_extension(input, ".cellbin.gef")) return 1;
+    if (is_cosmx_dir(input)) return 1;
+    return 0;
+}
+
+/* Check that Rscript is available on PATH without invoking a shell. */
+static int rscript_available(void) {
+    const char *path_env = getenv("PATH");
+    if (!path_env) return 0;
+    char *path_copy = strdup(path_env);
+    if (!path_copy) return 0;
+    int found = 0;
+    char *saveptr = NULL;
+    for (char *tok = strtok_r(path_copy, ":", &saveptr);
+         tok != NULL;
+         tok = strtok_r(NULL, ":", &saveptr)) {
+        char candidate[PATH_MAX];
+        int n = snprintf(candidate, sizeof(candidate), "%s/Rscript", tok);
+        if (n > 0 && (size_t)n < sizeof(candidate) && access(candidate, X_OK) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    free(path_copy);
+    return found;
+}
+
+/* Delegate conversion of vendor raw formats to the R backend via Rscript.
+ *
+ * We use execvp + fork rather than system() so filenames are passed as argv
+ * strings that the shell never sees — no escaping, no injection surface.
+ * stdout and stderr are inherited from the parent so users see R messages
+ * directly.
+ */
+static int delegate_to_r(const sc_opts_t *opts) {
+    if (!rscript_available()) {
+        fprintf(stderr,
+            "Error: '%s' requires the R backend but Rscript was not found on PATH.\n"
+            "Install R and the scConvert package, then retry.\n",
+            opts->input_path);
+        return SC_ERR;
+    }
+
+    /* Absolutise input and output paths so the child does not depend on cwd.
+     * realpath() fails for non-existent output files — absolutise the parent
+     * directory and rejoin the basename instead. */
+    char abs_input[PATH_MAX];
+    if (realpath(opts->input_path, abs_input) == NULL) {
+        fprintf(stderr, "Error: cannot resolve input path '%s'\n", opts->input_path);
+        return SC_ERR;
+    }
+
+    char abs_output[PATH_MAX];
+    {
+        char out_copy[PATH_MAX];
+        if (strlen(opts->output_path) >= sizeof(out_copy)) {
+            fprintf(stderr, "Error: output path too long\n");
+            return SC_ERR;
+        }
+        strncpy(out_copy, opts->output_path, sizeof(out_copy) - 1);
+        out_copy[sizeof(out_copy) - 1] = '\0';
+
+        /* Split into parent dir + basename */
+        char *slash = strrchr(out_copy, '/');
+        char parent_abs[PATH_MAX];
+        const char *base;
+        if (slash == NULL) {
+            if (realpath(".", parent_abs) == NULL) {
+                fprintf(stderr, "Error: cannot resolve cwd\n");
+                return SC_ERR;
+            }
+            base = out_copy;
+        } else {
+            *slash = '\0';
+            const char *parent = (out_copy[0] == '\0') ? "/" : out_copy;
+            if (realpath(parent, parent_abs) == NULL) {
+                fprintf(stderr, "Error: cannot resolve output parent directory '%s'\n", parent);
+                return SC_ERR;
+            }
+            base = slash + 1;
+        }
+        int nw = snprintf(abs_output, sizeof(abs_output), "%s/%s", parent_abs, base);
+        if (nw < 0 || (size_t)nw >= sizeof(abs_output)) {
+            fprintf(stderr, "Error: output path too long after absolutisation\n");
+            return SC_ERR;
+        }
+    }
+
+    /* Build an R expression that calls scConvert() with explicit boolean args.
+     * Filenames are NEVER interpolated into the R string — they come in as
+     * separate argv entries after '--args', which R exposes via commandArgs(). */
+    const char *expr =
+        "args <- commandArgs(trailingOnly = TRUE); "
+        "suppressPackageStartupMessages(library(scConvert)); "
+        "scConvert::scConvert("
+            "source = args[[1]], dest = args[[2]], "
+            "overwrite = as.logical(args[[3]]), "
+            "verbose = as.logical(args[[4]]))";
+
+    if (opts->verbose) {
+        fprintf(stderr,
+                "[scConvert] Delegating to R backend: %s -> %s\n",
+                abs_input, abs_output);
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        fprintf(stderr, "Error: fork failed\n");
+        return SC_ERR;
+    }
+    if (pid == 0) {
+        /* Child: exec Rscript with a fixed argv. With `Rscript -e EXPR
+         * arg1 arg2 ...` every following positional reaches the R script
+         * via commandArgs(trailingOnly=TRUE) verbatim. NOT prepending an
+         * `--args` marker — under -e mode Rscript would forward the
+         * literal "--args" as the first positional. */
+        char *child_argv[] = {
+            (char *)"Rscript",
+            (char *)"--vanilla",
+            (char *)"-e",
+            (char *)expr,
+            abs_input,
+            abs_output,
+            (char *)(opts->overwrite ? "TRUE" : "FALSE"),
+            (char *)(opts->verbose   ? "TRUE" : "FALSE"),
+            NULL
+        };
+        execvp("Rscript", child_argv);
+        /* execvp returned -> failure */
+        fprintf(stderr, "Error: failed to exec Rscript: %s\n", strerror(errno));
+        _exit(127);
+    }
+
+    /* Parent: wait for child */
+    int status;
+    while (waitpid(pid, &status, 0) < 0) {
+        if (errno == EINTR) continue;
+        fprintf(stderr, "Error: waitpid failed\n");
+        return SC_ERR;
+    }
+    if (!WIFEXITED(status)) {
+        fprintf(stderr, "Error: R backend terminated abnormally\n");
+        return SC_ERR;
+    }
+    int code = WEXITSTATUS(status);
+    if (code != 0) {
+        fprintf(stderr, "Error: R backend exited with status %d\n", code);
+        return SC_ERR;
+    }
+    return SC_OK;
 }
 
 static sc_direction_t detect_direction(const char *input, const char *output) {
@@ -220,6 +398,13 @@ int main(int argc, char **argv) {
             sc_rmdir_recursive(opts.output_path);
         else
             unlink(opts.output_path);
+    }
+
+    /* Vendor raw formats (.gef, .cellbin.gef, CosMx flat-file bundles) have
+     * no C streaming path. Delegate to the R backend via Rscript. */
+    if (needs_r_delegation(opts.input_path)) {
+        int drc = delegate_to_r(&opts);
+        return drc == SC_OK ? 0 : 1;
     }
 
     /* Detect direction */

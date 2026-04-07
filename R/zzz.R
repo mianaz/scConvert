@@ -300,6 +300,19 @@ FileType <- function(file) {
   if (grepl("\\.spatialdata\\.zarr$", bn, ignore.case = TRUE)) {
     return("spatialdata.zarr")
   }
+  # Stereo-seq cellbin GEF must be checked before generic .gef.
+  if (grepl("\\.cellbin\\.gef$", bn, ignore.case = TRUE)) {
+    return("cellbin.gef")
+  }
+  if (grepl("\\.gef$", bn, ignore.case = TRUE)) {
+    return("gef")
+  }
+  # CosMx SMI bundles are distributed as a directory of CSV files, not a
+  # single-extension container. Delegate detection to .is_cosmx_dir().
+  if (dir.exists(file) && exists(".is_cosmx_dir", mode = "function") &&
+      isTRUE(.is_cosmx_dir(file))) {
+    return("cosmx")
+  }
   ext <- file_ext(x = file)
   ext <- ifelse(test = nchar(x = ext), yes = ext, no = bn)
   return(tolower(x = ext))
@@ -1443,6 +1456,33 @@ SafeSetLayerData <- function(object, layer, value) {
   }, saver = function(object, dest, ...) {
     writeSpatialData(object, dest, ...)
   })
+
+  # Register vendor raw spatial formats (read-only, no corresponding saver).
+  # Stereo-seq square-bin and cellbin GEFs and NanoString CosMx flat-file
+  # bundles are upstream of the scverse container ecosystem; scConvert loads
+  # them into Seurat and then routes through the standard write paths.
+  RegisterFormat(ext = 'gef',
+    loader = function(source, assay = 'Spatial', verbose = TRUE, ...) {
+      bin_size <- list(...)$bin_size
+      if (is.null(bin_size)) bin_size <- 50L
+      LoadStereoSeqGef(file = source, bin_size = bin_size,
+                       assay = assay, verbose = verbose)
+    },
+    saver = NULL)
+
+  RegisterFormat(ext = 'cellbin.gef',
+    loader = function(source, assay = 'Spatial', verbose = TRUE, ...) {
+      LoadStereoSeqGef(file = source, assay = assay, verbose = verbose)
+    },
+    saver = NULL)
+
+  RegisterFormat(ext = 'cosmx',
+    loader = function(source, assay = 'Nanostring', verbose = TRUE, ...) {
+      fov <- list(...)$fov
+      if (is.null(fov)) fov <- 'cosmx'
+      LoadCosMx(data.dir = source, fov = fov, assay = assay, verbose = verbose)
+    },
+    saver = NULL)
 
   invisible(x = NULL)
 }

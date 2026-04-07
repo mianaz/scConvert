@@ -447,6 +447,33 @@ LoadLoom3.0 <- function(
     meta.data <- meta.data[cells.valid, , drop = FALSE]
   }
   rownames(x = meta.data) <- dnames$cells
+
+  # Restore factor columns from the scConvert extension group, if present.
+  # Lives outside col_attrs to stay compatible with the Loom spec.
+  if (Exists(x = file, name = 'scConvert_extensions/col_factor_levels')) {
+    tryCatch({
+      lv_root <- file[['scConvert_extensions/col_factor_levels']]
+      for (fname in names(lv_root)) {
+        if (!(fname %in% colnames(meta.data))) next
+        fgrp <- lv_root[[fname]]
+        if (!Exists(x = fgrp, name = 'levels')) next
+        levels_vec <- as.character(fgrp[['levels']]$read())
+        ordered_flag <- FALSE
+        if (Exists(x = fgrp, name = 'ordered')) {
+          ordered_flag <- isTRUE(as.integer(fgrp[['ordered']]$read()) == 1L)
+        }
+        meta.data[[fname]] <- factor(
+          as.character(meta.data[[fname]]),
+          levels  = levels_vec,
+          ordered = ordered_flag
+        )
+      }
+    }, error = function(e) {
+      warning("Could not restore factor levels from loom: ",
+              conditionMessage(e), call. = FALSE)
+    })
+  }
+
   if (ncol(x = meta.data)) {
     object <- AddMetaData(object = object, metadata = meta.data)
   }

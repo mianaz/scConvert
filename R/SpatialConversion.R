@@ -249,50 +249,43 @@ SeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
     return(invisible(NULL))
   }
 
-  if (verbose) message("Found ", length(images), " spatial image(s)")
+  # Stable ordering: sort by name so cross-roundtrip selection and iteration
+  # are deterministic (fixes IMC 14/15 -> 11/13 double-roundtrip degradation,
+  # where HDF5 group-iteration order reshuffled images between rounds).
+  images <- sort(images)
 
-  # Use actual library ID from the image name
-  if (library_id == "library_1" && length(images) > 0) {
-    library_id <- images[1]
-  }
+  if (verbose) message("Found ", length(images), " spatial image(s); ",
+                        "primary = ", images[1])
 
-  # Process first image (extend for multiple images later)
-  img_obj <- seurat_obj[[images[1]]]
+  # Extract coordinates from the primary (first-sorted) image for obsm/spatial.
+  # Multi-image Seurat objects (e.g. IMC panels) share a single cell list so
+  # writing obsm/spatial once from the primary image is correct.
+  primary_img <- seurat_obj[[images[1]]]
+  coords <- GetTissueCoordinates(primary_img)
 
-  # Extract coordinates
-  coords <- GetTissueCoordinates(img_obj)
-
-  # Convert to h5ad format (cells x 2 matrix)
-  # AnnData/squidpy convention: [X, Y]
-  # VisiumV2 returns x/y/cell; VisiumV1 returns imagecol/imagerow
+  # Convert to h5ad format (cells x 2 matrix).
+  # VisiumV2 returns x/y/cell; VisiumV1 returns imagecol/imagerow; FOV returns x/y/cell.
   if (all(c("imagecol", "imagerow") %in% colnames(coords))) {
     spatial_matrix <- as.matrix(coords[, c("imagecol", "imagerow")])
   } else if (all(c("x", "y") %in% colnames(coords))) {
     spatial_matrix <- as.matrix(coords[, c("x", "y")])
   } else {
-    # Fallback: use first two numeric columns
     num_cols <- sapply(coords, is.numeric)
     spatial_matrix <- as.matrix(coords[, which(num_cols)[1:2]])
   }
 
-  # Create obsm group if not exists
+  # Write obsm/spatial once (universal (n_cells, 2) handle for all readers).
   if (!h5ad$exists("obsm")) {
     h5ad$create_group("obsm")
   }
-
-  # Write spatial coordinates
   if (h5ad[["obsm"]]$exists("spatial")) {
     h5ad[["obsm"]]$link_delete("spatial")
   }
-
-  # scTranspose: hdf5r writes R (n_cells, 2) as HDF5 (2, n_cells);
-  # anndata/squidpy expect (n_cells, 2), so write t(spatial_matrix)
   h5ad[["obsm"]]$create_dataset(
     name = "spatial",
     robj = t(spatial_matrix),
     dtype = h5types$H5T_NATIVE_DOUBLE
   )
-  # anndata requires encoding attributes on obsm datasets
   h5ad[["obsm"]][["spatial"]]$create_attr(
     attr_name = 'encoding-type', robj = 'array',
     dtype = CachedGuessDType(x = 'array'), space = ScalarSpace()
@@ -301,102 +294,114 @@ SeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
     attr_name = 'encoding-version', robj = '0.2.0',
     dtype = CachedGuessDType(x = '0.2.0'), space = ScalarSpace()
   )
-
   if (verbose) message("Wrote spatial coordinates to obsm['spatial']")
 
-  # Create uns/spatial structure for Visium-like data
   if (!h5ad$exists("uns")) {
     h5ad$create_group("uns")
   }
-
   if (!h5ad[["uns"]]$exists("spatial")) {
     h5ad[["uns"]]$create_group("spatial")
   }
-
-  # Create library-specific group
   spatial_group <- h5ad[["uns/spatial"]]
 
-  if (spatial_group$exists(library_id)) {
-    spatial_group$link_delete(library_id)
-  }
+  # Loop over ALL images. Previously only images[1] was processed, silently
+  # dropping all additional IMC panels / FOVs.
+  for (img_name in images) {
+    current_lib <- img_name
+    img_obj <- seurat_obj[[img_name]]
 
-  lib_group <- spatial_group$create_group(library_id)
+    if (spatial_group$exists(current_lib)) {
+      spatial_group$link_delete(current_lib)
+    }
+    lib_group <- spatial_group$create_group(current_lib)
 
-  # Add scale factors if available
-  if (inherits(img_obj, "VisiumV1") || inherits(img_obj, "VisiumV2") || inherits(img_obj, "FOV")) {
-    scalefactors <- GetScaleFactors(img_obj)
+    # Scale factors (Visium + FOV).
+    if (inherits(img_obj, "VisiumV1") || inherits(img_obj, "VisiumV2") ||
+        inherits(img_obj, "FOV")) {
+      scalefactors <- GetScaleFactors(img_obj)
+      if (!is.null(scalefactors) && length(scalefactors) > 0) {
+        sf_group <- lib_group$create_group("scalefactors")
 
-    if (!is.null(scalefactors) && length(scalefactors) > 0) {
-      sf_group <- lib_group$create_group("scalefactors")
+        sf_name_map <- c(
+          spot     = "spot_diameter_fullres",
+          fiducial = "fiducial_diameter_fullres",
+          hires    = "tissue_hires_scalef",
+          lowres   = "tissue_lowres_scalef"
+        )
 
-      # Map Seurat scale factor names to h5ad/scanpy convention
-      sf_name_map <- c(
-        spot     = "spot_diameter_fullres",
-        fiducial = "fiducial_diameter_fullres",
-        hires    = "tissue_hires_scalef",
-        lowres   = "tissue_lowres_scalef"
-      )
-
-      for (sf_name in names(scalefactors)) {
-        val <- as.numeric(scalefactors[[sf_name]])
-        if (is.finite(val)) {
-          # Use mapped name if available, otherwise keep original
-          dst_name <- if (!is.null(sf_name_map[[sf_name]])) sf_name_map[[sf_name]] else sf_name
-          # Write as HDF5 scalar (shape=()) not 1-element array (shape=(1,)).
-          # squidpy/scanpy expect scalars; arrays cause plotting issues.
-          sf_group$create_dataset(
-            name = dst_name,
-            robj = val,
-            dtype = h5types$H5T_NATIVE_DOUBLE,
-            space = ScalarSpace(),
-            chunk_dims = NULL
-          )
+        for (sf_name in names(scalefactors)) {
+          val <- as.numeric(scalefactors[[sf_name]])
+          if (is.finite(val)) {
+            dst_name <- if (!is.null(sf_name_map[[sf_name]])) sf_name_map[[sf_name]] else sf_name
+            # Write as HDF5 scalar (shape=()) not 1-element array; squidpy
+            # expects scalars for scale-factor fields.
+            sf_group$create_dataset(
+              name = dst_name,
+              robj = val,
+              dtype = h5types$H5T_NATIVE_DOUBLE,
+              space = ScalarSpace(),
+              chunk_dims = NULL
+            )
+          }
         }
+        if (verbose) message("  [", current_lib, "] Wrote scale factors")
       }
 
-      if (verbose) message("Wrote scale factors")
-    }
-
-    # Write tissue images
-    # R image arrays are (height, width, channels) in column-major order.
-    # hdf5r reverses dimensions for HDF5 row-major, so Python would read
-    # (channels, width, height). aperm reverses the R dims so that after
-    # HDF5 transposition Python gets (height, width, channels).
-    tryCatch({
-      img_data <- img_obj@image
-      if (!is.null(img_data) && length(dim(img_data)) == 3) {
-        images_group <- lib_group$create_group("images")
-        images_group$create_dataset(
-          name = "lowres",
-          robj = aperm(img_data, c(3, 2, 1)),
-          dtype = h5types$H5T_NATIVE_DOUBLE
-        )
-        if (verbose) message("Wrote lowres tissue image")
-
-        # Write hires if available
-        hires <- attr(img_data, "hires.image")
-        if (!is.null(hires)) {
+      # Tissue images (Visium only; FOV has no @image).
+      tryCatch({
+        img_data <- img_obj@image
+        if (!is.null(img_data) && length(dim(img_data)) == 3) {
+          images_group <- lib_group$create_group("images")
+          # aperm reverses the R (h, w, c) layout so that after hdf5r writes
+          # it row-major, Python readers see (h, w, c).
           images_group$create_dataset(
-            name = "hires",
-            robj = aperm(hires, c(3, 2, 1)),
+            name = "lowres",
+            robj = aperm(img_data, c(3, 2, 1)),
             dtype = h5types$H5T_NATIVE_DOUBLE
           )
-          if (verbose) message("Wrote hires tissue image")
+          if (verbose) message("  [", current_lib, "] Wrote lowres tissue image")
+
+          hires <- attr(img_data, "hires.image")
+          if (!is.null(hires)) {
+            images_group$create_dataset(
+              name = "hires",
+              robj = aperm(hires, c(3, 2, 1)),
+              dtype = h5types$H5T_NATIVE_DOUBLE
+            )
+            if (verbose) message("  [", current_lib, "] Wrote hires tissue image")
+          }
         }
-      }
-    }, error = function(e) {
-      if (verbose) message("Could not write tissue images: ", e$message)
-    })
+      }, error = function(e) {
+        if (verbose) message("  [", current_lib, "] Could not write tissue images: ", e$message)
+      })
+    }
+
+    # Per-image metadata.
+    meta_group <- lib_group$create_group("metadata")
+    meta_group$create_dataset(
+      name = "technology",
+      robj = class(img_obj)[1]
+    )
+
+    # FOV boundaries + molecules (CosMx, Xenium, MERFISH). Writes
+    # segmentation/ and molecules/ subgroups per the FOV serialization
+    # contract. Non-FOV images pass through untouched.
+    if (inherits(img_obj, "FOV")) {
+      tryCatch(
+        WriteFOVToH5AD(img_obj, lib_group,
+                        library_id = current_lib, verbose = verbose),
+        error = function(e) {
+          if (verbose) {
+            message("  [", current_lib,
+                    "] Could not write FOV data: ", e$message)
+          }
+        }
+      )
+    }
   }
 
-  # Add metadata
-  meta_group <- lib_group$create_group("metadata")
-  meta_group$create_dataset(
-    name = "technology",
-    robj = class(img_obj)[1]
-  )
-
-  if (verbose) message("Spatial data conversion complete")
+  if (verbose) message("Spatial data conversion complete (",
+                        length(images), " image(s))")
 
   return(invisible(NULL))
 }

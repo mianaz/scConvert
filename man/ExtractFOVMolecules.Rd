@@ -2,17 +2,19 @@
 % Please edit documentation in R/SpatialFOV.R
 \name{ExtractFOVMolecules}
 \alias{ExtractFOVMolecules}
-\title{Extract molecule positions from FOV object}
+\title{Extract molecule coordinates from an FOV object}
 \usage{
 ExtractFOVMolecules(fov_obj)
 }
 \arguments{
-\item{fov_obj}{FOV object from Seurat}
+\item{fov_obj}{FOV object}
 }
 \value{
-Data frame with molecule positions or NULL
+named list or NULL
 }
 \description{
-Extract molecule positions from FOV object
+Returns a named list where each entry is a data frame of
+\code{(x, y, gene)} transcript positions. The top-level name mirrors
+\code{names(fov_obj@molecules)} (typically "molecules" for CosMx/Xenium).
 }
 \keyword{internal}

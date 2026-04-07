@@ -2,21 +2,17 @@
 % Please edit documentation in R/SpatialFOV.R
 \name{ExtractFOVCentroids}
 \alias{ExtractFOVCentroids}
-\title{Functions for handling FOV (Field of View) spatial objects}
+\title{Extract centroid coordinates from an FOV object}
 \usage{
 ExtractFOVCentroids(fov_obj)
 }
 \arguments{
-\item{fov_obj}{FOV object from Seurat}
+\item{fov_obj}{FOV (or nested Centroids/Segmentation) object}
 }
 \value{
-Matrix of centroids (cells x 2) with x,y coordinates
+numeric matrix (n_cells x 2) with colnames c("x","y"), or NULL
 }
 \description{
-FOV objects are used for imaging-based spatial transcriptomics
-(Xenium, MERFISH, CosMx, etc.)
-}
-\details{
-Extract centroids from FOV object
+Extract centroid coordinates from an FOV object
 }
 \keyword{internal}

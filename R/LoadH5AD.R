@@ -806,6 +806,11 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     )
   }
 
+  # 12b. FOV rebuild: if any library under uns/spatial/ has segmentation or
+  # molecules subgroups, reconstruct an FOV object and attach to the Seurat
+  # object keyed by library name. Closes the CosMx/Xenium silent-loss gap.
+  seurat_obj <- .rebuild_fovs_from_h5ad(h5ad, seurat_obj, verbose = verbose)
+
   # Store source path for deferred loading (Optimization 4)
   if (!setequal(components, all_components)) {
     seurat_obj@misc[[".__h5ad_path__"]] <- normalizePath(file)
@@ -1185,6 +1190,9 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
       seurat_obj <- H5ADSpatialToSeurat(h5ad_file = h5ad, seurat_obj = seurat_obj,
                                          assay_name = assay.name, verbose = verbose)
     }
+
+    # FOV rebuild (mirrors the non-components path above)
+    seurat_obj <- .rebuild_fovs_from_h5ad(h5ad, seurat_obj, verbose = verbose)
   }
 
   # Store source path for deferred loading
@@ -1201,4 +1209,46 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
   }
 
   return(seurat_obj)
+}
+
+# Walk uns/spatial/{library}/ groups and rebuild FOV objects for any library
+# that has segmentation/ or molecules/ subgroups (written by WriteFOVToH5AD).
+# Attaches each rebuilt FOV to the Seurat object keyed by library name,
+# matching the library keys emitted by the writer.
+.rebuild_fovs_from_h5ad <- function(h5ad, seurat_obj, verbose = TRUE) {
+  if (!h5ad$exists("uns")) return(seurat_obj)
+  uns_grp <- h5ad[["uns"]]
+  if (!uns_grp$exists("spatial")) return(seurat_obj)
+  sp_grp <- uns_grp[["spatial"]]
+  lib_names <- names(sp_grp)
+  if (length(lib_names) == 0) return(seurat_obj)
+
+  # Use the Seurat object's default assay so the attached FOV binds to the
+  # existing assay and Seurat does not warn about orphaned image data.
+  default_assay <- tryCatch(Seurat::DefaultAssay(seurat_obj),
+                             error = function(e) "Spatial")
+
+  for (lib_id in lib_names) {
+    lib_grp <- tryCatch(sp_grp[[lib_id]], error = function(e) NULL)
+    if (is.null(lib_grp)) next
+    if (!inherits(lib_grp, "H5Group")) next
+    has_seg <- tryCatch(lib_grp$exists("segmentation"), error = function(e) FALSE)
+    has_mol <- tryCatch(lib_grp$exists("molecules"),    error = function(e) FALSE)
+    if (!isTRUE(has_seg) && !isTRUE(has_mol)) next
+
+    fov <- tryCatch(
+      ReadFOVFromH5AD(lib_grp, key = lib_id, assay = default_assay),
+      error = function(e) {
+        if (verbose) {
+          message("  FOV rebuild failed for '", lib_id, "': ", e$message)
+        }
+        NULL
+      }
+    )
+    if (is.null(fov)) next
+
+    suppressWarnings(seurat_obj[[lib_id]] <- fov)
+    if (verbose) message("  Rebuilt FOV '", lib_id, "' from uns/spatial")
+  }
+  seurat_obj
 }

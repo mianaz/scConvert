@@ -203,6 +203,10 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
     rc = sc_stream_obsp(src, dst, SC_H5AD_TO_H5SEURAT, assay);
     if (rc != SC_OK) goto cleanup;
 
+    /* 6b. Transfer varp → misc/__varp__ (pairwise variable annotations) */
+    rc = sc_stream_varp(src, dst, SC_H5AD_TO_H5SEURAT);
+    if (rc != SC_OK) goto cleanup;
+
     /* 7. Transfer uns → misc */
     if (opts->verbose) SC_MSG("  [6/6] Transferring uns...\n");
     rc = sc_stream_uns(src, dst, SC_H5AD_TO_H5SEURAT);
@@ -479,6 +483,10 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
     /* 5. Transfer obsp (graphs → obsp) */
     if (opts->verbose) SC_MSG("  [5/6] Transferring obsp...\n");
     rc = sc_stream_obsp(src, dst, SC_H5SEURAT_TO_H5AD, NULL);
+    if (rc != SC_OK) goto cleanup;
+
+    /* 5b. Transfer varp (misc/__varp__ → varp) */
+    rc = sc_stream_varp(src, dst, SC_H5SEURAT_TO_H5AD);
     if (rc != SC_OK) goto cleanup;
 
     /* 6. Transfer uns */

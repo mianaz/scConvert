@@ -476,6 +476,44 @@ readH5MU <- function(file,
     }
   }
 
+  # ========== Per-modality uns preservation ==========
+  # Mirror each modality's uns group into misc[["__h5mu_uns_per_mod__"]][[mod]]
+  # so writeH5MU can round-trip it. Closes the 19/22 fidelity gap caused by
+  # flattening per-modality uns into the global uns.
+  per_mod_uns <- list()
+  .read_h5mu_uns_group <- function(grp) {
+    result <- list()
+    for (item in names(grp)) {
+      tryCatch({
+        child <- grp[[item]]
+        if (inherits(child, "H5D")) {
+          result[[item]] <- child$read()
+        } else if (inherits(child, "H5Group")) {
+          result[[item]] <- .read_h5mu_uns_group(child)
+        }
+      }, error = function(e) NULL)
+    }
+    result
+  }
+  for (mod_name in modalities_to_load) {
+    mod_uns_path <- paste0("mod/", mod_name, "/uns")
+    if (!h5mu$exists(mod_uns_path)) next
+    mod_uns_grp <- h5mu[[mod_uns_path]]
+    if (length(names(mod_uns_grp)) == 0) next
+    # Skip the legacy spatial sub-group: RestoreSpatialFromH5MU handles it.
+    uns_contents <- .read_h5mu_uns_group(mod_uns_grp)
+    if (length(uns_contents) > 0) {
+      per_mod_uns[[mod_name]] <- uns_contents
+    }
+  }
+  if (length(per_mod_uns) > 0) {
+    seurat_obj@misc[["__h5mu_uns_per_mod__"]] <- per_mod_uns
+    if (verbose) {
+      message("  Preserved per-modality uns for ",
+              length(per_mod_uns), " modality(ies)")
+    }
+  }
+
   # ========== Restore spatial data if requested ==========
   if (restore.spatial) {
     seurat_obj <- RestoreSpatialFromH5MU(

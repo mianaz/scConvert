@@ -153,6 +153,25 @@ scConvert.character <- function(
     ))
   }
 
+  # Vendor raw spatial formats (.gef, .cellbin.gef, CosMx bundles): invoke the
+  # registered loader, then recurse on the resulting Seurat object so we reuse
+  # the hub write path. These formats have no corresponding saver because they
+  # sit upstream of the scverse container ecosystem.
+  if (stype %in% c('gef', 'cellbin.gef', 'cosmx')) {
+    loader <- GetLoader(ext = stype)
+    if (is.null(loader)) {
+      stop("No loader registered for vendor format: ", stype, call. = FALSE)
+    }
+    if (missing(x = assay)) {
+      assay <- if (stype == 'cosmx') 'Nanostring' else 'Spatial'
+    }
+    obj <- loader(source = source, assay = assay, verbose = verbose, ...)
+    return(scConvert(
+      source = obj, dest = dest, assay = assay,
+      overwrite = overwrite, verbose = verbose, standardize = standardize, ...
+    ))
+  }
+
   # Loom: open as loom R6 object and dispatch to Convert.loom
   if (stype == 'loom') {
     lfile <- scConnect(filename = source, type = 'loom', mode = 'r')
@@ -5253,6 +5272,33 @@ writeH5MU <- function(
             attr_name = 'encoding-version', robj = '0.2.0',
             dtype = CachedGuessDType('0.2.0'), space = ScalarSpace())
         }
+      }
+    }
+
+    # --- Per-modality uns (mod/{modality}/uns) ---
+    # Mirror of obj@misc[["__h5mu_uns_per_mod__"]][[modality]]. This is the
+    # write side of the fix for the h5mu 19/22 fidelity gap where per-modality
+    # uns was previously flattened into the global uns.
+    mod_uns_list <- tryCatch(
+      Misc(object)[["__h5mu_uns_per_mod__"]][[mod_name]],
+      error = function(e) NULL
+    )
+    if (is.list(mod_uns_list) && length(mod_uns_list) > 0) {
+      mod_uns_grp <- mod_grp$create_group("uns")
+      mod_uns_grp$create_attr(attr_name = 'encoding-type', robj = 'dict',
+                               dtype = CachedGuessDType('dict'), space = ScalarSpace())
+      mod_uns_grp$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
+                               dtype = CachedGuessDType('0.1.0'), space = ScalarSpace())
+      for (key in names(mod_uns_list)) {
+        tryCatch(
+          WriteUnsItem(mod_uns_grp, key, mod_uns_list[[key]], gzip),
+          error = function(e) {
+            if (verbose) {
+              message("    Warning: could not write uns key '", key,
+                      "' for modality '", mod_name, "': ", e$message)
+            }
+          }
+        )
       }
     }
 

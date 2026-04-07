@@ -43,6 +43,7 @@
 ^SCHOLAR_EVALUATION.*\.md$
 ^codecov\.yml$
 ^CLAUDE\.md$
+^NOTES\.md$
 ^review\.md$
 ^Rplots\.pdf$
 

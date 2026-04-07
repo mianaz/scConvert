@@ -464,6 +464,148 @@ int sc_stream_obsp(hid_t src, hid_t dst, sc_direction_t dir,
     return SC_OK;
 }
 
+/* ── varp: pairwise variable annotations (gene x gene) ─────────────────────── */
+/*
+ * h5seurat has no native varp slot. The scConvert R API stores varp under
+ * misc/__varp__ (see tests/testthat/test-varp-roundtrip.R). This function
+ * mirrors sc_stream_obsp but maps:
+ *    h5ad:     /varp/{name}           (csc_matrix groups)
+ *    h5seurat: /misc/__varp__/{name}  (dgCMatrix groups)
+ *
+ * varp matrices are gene x gene (symmetric in common use). No orientation
+ * flip is needed — storage is identical to obsp (CSC, 0-based indices).
+ */
+int sc_stream_varp(hid_t src, hid_t dst, sc_direction_t dir) {
+    const char *src_path, *dst_path;
+
+    if (dir == SC_H5AD_TO_H5SEURAT) {
+        src_path = "varp";
+        dst_path = "misc/__varp__";
+    } else {
+        src_path = "misc/__varp__";
+        dst_path = "varp";
+    }
+
+    if (!sc_has_group(src, src_path)) {
+        /* Nothing to copy; ensure destination placeholder exists in h5ad. */
+        if (dir == SC_H5SEURAT_TO_H5AD) {
+            hid_t g = sc_create_or_open_group(dst, "varp");
+            sc_set_str_attr(g, "encoding-type", "dict");
+            sc_set_str_attr(g, "encoding-version", "0.1.0");
+            H5Gclose(g);
+        }
+        return SC_OK;
+    }
+
+    /* For h5ad → h5seurat, parent misc/ must exist before creating misc/__varp__. */
+    if (dir == SC_H5AD_TO_H5SEURAT) {
+        if (!sc_has_group(dst, "misc")) {
+            hid_t mg = H5Gcreate2(dst, "misc", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            if (mg >= 0) H5Gclose(mg);
+        }
+    }
+
+    hid_t src_grp = H5Gopen2(src, src_path, H5P_DEFAULT);
+    hid_t dst_grp = sc_create_or_open_group(dst, dst_path);
+
+    if (dir == SC_H5SEURAT_TO_H5AD) {
+        sc_set_str_attr(dst_grp, "encoding-type", "dict");
+        sc_set_str_attr(dst_grp, "encoding-version", "0.1.0");
+    }
+
+    hsize_t n;
+    H5Gget_num_objs(src_grp, &n);
+
+    for (hsize_t i = 0; i < n; i++) {
+        char name[SC_MAX_NAME_LEN];
+        H5Gget_objname_by_idx(src_grp, i, name, sizeof(name));
+        int obj_type = H5Gget_objtype_by_idx(src_grp, i);
+
+        /* varp entries can be either groups (sparse CSR/CSC matrices) or
+         * datasets (dense gene x gene arrays like attention weights).
+         * Use H5Ocopy for both — it handles datasets and groups uniformly. */
+        int copy_rc = sc_copy_group_h5ocopy(src_grp, name, dst_grp, name);
+        if (copy_rc != SC_OK) {
+            if (obj_type == H5G_GROUP) {
+                hid_t child = H5Gopen2(src_grp, name, H5P_DEFAULT);
+                if (sc_has_dataset(child, "data") && sc_has_dataset(child, "indices")) {
+                    hid_t dst_child = H5Gcreate2(dst_grp, name, H5P_DEFAULT,
+                                                  H5P_DEFAULT, H5P_DEFAULT);
+                    sc_stream_csr_copy(child, dst_child, SC_GZIP_LEVEL);
+                    sc_copy_group_attrs(child, dst_child);
+                    H5Gclose(dst_child);
+                } else {
+                    hid_t dst_child = sc_create_or_open_group(dst_grp, name);
+                    sc_copy_group_recursive(child, dst_child, SC_GZIP_LEVEL);
+                    H5Gclose(dst_child);
+                }
+                H5Gclose(child);
+            }
+            /* For dataset children, if H5Ocopy failed there is nothing to
+             * fall back to — skip and continue. */
+            if (obj_type != H5G_GROUP) continue;
+        }
+
+        /* Attribute fixups apply only to sparse-matrix group children. For
+         * dense-dataset children the source encoding-type is already "array"
+         * and no dims/shape renaming is needed. */
+        if (obj_type != H5G_GROUP) continue;
+
+        /* Fix attributes for direction, mirroring obsp. */
+        if (dir == SC_H5SEURAT_TO_H5AD) {
+            hid_t dst_child = H5Gopen2(dst_grp, name, H5P_DEFAULT);
+            if (H5Aexists(dst_child, "dims") > 0) {
+                int64_t shape[2] = {0, 0};
+                hid_t dims_attr = H5Aopen(dst_child, "dims", H5P_DEFAULT);
+                hid_t dtype = H5Aget_type(dims_attr);
+                if (H5Tget_size(dtype) <= 4) {
+                    int32_t s32[2];
+                    H5Aread(dims_attr, H5T_NATIVE_INT32, s32);
+                    shape[0] = s32[0]; shape[1] = s32[1];
+                } else {
+                    H5Aread(dims_attr, H5T_NATIVE_INT64, shape);
+                }
+                H5Tclose(dtype);
+                H5Aclose(dims_attr);
+                H5Adelete(dst_child, "dims");
+                sc_set_int_array_attr(dst_child, "shape", shape, 2);
+            }
+            /* Same convention as obsp: h5seurat dgCMatrix is column-major,
+             * so label as csc_matrix in h5ad varp. */
+            sc_set_str_attr(dst_child, "encoding-type", "csc_matrix");
+            sc_set_str_attr(dst_child, "encoding-version", "0.1.0");
+            H5Gclose(dst_child);
+        } else if (dir == SC_H5AD_TO_H5SEURAT) {
+            hid_t dst_child = H5Gopen2(dst_grp, name, H5P_DEFAULT);
+            if (H5Aexists(dst_child, "shape") > 0) {
+                int64_t shape[2] = {0, 0};
+                hid_t shape_attr = H5Aopen(dst_child, "shape", H5P_DEFAULT);
+                hid_t dtype = H5Aget_type(shape_attr);
+                if (H5Tget_size(dtype) <= 4) {
+                    int32_t s32[2];
+                    H5Aread(shape_attr, H5T_NATIVE_INT32, s32);
+                    shape[0] = s32[0]; shape[1] = s32[1];
+                } else {
+                    H5Aread(shape_attr, H5T_NATIVE_INT64, shape);
+                }
+                H5Tclose(dtype);
+                H5Aclose(shape_attr);
+                H5Adelete(dst_child, "shape");
+                sc_set_int_array_attr(dst_child, "dims", shape, 2);
+            }
+            if (H5Aexists(dst_child, "encoding-type") > 0)
+                H5Adelete(dst_child, "encoding-type");
+            if (H5Aexists(dst_child, "encoding-version") > 0)
+                H5Adelete(dst_child, "encoding-version");
+            H5Gclose(dst_child);
+        }
+    }
+
+    H5Gclose(dst_grp);
+    H5Gclose(src_grp);
+    return SC_OK;
+}
+
 /* ── layers: additional expression matrices ─────────────────────────────────── */
 
 int sc_stream_layers(hid_t src, hid_t dst, sc_direction_t dir, int gzip_level) {

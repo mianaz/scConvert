@@ -2,19 +2,21 @@
 % Please edit documentation in R/SpatialFOV.R
 \name{ConvertFOVToH5AD}
 \alias{ConvertFOVToH5AD}
-\title{Convert FOV object to h5ad-compatible structure}
+\title{Convert FOV object to an h5ad-compatible list structure}
 \usage{
 ConvertFOVToH5AD(fov_obj, verbose = TRUE)
 }
 \arguments{
-\item{fov_obj}{FOV object from Seurat}
+\item{fov_obj}{FOV object}
 
-\item{verbose}{Show progress messages}
+\item{verbose}{Print progress messages}
 }
 \value{
-List with spatial data in h5ad-compatible format
+named list with \code{centroids}, \code{segmentation},
+  \code{molecules}, \code{technology}, \code{fov_name}
 }
 \description{
-Convert FOV object to h5ad-compatible structure
+Produced structure is consumed by \code{\link{WriteFOVToH5AD}}. Users do
+not normally call this directly.
 }
 \keyword{internal}
