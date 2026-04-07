@@ -412,6 +412,32 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     }
   }
 
+  # 5b. Ensure the default assay has a "data" layer even in the simple
+  # single-X case. Seurat 5's CreateSeuratObject(counts=) populates only
+  # the counts layer; FeaturePlot / FetchData require "data" and will
+  # fail with "layer 'data' is not found in the object". Populate data
+  # from counts as a copy (the user is expected to call NormalizeData()
+  # later when they actually need normalised values).
+  if (!use_bpcells) {
+    tryCatch({
+      data_layer <- tryCatch(
+        Seurat::GetAssayData(seurat_obj, assay = assay.name, layer = "data"),
+        error = function(e) NULL
+      )
+      if (is.null(data_layer) || length(data_layer) == 0L) {
+        counts_layer <- Seurat::GetAssayData(seurat_obj, assay = assay.name,
+                                              layer = "counts")
+        seurat_obj[[assay.name]] <- SetAssayData(
+          object = seurat_obj[[assay.name]],
+          layer = "data",
+          new.data = counts_layer
+        )
+      }
+    }, error = function(e) {
+      if (verbose) message("  Could not copy counts -> data layer: ", e$message)
+    })
+  }
+
   # 6. Add layers if present
   if (h5ad$exists("layers")) {
     if (use_bpcells) {
@@ -910,8 +936,24 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
 #' @keywords internal
 #'
 .fast_create_seurat <- function(counts, assay.name = "RNA") {
-  CreateSeuratObject(counts = counts, project = "H5AD",
-                     assay = assay.name, min.cells = 0, min.features = 0)
+  obj <- CreateSeuratObject(counts = counts, project = "H5AD",
+                             assay = assay.name, min.cells = 0, min.features = 0)
+  # Seurat 5's CreateSeuratObject(counts=) populates only the counts layer.
+  # FeaturePlot / FetchData require "data" and error with "layer 'data' is
+  # not found" when it is missing. Copy counts into data so downstream code
+  # that assumes Seurat 4 semantics keeps working.
+  data_layer <- tryCatch(
+    Seurat::GetAssayData(obj, assay = assay.name, layer = "data"),
+    error = function(e) NULL
+  )
+  if (is.null(data_layer) || length(data_layer) == 0L) {
+    obj[[assay.name]] <- SetAssayData(
+      object = obj[[assay.name]],
+      layer = "data",
+      new.data = counts
+    )
+  }
+  obj
 }
 
 .readH5AD_c <- function(file, assay.name = "RNA", components = NULL, verbose = TRUE) {
