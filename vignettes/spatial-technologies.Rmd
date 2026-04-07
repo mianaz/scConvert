@@ -106,6 +106,13 @@ Nrgn (Neurogranin) is a cortical neuron marker with a different spatial pattern
 than Ttr.
 
 ```{r plot-nrgn, eval = TRUE, fig.width = 7, fig.height = 5}
+# Round-tripped objects may have only the counts layer populated (scConvert
+# writes X from counts when no normalised data is present). Ensure a data
+# layer exists before plotting.
+if (!"data" %in% SeuratObject::Layers(brain_rt[["Spatial"]]) ||
+    length(SeuratObject::GetAssayData(brain_rt, layer = "data")) == 0L) {
+  brain_rt <- Seurat::NormalizeData(brain_rt, verbose = FALSE)
+}
 FeaturePlot(brain_rt, features = "Nrgn", reduction = "umap") +
   ggplot2::ggtitle("Nrgn expression (UMAP, after roundtrip)")
 ```
