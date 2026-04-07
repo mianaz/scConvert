@@ -32,6 +32,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Install pandoc before setup-r-dependencies. The r-lib action runs a
+      # "check if pandoc is needed" step that calls pak::pkg_deps() with the
+      # hardcoded spec list(direct = "all"), which expands to include
+      # Enhances — and tiledbsoma (in our Enhances) is unresolvable on the
+      # macOS runners. Pre-installing pandoc short-circuits that check.
+      - uses: r-lib/actions/setup-pandoc@v2
+
       - name: Install system dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libhdf5-dev

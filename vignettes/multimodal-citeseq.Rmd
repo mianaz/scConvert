@@ -44,7 +44,7 @@ h5mu_file <- system.file("extdata", "citeseq_demo.h5mu", package = "scConvert")
 obj <- readH5MU(h5mu_file)
 
 cat("Cells:", ncol(obj), "\n")
-cat("Assays:", paste(Assays(obj), collapse = ", "), "\n")
+cat("Assays:", paste(names(obj@assays), collapse = ", "), "\n")
 cat("RNA features:", nrow(obj[["RNA"]]), "\n")
 cat("ADT features:", nrow(obj[["ADT"]]), "\n")
 cat("ADT markers:", paste(rownames(obj[["ADT"]]), collapse = ", "), "\n")
@@ -122,7 +122,7 @@ cat("File size:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
 ```{r reload-h5ad, eval = TRUE}
 loaded_h5ad <- readH5AD(h5ad_path)
 cat("h5ad loaded:", ncol(loaded_h5ad), "cells x", nrow(loaded_h5ad), "features\n")
-cat("Assays:", paste(Assays(loaded_h5ad), collapse = ", "), "\n")
+cat("Assays:", paste(names(loaded_h5ad@assays), collapse = ", "), "\n")
 ```
 
 ### From h5mu (RNA + ADT)
@@ -130,7 +130,7 @@ cat("Assays:", paste(Assays(loaded_h5ad), collapse = ", "), "\n")
 ```{r reload-h5mu, eval = TRUE}
 loaded_h5mu <- readH5MU(h5mu_path)
 cat("h5mu loaded:", ncol(loaded_h5mu), "cells\n")
-cat("Assays:", paste(Assays(loaded_h5mu), collapse = ", "), "\n")
+cat("Assays:", paste(names(loaded_h5mu@assays), collapse = ", "), "\n")
 cat("RNA features:", nrow(loaded_h5mu[["RNA"]]), "\n")
 cat("ADT features:", nrow(loaded_h5mu[["ADT"]]), "\n")
 ```

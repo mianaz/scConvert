@@ -83,7 +83,7 @@ Verify the round-tripped data is intact:
 ```{r verify, eval = TRUE, fig.width = 7, fig.height = 5}
 obj_rt <- readH5AD(h5ad_path, verbose = FALSE)
 cat("Cells:", ncol(obj_rt), "| Genes:", nrow(obj_rt), "\n")
-cat("Reductions:", paste(Reductions(obj_rt), collapse = ", "), "\n")
+cat("Reductions:", paste(names(obj_rt@reductions), collapse = ", "), "\n")
 
 FeaturePlot(obj_rt, features = "LYZ", reduction = "umap") +
   ggtitle("LYZ expression after CLI round-trip")
