@@ -45,6 +45,23 @@ jobs:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
 
+      # Pre-install BPCells from its r-universe binary. pak's handling of
+      # github::user/repo/subdir refs (BPCells lives at bnprks/BPCells/r)
+      # repacks the GitHub zipball into a tarball and has historically
+      # failed with "Failed to uncompress"; the r-universe publishes a
+      # proper binary tarball that installs cleanly. Once BPCells is on the
+      # library path, pak/setup-r-dependencies skips it.
+      - name: Pre-install BPCells from r-universe
+        shell: Rscript {0}
+        run: |
+          install.packages(
+            "BPCells",
+            repos = c(
+              bnprks = "https://bnprks.r-universe.dev",
+              CRAN   = "https://cloud.r-project.org"
+            )
+          )
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           # "all" would pull in Enhances (tiledbsoma), which needs a heavy
