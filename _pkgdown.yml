@@ -42,6 +42,7 @@ reference:
       - readH5AD
       - readH5AD_obs
       - readH5AD_obsm
+      - scLoadMeta
 
   - title: "MuData (h5mu) Format"
     desc: "Working with MuData multimodal HDF5 files"
@@ -113,6 +114,14 @@ reference:
       - H5SeuratToSpatialData
       - SpatialDataToZarr
       - ZarrToSpatialData
+      - WriteFOVToH5AD
+      - ReadFOVFromH5AD
+
+  - title: "Vendor Spatial Formats"
+    desc: "Native readers for upstream vendor formats (no Python required)"
+    contents:
+      - LoadStereoSeqGef
+      - LoadCosMx
 
   - title: "Format Conversion"
     desc: "General conversion utilities between all supported formats"
