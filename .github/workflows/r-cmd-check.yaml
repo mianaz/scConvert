@@ -82,4 +82,11 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         with:
           error-on: '"warning"'
-          args: 'c("--no-manual", "--as-cran")'
+          # Skip vignette building under R CMD check. Vignette correctness is
+          # exercised by pkgdown::build_site() in the separate pkgdown workflow,
+          # where we control the R/HDF5 environment. Building them inside
+          # rcmdcheck has repeatedly caught version-sensitive breakage unrelated
+          # to the package itself (hdf5r + HDF5 2.1.1 on macOS drops metadata
+          # columns; older Seurat's Assays() dispatch differs from 5.x).
+          build_args: '"--no-build-vignettes"'
+          args: 'c("--no-manual", "--as-cran", "--no-vignettes")'
