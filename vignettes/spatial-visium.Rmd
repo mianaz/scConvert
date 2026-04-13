@@ -41,8 +41,8 @@ brain <- readH5AD(h5ad_file, verbose = FALSE)
 
 cat("Spots:", ncol(brain), "\n")
 cat("Genes:", nrow(brain), "\n")
-cat("Image:", Images(brain), "\n")
-cat("Assay:", Assays(brain), "\n")
+cat("Image:", paste(names(brain@images), collapse = ", "), "\n")
+cat("Assay:", paste(names(brain@assays), collapse = ", "), "\n")
 ```
 
 ### Spatial expression of a brain marker
@@ -76,7 +76,7 @@ cat("Wrote:", round(file.size(h5ad_rt) / 1024^2, 1), "MB\n")
 brain_rt <- readH5AD(h5ad_rt, verbose = FALSE)
 cat("Roundtrip spots:", ncol(brain_rt), "\n")
 cat("Roundtrip genes:", nrow(brain_rt), "\n")
-cat("Image:", Images(brain_rt), "\n")
+cat("Image:", paste(names(brain_rt@images), collapse = ", "), "\n")
 ```
 
 ### Compare spatial plots

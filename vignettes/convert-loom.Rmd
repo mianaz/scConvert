@@ -43,7 +43,7 @@ reductions from the Loom column and row attributes:
 ```{r inspect, eval = TRUE}
 cat("Cells:", ncol(pbmc), "\n")
 cat("Genes:", nrow(pbmc), "\n")
-cat("Reductions:", paste(Reductions(pbmc), collapse = ", "), "\n")
+cat("Reductions:", paste(names(pbmc@reductions), collapse = ", "), "\n")
 cat("Metadata columns:", paste(colnames(pbmc[[]]), collapse = ", "), "\n")
 ```
 

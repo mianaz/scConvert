@@ -1,0 +1,156 @@
+#!/bin/sh
+# configure.win — detect HDF5 and generate src/Makevars.win for scConvert
+#
+# Mirrors configure but adds MSYS2-specific fallbacks for Windows runners.
+
+echo_status() {
+    echo "* $1"
+}
+
+die() {
+    echo ""
+    echo "ERROR: $1" >&2
+    echo ""
+    echo "HDF5 is required to compile scConvert on Windows." >&2
+    echo "Install it with:" >&2
+    echo "  pacman -Sy --noconfirm --needed mingw-w64-ucrt-x86_64-hdf5" >&2
+    echo "or set HDF5_CFLAGS / HDF5_LIBS environment variables manually." >&2
+    exit 1
+}
+
+check_header() {
+    _incdir="$1"
+    _incdir=$(echo "$_incdir" | sed 's/^-I//' | sed 's/^ *//' | sed 's/ *$//')
+    for _flag in $_incdir; do
+        _d=$(echo "$_flag" | sed 's/^-I//')
+        if [ -f "$_d/hdf5.h" ]; then
+            return 0
+        fi
+    done
+    if [ -f "$_incdir/hdf5.h" ]; then
+        return 0
+    fi
+    return 1
+}
+
+check_lib() {
+    _libdir="$1"
+    _libdir=$(echo "$_libdir" | sed 's/^-L//' | sed 's/^ *//' | sed 's/ *$//')
+    for _flag in $_libdir; do
+        _d=$(echo "$_flag" | sed 's/^-L//')
+        if [ -f "$_d/libhdf5.dll" ] || [ -f "$_d/libhdf5.lib" ] || \
+           [ -f "$_d/libhdf5.a" ]   || [ -f "$_d/libhdf5.dylib" ] || \
+           [ -f "$_d/libhdf5.so" ]; then
+            return 0
+        fi
+    done
+    if [ -f "$_libdir/libhdf5.dll" ] || [ -f "$_libdir/libhdf5.lib" ] || \
+       [ -f "$_libdir/libhdf5.a" ]   || [ -f "$_libdir/libhdf5.dylib" ] || \
+       [ -f "$_libdir/libhdf5.so" ]; then
+        return 0
+    fi
+    return 1
+}
+
+HDF5_CFLAGS_FOUND=""
+HDF5_LIBS_FOUND=""
+
+echo "------------------------------------------------------------"
+echo "Configuring scConvert (Windows) — detecting HDF5 installation"
+echo "------------------------------------------------------------"
+
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    echo_status "Trying to match hdf5r's HDF5 library..."
+    _hdf5r_lib=$(${R_HOME:-$(R RHOME)}/bin/Rscript -e \
+        'p <- system.file("libs", paste0("hdf5r", .Platform$dynlib.ext), package="hdf5r"); if (nzchar(p)) cat(p)' 2>/dev/null)
+    if [ -n "$_hdf5r_lib" ] && [ -f "$_hdf5r_lib" ]; then
+        _hdf5_dll=$(ldd "$_hdf5r_lib" 2>/dev/null | grep -o '/[^ ]*libhdf5\.[^ ]*' | head -1)
+        if [ -n "$_hdf5_dll" ]; then
+            _hdf5r_libdir=$(dirname "$_hdf5_dll")
+            _hdf5r_prefix=$(dirname "$_hdf5r_libdir")
+            if [ -f "$_hdf5r_prefix/include/hdf5.h" ]; then
+                echo_status "  Matched hdf5r -> $_hdf5r_prefix"
+                HDF5_CFLAGS_FOUND="-I${_hdf5r_prefix}/include"
+                HDF5_LIBS_FOUND="-L${_hdf5r_libdir} -lhdf5 -lz"
+            fi
+        fi
+    fi
+fi
+
+if [ -z "$HDF5_CFLAGS_FOUND" ] && [ -n "$HDF5_CFLAGS" ] && [ -n "$HDF5_LIBS" ]; then
+    echo_status "Using HDF5_CFLAGS and HDF5_LIBS from environment"
+    HDF5_CFLAGS_FOUND="$HDF5_CFLAGS"
+    HDF5_LIBS_FOUND="$HDF5_LIBS"
+fi
+
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    if command -v pkg-config >/dev/null 2>&1; then
+        echo_status "Trying pkg-config..."
+        _pc_cflags=$(pkg-config --cflags hdf5 2>/dev/null)
+        _pc_libs=$(pkg-config --libs hdf5 2>/dev/null)
+        if [ -n "$_pc_libs" ]; then
+            echo_status "  pkg-config found HDF5"
+            HDF5_CFLAGS_FOUND="$_pc_cflags"
+            HDF5_LIBS_FOUND="$_pc_libs"
+        else
+            echo_status "  pkg-config did not find HDF5"
+        fi
+    else
+        echo_status "pkg-config not available"
+    fi
+fi
+
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    echo_status "Trying common MSYS2 prefixes..."
+    for _prefix in /ucrt64 /mingw64; do
+        if [ -f "$_prefix/include/hdf5.h" ]; then
+            echo_status "  Found hdf5.h at $_prefix/include"
+            HDF5_CFLAGS_FOUND="-I${_prefix}/include"
+            HDF5_LIBS_FOUND="-L${_prefix}/lib -lhdf5"
+            break
+        fi
+    done
+fi
+
+if [ -z "$HDF5_CFLAGS_FOUND" ]; then
+    die "Could not find HDF5 library."
+fi
+
+if ! check_header "$HDF5_CFLAGS_FOUND"; then
+    echo_status "WARNING: hdf5.h not found at detected include path."
+    echo_status "  HDF5_CFLAGS = $HDF5_CFLAGS_FOUND"
+fi
+
+if ! check_lib "$HDF5_LIBS_FOUND"; then
+    echo_status "WARNING: libhdf5 not found at detected lib path."
+    echo_status "  HDF5_LIBS = $HDF5_LIBS_FOUND"
+fi
+
+case "$HDF5_LIBS_FOUND" in
+    *-lz*) ;;
+    *) HDF5_LIBS_FOUND="$HDF5_LIBS_FOUND -lz";;
+esac
+
+echo_status "HDF5_CFLAGS = $HDF5_CFLAGS_FOUND"
+echo_status "HDF5_LIBS   = $HDF5_LIBS_FOUND"
+
+if [ ! -f src/Makevars.in ]; then
+    die "src/Makevars.in not found. Is the package source complete?"
+fi
+
+echo_status "Writing src/Makevars.win"
+
+sed -e "s|@HDF5_CFLAGS@|${HDF5_CFLAGS_FOUND}|g" \
+    -e "s|@HDF5_LIBS@|${HDF5_LIBS_FOUND}|g" \
+    src/Makevars.in > src/Makevars.win
+
+if [ -f src/Makefile ]; then
+    echo_status "Moving src/Makefile -> src/Makefile.cli (so R uses Makevars.win)"
+    mv src/Makefile src/Makefile.cli
+fi
+
+rm -f src/*.o
+
+echo "------------------------------------------------------------"
+echo "Windows configuration complete."
+echo "------------------------------------------------------------"

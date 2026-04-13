@@ -86,8 +86,8 @@ rt_counts <- GetAssayData(seurat_rt, layer = "counts")
 cat("Counts identical:", identical(orig_counts, rt_counts), "\n")
 
 # Dimensionality reductions (SCE stores these in reducedDims)
-cat("Reductions in original:", paste(Reductions(pbmc), collapse = ", "), "\n")
-cat("Reductions after round-trip:", paste(Reductions(seurat_rt), collapse = ", "), "\n")
+cat("Reductions in original:", paste(names(pbmc@reductions), collapse = ", "), "\n")
+cat("Reductions after round-trip:", paste(names(seurat_rt@reductions), collapse = ", "), "\n")
 ```
 
 ## SCE to h5ad via scConvert
@@ -109,7 +109,7 @@ Read it back to confirm the data survived the full SCE -> Seurat -> h5ad
 pbmc_h5ad <- readH5AD(h5ad_path)
 cat("Cells:", ncol(pbmc_h5ad), "\n")
 cat("Genes:", nrow(pbmc_h5ad), "\n")
-cat("Reductions:", paste(Reductions(pbmc_h5ad), collapse = ", "), "\n")
+cat("Reductions:", paste(names(pbmc_h5ad@reductions), collapse = ", "), "\n")
 ```
 
 ## Seurat to SCE via scConvert

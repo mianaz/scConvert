@@ -46,7 +46,7 @@ h5mu_file <- system.file("extdata", "citeseq_demo.h5mu", package = "scConvert")
 obj <- readH5MU(h5mu_file)
 
 cat("Cells:", ncol(obj), "\n")
-cat("Assays:", paste(Assays(obj), collapse = ", "), "\n")
+cat("Assays:", paste(names(obj@assays), collapse = ", "), "\n")
 cat("RNA features:", nrow(obj[["RNA"]]), "\n")
 cat("ADT features:", nrow(obj[["ADT"]]), "\n")
 ```
@@ -99,7 +99,7 @@ writeH5MU(orig, h5mu_path, overwrite = TRUE)
 cat("Wrote:", round(file.size(h5mu_path) / 1024^2, 1), "MB\n")
 
 loaded <- readH5MU(h5mu_path)
-cat("Loaded:", ncol(loaded), "cells,", paste(Assays(loaded), collapse = ", "), "\n")
+cat("Loaded:", ncol(loaded), "cells,", paste(names(loaded@assays), collapse = ", "), "\n")
 ```
 
 ### Side-by-side comparison
@@ -118,7 +118,7 @@ p1 + p2
 
 ```{r verify, eval = TRUE}
 cat("Cell count match:", ncol(orig) == ncol(loaded), "\n")
-cat("Assays match:", identical(sort(Assays(orig)), sort(Assays(loaded))), "\n")
+cat("Assays match:", identical(sort(names(orig@assays)), sort(names(loaded@assays))), "\n")
 
 common_cells <- intersect(colnames(orig), colnames(loaded))
 common_genes <- intersect(rownames(orig[["RNA"]]), rownames(loaded[["RNA"]]))
@@ -143,7 +143,7 @@ argument:
 
 ```{r custom-mapping, eval = TRUE}
 custom <- readH5MU(h5mu_file, assay.names = c(rna = "RNA", prot = "Protein"))
-cat("Assays with custom mapping:", paste(Assays(custom), collapse = ", "), "\n")
+cat("Assays with custom mapping:", paste(names(custom@assays), collapse = ", "), "\n")
 ```
 
 ## Python interoperability

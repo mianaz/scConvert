@@ -5280,7 +5280,7 @@ writeH5MU <- function(
     # write side of the fix for the h5mu 19/22 fidelity gap where per-modality
     # uns was previously flattened into the global uns.
     mod_uns_list <- tryCatch(
-      Misc(object)[["__h5mu_uns_per_mod__"]][[mod_name]],
+      Misc(object)[["__h5mu_uns_per_mod__"]][[modality]],
       error = function(e) NULL
     )
     if (is.list(mod_uns_list) && length(mod_uns_list) > 0) {
@@ -5290,15 +5290,19 @@ writeH5MU <- function(
       mod_uns_grp$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
                                dtype = CachedGuessDType('0.1.0'), space = ScalarSpace())
       for (key in names(mod_uns_list)) {
-        tryCatch(
-          WriteUnsItem(mod_uns_grp, key, mod_uns_list[[key]], gzip),
-          error = function(e) {
-            if (verbose) {
-              message("    Warning: could not write uns key '", key,
-                      "' for modality '", mod_name, "': ", e$message)
+        local({
+          k <- key
+          mod <- modality
+          tryCatch(
+            WriteUnsItem(mod_uns_grp, k, mod_uns_list[[k]], gzip),
+            error = function(e) {
+              if (verbose) {
+                message("    Warning: could not write uns key '", k,
+                        "' for modality '", mod, "': ", e$message)
+              }
             }
-          }
-        )
+          )
+        })
       }
     }
 

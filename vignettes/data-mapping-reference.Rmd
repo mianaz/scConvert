@@ -37,7 +37,7 @@ obj_rt <- readH5AD(h5ad_path, verbose = FALSE)
 
 cat("Original:", ncol(obj), "cells x", nrow(obj), "genes\n")
 cat("Round-trip:", ncol(obj_rt), "cells x", nrow(obj_rt), "genes\n")
-cat("Reductions preserved:", paste(Reductions(obj_rt), collapse = ", "), "\n")
+cat("Reductions preserved:", paste(names(obj_rt@reductions), collapse = ", "), "\n")
 
 DimPlot(obj_rt, reduction = "umap", group.by = "seurat_annotations") +
   ggplot2::ggtitle("After h5ad round-trip")

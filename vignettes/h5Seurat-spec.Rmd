@@ -36,8 +36,8 @@ writeH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
 
 obj_loaded <- readH5Seurat(h5s_path, verbose = FALSE)
 cat("Cells:", ncol(obj_loaded), "| Genes:", nrow(obj_loaded), "\n")
-cat("Assays:", paste(Assays(obj_loaded), collapse = ", "), "\n")
-cat("Reductions:", paste(Reductions(obj_loaded), collapse = ", "), "\n")
+cat("Assays:", paste(names(obj_loaded@assays), collapse = ", "), "\n")
+cat("Reductions:", paste(names(obj_loaded@reductions), collapse = ", "), "\n")
 
 DimPlot(obj_loaded, reduction = "umap", group.by = "seurat_annotations") +
   ggplot2::ggtitle("Loaded from h5Seurat")

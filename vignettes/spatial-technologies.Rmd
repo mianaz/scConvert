@@ -56,8 +56,8 @@ brain <- readRDS(spatial_path)
 
 cat("Spots:", ncol(brain), "\n")
 cat("Genes:", nrow(brain), "\n")
-cat("Image:", Images(brain), "\n")
-cat("Assay:", Assays(brain), "\n")
+cat("Image:", paste(names(brain@images), collapse = ", "), "\n")
+cat("Assay:", paste(names(brain@assays), collapse = ", "), "\n")
 ```
 
 ### Spatial gene expression
@@ -79,7 +79,7 @@ brain_rt <- readH5AD(h5ad_file, verbose = FALSE)
 
 cat("Roundtrip spots:", ncol(brain_rt), "\n")
 cat("Roundtrip genes:", nrow(brain_rt), "\n")
-cat("Image preserved:", length(Images(brain_rt)) > 0, "\n")
+cat("Image preserved:", length(brain_rt@images) > 0, "\n")
 ```
 
 ### Verify coordinate preservation
@@ -126,7 +126,7 @@ For any h5ad file with spatial coordinates, the same workflow applies:
 obj <- readH5AD("merfish_data.h5ad")
 
 # Check what was detected
-cat("Images:", Images(obj), "\n")
+cat("Images:", paste(names(obj@images), collapse = ", "), "\n")
 
 # Convert to another format
 scConvert("merfish_data.h5ad", "merfish_data.h5seurat")

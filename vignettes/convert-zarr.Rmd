@@ -72,7 +72,7 @@ rt_path <- file.path(tempdir(), "pbmc_roundtrip.zarr")
 writeZarr(pbmc, rt_path, overwrite = TRUE, verbose = FALSE)
 pbmc_rt <- readZarr(rt_path, verbose = FALSE)
 cat("Cells:", ncol(pbmc_rt), "| Genes:", nrow(pbmc_rt), "\n")
-cat("Reductions:", paste(Reductions(pbmc_rt), collapse = ", "), "\n")
+cat("Reductions:", paste(names(pbmc_rt@reductions), collapse = ", "), "\n")
 ```
 
 ### Verify the round-trip

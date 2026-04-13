@@ -46,6 +46,8 @@
 ^NOTES\.md$
 ^review\.md$
 ^Rplots\.pdf$
+^agent\.md$
+^tests/scverse-env\.yml$
 
 # Large test data (not used by testthat; for local/integration testing only)
 ^tests/testdata/spatial$

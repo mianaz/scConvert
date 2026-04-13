@@ -41,7 +41,7 @@ obj <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 
 cat("Cells:", ncol(obj), "\n")
 cat("Features:", nrow(obj), "\n")
-cat("Reductions:", paste(Reductions(obj), collapse = ", "), "\n")
+cat("Reductions:", paste(names(obj@reductions), collapse = ", "), "\n")
 cat("Metadata columns:", paste(colnames(obj[[]]), collapse = ", "), "\n")
 ```
 
@@ -112,10 +112,10 @@ if ("seurat_annotations" %in% shared_cols) {
 ### Embeddings
 
 ```{r verify-embeddings, eval = TRUE}
-cat("Original reductions:", paste(Reductions(obj), collapse = ", "), "\n")
-cat("Loaded reductions:", paste(Reductions(loaded), collapse = ", "), "\n")
+cat("Original reductions:", paste(names(obj@reductions), collapse = ", "), "\n")
+cat("Loaded reductions:", paste(names(loaded@reductions), collapse = ", "), "\n")
 
-if ("umap" %in% Reductions(loaded)) {
+if ("umap" %in% names(loaded@reductions)) {
   orig_umap <- Embeddings(obj, "umap")[common_cells, ]
   rt_umap <- Embeddings(loaded, "umap")[common_cells, ]
   max_diff <- max(abs(orig_umap - rt_umap))

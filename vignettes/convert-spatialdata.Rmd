@@ -73,8 +73,8 @@ cat("SpatialData store written to:", sd_path, "\n")
 ```{r read-spatialdata, eval = TRUE}
 brain_rt <- readSpatialData(sd_path, verbose = FALSE)
 cat("Cells:", ncol(brain_rt), "| Genes:", nrow(brain_rt), "\n")
-cat("Reductions:", paste(Reductions(brain_rt), collapse = ", "), "\n")
-cat("Images:", paste(Images(brain_rt), collapse = ", "), "\n")
+cat("Reductions:", paste(names(brain_rt@reductions), collapse = ", "), "\n")
+cat("Images:", paste(names(brain_rt@images), collapse = ", "), "\n")
 ```
 
 ## Compare original and round-trip

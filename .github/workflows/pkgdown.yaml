@@ -14,6 +14,7 @@ jobs:
       group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      _R_CHECK_FORCE_SUGGESTS_: false
     permissions:
       contents: write
     steps:
@@ -28,15 +29,33 @@ jobs:
         with:
           use-public-rspm: true
 
+      # See r-cmd-check.yaml for rationale: BPCells subdir + pak don't mix.
+      - name: Pre-install BPCells from r-universe
+        shell: Rscript {0}
+        run: |
+          install.packages(
+            "BPCells",
+            repos = c(
+              bnprks = "https://bnprks.r-universe.dev",
+              CRAN   = "https://cloud.r-project.org"
+            )
+          )
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          dependencies: '"all"'
+          # See r-cmd-check.yaml for the rationale behind excluding Enhances.
+          dependencies: 'c("Depends", "Imports", "LinkingTo", "Suggests")'
           extra-packages: any::pkgdown
           cache-version: 1
 
       - name: Build site
-        run: pkgdown::build_site(new_process = FALSE)
         shell: Rscript {0}
+        # clean_site() wipes the checked-in docs/ directory (which holds a
+        # stale pre-built site). Without it, pkgdown::build_site() aborts
+        # because it refuses to overwrite a directory it did not create.
+        run: |
+          pkgdown::clean_site(force = TRUE)
+          pkgdown::build_site(new_process = FALSE)
 
       - name: Deploy to GitHub pages
         uses: JamesIves/github-pages-deploy-action@v4.6.8

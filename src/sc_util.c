@@ -275,13 +275,19 @@ int sc_copy_group_attrs(hid_t src, hid_t dst) {
 }
 
 /* ── Overflow-checked allocation ────────────────────────────────────────────── */
+/*
+ * SC_MSG routes to REprintf in R-package builds and to fprintf(stderr, ...)
+ * in CLI builds. Using it directly avoids the `fprintf(stderr, ...)` symbol
+ * leak that R CMD check flags under "checking compiled code ... NOTE"
+ * ("Compiled code should not call entry points which might ... write to
+ * stdout/stderr instead of to the console").
+ */
 
 int sc_check_mul_size(size_t a, size_t b, size_t *out) {
     if (out == NULL) return SC_ERR;
     if (a != 0 && b > (size_t)-1 / a) {
-        fprintf(stderr,
-                "scConvert: size overflow (%zu * %zu would exceed SIZE_MAX)\n",
-                a, b);
+        SC_MSG("scConvert: size overflow (%zu * %zu would exceed SIZE_MAX)\n",
+               a, b);
         return SC_ERR;
     }
     *out = a * b;
@@ -292,7 +298,7 @@ void *sc_xmalloc(size_t n) {
     if (n == 0) return NULL;
     void *p = malloc(n);
     if (p == NULL) {
-        fprintf(stderr, "scConvert: out of memory (%zu bytes)\n", n);
+        SC_MSG("scConvert: out of memory (%zu bytes)\n", n);
     }
     return p;
 }
@@ -303,8 +309,8 @@ void *sc_xcalloc(size_t nelem, size_t elem_size) {
     if (total == 0) return NULL;
     void *p = calloc(nelem, elem_size);
     if (p == NULL) {
-        fprintf(stderr, "scConvert: out of memory (calloc %zu x %zu)\n",
-                nelem, elem_size);
+        SC_MSG("scConvert: out of memory (calloc %zu x %zu)\n",
+               nelem, elem_size);
     }
     return p;
 }
@@ -312,7 +318,7 @@ void *sc_xcalloc(size_t nelem, size_t elem_size) {
 void *sc_xrealloc(void *ptr, size_t n) {
     void *p = realloc(ptr, n);
     if (p == NULL && n != 0) {
-        fprintf(stderr, "scConvert: realloc(%zu) failed\n", n);
+        SC_MSG("scConvert: realloc(%zu) failed\n", n);
     }
     return p;
 }
