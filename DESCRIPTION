@@ -103,6 +103,7 @@ Suggests:
 Enhances:
     tiledbsoma
 Additional_repositories:
+    https://bnprks.r-universe.dev,
     https://satijalab.r-universe.dev,
     https://tiledb-inc.r-universe.dev
 Remotes:

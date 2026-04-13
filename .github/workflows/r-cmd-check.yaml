@@ -84,6 +84,17 @@ jobs:
             )
           )
 
+      # Strip BPCells from Suggests before pak resolves dependencies.
+      # BPCells is already pre-installed from r-universe above; pak cannot
+      # resolve it from GitHub subdir refs (uncompress failure) and may not
+      # pick up Additional_repositories from DESCRIPTION on all platforms.
+      - name: Hide BPCells from pak dependency resolution
+        shell: Rscript {0}
+        run: |
+          desc <- readLines("DESCRIPTION")
+          desc <- desc[!grepl("^\\s*BPCells", desc)]
+          writeLines(desc, "DESCRIPTION")
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           # "all" would pull in Enhances (tiledbsoma), which needs a heavy

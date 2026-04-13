@@ -12,6 +12,13 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#define sc_mkdir(p, m) _mkdir(p)
+#else
+#define sc_mkdir(p, m) mkdir(p, m)
+#endif
+
 /* ══════════════════════════════════════════════════════════════════════════════
  *  Directory utilities
  * ══════════════════════════════════════════════════════════════════════════════ */
@@ -22,11 +29,11 @@ int sc_mkdir_p(const char *path) {
     for (char *p = buf + 1; *p; p++) {
         if (*p == '/') {
             *p = '\0';
-            mkdir(buf, 0755);
+            sc_mkdir(buf, 0755);
             *p = '/';
         }
     }
-    return mkdir(buf, 0755) == 0 || errno == EEXIST ? SC_OK : SC_ERR_IO;
+    return sc_mkdir(buf, 0755) == 0 || errno == EEXIST ? SC_OK : SC_ERR_IO;
 }
 
 int sc_rmdir_recursive(const char *path) {
