@@ -210,14 +210,15 @@ int sc_stream_obs_h5ad_to_h5seurat(hid_t src, hid_t dst, const char *assay) {
     /* Fix attributes: h5seurat uses "colnames" instead of "column-order",
      * and does not have AnnData encoding-type/version attributes */
     if (rc == SC_OK) {
-        /* Rename column-order → colnames */
-        char **cols = NULL;
-        hsize_t ncols = 0;
-        if (sc_get_str_array_attr(dst_meta, "column-order", &cols, &ncols) == SC_OK) {
-            sc_set_str_array_attr(dst_meta, "colnames",
-                                  (const char **)cols, ncols);
-            sc_free_str_array(cols, ncols);
-            H5Adelete(dst_meta, "column-order");
+        /* Rename column-order → colnames via HDF5's native H5Arename,
+         * which preserves the attribute's on-disk type/encoding exactly
+         * and avoids the read-deep-copy-write path that segfaulted on
+         * Linux libhdf5 1.10 serial when re-converting vlen strings
+         * (strlen on HDF5-private buffer layouts across lib versions). */
+        if (H5Aexists(dst_meta, "column-order") > 0) {
+            if (H5Aexists(dst_meta, "colnames") > 0)
+                H5Adelete(dst_meta, "colnames");
+            H5Arename(dst_meta, "column-order", "colnames");
         }
         /* Remove AnnData-specific attributes */
         if (H5Aexists(dst_meta, "encoding-type") > 0)
@@ -495,16 +496,13 @@ int sc_stream_obs_h5seurat_to_h5ad(hid_t src, hid_t dst, const char *assay) {
      * h5ad categoricals (categories/codes, 0-based) */
     convert_factors_in_group(dst_obs);
 
-    /* Fix attributes: rename colnames → column-order for h5ad */
-    {
-        char **cols = NULL;
-        hsize_t ncols = 0;
-        if (sc_get_str_array_attr(dst_obs, "colnames", &cols, &ncols) == SC_OK) {
-            sc_set_str_array_attr(dst_obs, "column-order",
-                                  (const char **)cols, ncols);
-            sc_free_str_array(cols, ncols);
-            H5Adelete(dst_obs, "colnames");
-        }
+    /* Fix attributes: rename colnames → column-order for h5ad.
+     * Use H5Arename to preserve on-disk type exactly (see note above
+     * in sc_stream_obs_h5ad_to_h5seurat about Linux libhdf5 vlen quirks). */
+    if (H5Aexists(dst_obs, "colnames") > 0) {
+        if (H5Aexists(dst_obs, "column-order") > 0)
+            H5Adelete(dst_obs, "column-order");
+        H5Arename(dst_obs, "colnames", "column-order");
     }
 
     /* Ensure AnnData encoding attributes */
@@ -529,6 +527,36 @@ int sc_stream_obs_h5seurat_to_h5ad(hid_t src, hid_t dst, const char *assay) {
         sc_set_str_attr(dst_idx, "encoding-type", "string-array");
         sc_set_str_attr(dst_idx, "encoding-version", "0.2.0");
         H5Dclose(dst_idx);
+    }
+
+    /* AnnData spec requires encoding-type on every column dataset.
+     * Factors already have "categorical"; _index has "string-array".
+     * Numeric/boolean columns need "array". Iterate all dataset members
+     * and set "array" on any that don't already have encoding-type. */
+    {
+        hsize_t n_members;
+        H5Gget_num_objs(dst_obs, &n_members);
+        for (hsize_t i = 0; i < n_members; i++) {
+            char name[SC_MAX_NAME_LEN];
+            H5Gget_objname_by_idx(dst_obs, i, name, sizeof(name));
+            int obj_type = H5Gget_objtype_by_idx(dst_obs, i);
+            if (obj_type == H5G_DATASET) {
+                hid_t dset = H5Dopen2(dst_obs, name, H5P_DEFAULT);
+                if (H5Aexists(dset, "encoding-type") <= 0) {
+                    /* Check if it's a string or numeric dataset */
+                    hid_t dtype = H5Dget_type(dset);
+                    H5T_class_t cls = H5Tget_class(dtype);
+                    if (cls == H5T_STRING) {
+                        sc_set_str_attr(dset, "encoding-type", "string-array");
+                    } else {
+                        sc_set_str_attr(dset, "encoding-type", "array");
+                    }
+                    sc_set_str_attr(dset, "encoding-version", "0.2.0");
+                    H5Tclose(dtype);
+                }
+                H5Dclose(dset);
+            }
+        }
     }
 
     H5Gclose(dst_obs);
