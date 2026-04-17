@@ -2153,7 +2153,11 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
                                                H5T_NATIVE_DOUBLE,
                                                (hsize_t)XLENGTH(col),
                                                REAL(col), gzip);
-                if (dset >= 0) H5Dclose(dset);
+                if (dset >= 0) {
+                    set_str_attr_ascii(dset, "encoding-type", "array");
+                    set_str_attr_ascii(dset, "encoding-version", "0.2.0");
+                    H5Dclose(dset);
+                }
                 break;
             }
             case INTSXP: {
@@ -2213,7 +2217,11 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
                                                    H5T_NATIVE_INT,
                                                    (hsize_t)XLENGTH(col),
                                                    INTEGER(col), gzip);
-                    if (dset >= 0) H5Dclose(dset);
+                    if (dset >= 0) {
+                        set_str_attr_ascii(dset, "encoding-type", "array");
+                        set_str_attr_ascii(dset, "encoding-version", "0.2.0");
+                        H5Dclose(dset);
+                    }
                 }
                 break;
             }
@@ -2229,7 +2237,11 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
                     hid_t dset = write_1d_dataset(obs_grp, cname,
                                                    H5T_NATIVE_INT8,
                                                    (hsize_t)len, buf, gzip);
-                    if (dset >= 0) H5Dclose(dset);
+                    if (dset >= 0) {
+                        set_str_attr_ascii(dset, "encoding-type", "array");
+                        set_str_attr_ascii(dset, "encoding-version", "0.2.0");
+                        H5Dclose(dset);
+                    }
                     free(buf);
                 }
                 break;
@@ -2278,6 +2290,8 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
     {
         hid_t obsm_grp = H5Gcreate2(file, "obsm", H5P_DEFAULT,
                                        H5P_DEFAULT, H5P_DEFAULT);
+        set_str_attr_ascii(obsm_grp, "encoding-type", "dict");
+        set_str_attr_ascii(obsm_grp, "encoding-version", "0.1.0");
         int n_reductions = (int)XLENGTH(reductions_sexp);
         SEXP red_names = getAttrib(reductions_sexp, R_NamesSymbol);
 
@@ -2336,6 +2350,8 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
     {
         hid_t obsp_grp = H5Gcreate2(file, "obsp", H5P_DEFAULT,
                                        H5P_DEFAULT, H5P_DEFAULT);
+        set_str_attr_ascii(obsp_grp, "encoding-type", "dict");
+        set_str_attr_ascii(obsp_grp, "encoding-version", "0.1.0");
         int n_graphs = (int)XLENGTH(graphs_sexp);
         SEXP graph_names = getAttrib(graphs_sexp, R_NamesSymbol);
 
@@ -2404,7 +2420,11 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
         for (int ei = 0; ei < 4; ei++) {
             hid_t grp = H5Gcreate2(file, empty_groups[ei], H5P_DEFAULT,
                                      H5P_DEFAULT, H5P_DEFAULT);
-            if (grp >= 0) H5Gclose(grp);
+            if (grp >= 0) {
+                set_str_attr_ascii(grp, "encoding-type", "dict");
+                set_str_attr_ascii(grp, "encoding-version", "0.1.0");
+                H5Gclose(grp);
+            }
         }
     }
 

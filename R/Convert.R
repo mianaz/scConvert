@@ -689,9 +689,11 @@ WriteDFGroup <- function(h5parent, group_name, df, index_values,
     } else if (is.logical(col_data)) {
       grp$create_dataset(col_name, robj = BoolToInt(col_data),
                          chunk_dims = length(col_data), gzip_level = gzip)
+      AddAnndataEncoding(grp[[col_name]], encoding_type = 'array')
     } else {
       grp$create_dataset(col_name, robj = col_data,
                          chunk_dims = length(col_data), gzip_level = gzip)
+      AddAnndataEncoding(grp[[col_name]], encoding_type = 'array')
     }
   }
   grp$create_attr(attr_name = 'column-order', robj = col_order,

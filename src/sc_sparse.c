@@ -305,6 +305,29 @@ int sc_stream_csr_copy(hid_t src_grp, hid_t dst_grp, int gzip_level) {
      * Callers must set the appropriate encoding attributes (shape vs dims,
      * encoding-type, etc.) for the target format. */
 
+    /* FAST PATH: H5Ocopy each sub-dataset in one HDF5-native call. For files
+     * with many small gzip chunks (e.g., CELLxGENE uses 17,581-element
+     * chunks on ~1.5B-element arrays → 87K+ chunks per dataset), this
+     * avoids ~530K user-land H5Dread_chunk/H5Dwrite_chunk API crossings and
+     * runs close to the APFS copy rate. The fast path preserves source
+     * chunking & compression; the destination ends up with the same gzip
+     * level as the source, which is acceptable for sparse matrix arrays.
+     *
+     * Falls through to stream_1d_dataset on any H5Ocopy failure (e.g.,
+     * cross-dtype conversions, destination already exists). */
+    {
+        const char *members[3] = {"data", "indices", "indptr"};
+        int ok = 1;
+        for (int i = 0; i < 3; i++) {
+            if (H5Lexists(src_grp, members[i], H5P_DEFAULT) <= 0) { ok = 0; break; }
+            if (H5Lexists(dst_grp, members[i], H5P_DEFAULT) > 0)
+                H5Ldelete(dst_grp, members[i], H5P_DEFAULT);
+            if (H5Ocopy(src_grp, members[i], dst_grp, members[i],
+                        H5P_DEFAULT, H5P_DEFAULT) < 0) { ok = 0; break; }
+        }
+        if (ok) return SC_OK;
+    }
+
     /* Stream data (float64) */
     hid_t src_data = H5Dopen2(src_grp, "data", H5P_DEFAULT);
     rc = stream_1d_dataset(src_data, dst_grp, "data", H5T_NATIVE_DOUBLE,
@@ -367,6 +390,25 @@ int sc_stream_csr_transpose(hid_t src_grp, hid_t dst_grp, int gzip_level) {
     /* NOTE: This function only copies data/indices/indptr datasets.
      * The caller must set shape/dims and encoding attributes for the target. */
     (void)info; /* n_rows/n_cols used by caller via sc_read_csr_info */
+
+    /* FAST PATH: H5Ocopy each sub-dataset. Same rationale as
+     * sc_stream_csr_copy — CELLxGENE-style inputs have ~530K tiny chunks
+     * and per-chunk API overhead dominates. In the transpose case the
+     * underlying arrays are identical (CSR of A == CSC of A^T); only the
+     * shape/dims attribute set by the caller differs. Falls through to
+     * stream_1d_dataset on H5Ocopy failure. */
+    {
+        const char *members[3] = {"data", "indices", "indptr"};
+        int ok = 1;
+        for (int i = 0; i < 3; i++) {
+            if (H5Lexists(src_grp, members[i], H5P_DEFAULT) <= 0) { ok = 0; break; }
+            if (H5Lexists(dst_grp, members[i], H5P_DEFAULT) > 0)
+                H5Ldelete(dst_grp, members[i], H5P_DEFAULT);
+            if (H5Ocopy(src_grp, members[i], dst_grp, members[i],
+                        H5P_DEFAULT, H5P_DEFAULT) < 0) { ok = 0; break; }
+        }
+        if (ok) return SC_OK;
+    }
 
     /* Stream data (values are identical in CSR/CSC) */
     hid_t src_data = H5Dopen2(src_grp, "data", H5P_DEFAULT);
