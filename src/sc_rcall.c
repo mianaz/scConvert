@@ -2025,9 +2025,78 @@ static void set_bool_attr(hid_t loc, const char *attr_name, int value) {
     H5Sclose(space);
 }
 
+/* Write a dgCMatrix as a CSR sparse group (zero-copy reinterpretation). */
+static void write_csr_sparse_group(hid_t parent, const char *group_name,
+                                    SEXP mat_i, SEXP mat_p, SEXP mat_x,
+                                    int n_cells, int n_genes, int gzip)
+{
+    hid_t grp = H5Gcreate2(parent, group_name, H5P_DEFAULT,
+                              H5P_DEFAULT, H5P_DEFAULT);
+    R_xlen_t nnz = XLENGTH(mat_x);
+
+    {
+        hid_t dset = write_1d_dataset(grp, "data", H5T_NATIVE_DOUBLE,
+                                       (hsize_t)nnz, REAL(mat_x), gzip);
+        if (dset >= 0) H5Dclose(dset);
+    }
+    {
+        hid_t dset = write_1d_dataset(grp, "indices", H5T_NATIVE_INT,
+                                       (hsize_t)XLENGTH(mat_i),
+                                       INTEGER(mat_i), gzip);
+        if (dset >= 0) H5Dclose(dset);
+    }
+    {
+        hid_t dset = write_1d_dataset(grp, "indptr", H5T_NATIVE_INT,
+                                       (hsize_t)XLENGTH(mat_p),
+                                       INTEGER(mat_p), gzip);
+        if (dset >= 0) H5Dclose(dset);
+    }
+
+    set_str_attr_ascii(grp, "encoding-type", "csr_matrix");
+    set_str_attr_ascii(grp, "encoding-version", "0.1.0");
+    {
+        int shape[2] = { n_cells, n_genes };
+        hsize_t two = 2;
+        hid_t space = H5Screate_simple(1, &two, NULL);
+        hid_t attr = H5Acreate2(grp, "shape", H5T_NATIVE_INT,
+                                 space, H5P_DEFAULT, H5P_DEFAULT);
+        if (attr >= 0) {
+            H5Awrite(attr, H5T_NATIVE_INT, shape);
+            H5Aclose(attr);
+        }
+        H5Sclose(space);
+    }
+    H5Gclose(grp);
+}
+
+/* Write an empty dataframe group (just _index + required attrs).
+ * Used for /raw/var when raw/X is present but no raw var metadata. */
+static void write_empty_var_group(hid_t parent, const char *group_name,
+                                   SEXP gene_names, int gzip)
+{
+    hid_t grp = H5Gcreate2(parent, group_name, H5P_DEFAULT,
+                              H5P_DEFAULT, H5P_DEFAULT);
+    write_string_dataset(grp, "_index", gene_names, gzip);
+    set_string_encoding_attrs(grp, "_index");
+    set_str_attr_ascii(grp, "encoding-type", "dataframe");
+    set_str_attr_ascii(grp, "encoding-version", "0.2.0");
+    set_str_attr_ascii(grp, "_index", "_index");
+    {
+        hsize_t zero = 0;
+        hid_t strtype = vlen_str_type();
+        hid_t space = H5Screate_simple(1, &zero, NULL);
+        hid_t attr = H5Acreate2(grp, "column-order", strtype, space,
+                                 H5P_DEFAULT, H5P_DEFAULT);
+        if (attr >= 0) H5Aclose(attr);
+        H5Sclose(space);
+        H5Tclose(strtype);
+    }
+    H5Gclose(grp);
+}
+
 SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
                    SEXP reductions_sexp, SEXP graphs_sexp,
-                   SEXP assay_sexp, SEXP gzip_sexp)
+                   SEXP assay_sexp, SEXP gzip_sexp, SEXP raw_sexp)
 {
     const char *path  = CHAR(STRING_ELT(path_sexp, 0));
     int gzip          = INTEGER(gzip_sexp)[0];
@@ -2042,7 +2111,6 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
 
     int n_genes = INTEGER(mat_dim)[0];
     int n_cells = INTEGER(mat_dim)[1];
-    R_xlen_t nnz = XLENGTH(mat_x);
 
     /* ── Create file ─────────────────────────────────────────────────────────── */
     hid_t file = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -2056,48 +2124,26 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
     set_str_attr_ascii(file, "encoding-version", "0.1.0");
 
     /* ── /X (CSR sparse group) ───────────────────────────────────────────────── */
-    {
-        hid_t x_grp = H5Gcreate2(file, "X", H5P_DEFAULT,
-                                    H5P_DEFAULT, H5P_DEFAULT);
+    write_csr_sparse_group(file, "X", mat_i, mat_p, mat_x,
+                           n_cells, n_genes, gzip);
 
-        /* data (non-zero values) */
-        {
-            hid_t dset = write_1d_dataset(x_grp, "data", H5T_NATIVE_DOUBLE,
-                                           (hsize_t)nnz, REAL(mat_x), gzip);
-            if (dset >= 0) H5Dclose(dset);
-        }
-        /* indices (gene indices — same as dgCMatrix @i) */
-        {
-            hid_t dset = write_1d_dataset(x_grp, "indices", H5T_NATIVE_INT,
-                                           (hsize_t)XLENGTH(mat_i),
-                                           INTEGER(mat_i), gzip);
-            if (dset >= 0) H5Dclose(dset);
-        }
-        /* indptr (cell pointers — same as dgCMatrix @p) */
-        {
-            hid_t dset = write_1d_dataset(x_grp, "indptr", H5T_NATIVE_INT,
-                                           (hsize_t)XLENGTH(mat_p),
-                                           INTEGER(mat_p), gzip);
-            if (dset >= 0) H5Dclose(dset);
-        }
+    /* ── /raw/X + /raw/var (optional; present when source had both data+counts) */
+    if (raw_sexp != R_NilValue && TYPEOF(raw_sexp) == VECSXP &&
+        XLENGTH(raw_sexp) >= 4) {
+        SEXP raw_i   = VECTOR_ELT(raw_sexp, 0);
+        SEXP raw_p   = VECTOR_ELT(raw_sexp, 1);
+        SEXP raw_x   = VECTOR_ELT(raw_sexp, 2);
+        SEXP raw_dim = VECTOR_ELT(raw_sexp, 3);
+        int raw_n_genes = INTEGER(raw_dim)[0];
+        int raw_n_cells = INTEGER(raw_dim)[1];
 
-        /* Attributes: encoding-type, encoding-version, shape */
-        set_str_attr_ascii(x_grp, "encoding-type", "csr_matrix");
-        set_str_attr_ascii(x_grp, "encoding-version", "0.1.0");
-        {
-            int shape[2] = { n_cells, n_genes };
-            hsize_t two = 2;
-            hid_t space = H5Screate_simple(1, &two, NULL);
-            hid_t attr = H5Acreate2(x_grp, "shape", H5T_NATIVE_INT,
-                                     space, H5P_DEFAULT, H5P_DEFAULT);
-            if (attr >= 0) {
-                H5Awrite(attr, H5T_NATIVE_INT, shape);
-                H5Aclose(attr);
-            }
-            H5Sclose(space);
-        }
+        hid_t raw_grp = H5Gcreate2(file, "raw", H5P_DEFAULT,
+                                       H5P_DEFAULT, H5P_DEFAULT);
+        H5Gclose(raw_grp);
 
-        H5Gclose(x_grp);
+        write_csr_sparse_group(file, "raw/X", raw_i, raw_p, raw_x,
+                               raw_n_cells, raw_n_genes, gzip);
+        write_empty_var_group(file, "raw/var", gene_names, gzip);
     }
 
     /* ── /obs (dataframe group) ──────────────────────────────────────────────── */

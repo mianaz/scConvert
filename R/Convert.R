@@ -4559,14 +4559,30 @@ writeH5AD <- function(
   if (length(Assays(object)) > 1) return(FALSE)
 
   assay_obj <- object[[assay_name]]
-  mat <- NULL
-  for (ln in c("counts", "data")) {
+  layer_has <- function(ln) {
     tryCatch({
       m <- GetAssayData(assay_obj, layer = ln)
-      if (inherits(m, "dgCMatrix") && length(m@x) > 0) { mat <- m; break }
-    }, error = function(e) NULL)
+      inherits(m, "dgCMatrix") && length(m@x) > 0
+    }, error = function(e) FALSE)
   }
+  has_counts <- layer_has("counts")
+  has_data   <- layer_has("data")
+
+  # anndata convention: X holds normalized data, raw/X holds counts. When both
+  # layers exist, route counts to the raw group; when only one exists, it
+  # becomes X directly.
+  mat <- if (has_data) GetAssayData(assay_obj, layer = "data")
+         else if (has_counts) GetAssayData(assay_obj, layer = "counts")
+         else NULL
   if (is.null(mat)) return(FALSE)
+
+  raw_list <- NULL
+  if (has_data && has_counts) {
+    raw_mat <- GetAssayData(assay_obj, layer = "counts")
+    raw_list <- list(i = raw_mat@i, p = raw_mat@p, x = raw_mat@x,
+                     dim = dim(raw_mat))
+    rm(raw_mat)
+  }
 
   mat_list <- list(
     i = mat@i, p = mat@p, x = mat@x,
@@ -4599,7 +4615,7 @@ writeH5AD <- function(
 
   result <- .Call(C_write_h5ad,
     filename, mat_list, meta, reductions, graphs,
-    assay_name, as.integer(gzip_level)
+    assay_name, as.integer(gzip_level), raw_list
   )
 
   if (isTRUE(result) && verbose) {
@@ -4738,10 +4754,9 @@ DirectSeuratToH5AD <- function(
   write_df_group(dfile, "var", meta_features, gene_names)
 
   # Write raw/var if raw/X exists
-  if (!is.null(data_mat) && !is.null(counts_mat)) {
-    raw_gene_names <- rownames(counts_mat)
-    raw_var_df <- data.frame(row.names = raw_gene_names)
-    write_df_group(dfile[["raw"]], "var", raw_var_df, raw_gene_names)
+  if (has_data && has_counts) {
+    write_df_group(dfile[["raw"]], "var",
+                   data.frame(row.names = gene_names), gene_names)
   }
 
   # ========== obsm (dimensional reductions) ==========
