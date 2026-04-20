@@ -191,7 +191,7 @@ test_that("h5seurat roundtrip preserves counts and obs metadata", {
 
 # --- Zarr roundtrip --------------------------------------------------------
 
-test_that("zarr roundtrip preserves counts and obs metadata", {
+test_that("zarr roundtrip preserves counts, data, and obs metadata", {
   for (seed in 31:33) {
     obj <- gen_random_seurat(seed, with_graphs = FALSE, with_reductions = FALSE)
     tmp <- tempfile(fileext = ".zarr")
@@ -204,6 +204,11 @@ test_that("zarr roundtrip preserves counts and obs metadata", {
       GetAssayData(obj,  assay = "RNA", layer = "counts"),
       GetAssayData(back, assay = "RNA", layer = "counts"),
       label = paste0("seed=", seed, " counts")
+    )
+    expect_matrix_equal(
+      GetAssayData(obj,  assay = "RNA", layer = "data"),
+      GetAssayData(back, assay = "RNA", layer = "data"),
+      label = paste0("seed=", seed, " data")
     )
     expect_obs_equal(obj[[]], back[[]])
   }
