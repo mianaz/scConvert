@@ -19,6 +19,27 @@ NULL
 #   /cellBin/cell    compound {id, x, y, offset, geneCount, expCount, ...}
 #   /cellBin/gene    compound {geneID, geneName, offset, cellcount, expCount, ...}
 #   /cellBin/cellExp compound {geneID, count}
+#
+# TODO(stereoseq, 2026-04-20): the reader is unit-tested against synthetic
+# .gef fixtures but has not yet been validated end-to-end against a real
+# MOSTA section because the CNGB STOmicsDB portal gates .gef downloads and
+# the Zenodo MOSTA mirror (record 10698963) hosts truncated h5ad files.
+# Remaining work before claiming Stereo-seq Task-5 fidelity:
+#   1. Obtain a conforming public .gef exemplar (CNGB account, BGI rep, or
+#      collaborator handoff) and stage it under data/raw/stereoseq/.
+#   2. Extend benchmark/run_real_modalities.R with a Stereo-seq block that
+#      ingests via LoadStereoSeqGef(), round-trips through writeH5AD /
+#      readH5AD, and writes a Task-5 row.
+#   3. Restore the stereoseq_mosta manifest entry in
+#      data/dataset_manifest.yaml (see git log commit 8926b72 for the
+#      previous entry, which noted the CNGB access path and stereopy
+#      fallback).
+#   4. Add a short paragraph to scConvert.tex §Spatial and §Limitations
+#      reintroducing Stereo-seq as a validated vendor-native path.
+# Coordinates / downstream spatial plotting against squidpy and stereopy
+# AnnData outputs have not been cross-checked yet — add a fidelity check
+# for spatial_x / spatial_y consistency in helpers/fidelity_schema.R when
+# this work is resumed.
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # Convert an hdf5r compound-dataset string field to a character vector.
