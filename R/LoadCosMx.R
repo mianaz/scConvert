@@ -82,8 +82,31 @@ LoadCosMx <- function(data.dir, fov = "cosmx", assay = "Nanostring",
     message("Loading CosMx bundle via Seurat::LoadNanostring: ", data.dir)
   }
 
-  seurat_obj <- Seurat::LoadNanostring(data.dir = data.dir, fov = fov,
-                                        assay = assay)
+  # Seurat::LoadNanostring hardcodes type = c("centroids", "segmentations")
+  # and errors on bundles without a *-polygons.csv file. We inline its body
+  # so we can request centroids-only when no polygons are staged.
+  has_polygons <- length(list.files(data.dir, pattern = "-polygons\\.csv$",
+                                    recursive = FALSE)) > 0
+  req_type <- if (has_polygons) c("centroids", "segmentations") else "centroids"
+  fov_type <- if (has_polygons) c("segmentation", "centroids") else "centroids"
+
+  data <- Seurat::ReadNanostring(data.dir = data.dir, type = req_type)
+  cents <- SeuratObject::CreateCentroids(data$centroids)
+  if (has_polygons) {
+    segs <- SeuratObject::CreateSegmentation(data$segmentations)
+    seg_data <- list(centroids = cents, segmentation = segs)
+  } else {
+    seg_data <- list(centroids = cents)
+  }
+  coords <- SeuratObject::CreateFOV(coords = seg_data, type = fov_type,
+                                    molecules = data$pixels, assay = assay)
+  seurat_obj <- Seurat::CreateSeuratObject(counts = data$matrix, assay = assay)
+  cells <- Reduce(intersect, lapply(fov_type, function(bt) {
+    SeuratObject::Cells(x = coords, boundary = bt)
+  }))
+  cells <- intersect(SeuratObject::Cells(seurat_obj), cells)
+  coords <- subset(x = coords, cells = cells)
+  seurat_obj[[fov]] <- coords
 
   seurat_obj@misc$spatial_technology <- "CosMx"
   seurat_obj@misc$cosmx <- list(

@@ -54,6 +54,7 @@ Collate:
     'Convert.R'
     'H5DAccess.R'
     'LoadCosMx.R'
+    'LoadXenium.R'
     'LoadH5AD.R'
     'LoadH5MU.R'
     'LoadH5Seurat.R'
