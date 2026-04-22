@@ -322,17 +322,10 @@ SeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
       if (!is.null(scalefactors) && length(scalefactors) > 0) {
         sf_group <- lib_group$create_group("scalefactors")
 
-        sf_name_map <- c(
-          spot     = "spot_diameter_fullres",
-          fiducial = "fiducial_diameter_fullres",
-          hires    = "tissue_hires_scalef",
-          lowres   = "tissue_lowres_scalef"
-        )
-
         for (sf_name in names(scalefactors)) {
           val <- as.numeric(scalefactors[[sf_name]])
           if (is.finite(val)) {
-            dst_name <- if (!is.null(sf_name_map[[sf_name]])) sf_name_map[[sf_name]] else sf_name
+            dst_name <- SCALEFACTOR_NAME_SEURAT_TO_H5AD[[sf_name]] %||% sf_name
             # Write as HDF5 scalar (shape=()) not 1-element array; squidpy
             # expects scalars for scale-factor fields.
             sf_group$create_dataset(

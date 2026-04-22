@@ -52,9 +52,10 @@ Collate:
     'PadMatrix.R'
     'FormatRegistry.R'
     'Convert.R'
+    'ConvertCLI.R'
+    'ConvertZarr.R'
     'H5DAccess.R'
     'LoadCosMx.R'
-    'LoadXenium.R'
     'LoadH5AD.R'
     'LoadH5MU.R'
     'LoadH5Seurat.R'
@@ -62,6 +63,7 @@ Collate:
     'loom_bindings.R'
     'LoadLoom.R'
     'LoadStereoSeq.R'
+    'LoadXenium.R'
     'LoadZarr.R'
     'ReadH5.R'
     'ReadWriteSOMA.R'
@@ -79,6 +81,7 @@ Collate:
     'Transpose.R'
     'V5Compatibility.R'
     'V5LayerSupport.R'
+    'WriteH5AD.R'
     'h5Seurat_bindings.R'
 NeedsCompilation: yes
 Suggests:
