@@ -34,7 +34,7 @@ NULL
 #'
 #' @return \code{object} with the extra data requested
 #'
-#' @export
+#' @keywords internal
 #'
 scAppendData <- function(
   file,

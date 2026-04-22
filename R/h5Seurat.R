@@ -329,9 +329,6 @@ h5Seurat <- R6Class(
       if (Exists(x = self, name = 'neighbors')) {
         index$global$neighbors <- names(x = self[['neighbors']])
       }
-      # TODO: Get metadata
-      # TODO: Get miscellaneous data
-      # TODO: Get tool-specific results
       # Finalize the index
       private$index.internal <- structure(
         .Data = index,
@@ -416,14 +413,12 @@ h5Seurat <- R6Class(
       return(invisible(x = NULL))
     },
     v3.1.2 = function() {
-      # TODO: Check top-level attributes
       attrs <- c('project', 'active.assay', 'version')
       for (attr in attrs) {
         if (!self$attr_exists(attr_name = attr)) {
           stop("Missing attribute ", attr, call. = FALSE)
         }
       }
-      # TODO: Check cell.names and meta.data
       if (!private$is.data(name = 'cell.names')) {
         stop("Cannot find dataset with cell names", call. = FALSE)
       }
@@ -449,7 +444,6 @@ h5Seurat <- R6Class(
       } else {
         stop("Cannot find cell-level metadata")
       }
-      # TODO: Check Assays
       if (!private$is.data(name = 'assays', type = 'H5Group')) {
         stop("Cannot find assay expression data", call. = FALSE)
       }
@@ -465,11 +459,6 @@ h5Seurat <- R6Class(
           )
         }
       }
-      # TODO: Check DimReducs
-      # TODO: Check Graphs
-      # TODO: Check SeuratCommands
-      # TODO: Check miscellaneous data
-      # TODO: Check tool-specific results
       return(invisible(x = NULL))
     },
     v3.2.0 = function() {
@@ -604,12 +593,6 @@ print.h5SI <- function(x, ...) {
       catn("Images:")
       catn(paste0(' ', symbol$line, ' ', x[[assay]]$images, collapse = '\n'))
     }
-    # TODO: Show command information
-    # TODO: Show globals
-    # if (!is.null(x = x$global)) {
-    #   catn("Globally available information:")
-    # }
-    # Show no assay
   }
   return(invisible(x = x))
 }

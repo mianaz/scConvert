@@ -122,6 +122,7 @@ reference:
     contents:
       - LoadStereoSeqGef
       - LoadCosMx
+      - LoadXenium
 
   - title: "Format Conversion"
     desc: "General conversion utilities between all supported formats"
@@ -147,7 +148,6 @@ reference:
     contents:
       - GetObject
       - AssembleObject
-      - scAppendData
       - scTranspose
       - PadMatrix
 

@@ -741,14 +741,10 @@ NULL
       AddAnndataEncoding(var_grp[["_index"]], encoding_type = "string-array")
     }
 
+    a_paths <- DetectSeuratLayerPaths(a_grp)
+
     # --- X (layers/data -> CSR, or scale.data or data) ---
-    data_src <- NULL
-    # Seurat v5 paths
-    if (a_grp$exists("layers") && a_grp[["layers"]]$exists("data")) {
-      data_src <- a_grp[["layers"]][["data"]]
-    } else if (a_grp$exists("data")) {
-      data_src <- a_grp[["data"]]
-    }
+    data_src <- if (!is.null(a_paths$data_path)) a_grp[[a_paths$data_path]] else NULL
 
     if (!is.null(data_src)) {
       if (inherits(data_src, "H5Group")) {
@@ -761,12 +757,7 @@ NULL
     }
 
     # --- layers/counts -> layers/counts ---
-    counts_src <- NULL
-    if (a_grp$exists("layers") && a_grp[["layers"]]$exists("counts")) {
-      counts_src <- a_grp[["layers"]][["counts"]]
-    } else if (a_grp$exists("counts")) {
-      counts_src <- a_grp[["counts"]]
-    }
+    counts_src <- if (!is.null(a_paths$counts_path)) a_grp[[a_paths$counts_path]] else NULL
 
     if (!is.null(counts_src)) {
       layers_grp <- .h5ad_write_dict_group(mod_grp, "layers")
@@ -1253,13 +1244,7 @@ NULL
 
   if (src$exists(assay_path)) {
     a_grp <- src[[assay_path]]
-    # Try v5 path first, then v4
-    data_path <- NULL
-    if (a_grp$exists("layers") && a_grp[["layers"]]$exists("data")) {
-      data_path <- "layers/data"
-    } else if (a_grp$exists("data")) {
-      data_path <- "data"
-    }
+    data_path <- DetectSeuratLayerPaths(a_grp)$data_path
 
     if (!is.null(data_path)) {
       data_obj <- a_grp[[data_path]]
@@ -1286,13 +1271,7 @@ NULL
   dst_layers <- dst$create_group("layers")
   if (src$exists(assay_path)) {
     a_grp <- src[[assay_path]]
-    # Check for counts
-    counts_path <- NULL
-    if (a_grp$exists("layers") && a_grp[["layers"]]$exists("counts")) {
-      counts_path <- "layers/counts"
-    } else if (a_grp$exists("counts")) {
-      counts_path <- "counts"
-    }
+    counts_path <- DetectSeuratLayerPaths(a_grp)$counts_path
 
     if (!is.null(counts_path)) {
       tryCatch({

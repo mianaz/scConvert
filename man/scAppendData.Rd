@@ -122,3 +122,4 @@ following values:
 Append data from an h5Seurat file to a preexisting
 \code{\link[Seurat]{Seurat}} object
 }
+\keyword{internal}

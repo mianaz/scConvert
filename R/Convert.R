@@ -769,6 +769,42 @@ SCALEFACTOR_NAME_H5AD_TO_SEURAT <- setNames(
   unname(SCALEFACTOR_NAME_SEURAT_TO_H5AD)
 )
 
+# Resolve the h5Seurat assay-layout paths for data / counts / scale.data.
+# Seurat v5 stores expression matrices under `layers/` (layers/data,
+# layers/counts); v4 stores them at the assay root (data, counts). `scale.data`
+# sits at the assay root in both versions. The same inline detection had to be
+# patched in every site when Seurat v5 shipped; routing every caller through
+# this helper prevents future drift.
+#
+# @param assay_group hdf5r H5Group for an assay (e.g. `assays/RNA`)
+#
+# @return List with components:
+#   - is_v5: logical, TRUE if a layers/ H5Group is present
+#   - data_path: "layers/data" / "data" / NULL (relative to assay_group)
+#   - counts_path: "layers/counts" / "counts" / NULL
+#   - scale_data_path: "scale.data" / NULL
+#
+# @keywords internal
+DetectSeuratLayerPaths <- function(assay_group) {
+  is_v5 <- assay_group$exists(name = 'layers') &&
+    inherits(assay_group[['layers']], 'H5Group')
+  if (is_v5) {
+    layers <- assay_group[['layers']]
+    data_path <- if (layers$exists(name = 'data')) 'layers/data' else NULL
+    counts_path <- if (layers$exists(name = 'counts')) 'layers/counts' else NULL
+  } else {
+    data_path <- if (assay_group$exists(name = 'data')) 'data' else NULL
+    counts_path <- if (assay_group$exists(name = 'counts')) 'counts' else NULL
+  }
+  scale_data_path <- if (assay_group$exists(name = 'scale.data')) 'scale.data' else NULL
+  list(
+    is_v5 = is_v5,
+    data_path = data_path,
+    counts_path = counts_path,
+    scale_data_path = scale_data_path
+  )
+}
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Implementations
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3036,50 +3072,23 @@ H5SeuratToH5AD <- function(
   # Add assay data
   assay.group <- source[['assays']][[assay]]
 
-  # Check if this is a V5 h5Seurat file with layers structure
-  has_layers <- assay.group$exists(name = 'layers') && inherits(assay.group[['layers']], 'H5Group')
+  # Resolve v4/v5 layer paths in one place. `has_layers` is still consumed by
+  # the meta.data/_index feature-count lookups below.
+  layer_paths <- DetectSeuratLayerPaths(assay.group)
+  has_layers <- layer_paths$is_v5
 
-  # Determine the appropriate data paths based on structure
-  if (has_layers) {
-    # V5 structure: data is under layers/
-    # Prioritize layers/data (all genes) over scale.data (variable features only)
-    if (assay.group[['layers']]$exists(name = 'data')) {
-      x.data <- 'layers/data'
-      raw.data <- if (assay.group[['layers']]$exists(name = 'counts')) {
-        'layers/counts'
-      } else {
-        NULL
-      }
-    } else if (assay.group[['layers']]$exists(name = 'counts')) {
-      x.data <- 'layers/counts'
-      raw.data <- NULL
-    } else if (assay.group$exists(name = 'scale.data')) {
-      # Fallback: only scale.data available (unusual)
-      x.data <- 'scale.data'
-      raw.data <- NULL
-    } else {
-      stop("Cannot find data or counts in V5 h5Seurat file", call. = FALSE)
-    }
+  # Prioritise data (all genes) over scale.data (variable features only).
+  if (!is.null(layer_paths$data_path)) {
+    x.data <- layer_paths$data_path
+    raw.data <- layer_paths$counts_path
+  } else if (!is.null(layer_paths$counts_path)) {
+    x.data <- layer_paths$counts_path
+    raw.data <- NULL
+  } else if (!is.null(layer_paths$scale_data_path)) {
+    x.data <- layer_paths$scale_data_path
+    raw.data <- NULL
   } else {
-    # Legacy structure
-    # Prioritize data (all genes) over scale.data (variable features only)
-    if (source$index()[[assay]]$slots[['data']]) {
-      x.data <- 'data'
-      raw.data <- if (source$index()[[assay]]$slots[['counts']]) {
-        'counts'
-      } else {
-        NULL
-      }
-    } else if (source$index()[[assay]]$slots[['counts']]) {
-      x.data <- 'counts'
-      raw.data <- NULL
-    } else if (source$index()[[assay]]$slots[['scale.data']]) {
-      # Fallback: only scale.data available (unusual)
-      x.data <- 'scale.data'
-      raw.data <- NULL
-    } else {
-      stop("Cannot find data or counts in h5Seurat file", call. = FALSE)
-    }
+    stop("Cannot find data or counts in h5Seurat file", call. = FALSE)
   }
 
   if (verbose) {
@@ -4053,30 +4062,19 @@ H5SeuratToH5AD <- function(
       layer.slot <- NULL
       other.group <- source[['assays']][[other]]
 
-      # Check if this assay has V5 structure with layers
-      other.has_layers <- other.group$exists(name = 'layers') && inherits(other.group[['layers']], 'H5Group')
+      other_paths <- DetectSeuratLayerPaths(other.group)
+      slot_lookup <- list(
+        'scale.data' = other_paths$scale_data_path,
+        'data'       = other_paths$data_path
+      )
 
       for (slot in c('scale.data', 'data')) {
-        # Determine the actual path for the slot
-        actual_path <- if (other.has_layers && slot %in% c('data', 'counts')) {
-          paste0('layers/', slot)
-        } else {
-          slot
-        }
-
-        # Check if the slot exists at the determined path
-        slot.exists <- if (other.has_layers && slot %in% c('data', 'counts')) {
-          other.group[['layers']]$exists(name = slot)
-        } else {
-          other.group$exists(name = slot)
-        }
-
-        if (slot.exists) {
-          slot.dims <- Dims(x = other.group[[actual_path]])
-          if (isTRUE(all.equal(slot.dims, x.dims))) {
-            layer.slot <- actual_path
-            break
-          }
+        actual_path <- slot_lookup[[slot]]
+        if (is.null(actual_path)) next
+        slot.dims <- Dims(x = other.group[[actual_path]])
+        if (isTRUE(all.equal(slot.dims, x.dims))) {
+          layer.slot <- actual_path
+          break
         }
       }
 
