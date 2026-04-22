@@ -1278,6 +1278,20 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
     has_mol <- tryCatch(lib_grp$exists("molecules"),    error = function(e) FALSE)
     if (!isTRUE(has_seg) && !isTRUE(has_mol)) next
 
+    # If H5ADSpatialToSeurat already attached a Visium-family image at this
+    # library key, leave it alone. SeuratSpatialToH5AD emits boundary
+    # centroids under segmentation/ as a Visium roundtrip byproduct, so the
+    # seg/mol probe above fires on pure Visium inputs — overwriting with a
+    # plain FOV would discard the scale.factors needed by SpatialFeaturePlot.
+    existing_img <- tryCatch(seurat_obj[[lib_id]], error = function(e) NULL)
+    if (inherits(existing_img, c("VisiumV1", "VisiumV2"))) {
+      if (verbose) {
+        message("  Keeping ", class(existing_img)[1], " image for '", lib_id,
+                "'; skipping FOV rebuild")
+      }
+      next
+    }
+
     fov <- tryCatch(
       ReadFOVFromH5AD(lib_grp, key = lib_id, assay = default_assay),
       error = function(e) {
