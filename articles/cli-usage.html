@@ -35,11 +35,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
+    <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -54,6 +57,7 @@
     <li><a class="dropdown-item" href="../articles/spatial-technologies.html">Spatial Technologies Overview</a></li>
     <li><a class="dropdown-item" href="../articles/convert-spatialdata.html">SpatialData Zarr Stores</a></li>
     <li><a class="dropdown-item" href="../articles/immune-repertoire.html">Immune Repertoire Metadata Preservation</a></li>
+    <li><a class="dropdown-item" href="../articles/atlas-bpcells.html">Atlas-Scale Datasets with BPCells</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -79,7 +83,7 @@
       <h1>Command-Line Interface</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/HEAD/vignettes/cli-usage.Rmd" class="external-link"><code>vignettes/cli-usage.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/main/vignettes/cli-usage.Rmd" class="external-link"><code>vignettes/cli-usage.Rmd</code></a></small>
       <div class="d-none name"><code>cli-usage.Rmd</code></div>
     </div>
 
@@ -101,14 +105,14 @@ automatically.</p>
 as h5Seurat – the starting point for CLI conversion.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"pbmc_demo.rds"</span>, package <span class="op">=</span> <span class="st">"scConvert"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">DimPlot</span><span class="op">(</span><span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu"><a href="https://satijalab.org/seurat/reference/DimPlot.html" class="external-link">DimPlot</a></span><span class="op">(</span><span class="va">obj</span>, reduction <span class="op">=</span> <span class="st">"umap"</span>, group.by <span class="op">=</span> <span class="st">"seurat_annotations"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"PBMC demo (500 cells)"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="cli-usage_files/figure-html/load_demo-1.png" class="r-plt" alt="" width="672"></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">h5s_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5Seurat"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/writeH5Seurat.html">writeH5Seurat</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5s_path</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Saved:"</span>, <span class="va">h5s_path</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Saved: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp9UNTGA/file158ab13581d98.h5Seurat</span></span></code></pre></div>
+<span><span class="co">#&gt; Saved: /tmp/Rtmp3z4E0M/file46fb4a734bd5.h5Seurat</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="using-the-c-binary-from-the-shell">Using the C binary from the shell<a class="anchor" aria-label="anchor" href="#using-the-c-binary-from-the-shell"></a>
@@ -163,19 +167,21 @@ compiled.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".h5ad"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="va">h5s_path</span>, <span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Validating h5Seurat file</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Converted to:"</span>, <span class="va">h5ad_path</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Converted to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp9UNTGA/file158ab4fd90e23.h5ad</span></span></code></pre></div>
+<span><span class="co">#&gt; Converted to: /tmp/Rtmp3z4E0M/file46fb62053530.h5ad</span></span></code></pre></div>
 <p>Verify the round-tripped data is intact:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">obj_rt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: Layer 'data' is empty</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Cells:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">obj_rt</span><span class="op">)</span>, <span class="st">"| Genes:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">obj_rt</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Cells: 500 | Genes: 2000</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu">Reductions</span><span class="op">(</span><span class="va">obj_rt</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reductions:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">obj_rt</span><span class="op">@</span><span class="va">reductions</span><span class="op">)</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Reductions: pca, umap</span></span>
 <span></span>
-<span><span class="fu">FeaturePlot</span><span class="op">(</span><span class="va">obj_rt</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, reduction <span class="op">=</span> <span class="st">"umap"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"LYZ expression after CLI round-trip"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://satijalab.org/seurat/reference/FeaturePlot.html" class="external-link">FeaturePlot</a></span><span class="op">(</span><span class="va">obj_rt</span>, features <span class="op">=</span> <span class="st">"LYZ"</span>, reduction <span class="op">=</span> <span class="st">"umap"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"LYZ expression after CLI round-trip"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="cli-usage_files/figure-html/verify-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level2">

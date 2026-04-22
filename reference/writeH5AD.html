@@ -24,12 +24,14 @@ location and removed after conversion."></head><body>
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -59,7 +61,7 @@ location and removed after conversion."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Direct Seurat to H5AD Conversion</h1>
-      <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/main/R/Convert.R" class="external-link"><code>R/Convert.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/mianaz/scConvert/blob/main/R/WriteH5AD.R" class="external-link"><code>R/WriteH5AD.R</code></a></small>
       <div class="d-none name"><code>writeH5AD.Rd</code></div>
     </div>
 
@@ -78,6 +80,7 @@ location and removed after conversion.</p>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  standardize <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  gzip <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -112,6 +115,10 @@ with .h5ad extension.</p></dd>
 Default FALSE.</p></dd>
 
 
+<dt id="arg-gzip">gzip<a class="anchor" aria-label="anchor" href="#arg-gzip"></a></dt>
+<dd><p>Integer gzip compression level (0-9), or NULL to use the package default.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to writeH5Seurat and Convert.</p></dd>
 
@@ -131,7 +138,7 @@ keeping the intermediate h5Seurat file.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="writeH5Seurat.html">writeH5Seurat</a></code>, <code>scConvert</code>, <code><a href="readH5AD.html">readH5AD</a></code></p></div>
+    <div class="dont-index"><p><code><a href="writeH5Seurat.html">writeH5Seurat</a></code>, <code><a href="scConvert.html">scConvert</a></code>, <code><a href="readH5AD.html">readH5AD</a></code></p></div>
     </div>
 
     <div class="section level2">

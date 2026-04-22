@@ -26,12 +26,14 @@ available for memory efficiency."></head><body>
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -289,10 +291,6 @@ the <code>scConvert.dtypes.dataframe_as_group</code> option is <code>FALSE</code
  <code>assay_anndata</code></p>
 </div>
 <div class="section">
-<h3 id="layers">Layers<a class="anchor" aria-label="anchor" href="#layers"></a></h3>
-<p>TODO: add this</p>
-</div>
-<div class="section">
 <h3 id="miscellaneous-information">Miscellaneous information<a class="anchor" aria-label="anchor" href="#miscellaneous-information"></a></h3>
 <p>All groups and datasets from <code>/uns</code> will be copied to <code>misc</code> in
  the h5Seurat file except for the following:</p><ul><li><p>Any group or dataset named the same as a dimensional reduction (eg.
@@ -346,7 +344,7 @@ index (<code>source$index()</code>). It works in the following manner:</p><div c
  then <strong>only</strong> the last graph according to the index will be added.</p>
 </div>
 <div class="section">
-<h3 id="layers-1">Layers<a class="anchor" aria-label="anchor" href="#layers-1"></a></h3>
+<h3 id="layers">Layers<a class="anchor" aria-label="anchor" href="#layers"></a></h3>
 <p>Data from other assays can be added to <code>layers</code> if they have the same
  shape as <code>X</code> (same number of cells and features). To determine this,
  the shape of each alternate assays's <code>scale.data</code> and <code>data</code> slots

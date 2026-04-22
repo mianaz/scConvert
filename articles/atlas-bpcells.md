@@ -1,7 +1,6 @@
 # Atlas-Scale Datasets with BPCells
 
 ``` r
-
 library(scConvert)
 library(Seurat)
 library(ggplot2)
@@ -21,7 +20,6 @@ We use the **Cross-tissue immune cell atlas** (Domínguez Conde et al.,
 35,469 genes across 12 tissues (1.6 GB h5ad).
 
 ``` r
-
 # Download T & innate lymphoid cells subset (~1.6 GB)
 url <- "https://datasets.cellxgene.cziscience.com/6cd641fe-5ee8-47b4-92dc-26816e270d5e.h5ad"
 atlas_path <- "immune_tcells.h5ad"
@@ -45,7 +43,6 @@ sparse matrix. For 217K cells × 35K genes, this requires **~8.5 GB** of
 RAM.
 
 ``` r
-
 system.time(atlas <- readH5AD("immune_tcells.h5ad"))
 #>   Cells: 216611
 #>   Features: 35469
@@ -56,7 +53,6 @@ format(object.size(atlas), units = "GB")
 ```
 
 ``` r
-
 DimPlot(atlas, group.by = "cell_type", label = TRUE, repel = TRUE,
         label.size = 2.5, pt.size = 0.05) +
   NoLegend() + ggtitle("217K immune cells — standard load (28.8s)")
@@ -69,7 +65,6 @@ DimPlot(atlas, group.by = "cell_type", label = TRUE, repel = TRUE,
 16 distinct immune cell types are clearly resolved on the UMAP.
 
 ``` r
-
 DimPlot(atlas, group.by = "tissue", label = TRUE, repel = TRUE,
         label.size = 3, pt.size = 0.05) +
   NoLegend() + ggtitle("Colored by tissue of origin")
@@ -94,7 +89,6 @@ Pass `use.bpcells = TRUE` to keep the matrix backed by the original h5ad
 file. No data is copied.
 
 ``` r
-
 system.time(atlas_bp <- readH5AD("immune_tcells.h5ad", use.bpcells = TRUE))
 #>   elapsed: 12.6 s  (2.3x faster)
 
@@ -103,7 +97,6 @@ format(object.size(atlas_bp), units = "MB")
 ```
 
 ``` r
-
 DimPlot(atlas_bp, group.by = "cell_type", label = TRUE, repel = TRUE,
         label.size = 2.5, pt.size = 0.05) +
   NoLegend() + ggtitle("217K cells — BPCells on-disk (12.6s)")
@@ -121,7 +114,6 @@ Pass a directory path to convert into BPCells’ optimized bitpacked
 format.
 
 ``` r
-
 # First load writes the cache
 system.time(atlas_bp2 <- readH5AD("immune_tcells.h5ad", use.bpcells = "bp_cache"))
 #>   elapsed: 13.5 s
@@ -157,12 +149,10 @@ Side-by-side: cell type and tissue
 Verify BPCells mode works on your system with the small shipped demo.
 
 ``` r
-
 has_bp <- requireNamespace("BPCells", quietly = TRUE)
 ```
 
 ``` r
-
 h5ad_file <- system.file("extdata", "pbmc_demo.h5ad", package = "scConvert")
 
 if (has_bp) {
@@ -184,14 +174,14 @@ if (has_bp) {
 #> Warning: Matrix compression performs poorly with non-integers.
 #> • Consider calling convert_matrix_type if a compressed integer matrix is intended.
 #> This message is displayed once every 8 hours.
+#> Warning: Layer 'data' is empty
 #> Standard object size: 3377.9 Kb 
-#> BPCells object size:  1362.7 Kb 
+#> BPCells object size:  1362.6 Kb 
 #> Matrix class (standard): dgCMatrix 
 #> Matrix class (BPCells):  RenameDims
 ```
 
 ``` r
-
 if (has_bp) {
   library(patchwork)
   p1 <- DimPlot(obj_std, group.by = "seurat_annotations", label = TRUE, pt.size = 1) +
@@ -212,7 +202,6 @@ For HDF5 format pairs, the C binary converts directly without loading
 into R:
 
 ``` r
-
 # Convert the 217K-cell atlas without loading into R
 scConvert_cli("immune_tcells.h5ad", "immune_tcells.h5seurat")
 #>   elapsed: 55.5 s  (1.6 GB file)
@@ -226,7 +215,6 @@ scConvert("immune_tcells.h5ad", dest = "h5seurat")
 Load with BPCells, filter to a cell type of interest, then save:
 
 ``` r
-
 atlas <- readH5AD("immune_tcells.h5ad", use.bpcells = TRUE)
 
 # Subset to regulatory T cells only
@@ -240,13 +228,13 @@ saveRDS(tregs, "tregs_only.rds")
 
 ## When to use BPCells
 
-| Scenario | Recommendation |
-|----|----|
-| \< 50K cells | Standard loading (fast, simple) |
-| 50K – 500K cells | BPCells optional (saves RAM) |
-| \> 500K cells | BPCells strongly recommended |
-| Repeated access to same file | `use.bpcells = "/path"` (directory cache) |
-| One-time format conversion | C binary (`scConvert_cli`) — no loading at all |
-| Subsetting before analysis | BPCells + [`subset()`](https://rdrr.io/r/base/subset.html) + save |
+| Scenario                     | Recommendation                                                    |
+|------------------------------|-------------------------------------------------------------------|
+| \< 50K cells                 | Standard loading (fast, simple)                                   |
+| 50K – 500K cells             | BPCells optional (saves RAM)                                      |
+| \> 500K cells                | BPCells strongly recommended                                      |
+| Repeated access to same file | `use.bpcells = "/path"` (directory cache)                         |
+| One-time format conversion   | C binary (`scConvert_cli`) — no loading at all                    |
+| Subsetting before analysis   | BPCells + [`subset()`](https://rdrr.io/r/base/subset.html) + save |
 
 ## Clean up

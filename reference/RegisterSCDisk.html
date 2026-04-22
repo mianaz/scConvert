@@ -22,12 +22,14 @@ use in functions that rely on the class definition instead of an object."></head
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -98,7 +100,7 @@ follow traditional inheritance patterns (can be determined through
 These functions provide a simple mechanism for adding and getting the
 defintions of <code>scdisk</code> subclasses for functions that utilize the object
 generators or other aspects of the class definition (such as
-<code>scConvert</code>)</p>
+<code><a href="scConvert.html">scConvert</a></code>)</p>
 <p>To register a subclass of <code>scdisk</code>, simply add a call to
 <code>RegisterSCDisk</code> in your load hook</p>
 <div class="sourceCode"><pre><code><span></span>

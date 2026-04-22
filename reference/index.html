@@ -20,12 +20,14 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -69,7 +71,7 @@
 
       <dl><dt>
 
-          <code><a href="scConvert-package.html">scConvert-package</a></code> <code><a href="scConvert-package.html">scConvert</a></code>
+          <code><a href="scConvert-package.html">scConvert-package</a></code>
 
         </dt>
         <dd>scConvert: Universal Single-Cell Format Conversion for R</dd>
@@ -93,7 +95,7 @@
           <code><a href="RegisterSCDisk.html">GetSCDisk()</a></code> <code><a href="RegisterSCDisk.html">RegisterSCDisk()</a></code>
 
         </dt>
-        <dd>Get and Register <code><a href="https://mianaz.github.io/scConvert/reference/scdisk-class.html">scdisk</a></code> Subclasses</dd>
+        <dd>Get and Register <code>scdisk</code> Subclasses</dd>
       </dl></div><div class="section level2">
       <h2 id="h-seurat-format">h5Seurat Format<a class="anchor" aria-label="anchor" href="#h-seurat-format"></a></h2>
 
@@ -196,6 +198,13 @@
 
         </dt>
         <dd>Read observation embeddings from an H5AD file</dd>
+
+        <dt>
+
+          <code><a href="scLoadMeta.html">scLoadMeta()</a></code>
+
+        </dt>
+        <dd>Load deferred h5ad components into a Seurat object</dd>
       </dl></div><div class="section level2">
       <h2 id="mudata-h-mu-format">MuData (h5mu) Format<a class="anchor" aria-label="anchor" href="#mudata-h-mu-format"></a></h2>
 
@@ -232,21 +241,21 @@
           <code><a href="H5MUToH5Seurat.html">H5MUToH5Seurat()</a></code>
 
         </dt>
-        <dd>Convert H5MU files to h5Seurat files</dd>
+        <dd>Convert an h5mu file to h5seurat format</dd>
 
         <dt>
 
           <code><a href="H5SeuratToH5MU.html">H5SeuratToH5MU()</a></code>
 
         </dt>
-        <dd>Convert h5Seurat files to H5MU files</dd>
+        <dd>Convert an h5seurat file to h5mu format</dd>
 
         <dt>
 
           <code><a href="H5MUToH5AD.html">H5MUToH5AD()</a></code>
 
         </dt>
-        <dd>Convert H5MU files to H5AD files (extract single modality)</dd>
+        <dd>Convert an h5mu file to h5ad format</dd>
 
         <dt>
 
@@ -598,6 +607,50 @@
 
         </dt>
         <dd>Wrap a standard anndata zarr store as a SpatialData store</dd>
+
+        <dt>
+
+          <code><a href="WriteFOVToH5AD.html">WriteFOVToH5AD()</a></code>
+
+        </dt>
+        <dd>Write FOV segmentation and molecules into an open h5ad library group</dd>
+
+        <dt>
+
+          <code><a href="ReadFOVFromH5AD.html">ReadFOVFromH5AD()</a></code>
+
+        </dt>
+        <dd>Read FOV structure back from an h5ad library group</dd>
+      </dl></div><div class="section level2">
+      <h2 id="vendor-spatial-formats">Vendor Spatial Formats<a class="anchor" aria-label="anchor" href="#vendor-spatial-formats"></a></h2>
+
+      <div class="section-desc"><p>Native readers for upstream vendor formats (no Python required)</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="LoadStereoSeqGef.html">LoadStereoSeqGef()</a></code>
+
+        </dt>
+        <dd>Load a Stereo-seq GEF file into a Seurat object</dd>
+
+        <dt>
+
+          <code><a href="LoadCosMx.html">LoadCosMx()</a></code>
+
+        </dt>
+        <dd>Load a NanoString CosMx SMI bundle into a Seurat object</dd>
+
+        <dt>
+
+          <code><a href="LoadXenium.html">LoadXenium()</a></code>
+
+        </dt>
+        <dd>Load a 10x Xenium output bundle into a Seurat object</dd>
       </dl></div><div class="section level2">
       <h2 id="format-conversion">Format Conversion<a class="anchor" aria-label="anchor" href="#format-conversion"></a></h2>
 
@@ -620,7 +673,7 @@
           <code><a href="FileType.html">FileType()</a></code>
 
         </dt>
-        <dd>Convert an HDF5 compound dataset to a group (legacy version)</dd>
+        <dd>Determine a filetype based on its extension</dd>
 
         <dt>
 
@@ -716,13 +769,6 @@
 
         </dt>
         <dd>Assemble an object from an h5Seurat file</dd>
-
-        <dt>
-
-          <code><a href="scAppendData.html">scAppendData()</a></code>
-
-        </dt>
-        <dd>Append data from an h5Seurat file to a preexisting <code><a href="https://satijalab.org/seurat/reference/Seurat-package.html" class="external-link">Seurat</a></code> object</dd>
 
         <dt>
 
@@ -1066,7 +1112,7 @@
           <code><a href="ConvertFOVToH5AD.html">ConvertFOVToH5AD()</a></code>
 
         </dt>
-        <dd>Convert FOV object to h5ad-compatible structure</dd>
+        <dd>Convert FOV object to an h5ad-compatible list structure</dd>
 
         <dt>
 
@@ -1143,28 +1189,28 @@
           <code><a href="ExtractFOVCentroids.html">ExtractFOVCentroids()</a></code>
 
         </dt>
-        <dd>Functions for handling FOV (Field of View) spatial objects</dd>
+        <dd>Extract centroid coordinates from an FOV object</dd>
 
         <dt>
 
           <code><a href="ExtractFOVMolecules.html">ExtractFOVMolecules()</a></code>
 
         </dt>
-        <dd>Extract molecule positions from FOV object</dd>
+        <dd>Extract molecule coordinates from an FOV object</dd>
 
         <dt>
 
           <code><a href="ExtractFOVSegmentation.html">ExtractFOVSegmentation()</a></code>
 
         </dt>
-        <dd>Extract segmentation boundaries from FOV object</dd>
+        <dd>Extract segmentation boundaries from an FOV object</dd>
 
         <dt>
 
           <code><a href="FileType.html">FileType()</a></code>
 
         </dt>
-        <dd>Convert an HDF5 compound dataset to a group (legacy version)</dd>
+        <dd>Determine a filetype based on its extension</dd>
 
         <dt>
 
@@ -1273,13 +1319,6 @@
 
         <dt>
 
-          <code><a href="H5ADToFOV.html">H5ADToFOV()</a></code>
-
-        </dt>
-        <dd>Convert h5ad spatial data to FOV object</dd>
-
-        <dt>
-
           <code><a href="H5ADToH5Seurat.html">H5ADToH5Seurat()</a></code>
 
         </dt>
@@ -1294,20 +1333,6 @@
 
         <dt>
 
-          <code><a href="H5MUToH5AD.html">H5MUToH5AD()</a></code>
-
-        </dt>
-        <dd>Convert H5MU files to H5AD files (extract single modality)</dd>
-
-        <dt>
-
-          <code><a href="H5MUToH5Seurat.html">H5MUToH5Seurat()</a></code>
-
-        </dt>
-        <dd>Convert H5MU files to h5Seurat files</dd>
-
-        <dt>
-
           <code><a href="H5Path.html">H5Path()</a></code>
 
         </dt>
@@ -1319,13 +1344,6 @@
 
         </dt>
         <dd>Convert h5Seurat files to H5AD files</dd>
-
-        <dt>
-
-          <code><a href="H5SeuratToH5MU.html">H5SeuratToH5MU()</a></code>
-
-        </dt>
-        <dd>Convert h5Seurat files to H5MU files</dd>
 
         <dt>
 
@@ -1742,6 +1760,13 @@
 
         <dt>
 
+          <code><a href="dot-fast_create_seurat.html">.fast_create_seurat()</a></code>
+
+        </dt>
+        <dd>Fast Seurat object constructor (bypass CreateSeuratObject validation)</dd>
+
+        <dt>
+
           <code><a href="dot-h5ad_write_dict_group.html">.h5ad_write_dict_group()</a></code>
 
         </dt>
@@ -1914,6 +1939,20 @@
 
         </dt>
         <dd>Stream a sparse matrix group from one HDF5 file to another</dd>
+
+        <dt>
+
+          <code><a href="dot-writeH5AD_c.html">.writeH5AD_c()</a></code>
+
+        </dt>
+        <dd>Fast C-based h5ad writer</dd>
+
+        <dt>
+
+          <code><a href="dot-writeH5Seurat_c.html">.writeH5Seurat_c()</a></code>
+
+        </dt>
+        <dd>Fast C-based h5Seurat writer</dd>
 
         <dt>
 
@@ -2110,6 +2149,13 @@
 
         </dt>
         <dd>Tools for handling h5Seurat indexes</dd>
+
+        <dt>
+
+          <code><a href="scAppendData.html">scAppendData()</a></code>
+
+        </dt>
+        <dd>Append data from an h5Seurat file to a preexisting <code><a href="https://satijalab.org/seurat/reference/Seurat-package.html" class="external-link">Seurat</a></code> object</dd>
 
         <dt>
 

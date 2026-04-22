@@ -20,12 +20,14 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -59,6 +61,53 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.0.9001" id="scconvert-0109001-development">scConvert 0.1.0.9001 (development)<a class="anchor" aria-label="anchor" href="#scconvert-0109001-development"></a></h2>
+<blockquote>
+<p><strong>Status:</strong> unreleased; rolling development between 0.1.0 and the next tag.</p>
+</blockquote>
+<div class="section level3">
+<h3 id="new-features-0-1-0-9001">New features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0-9001"></a></h3>
+<ul><li>
+<strong>Native Stereo-seq GEF reader (<code><a href="../reference/LoadStereoSeqGef.html">LoadStereoSeqGef()</a></code>).</strong> Pure-R reader for BGI <code>.gef</code> and <code>.cellbin.gef</code> files using <code>hdf5r</code> only. Handles both the square-bin and cell-bin schemas documented by STOmics. No Python, stereopy, or reticulate dependency. Spot coordinates are stored in <code>meta.data$spatial_x/y</code> and <code>misc$spatial_technology = "StereoSeq"</code>.</li>
+<li>
+<strong>Native CosMx SMI reader (<code><a href="../reference/LoadCosMx.html">LoadCosMx()</a></code>).</strong> Thin R wrapper around <code><a href="https://satijalab.org/seurat/reference/ReadNanostring.html" class="external-link">Seurat::LoadNanostring()</a></code> that validates the canonical flat-file bundle (<code>*exprMat*.csv</code>, <code>*metadata*.csv</code>, <code>*fov_positions*.csv</code>, <code>*tx_file*.csv</code>) and tags the result with <code>misc$spatial_technology = "CosMx"</code>. No squidpy or reticulate dependency.</li>
+<li>
+<strong>CLI auto-delegation for vendor raw formats.</strong> The <code>scconvert</code> C binary now auto-detects <code>.gef</code>, <code>.cellbin.gef</code>, and CosMx bundle directories and transparently delegates to the R backend via <code>Rscript</code> + <code>execvp()</code>. Users can write <code>scconvert mosta.gef mosta.h5ad</code> directly. <code>Rscript</code> lookup happens up-front; paths are absolutised; no shell-parsed command strings.</li>
+<li>
+<strong>FOV round-trip through h5ad.</strong> <code><a href="../reference/writeH5AD.html">writeH5AD()</a></code> now serializes <code>FOV@boundaries</code> and <code>FOV@molecules</code> into a stable <code>uns/spatial/{library}/segmentation/</code> and <code>uns/spatial/{library}/molecules/</code> contract. <code><a href="../reference/readH5AD.html">readH5AD()</a></code> automatically rebuilds any FOV library it finds on load. Backward-compatible with squidpy and scanpy (they ignore unknown <code>uns/spatial/{lib}/</code> children).</li>
+<li>
+<strong>CLI <code>varp</code> preservation.</strong> The new <code>sc_stream_varp()</code> in <code>src/sc_groups.c</code> mirrors <code>sc_stream_obsp()</code> and maps <code>/varp/</code> (h5ad) to <code>/misc/__varp__/</code> (h5seurat). Handles both sparse (CSR/CSC group) and dense (array dataset) varp entries. Closes the manuscript limitation “CLI does not preserve varp”.</li>
+<li>
+<strong>Loom factor-level preservation.</strong> <code><a href="../reference/writeLoom.html">writeLoom()</a></code> now stores factor levels and <code>ordered</code> flag under <code>/scConvert_extensions/col_factor_levels/{name}</code>, outside <code>col_attrs</code> so loompy/scanpy continue to read the file without errors. <code><a href="../reference/readLoom.html">readLoom()</a></code> restores the factors on load.</li>
+<li>
+<strong>h5mu per-modality <code>uns</code> round-trip.</strong> <code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> and <code><a href="../reference/readH5MU.html">readH5MU()</a></code> now mirror each modality’s <code>uns</code> group under <code>obj@misc[["__h5mu_uns_per_mod__"]][[modality]]</code> so per-modality uns entries survive h5mu round-trips instead of being flattened.</li>
+<li>
+<strong>IMC multi-image support.</strong> <code><a href="../reference/SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code> now iterates over every image in deterministic sorted order instead of processing only <code>Images()[1]</code>. Fixes the IMC 14/15 -&gt; 11/13 double-roundtrip degradation documented in <code>NOTES.md</code> section 3.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="robustness-0-1-0-9001">Robustness<a class="anchor" aria-label="anchor" href="#robustness-0-1-0-9001"></a></h3>
+<ul><li>
+<strong>C CLI memory-safety helpers.</strong> New <code>sc_xmalloc()</code>, <code>sc_xcalloc()</code>, <code>sc_xrealloc()</code>, and <code>sc_check_mul_size()</code> in <code>src/sc_util.c</code> replace raw <code>malloc()</code> calls with overflow-checked allocations at the dense-embedding transpose sites in <code>src/sc_zarr.c:1043, 1668, 1674</code> and the column-buffer allocation in <code>src/sc_loom.c:138</code>. Prevents SIZE_MAX overflow on chip-scale embeddings.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-1-0-9001">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-0-9001"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/readH5AD.html">readH5AD()</a></code>: handle unsorted CSR column indices.</strong> scanpy-processed files such as <code>scanpy.datasets.pbmc3k_processed()</code> ship with CSR matrices whose column indices are not sorted within each row. Previously these produced an invalid <code>dgCMatrix</code> on read. <code><a href="../reference/readH5AD.html">readH5AD()</a></code> and <code><a href="../reference/readH5MU.html">readH5MU()</a></code> now detect this condition via <code>.sort_dgc_indices()</code> in <code>R/LoadH5AD.R</code> (and the sibling helper in <code>R/LoadH5MU.R</code>) and sort indices column-wise before constructing the sparse matrix. A regression test has been added in <code>tests/testthat/test-regression-fixes.R</code>.</li>
+<li>
+<strong><code><a href="../reference/H5SeuratToZarr.html">H5SeuratToZarr()</a></code>: do not crash on 1D dense datasets.</strong> The direct h5Seurat -&gt; Zarr converter previously attempted to infer (rows, cols) from a 1D dense HDF5 dataset and crashed with a dimensionality error. It now emits a warning and skips the offending dataset. Tracked as “Chain D” in the benchmark manuscript; regression test included.</li>
+<li>
+<strong><code><a href="../reference/writeZarr.html">writeZarr()</a></code>: skip scale.data layer when its shape differs from X.</strong> <code><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">Seurat::ScaleData()</a></code> produces an <code>(n_hvg x n_cells)</code> matrix whose row count does not match <code>X</code>’s <code>n_genes</code>. AnnData requires all <code>layers/*</code> to match <code>X</code>’s shape, so <code><a href="../reference/writeZarr.html">writeZarr()</a></code> now skips any layer whose dimensions differ from the default assay’s data matrix. A regression test covers this case. (See <code>R/SaveZarr.R:131</code>.)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="testing-0-1-0-9001">Testing<a class="anchor" aria-label="anchor" href="#testing-0-1-0-9001"></a></h3>
+<ul><li>Added <code>tests/testthat/test-regression-fixes.R</code> with three regression tests pinning the bugs listed above. The test suite is now <strong>140 <code>test_that</code> blocks</strong> with <strong>465 assertions</strong> (up from 137 / 448).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-0-1-0-9001">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-0-9001"></a></h3>
+<ul><li>Added <code>NOTES.md</code> describing the state of recent bug fixes, benchmark findings that are specific to the manuscript (not to users), and investigations into dataset-pipeline issues (Stereo-seq MOSTA and CosMx SMI – upstream format is not HDF5; see the notes file for details).</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="scconvert-010">scConvert 0.1.0<a class="anchor" aria-label="anchor" href="#scconvert-010"></a></h2>
 <blockquote>
 <p><strong>Release Date:</strong> 2026-03-10</p>
@@ -69,7 +118,7 @@
 <div class="section level4">
 <h4 id="universal-format-conversion-0-1-0">Universal Format Conversion<a class="anchor" aria-label="anchor" href="#universal-format-conversion-0-1-0"></a></h4>
 <ul><li>Support for 7 formats: h5ad, h5Seurat, h5mu, Loom, Zarr, RDS, and SingleCellExperiment</li>
-<li>Hub architecture with 30+ conversion paths via <code>scConvert()</code>
+<li>Hub architecture with 30+ conversion paths via <code><a href="../reference/scConvert.html">scConvert()</a></code>
 </li>
 <li>Direct HDF5 paths for h5ad/h5Seurat without intermediate loading</li>
 </ul></div>

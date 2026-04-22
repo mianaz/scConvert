@@ -14,7 +14,6 @@ Load the bundled PBMC demo data (500 cells, 9 cell types) and save it as
 h5Seurat – the starting point for CLI conversion.
 
 ``` r
-
 obj <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 DimPlot(obj, reduction = "umap", group.by = "seurat_annotations") +
   ggplot2::ggtitle("PBMC demo (500 cells)")
@@ -23,11 +22,10 @@ DimPlot(obj, reduction = "umap", group.by = "seurat_annotations") +
 ![](cli-usage_files/figure-html/load_demo-1.png)
 
 ``` r
-
 h5s_path <- tempfile(fileext = ".h5Seurat")
 writeH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
 cat("Saved:", h5s_path, "\n")
-#> Saved: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp9UNTGA/file158ab13581d98.h5Seurat
+#> Saved: /tmp/Rtmp3z4E0M/file46fb4a734bd5.h5Seurat
 ```
 
 ## Using the C binary from the shell
@@ -60,22 +58,22 @@ The R wrapper tries the C binary first, then falls back to R streaming
 or the Seurat hub. It works even if the binary is not compiled.
 
 ``` r
-
 h5ad_path <- tempfile(fileext = ".h5ad")
 scConvert_cli(h5s_path, h5ad_path, verbose = FALSE)
+#> Validating h5Seurat file
 #> [1] TRUE
 cat("Converted to:", h5ad_path, "\n")
-#> Converted to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp9UNTGA/file158ab4fd90e23.h5ad
+#> Converted to: /tmp/Rtmp3z4E0M/file46fb62053530.h5ad
 ```
 
 Verify the round-tripped data is intact:
 
 ``` r
-
 obj_rt <- readH5AD(h5ad_path, verbose = FALSE)
+#> Warning: Layer 'data' is empty
 cat("Cells:", ncol(obj_rt), "| Genes:", nrow(obj_rt), "\n")
 #> Cells: 500 | Genes: 2000
-cat("Reductions:", paste(Reductions(obj_rt), collapse = ", "), "\n")
+cat("Reductions:", paste(names(obj_rt@reductions), collapse = ", "), "\n")
 #> Reductions: pca, umap
 
 FeaturePlot(obj_rt, features = "LYZ", reduction = "umap") +
@@ -89,7 +87,6 @@ FeaturePlot(obj_rt, features = "LYZ", reduction = "umap") +
 Convert all h5ad files in a directory:
 
 ``` r
-
 h5ad_files <- list.files(".", pattern = "\\.h5ad$", full.names = TRUE)
 for (f in h5ad_files) {
   out <- sub("\\.h5ad$", ".h5seurat", f)
@@ -101,7 +98,6 @@ For formats not supported by the C binary (RDS, Zarr, SCE), the same
 function works via the R hub:
 
 ``` r
-
 scConvert_cli("data.h5ad", "data.rds")
 scConvert_cli("data.rds", "data.zarr")
 scConvert_cli("data.h5ad", "data.zarr")
@@ -113,12 +109,12 @@ The C binary uses direct chunk copy and sparse zero-copy to avoid
 decompressing data. Median wall-clock seconds on synthetic sparse h5ad
 (20K genes, 5% density, Apple M4 Max):
 
-| Cells | R read (readH5AD) | R write (writeH5AD) | CLI h5ad to h5seurat | CLI h5seurat to h5ad |
-|---:|---:|---:|---:|---:|
-| 1,000 | 0.28 s | 0.61 s | 0.02 s | 0.02 s |
-| 10,000 | 0.49 s | 1.6 s | 0.04 s | 0.03 s |
-| 50,000 | 1.4 s | 6.0 s | 0.13 s | 0.16 s |
-| 100,000 | 2.9 s | 11.7 s | 0.29 s | 0.26 s |
+|   Cells | R read (readH5AD) | R write (writeH5AD) | CLI h5ad to h5seurat | CLI h5seurat to h5ad |
+|--------:|------------------:|--------------------:|---------------------:|---------------------:|
+|   1,000 |            0.28 s |              0.61 s |               0.02 s |               0.02 s |
+|  10,000 |            0.49 s |               1.6 s |               0.04 s |               0.03 s |
+|  50,000 |             1.4 s |               6.0 s |               0.13 s |               0.16 s |
+| 100,000 |             2.9 s |              11.7 s |               0.29 s |               0.26 s |
 
 The CLI is 10–50x faster because it never constructs a Seurat object.
 For loading data into R for analysis, use

@@ -13,7 +13,6 @@ loads it directly into a Seurat object – no intermediate conversion step
 is needed.
 
 ``` r
-
 h5ad_file <- system.file("extdata", "pbmc_demo.h5ad", package = "scConvert")
 pbmc <- readH5AD(h5ad_file)
 pbmc
@@ -30,12 +29,11 @@ The reader reconstructs the full Seurat object from the h5ad contents,
 including metadata, dimensional reductions, and neighbor graphs.
 
 ``` r
-
 cat("Cells:", ncol(pbmc), "\n")
 #> Cells: 500
 cat("Genes:", nrow(pbmc), "\n")
 #> Genes: 2000
-cat("Reductions:", paste(Reductions(pbmc), collapse = ", "), "\n")
+cat("Reductions:", paste(names(pbmc@reductions), collapse = ", "), "\n")
 #> Reductions: pca, umap
 cat("Metadata columns:", paste(colnames(pbmc[[]]), collapse = ", "), "\n")
 #> Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, seurat_annotations, percent.mt, RNA_snn_res.0.5, seurat_clusters
@@ -44,7 +42,6 @@ cat("Metadata columns:", paste(colnames(pbmc[[]]), collapse = ", "), "\n")
 The nine annotated cell types are preserved as a factor column:
 
 ``` r
-
 DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
         label = TRUE, pt.size = 0.5) + NoLegend()
 ```
@@ -55,7 +52,6 @@ We can also visualize a marker gene. LYZ is highly expressed in
 monocytes:
 
 ``` r
-
 FeaturePlot(pbmc, features = "LYZ", pt.size = 0.5)
 ```
 
@@ -68,12 +64,11 @@ h5ad. The normalized data matrix goes to `X`, raw counts go to `raw/X`,
 and all metadata, reductions, and graphs are preserved.
 
 ``` r
-
 pbmc_seurat <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 h5ad_path <- tempfile(fileext = ".h5ad")
 writeH5AD(pbmc_seurat, h5ad_path, overwrite = TRUE)
 cat("h5ad file size:", round(file.size(h5ad_path) / 1e6, 1), "MB\n")
-#> h5ad file size: 1 MB
+#> h5ad file size: 0.9 MB
 ```
 
 ## Verify the round-trip
@@ -82,12 +77,10 @@ Read the newly written h5ad back and confirm that expression values,
 cluster labels, and UMAP coordinates are preserved.
 
 ``` r
-
 pbmc_rt <- readH5AD(h5ad_path)
 ```
 
 ``` r
-
 library(patchwork)
 p1 <- DimPlot(pbmc_seurat, reduction = "umap", group.by = "seurat_annotations",
               label = TRUE, pt.size = 0.5) + NoLegend() + ggtitle("Original (.rds)")
@@ -101,12 +94,11 @@ p1 + p2
 ## One-liner format conversion
 
 For quick format conversion without loading data into R, use the
-[`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html)
+[`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert.md)
 dispatcher. It detects source and destination formats from file
 extensions and picks the most efficient conversion path:
 
 ``` r
-
 h5seurat_path <- tempfile(fileext = ".h5seurat")
 scConvert(h5ad_path, dest = h5seurat_path, overwrite = TRUE)
 cat("Converted h5ad to h5Seurat:", round(file.size(h5seurat_path) / 1e6, 1), "MB\n")
@@ -118,15 +110,15 @@ cat("Converted h5ad to h5Seurat:", round(file.size(h5seurat_path) / 1e6, 1), "MB
 During conversion, scConvert maps data between Seurat and h5ad as
 follows:
 
-| Seurat | h5ad | Description |
-|----|----|----|
-| `data` layer | `X` | Normalized expression matrix |
-| `counts` layer | `raw/X` | Raw counts |
-| `meta.data` | `obs` | Cell metadata (categoricals become factors) |
-| Feature metadata | `var` | Gene-level annotations |
-| `Reductions(obj)` | `obsm/X_pca`, `obsm/X_umap` | Dimensional reductions |
-| `Graphs(obj)` | `obsp/connectivities`, `obsp/distances` | Neighbor graphs |
-| `misc` | `uns` | Unstructured annotations |
+| Seurat            | h5ad                                    | Description                                 |
+|-------------------|-----------------------------------------|---------------------------------------------|
+| `data` layer      | `X`                                     | Normalized expression matrix                |
+| `counts` layer    | `raw/X`                                 | Raw counts                                  |
+| `meta.data`       | `obs`                                   | Cell metadata (categoricals become factors) |
+| Feature metadata  | `var`                                   | Gene-level annotations                      |
+| `Reductions(obj)` | `obsm/X_pca`, `obsm/X_umap`             | Dimensional reductions                      |
+| `Graphs(obj)`     | `obsp/connectivities`, `obsp/distances` | Neighbor graphs                             |
+| `misc`            | `uns`                                   | Unstructured annotations                    |
 
 ## Python interop (optional)
 
@@ -151,7 +143,6 @@ sc.pl.umap(adata, color="LYZ", use_raw=False)
 ## Clean up
 
 ``` r
-
 unlink(h5ad_path)
 unlink(h5seurat_path)
 ```

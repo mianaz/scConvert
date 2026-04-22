@@ -37,12 +37,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -80,7 +82,7 @@
 <!-- badges: start -->
 
 <p><strong>Universal single-cell format conversion for R. No Python required.</strong></p>
-<p>scConvert converts between <strong>9 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>50+ conversion paths</strong> from a single <code><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert()</a></code> interface.</p>
+<p>scConvert converts between <strong>9 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>50+ conversion paths</strong> from a single <code><a href="reference/scConvert.html">scConvert()</a></code> interface.</p>
 <div class="section level2">
 <h2 id="supported-formats">Supported Formats<a class="anchor" aria-label="anchor" href="#supported-formats"></a>
 </h2>
@@ -180,9 +182,9 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mianaz.github.io/scConvert/">scConvert</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># One-line conversion between any format pair</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5mu"</span>, dest <span class="op">=</span> <span class="st">"rds"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="va">seurat_obj</span>, dest <span class="op">=</span> <span class="st">"output.h5ad"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/scConvert.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/scConvert.html">scConvert</a></span><span class="op">(</span><span class="st">"data.h5mu"</span>, dest <span class="op">=</span> <span class="st">"rds"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/scConvert.html">scConvert</a></span><span class="op">(</span><span class="va">seurat_obj</span>, dest <span class="op">=</span> <span class="st">"output.h5ad"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Direct h5ad loading with full metadata preservation</span></span>
 <span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/readH5AD.html">readH5AD</a></span><span class="op">(</span><span class="st">"data.h5ad"</span><span class="op">)</span></span>
@@ -356,7 +358,7 @@
 </h2>
 <ul>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-anndata.html">Conversions: h5Seurat and AnnData</a></li>
-<li><a href="https://mianaz.github.io/scConvert/articles/direct-h5ad-loading.html">Direct H5AD Loading</a></li>
+<li><a href="https://mianaz.github.io/scConvert/articles/getting-started.html">Getting Started</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/multimodal-h5mu.html">Multimodal H5MU</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-loom.html">Loom Format</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-zarr.html">Zarr Format</a></li>
