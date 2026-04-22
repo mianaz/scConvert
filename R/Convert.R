@@ -985,9 +985,6 @@ FlattenNullable <- function(col_group) {
 #'  the name of the graph will be \code{assay_method}, otherwise, it will be
 #'  \code{assay_anndata}
 #' }
-#' \subsection{Layers}{
-#'  TODO: add this
-#' }
 #' \subsection{Miscellaneous information}{
 #'  All groups and datasets from \code{/uns} will be copied to \code{misc} in
 #'  the h5Seurat file except for the following:
@@ -1632,7 +1629,6 @@ H5ADToH5Seurat <- function(
   if (!getOption(x = "scConvert.dtypes.dataframe_as_group", default = FALSE)) {
     message("Adding feature-level metadata as a compound is not yet supported")
   }
-  # TODO: Support compound metafeatures
   if (Exists(x = source, name = 'raw/var')) {
     if (inherits(x = source[['raw/var']], what = 'H5Group')) {
       if (verbose) {

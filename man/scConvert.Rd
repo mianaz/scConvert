@@ -219,9 +219,6 @@ the \code{scConvert.dtypes.dataframe_as_group} option is \code{FALSE}
  the name of the graph will be \code{assay_method}, otherwise, it will be
  \code{assay_anndata}
 }
-\subsection{Layers}{
- TODO: add this
-}
 \subsection{Miscellaneous information}{
  All groups and datasets from \code{/uns} will be copied to \code{misc} in
  the h5Seurat file except for the following:

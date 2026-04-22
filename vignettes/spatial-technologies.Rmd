@@ -108,8 +108,11 @@ than Ttr.
 ```{r plot-nrgn, eval = TRUE, fig.width = 7, fig.height = 5}
 # Round-tripped objects may have only the counts layer populated (scConvert
 # writes X from counts when no normalised data is present). Ensure a data
-# layer exists before plotting.
-if (!"data" %in% SeuratObject::Layers(brain_rt[["Spatial"]]) ||
+# layer exists before plotting. readH5AD() names the default assay "RNA"
+# unless assay.name is passed, so look up the actual default rather than
+# assuming the input's assay name survives the roundtrip.
+rt_assay <- SeuratObject::DefaultAssay(brain_rt)
+if (!"data" %in% SeuratObject::Layers(brain_rt[[rt_assay]]) ||
     length(SeuratObject::GetAssayData(brain_rt, layer = "data")) == 0L) {
   brain_rt <- Seurat::NormalizeData(brain_rt, verbose = FALSE)
 }

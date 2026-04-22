@@ -236,8 +236,6 @@ scAppendData.h5Seurat <- function(
       verbose = verbose
     )
   }
-  # TODO: Load Neighbors
-  # TODO: Load SpatialImages
   # Load SeuratCommands
   if ('commands' %in% extras) {
     commands <- GetCommands(index = index, assays = Assays(object = object))
@@ -263,9 +261,6 @@ scAppendData.h5Seurat <- function(
       )
     }
   }
-  # TODO: Load meta.data
-  # TODO: Load misc
-  # TODO: Load tools
   # Load no.assay information
   if (obj.all && !is.null(x = index$no.assay)) {
     if (verbose) {
