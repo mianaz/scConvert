@@ -805,6 +805,281 @@ DetectSeuratLayerPaths <- function(assay_group) {
   )
 }
 
+# Resolve rownames in an h5ad dataframe group. Older h5ad files encode the
+# index as an `_index` attribute; newer ones write `_index` or `index` as a
+# dataset. Returns either the attribute value or the dataset name.
+#
+# @keywords internal
+GetRownames <- function(source, dset) {
+  if (!inherits(x = source[[dset]], what = 'H5Group')) {
+    stop("Don't know how to handle datasets", call. = FALSE)
+  }
+  if (isTRUE(x = AttrExists(x = source[[dset]], name = '_index'))) {
+    h5attr(x = source[[dset]], which = '_index')
+  } else if (source[[dset]]$exists(name = '_index')) {
+    '_index'
+  } else if (source[[dset]]$exists(name = 'index')) {
+    'index'
+  } else {
+    stop("Cannot find rownames in ", dset, call. = FALSE)
+  }
+}
+
+# Decode categorical feature_name group (categories + codes) into a character
+# vector. Memoises on the caller-provided environment so the same group is
+# not re-read for each assay.
+#
+# @keywords internal
+ReadCategoricalFeatures <- function(source, dset, cache) {
+  if (exists(dset, envir = cache)) {
+    return(get(dset, envir = cache))
+  }
+  feature_name_path <- paste0(dset, '/feature_name')
+  if (!source$exists(name = feature_name_path)) {
+    assign(dset, NULL, envir = cache); return(NULL)
+  }
+  feature_name_group <- source[[feature_name_path]]
+  if (!inherits(x = feature_name_group, what = 'H5Group')) {
+    assign(dset, NULL, envir = cache); return(NULL)
+  }
+  if (!feature_name_group$attr_exists(attr_name = 'encoding-type')) {
+    assign(dset, NULL, envir = cache); return(NULL)
+  }
+  if (h5attr(x = feature_name_group, which = 'encoding-type') != 'categorical') {
+    assign(dset, NULL, envir = cache); return(NULL)
+  }
+  if (!feature_name_group$exists(name = 'categories') ||
+      !feature_name_group$exists(name = 'codes')) {
+    assign(dset, NULL, envir = cache); return(NULL)
+  }
+  categories <- feature_name_group[['categories']]$read()
+  codes <- feature_name_group[['codes']]$read()
+  feature_names <- as.character(categories[codes + 1])
+  assign(dset, feature_names, envir = cache)
+  feature_names
+}
+
+# Read a compound HDF5 dataset (old-style obs/var stored as a flat table) into
+# a data.frame. Decodes `__categories` sibling-group encodings to characters.
+#
+# @keywords internal
+ReadCompoundDataset <- function(h5file, dataset_path, verbose = FALSE) {
+  tryCatch({
+    h5 <- H5File$new(h5file, mode = "r")
+    on.exit(h5$close_all(), add = TRUE)
+    if (!h5$exists(dataset_path)) return(NULL)
+    ds <- h5[[dataset_path]]
+    if (!inherits(ds, "H5D")) return(NULL)
+
+    data <- ds$read()
+    if (is.list(data)) {
+      df <- as.data.frame(data, stringsAsFactors = FALSE)
+      cats_path <- paste0(dataset_path, "/__categories")
+      if (h5$exists(cats_path)) {
+        cats_grp <- h5[[cats_path]]
+        for (col in names(cats_grp)) {
+          if (col %in% names(df)) {
+            categories <- as.character(cats_grp[[col]]$read())
+            codes <- as.integer(df[[col]])
+            decoded <- rep(NA_character_, length(codes))
+            valid <- !is.na(codes) & codes >= 0L & codes < length(categories)
+            decoded[valid] <- categories[codes[valid] + 1L]
+            df[[col]] <- decoded
+          }
+        }
+      }
+      return(df)
+    }
+    NULL
+  }, error = function(e) {
+    if (verbose) {
+      message("  Warning: Failed to read compound dataset: ", conditionMessage(e))
+    }
+    NULL
+  })
+}
+
+# Decompress an LZF-compressed sparse matrix into a temp h5 file so downstream
+# H5Ocopy can handle it without the LZF filter.
+#
+# @keywords internal
+CopySparseMatrixDecompressed <- function(src_file, src_path, verbose = FALSE) {
+  temp_file <- tempfile(fileext = ".h5")
+  tryCatch({
+    src_h5 <- H5File$new(src_file, mode = "r")
+    on.exit(src_h5$close_all(), add = TRUE)
+    dst_h5 <- H5File$new(temp_file, mode = "w")
+    on.exit(dst_h5$close_all(), add = TRUE)
+
+    src_grp <- src_h5[[src_path]]
+    dst_grp <- dst_h5$create_group("matrix")
+
+    for (comp in c("data", "indices", "indptr")) {
+      if (src_grp$exists(comp)) {
+        vals <- src_grp[[comp]]$read()
+        dst_grp$create_dataset(comp, robj = vals)
+      }
+    }
+
+    for (attr_name in h5attr_names(src_grp)) {
+      attr_val <- h5attr(src_grp, attr_name)
+      dst_grp$create_attr(
+        attr_name = attr_name, robj = attr_val,
+        dtype = GuessDType(x = if (length(attr_val) > 0) attr_val[1] else attr_val)
+      )
+    }
+
+    return(temp_file)
+  }, error = function(e) {
+    if (verbose) {
+      message("  Warning: LZF decompression failed: ", conditionMessage(e),
+              "\n  Ensure HDF5 was built with LZF filter support")
+    }
+    unlink(temp_file)
+    return(NULL)
+  })
+}
+
+# Convert old-style h5ad `__categories` sibling-group encoding into h5Seurat
+# factor groups (levels + 1-based values). Booleans are specialised to a
+# 1-D dataset since two-level factors produce noise.
+#
+# @keywords internal
+ColToFactor <- function(dfgroup) {
+  if (dfgroup$exists(name = '__categories')) {
+    for (i in names(x = dfgroup[['__categories']])) {
+      tname <- basename(path = tempfile(tmpdir = ''))
+      dfgroup$obj_copy_to(dst_loc = dfgroup, dst_name = tname, src_name = i)
+      dfgroup$link_delete(name = i)
+      bool.check <- dfgroup[['__categories']][[i]]$dims == 2
+      if (isTRUE(x = bool.check)) {
+        bool.check <- all(sort(x = dfgroup[['__categories']][[i]][]) == c('False', 'True'))
+      }
+      if (isTRUE(x = bool.check)) {
+        dfgroup$create_dataset(
+          name = i,
+          robj = dfgroup[[tname]][] + 1L,
+          dtype = dfgroup[[tname]]$get_type()
+        )
+      } else {
+        dfgroup$create_group(name = i)
+        dfgroup[[i]]$create_dataset(
+          name = 'values',
+          robj = dfgroup[[tname]][] + 1L,
+          dtype = dfgroup[[tname]]$get_type()
+        )
+        if (IsDType(x = dfgroup[['__categories']][[i]], dtype = 'H5T_STRING')) {
+          dfgroup$obj_copy_to(
+            dst_loc = dfgroup,
+            dst_name = paste0(i, '/levels'),
+            src_name = paste0('__categories/', i)
+          )
+        } else {
+          dfgroup[[i]]$create_dataset(
+            name = 'levels',
+            robj = as.character(x = dfgroup[[H5Path('__categories', i)]][]),
+            dtype = StringType()
+          )
+        }
+      }
+      dfgroup$link_delete(name = tname)
+    }
+    dfgroup$link_delete(name = '__categories')
+  }
+  invisible(NULL)
+}
+
+# Write placeholder cell.names into `dfile` when the h5ad has no obs index.
+# Uses the X matrix shape to determine cell count.
+#
+# @keywords internal
+CreateFakeCellNames <- function(assay.group, dfile) {
+  ncells <- if (inherits(x = assay.group[['data']], what = 'H5Group')) {
+    assay.group[['data/indptr']]$dims - 1
+  } else {
+    assay.group[['data']]$dims[2]
+  }
+  dfile$create_group(name = 'meta.data')
+  dfile$create_dataset(
+    name = 'cell.names',
+    robj = paste0('Cell', seq.default(from = 1, to = ncells)),
+    dtype = CachedGuessDType(x = 'Cell1')
+  )
+}
+
+# Sanitize column names in an HDF5 dataframe group and flatten nullable
+# (mask + values) sub-groups into plain datasets.
+#
+# @keywords internal
+SanitizeH5DFColumns <- function(dfgroup) {
+  col_names <- names(dfgroup)
+  col_names <- col_names[!col_names %in% c('__categories', '_index')]
+  col_name_map <- SanitizeColumnNames(col_names)
+  for (old_name in names(col_name_map)) {
+    new_name <- col_name_map[[old_name]]
+    col_obj <- dfgroup[[old_name]]
+
+    if (inherits(col_obj, 'H5Group')) {
+      flattened <- FlattenNullable(col_obj)
+      if (!is.null(flattened)) {
+        dfgroup$link_delete(name = old_name)
+        dfgroup$create_dataset(
+          name = new_name,
+          robj = flattened,
+          dtype = GuessDType(x = if (length(flattened) > 0) flattened[1] else flattened)
+        )
+        next
+      }
+      if (old_name == new_name) next
+    }
+
+    if (old_name != new_name) {
+      dfgroup$obj_copy_from(
+        src_loc = dfgroup,
+        src_name = old_name,
+        dst_name = new_name
+      )
+      dfgroup$link_delete(name = old_name)
+    }
+  }
+}
+
+# Convert h5ad-style categorical columns (categories + codes, 0-based) in a
+# copied meta.data group to h5Seurat factor columns (levels + values, 1-based
+# with NA for -1 codes).
+#
+# @keywords internal
+NormalizeH5ADCategorical <- function(dfgroup) {
+  col_names <- names(dfgroup)
+  col_names <- col_names[!col_names %in% c('__categories', '_index', 'index')]
+  for (col_name in col_names) {
+    col_obj <- dfgroup[[col_name]]
+    if (!inherits(col_obj, 'H5Group')) next
+    sub_names <- names(col_obj)
+    if (!all(c('categories', 'codes') %in% sub_names)) next
+    if (!'levels' %in% sub_names) {
+      col_obj$obj_copy_from(
+        src_loc = col_obj,
+        src_name = 'categories',
+        dst_name = 'levels'
+      )
+      col_obj$link_delete(name = 'categories')
+    }
+    if (!'values' %in% sub_names) {
+      codes_0based <- col_obj[['codes']]$read()
+      codes_dtype <- col_obj[['codes']]$get_type()
+      values_1based <- codes_0based + 1L
+      values_1based[codes_0based == -1L] <- NA_integer_
+      col_obj$create_dataset(
+        name = 'values',
+        robj = values_1based,
+        dtype = codes_dtype
+      )
+      col_obj$link_delete(name = 'codes')
+    }
+  }
+}
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Implementations
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1012,288 +1287,10 @@ H5ADToH5Seurat <- function(
     }
   }
   dfile <- h5Seurat$new(filename = dest, mode = WriteMode(overwrite = FALSE))
-  # Get rownames from an H5AD data frame
-  #
-  # @param dset Name of data frame
-  #
-  # @return Returns the name of the dataset that contains the rownames
-  #
-  GetRownames <- function(dset) {
-    if (inherits(x = source[[dset]], what = 'H5Group')) {
-      rownames <- if (isTRUE(x = AttrExists(x = source[[dset]], name = '_index'))) {
-        h5attr(x = source[[dset]], which = '_index')
-      } else if (source[[dset]]$exists(name = '_index')) {
-        '_index'
-      } else if (source[[dset]]$exists(name = 'index')) {
-        'index'
-      } else {
-        stop("Cannot find rownames in ", dset, call. = FALSE)
-      }
-    } else {
-      stop("Don't know how to handle datasets", call. = FALSE)
-    }
-    return(rownames)
-  }
-  # Read categorical feature names from H5AD
-  #
-  # @param dset Name of var dataframe group (e.g., 'raw/var' or 'var')
-  #
-  # @return Returns feature names (gene symbols) if categorical encoding exists, NULL otherwise
-  #
-  # Cache for ReadCategoricalFeatures results to avoid redundant HDF5 reads
+  # Per-call memoisation env for ReadCategoricalFeatures; the h5ad var group
+  # would otherwise be decoded per assay-copy pass.
   .categorical_cache <- new.env(parent = emptyenv())
 
-  ReadCategoricalFeatures <- function(dset) {
-    # Return cached result if available
-    cache_key <- dset
-    if (exists(cache_key, envir = .categorical_cache)) {
-      return(get(cache_key, envir = .categorical_cache))
-    }
-
-    # Check if feature_name exists and is a categorical group
-    feature_name_path <- paste0(dset, '/feature_name')
-    if (!source$exists(name = feature_name_path)) {
-      assign(cache_key, NULL, envir = .categorical_cache)
-      return(NULL)
-    }
-
-    feature_name_group <- source[[feature_name_path]]
-    if (!inherits(x = feature_name_group, what = 'H5Group')) {
-      assign(cache_key, NULL, envir = .categorical_cache)
-      return(NULL)
-    }
-
-    # Check for categorical encoding using simple attr_exists (skip space check)
-    if (!feature_name_group$attr_exists(attr_name = 'encoding-type')) {
-      assign(cache_key, NULL, envir = .categorical_cache)
-      return(NULL)
-    }
-
-    encoding_type <- h5attr(x = feature_name_group, which = 'encoding-type')
-    if (encoding_type != 'categorical') {
-      assign(cache_key, NULL, envir = .categorical_cache)
-      return(NULL)
-    }
-
-    # Read categories and codes
-    if (!feature_name_group$exists(name = 'categories') ||
-        !feature_name_group$exists(name = 'codes')) {
-      assign(cache_key, NULL, envir = .categorical_cache)
-      return(NULL)
-    }
-
-    categories <- feature_name_group[['categories']]$read()
-    codes <- feature_name_group[['codes']]$read()
-
-    # Decode: categories[codes] (R uses 1-based indexing, codes are 0-based)
-    feature_names <- as.character(categories[codes + 1])
-
-    # Cache and return
-    assign(cache_key, feature_names, envir = .categorical_cache)
-    return(feature_names)
-  }
-  # Read compound HDF5 dataset using hdf5r
-  #
-  # Some older h5ad files store obs/var as compound HDF5 datasets (a single flat
-  # table rather than a group with sub-datasets). hdf5r reads these natively.
-  #
-  # @param h5file Path to the h5ad file
-  # @param dataset_path Path to the dataset within the file (e.g., 'obs', 'var')
-  #
-  # @return A data.frame with the dataset contents, or NULL on failure
-  #
-  ReadCompoundDataset <- function(h5file, dataset_path) {
-    tryCatch({
-      h5 <- H5File$new(h5file, mode = "r")
-      on.exit(h5$close_all(), add = TRUE)
-      if (!h5$exists(dataset_path)) return(NULL)
-      ds <- h5[[dataset_path]]
-      if (!inherits(ds, "H5D")) return(NULL)
-
-      data <- ds$read()
-      if (is.list(data)) {
-        # Compound dataset returns a named list; convert to data.frame
-        df <- as.data.frame(data, stringsAsFactors = FALSE)
-        # Decode raw/bytes columns to character
-        for (col in names(df)) {
-          if (is.raw(df[[col]]) || is.list(df[[col]])) next
-          if (is.character(df[[col]])) next
-          # Leave numeric columns as-is
-        }
-
-        # Handle __categories if present (old-style categorical encoding)
-        cats_path <- paste0(dataset_path, "/__categories")
-        if (h5$exists(cats_path)) {
-          cats_grp <- h5[[cats_path]]
-          for (col in names(cats_grp)) {
-            if (col %in% names(df)) {
-              categories <- as.character(cats_grp[[col]]$read())
-              codes <- as.integer(df[[col]])
-              decoded <- rep(NA_character_, length(codes))
-              valid <- !is.na(codes) & codes >= 0L & codes < length(categories)
-              decoded[valid] <- categories[codes[valid] + 1L]
-              df[[col]] <- decoded
-            }
-          }
-        }
-        return(df)
-      }
-      NULL
-    }, error = function(e) {
-      if (verbose) {
-        message("  Warning: Failed to read compound dataset: ", conditionMessage(e))
-      }
-      NULL
-    })
-  }
-  # Read LZF-compressed sparse matrix and write decompressed to temp file
-  #
-  # Some older h5ad files use LZF compression. hdf5r reads these natively
-  # when the HDF5 library has LZF filter support (standard on modern installs).
-  # The data is read and rewritten uncompressed so H5Ocopy can work downstream.
-  #
-  # @param src_file Path to source h5ad file
-  # @param src_path Path to sparse matrix group in source (e.g., 'X')
-  #
-  # @return Path to temporary H5 file with decompressed data, or NULL if failed
-  #
-  CopySparseMatrixDecompressed <- function(src_file, src_path) {
-    temp_file <- tempfile(fileext = ".h5")
-    tryCatch({
-      src_h5 <- H5File$new(src_file, mode = "r")
-      on.exit(src_h5$close_all(), add = TRUE)
-      dst_h5 <- H5File$new(temp_file, mode = "w")
-      on.exit(dst_h5$close_all(), add = TRUE)
-
-      src_grp <- src_h5[[src_path]]
-      dst_grp <- dst_h5$create_group("matrix")
-
-      # Read each component (hdf5r handles LZF decompression if HDF5 supports it)
-      for (comp in c("data", "indices", "indptr")) {
-        if (src_grp$exists(comp)) {
-          vals <- src_grp[[comp]]$read()
-          dst_grp$create_dataset(comp, robj = vals)
-        }
-      }
-
-      # Copy attributes
-      for (attr_name in h5attr_names(src_grp)) {
-        attr_val <- h5attr(src_grp, attr_name)
-        dst_grp$create_attr(
-          attr_name = attr_name, robj = attr_val,
-          dtype = GuessDType(x = if (length(attr_val) > 0) attr_val[1] else attr_val)
-        )
-      }
-
-      return(temp_file)
-    }, error = function(e) {
-      if (verbose) {
-        message("  Warning: LZF decompression failed: ", conditionMessage(e),
-                "\n  Ensure HDF5 was built with LZF filter support")
-      }
-      unlink(temp_file)
-      return(NULL)
-    })
-  }
-  ColToFactor <- function(dfgroup) {
-    if (dfgroup$exists(name = '__categories')) {
-      for (i in names(x = dfgroup[['__categories']])) {
-        tname <- basename(path = tempfile(tmpdir = ''))
-        dfgroup$obj_copy_to(dst_loc = dfgroup, dst_name = tname, src_name = i)
-        dfgroup$link_delete(name = i)
-        # Because AnnData stores logicals as factors, but have too many levels
-        # for factors
-        bool.check <- dfgroup[['__categories']][[i]]$dims == 2
-        if (isTRUE(x = bool.check)) {
-          bool.check <- all(sort(x = dfgroup[['__categories']][[i]][]) == c('False', 'True'))
-        }
-        if (isTRUE(x = bool.check)) {
-          dfgroup$create_dataset(
-            name = i,
-            robj = dfgroup[[tname]][] + 1L,
-            dtype = dfgroup[[tname]]$get_type()
-          )
-        } else {
-          dfgroup$create_group(name = i)
-          dfgroup[[i]]$create_dataset(
-            name = 'values',
-            robj = dfgroup[[tname]][] + 1L,
-            dtype = dfgroup[[tname]]$get_type()
-          )
-          if (IsDType(x = dfgroup[['__categories']][[i]], dtype = 'H5T_STRING')) {
-            dfgroup$obj_copy_to(
-              dst_loc = dfgroup,
-              dst_name = paste0(i, '/levels'),
-              src_name = paste0('__categories/', i)
-            )
-          } else {
-            dfgroup[[i]]$create_dataset(
-              name = 'levels',
-              robj = as.character(x = dfgroup[[H5Path('__categories', i)]][]),
-              dtype = StringType()
-            )
-          }
-        }
-        dfgroup$link_delete(name = tname)
-      }
-      dfgroup$link_delete(name = '__categories')
-    }
-    return(invisible(x = NULL))
-  }
-  # Helper to create fake cell names when metadata is unavailable
-  CreateFakeCellNames <- function() {
-    ncells <- if (inherits(x = assay.group[['data']], what = 'H5Group')) {
-      assay.group[['data/indptr']]$dims - 1
-    } else {
-      assay.group[['data']]$dims[2]
-    }
-    dfile$create_group(name = 'meta.data')
-    dfile$create_dataset(
-      name = 'cell.names',
-      robj = paste0('Cell', seq.default(from = 1, to = ncells)),
-      dtype = CachedGuessDType(x = 'Cell1')
-    )
-  }
-  # Sanitize column names and handle nullable dtypes in HDF5 dataframes
-  SanitizeH5DFColumns <- function(dfgroup) {
-    col_names <- names(dfgroup)
-    # Skip internal names
-    col_names <- col_names[!col_names %in% c('__categories', '_index')]
-    col_name_map <- SanitizeColumnNames(col_names)
-    # Only process columns that need renaming or are nullable groups
-    needs_rename <- vapply(names(col_name_map), function(n) n != col_name_map[[n]], logical(1))
-    for (old_name in names(col_name_map)) {
-      new_name <- col_name_map[[old_name]]
-      col_obj <- dfgroup[[old_name]]
-
-      # Handle nullable dtype (mask+values) groups
-      if (inherits(col_obj, 'H5Group')) {
-        flattened <- FlattenNullable(col_obj)
-        if (!is.null(flattened)) {
-          # Delete old group and create flattened dataset
-          dfgroup$link_delete(name = old_name)
-          dfgroup$create_dataset(
-            name = new_name,
-            robj = flattened,
-            dtype = GuessDType(x = if (length(flattened) > 0) flattened[1] else flattened)
-          )
-          next
-        }
-        # Skip groups that don't need renaming (categorical groups handled elsewhere)
-        if (old_name == new_name) next
-      }
-
-      # Rename if needed
-      if (old_name != new_name) {
-        dfgroup$obj_copy_from(
-          src_loc = dfgroup,
-          src_name = old_name,
-          dst_name = new_name
-        )
-        dfgroup$link_delete(name = old_name)
-      }
-    }
-  }
   ds.map <- c(
     scale.data = if (inherits(x = source[['X']], what = 'H5D')) {
       'X'
@@ -1348,7 +1345,8 @@ H5ADToH5Seurat <- function(
       # Use Python to decompress to temporary file
       temp_file <- CopySparseMatrixDecompressed(
         src_file = src_file,
-        src_path = ds.map[[i]]
+        src_path = ds.map[[i]],
+        verbose = verbose
       )
 
       if (!is.null(temp_file)) {
@@ -1402,7 +1400,7 @@ H5ADToH5Seurat <- function(
 
   if (inherits(x = source[[features.source]], what = 'H5Group')) {
     # Try to read categorical feature_name (gene symbols) first
-    categorical_features <- ReadCategoricalFeatures(dset = features.source)
+    categorical_features <- ReadCategoricalFeatures(source = source, cache = .categorical_cache, dset = features.source)
 
     if (!is.null(categorical_features)) {
       # Use gene symbols from categorical encoding
@@ -1416,7 +1414,7 @@ H5ADToH5Seurat <- function(
       )
     } else {
       # Fallback to index dataset (typically Ensembl IDs)
-      features.dset <- GetRownames(dset = features.source)
+      features.dset <- GetRownames(source = source, dset = features.source)
       assay.group$obj_copy_from(
         src_loc = source,
         src_name = paste(features.source, features.dset, sep = '/'),
@@ -1436,7 +1434,7 @@ H5ADToH5Seurat <- function(
       as.character(source)
     }
 
-    var_data <- ReadCompoundDataset(h5file_path, features.source)
+    var_data <- ReadCompoundDataset(h5file_path, features.source, verbose = verbose)
 
     if (!is.null(var_data) && nrow(var_data) > 0) {
       # Successfully read compound dataset with Python
@@ -1562,7 +1560,7 @@ H5ADToH5Seurat <- function(
   if (scaled) {
     if (inherits(x = source[['var']], what = 'H5Group')) {
       # Try to read categorical feature_name for scaled features
-      scaled_categorical_features <- ReadCategoricalFeatures(dset = 'var')
+      scaled_categorical_features <- ReadCategoricalFeatures(source = source, cache = .categorical_cache, dset = 'var')
 
       if (!is.null(scaled_categorical_features)) {
         # Use gene symbols from categorical encoding
@@ -1576,7 +1574,7 @@ H5ADToH5Seurat <- function(
         )
       } else {
         # Fallback to index dataset
-        scaled.dset <- GetRownames(dset = 'var')
+        scaled.dset <- GetRownames(source = source, dset = 'var')
         assay.group$obj_copy_from(
           src_loc = source,
           src_name = paste0('var/', scaled.dset),
@@ -1708,7 +1706,7 @@ H5ADToH5Seurat <- function(
     )
   }
   if (inherits(x = source[['var']], what = 'H5Group')) {
-    rownames_to_delete <- GetRownames(dset = 'var')
+    rownames_to_delete <- GetRownames(source = source, dset = 'var')
     # Only delete if the link exists in meta.features
     if (assay.group[['meta.features']]$exists(name = rownames_to_delete)) {
       assay.group[['meta.features']]$link_delete(name = rownames_to_delete)
@@ -1763,12 +1761,12 @@ H5ADToH5Seurat <- function(
 
       # Get feature names from /var (same dimension as highly_variable)
       # Use the same feature names as the Seurat object: prioritize feature_name (gene symbols)
-      categorical_features <- ReadCategoricalFeatures(dset = 'var')
+      categorical_features <- ReadCategoricalFeatures(source = source, cache = .categorical_cache, dset = 'var')
       if (!is.null(categorical_features)) {
         all_features <- categorical_features
       } else {
         # Fallback to index dataset (Ensembl IDs) or compound labels
-        rownames_dset <- GetRownames(dset = 'var')
+        rownames_dset <- GetRownames(source = source, dset = 'var')
         if (source[['var']]$exists(rownames_dset)) {
           all_features <- source[[paste('var', rownames_dset, sep = '/')]][]
         } else {
@@ -1813,42 +1811,6 @@ H5ADToH5Seurat <- function(
       src_name = 'obs',
       dst_name = 'meta.data'
     )
-    # Normalize h5ad categorical format (categories/codes) to h5Seurat format (levels/values)
-    # h5ad uses 0-based indexing for codes, while R factors use 1-based indexing
-    NormalizeH5ADCategorical <- function(dfgroup) {
-      col_names <- names(dfgroup)
-      # Skip internal/non-column entries
-      col_names <- col_names[!col_names %in% c('__categories', '_index', 'index')]
-      for (col_name in col_names) {
-        col_obj <- dfgroup[[col_name]]
-        # Check if this is an h5ad categorical group (has 'categories' and 'codes')
-        if (!inherits(col_obj, 'H5Group')) next
-        sub_names <- names(col_obj)
-        if (!all(c('categories', 'codes') %in% sub_names)) next
-        # Rename 'categories' to 'levels'
-        if (!'levels' %in% sub_names) {
-          col_obj$obj_copy_from(
-            src_loc = col_obj,
-            src_name = 'categories',
-            dst_name = 'levels'
-          )
-          col_obj$link_delete(name = 'categories')
-        }
-        # Convert 'codes' to 'values' with 0-based to 1-based indexing conversion
-        if (!'values' %in% sub_names) {
-          codes_0based <- col_obj[['codes']]$read()
-          codes_dtype <- col_obj[['codes']]$get_type()
-          values_1based <- codes_0based + 1L
-          values_1based[codes_0based == -1L] <- NA_integer_
-          col_obj$create_dataset(
-            name = 'values',
-            robj = values_1based,
-            dtype = codes_dtype
-          )
-          col_obj$link_delete(name = 'codes')
-        }
-      }
-    }
     NormalizeH5ADCategorical(dfgroup = dfile[['meta.data']])
     ColToFactor(dfgroup = dfile[['meta.data']])
     SanitizeH5DFColumns(dfgroup = dfile[['meta.data']])
@@ -1863,7 +1825,7 @@ H5ADToH5Seurat <- function(
         dtype = GuessDType(x = if (length(colnames) > 0) colnames[1] else colnames)
       )
     }
-    rownames <- GetRownames(dset = 'obs')
+    rownames <- GetRownames(source = source, dset = 'obs')
     dfile$obj_copy_from(
       src_loc = dfile,
       src_name = paste0('meta.data/', rownames),
@@ -1883,7 +1845,7 @@ H5ADToH5Seurat <- function(
       as.character(source)
     }
 
-    obs_data <- ReadCompoundDataset(h5file_path, 'obs')
+    obs_data <- ReadCompoundDataset(h5file_path, 'obs', verbose = verbose)
 
     if (!is.null(obs_data) && nrow(obs_data) > 0) {
       # Successfully read compound dataset with Python
@@ -1940,11 +1902,11 @@ H5ADToH5Seurat <- function(
     } else {
       # Fallback if Python reading fails
       message("Could not read compound obs dataset with Python; creating fake cell names")
-      CreateFakeCellNames()
+      CreateFakeCellNames(assay.group = assay.group, dfile = dfile)
     }
   } else {
     message("No cell-level metadata present, creating fake cell names")
-    CreateFakeCellNames()
+    CreateFakeCellNames(assay.group = assay.group, dfile = dfile)
   }
 
   # Restore Seurat-specific metadata from uns['seurat'] if available
