@@ -115,7 +115,7 @@ dataset in RAM.</p>
 <span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc_hub.h5ad"</span><span class="op">)</span></span>
 <span><span class="va">t1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"In-memory write:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">t1</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"s\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; In-memory write: 3.15 s</span></span></code></pre></div>
+<span><span class="co">#&gt; In-memory write: 3.03 s</span></span></code></pre></div>
 <p>Use in-memory conversion when you need to manipulate the data in R,
 or when the source/destination formats don’t share the same on-disk
 layout.</p>
@@ -131,7 +131,7 @@ constant regardless of dataset size.</p>
 <span><span class="va">zarr_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc_stream.zarr"</span><span class="op">)</span></span>
 <span><span class="va">t2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="va">h5ad_path</span>, <span class="va">zarr_path</span>, stream <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Streaming h5ad -&gt; zarr:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">t2</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"s\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Streaming h5ad -&gt; zarr: 1.07 s</span></span></code></pre></div>
+<span><span class="co">#&gt; Streaming h5ad -&gt; zarr: 1.01 s</span></span></code></pre></div>
 <p>Available streaming converters:</p>
 <table class="table">
 <thead><tr class="header">
@@ -174,7 +174,7 @@ constant memory and is typically 10–50x faster than the R path.</p>
 <span><span class="va">t3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/scConvert_cli.html">scConvert_cli</a></span><span class="op">(</span><span class="va">h5s_path</span>, <span class="va">h5ad_cli</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Validating h5Seurat file</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"C binary h5seurat -&gt; h5ad:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">t3</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"s\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; C binary h5seurat -&gt; h5ad: 3.87 s</span></span></code></pre></div>
+<span><span class="co">#&gt; C binary h5seurat -&gt; h5ad: 4.07 s</span></span></code></pre></div>
 <p>Build the binary with <code>cd src &amp;&amp; make</code> (requires
 HDF5 headers).</p>
 </div>
