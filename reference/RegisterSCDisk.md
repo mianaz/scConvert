@@ -45,6 +45,7 @@ aspects of the class definition (such as
 To register a subclass of `scdisk`, simply add a call to
 `RegisterSCDisk` in your load hook
 
+
     .onLoad <- function(libname, pkgname) {
       RegisterSCDisk(classgen)
       # Other code to be run on load

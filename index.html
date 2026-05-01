@@ -94,7 +94,7 @@
 <col width="8%">
 <col width="10%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Format</th>
 <th>Extension</th>
 <th>Ecosystem</th>
@@ -102,63 +102,63 @@
 <th align="center">Write</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>AnnData</td>
 <td><code>.h5ad</code></td>
 <td>scanpy / CELLxGENE</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="even">
+<tr>
 <td>h5Seurat</td>
 <td><code>.h5Seurat</code></td>
 <td>Seurat</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>MuData</td>
 <td><code>.h5mu</code></td>
 <td>muon / multimodal</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Loom</td>
 <td><code>.loom</code></td>
 <td>loompy / HCA</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Zarr</td>
 <td><code>.zarr</code></td>
 <td>cloud AnnData</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="even">
+<tr>
 <td>TileDB-SOMA</td>
 <td><code>soma://</code></td>
 <td>CELLxGENE Census</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>SpatialData</td>
 <td><code>.zarr</code></td>
 <td>scverse spatial</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="even">
+<tr>
 <td>RDS</td>
 <td><code>.rds</code></td>
 <td>R native</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>SingleCellExperiment</td>
 <td>in-memory</td>
 <td>Bioconductor</td>
@@ -246,40 +246,40 @@
 <col width="50%">
 <col width="50%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Feature</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><strong>No Python</strong></td>
 <td>Pure R via hdf5r. No reticulate, no conda environments.</td>
 </tr>
-<tr class="even">
+<tr>
 <td><strong>Seurat v5</strong></td>
 <td>Full Assay5 support with layered counts/data/scale.data.</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><strong>Spatial</strong></td>
 <td>Visium roundtrip with image reconstruction and scale factors.</td>
 </tr>
-<tr class="even">
+<tr>
 <td><strong>SpatialData</strong></td>
 <td>Read/write scverse SpatialData zarr stores with OME-NGFF images.</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><strong>Multimodal</strong></td>
 <td>Native h5mu read/write for CITE-seq, ATAC+RNA, etc.</td>
 </tr>
-<tr class="even">
+<tr>
 <td><strong>TileDB-SOMA</strong></td>
 <td>Read/write SOMA for CELLxGENE Census interoperability.</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><strong>BPCells</strong></td>
 <td>On-disk matrix loading – 87% memory reduction at atlas scale.</td>
 </tr>
-<tr class="even">
+<tr>
 <td><strong>C CLI</strong></td>
 <td>Standalone binary for streaming on-disk HDF5 conversion.</td>
 </tr>
@@ -297,38 +297,38 @@
 <col width="15%">
 <col width="39%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Operation</th>
 <th>100K cells</th>
 <th>500K cells</th>
 <th>Comparison</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>Read h5ad</td>
 <td>2.56 s</td>
 <td>12.68 s</td>
 <td>Native C reader + Seurat</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Write h5ad (gzip=0)</td>
 <td>0.61 s</td>
 <td>3.29 s</td>
 <td>C writer, 17× faster</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Write h5ad (gzip=1)</td>
 <td>6.03 s</td>
 <td>30.66 s</td>
 <td>C writer, compressed</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Write h5ad (old R)</td>
 <td>10.49 s</td>
 <td>52.32 s</td>
 <td>R/hdf5r, gzip=4</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>CLI (h5ad ↔︎ h5seurat)</td>
 <td>0.19 s</td>
 <td>0.63 s</td>
@@ -343,14 +343,17 @@
 </h2>
 <p>A standalone C binary for HDF5-based conversions (h5ad, h5Seurat, h5mu, Loom) without R or Python:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Build (requires HDF5 headers)</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="bu">cd</span> src <span class="kw">&amp;&amp;</span> <span class="fu">make</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="bu">cd</span> src <span class="kw">&amp;&amp;</span> <span class="fu">make</span> <span class="at">-f</span> Makefile.cli</span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Convert between any HDF5 format pair</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.h5seurat</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="ex">scconvert</span> data.h5seurat data.h5ad <span class="at">--assay</span> RNA</span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="ex">scconvert</span> multimodal.h5mu multimodal.h5seurat</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="ex">scconvert</span> data.h5ad data.loom</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="ex">scconvert</span> data.loom data.h5seurat</span></code></pre></div>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Optional: install into the R package tree so `library(scConvert)` picks it up</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">make</span> <span class="at">-f</span> Makefile.cli install-bin   <span class="co"># copies to ../inst/bin/scconvert</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co"># Convert between any HDF5 format pair</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5ad data.h5seurat</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5seurat data.h5ad <span class="at">--assay</span> RNA</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="ex">./scconvert</span> multimodal.h5mu multimodal.h5seurat</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5ad data.loom</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="ex">./scconvert</span> data.loom data.h5seurat</span></code></pre></div>
 <p>Options: <code>--assay &lt;name&gt;</code>, <code>--gzip &lt;0-9&gt;</code>, <code>--overwrite</code>, <code>--quiet</code>, <code>--version</code>, <code>--help</code></p>
 </div>
 <div class="section level2">

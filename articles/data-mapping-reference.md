@@ -9,6 +9,7 @@ supported file format.
 ## Quick example
 
 ``` r
+
 obj <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 
 # Convert to h5ad and back
@@ -51,21 +52,21 @@ Y = preserved, – = not supported or lost in conversion.
 
 ## Seurat to h5ad
 
-| Seurat Component                                                                                  | h5ad Location                         | Notes                           |
-|---------------------------------------------------------------------------------------------------|---------------------------------------|---------------------------------|
-| `GetAssayData(layer = "data")`                                                                    | `X`                                   | Primary matrix (log-normalized) |
-| `GetAssayData(layer = "counts")`                                                                  | `raw/X`                               | Raw counts                      |
-| [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | `var['highly_variable']`              | Boolean column                  |
-| `meta.data`                                                                                       | `obs`                                 | Factors become categoricals     |
-| `meta.features`                                                                                   | `var`                                 | Gene-level metadata             |
-| `Embeddings(, "pca")`                                                                             | `obsm['X_pca']`                       | PCA coordinates                 |
-| `Embeddings(, "umap")`                                                                            | `obsm['X_umap']`                      | UMAP coordinates                |
-| `Graphs(, "RNA_snn")`                                                                             | `obsp['connectivities']`              | SNN graph                       |
-| `Graphs(, "RNA_nn")`                                                                              | `obsp['distances']`                   | KNN distances                   |
-| Spatial coordinates                                                                               | `obsm['spatial']`                     | Tissue positions                |
-| Spatial images                                                                                    | `uns['spatial'][lib]['images']`       | H&E images                      |
-| Scale factors                                                                                     | `uns['spatial'][lib]['scalefactors']` | Visium scaling                  |
-| `misc`                                                                                            | `uns`                                 | Unstructured metadata           |
+| Seurat Component | h5ad Location | Notes |
+|----|----|----|
+| `GetAssayData(layer = "data")` | `X` | Primary matrix (log-normalized) |
+| `GetAssayData(layer = "counts")` | `raw/X` | Raw counts |
+| [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | `var['highly_variable']` | Boolean column |
+| `meta.data` | `obs` | Factors become categoricals |
+| `meta.features` | `var` | Gene-level metadata |
+| `Embeddings(, "pca")` | `obsm['X_pca']` | PCA coordinates |
+| `Embeddings(, "umap")` | `obsm['X_umap']` | UMAP coordinates |
+| `Graphs(, "RNA_snn")` | `obsp['connectivities']` | SNN graph |
+| `Graphs(, "RNA_nn")` | `obsp['distances']` | KNN distances |
+| Spatial coordinates | `obsm['spatial']` | Tissue positions |
+| Spatial images | `uns['spatial'][lib]['images']` | H&E images |
+| Scale factors | `uns['spatial'][lib]['scalefactors']` | Visium scaling |
+| `misc` | `uns` | Unstructured metadata |
 
 **Notes:** Scale data is not stored in h5ad (recompute with
 [`ScaleData()`](https://satijalab.org/seurat/reference/ScaleData.html)
@@ -74,20 +75,20 @@ or `sc.pp.scale()`). Data (all genes) is written to `X`; scale.data
 
 ## h5ad to Seurat
 
-| h5ad Location            | Seurat Destination                                                                                | Notes                         |
-|--------------------------|---------------------------------------------------------------------------------------------------|-------------------------------|
-| `X`                      | `data` layer                                                                                      | Log-normalized expression     |
-| `raw/X`                  | `counts` layer                                                                                    | Raw counts (if present)       |
-| `obs`                    | `meta.data`                                                                                       | Categoricals become R factors |
-| `var`                    | Feature metadata                                                                                  | All columns preserved         |
-| `var['highly_variable']` | [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | Boolean TRUE = variable       |
-| `obsm/X_pca`             | `reductions$pca`                                                                                  | Auto-detected by prefix       |
-| `obsm/X_umap`            | `reductions$umap`                                                                                 | Auto-detected by prefix       |
-| `obsm/X_tsne`            | `reductions$tsne`                                                                                 | Auto-detected by prefix       |
-| `obsm/spatial`           | Spatial coordinates                                                                               | Via spatial handler           |
-| `obsp/connectivities`    | `graphs$RNA_snn`                                                                                  | SNN graph                     |
-| `obsp/distances`         | `graphs$RNA_nn`                                                                                   | KNN distances                 |
-| `uns`                    | `misc`                                                                                            | Unstructured annotations      |
+| h5ad Location | Seurat Destination | Notes |
+|----|----|----|
+| `X` | `data` layer | Log-normalized expression |
+| `raw/X` | `counts` layer | Raw counts (if present) |
+| `obs` | `meta.data` | Categoricals become R factors |
+| `var` | Feature metadata | All columns preserved |
+| `var['highly_variable']` | [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | Boolean TRUE = variable |
+| `obsm/X_pca` | `reductions$pca` | Auto-detected by prefix |
+| `obsm/X_umap` | `reductions$umap` | Auto-detected by prefix |
+| `obsm/X_tsne` | `reductions$tsne` | Auto-detected by prefix |
+| `obsm/spatial` | Spatial coordinates | Via spatial handler |
+| `obsp/connectivities` | `graphs$RNA_snn` | SNN graph |
+| `obsp/distances` | `graphs$RNA_nn` | KNN distances |
+| `uns` | `misc` | Unstructured annotations |
 
 ## Seurat to h5Seurat
 

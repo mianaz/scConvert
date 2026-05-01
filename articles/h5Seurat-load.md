@@ -12,6 +12,7 @@ scConvert ships a 500-cell PBMC dataset in h5Seurat format.
 loads it directly into a fully functional Seurat object.
 
 ``` r
+
 h5seurat_file <- system.file("extdata", "pbmc_demo.h5seurat", package = "scConvert")
 pbmc <- readH5Seurat(h5seurat_file)
 pbmc
@@ -26,6 +27,7 @@ The loaded object contains all nine annotated cell types with PCA, UMAP,
 and neighbor graphs:
 
 ``` r
+
 DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
         label = TRUE, pt.size = 0.5) + NoLegend()
 ```
@@ -35,6 +37,7 @@ DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
 Expression data is fully available. LYZ is a monocyte marker:
 
 ``` r
+
 FeaturePlot(pbmc, features = "LYZ", pt.size = 0.5)
 ```
 
@@ -47,6 +50,7 @@ saves any Seurat object to h5Seurat format, preserving all assays,
 dimensional reductions, graphs, and cell metadata.
 
 ``` r
+
 pbmc_seurat <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 h5seurat_path <- tempfile(fileext = ".h5Seurat")
 writeH5Seurat(pbmc_seurat, filename = h5seurat_path, overwrite = TRUE)
@@ -60,10 +64,12 @@ Read the written file back and confirm that the UMAP coordinates,
 cluster labels, and expression values are identical to the original.
 
 ``` r
+
 pbmc_rt <- readH5Seurat(h5seurat_path)
 ```
 
 ``` r
+
 library(patchwork)
 p1 <- DimPlot(pbmc_seurat, reduction = "umap", group.by = "seurat_annotations",
               label = TRUE, pt.size = 0.5) + NoLegend() + ggtitle("Original (.rds)")
@@ -83,6 +89,7 @@ UMAP plot.
 Load only the RNA assay with UMAP, skipping PCA and all graphs:
 
 ``` r
+
 pbmc_light <- readH5Seurat(h5seurat_file, assays = "RNA",
                            reductions = "umap", graphs = FALSE)
 pbmc_light
@@ -97,6 +104,7 @@ The light object still supports visualization since UMAP coordinates are
 present:
 
 ``` r
+
 DimPlot(pbmc_light, reduction = "umap", group.by = "seurat_annotations",
         label = TRUE, pt.size = 0.5) + NoLegend()
 ```
@@ -112,6 +120,7 @@ This opens a lightweight connection and `.index()` summarizes the
 contents – which assays, reductions, graphs, and images are available.
 
 ``` r
+
 hfile <- scConnect(h5seurat_file)
 hfile$index()
 #> Data for assay RNA★ (default assay)
@@ -133,6 +142,7 @@ A violin plot shows the LYZ expression distribution across all nine cell
 types:
 
 ``` r
+
 VlnPlot(pbmc, features = "LYZ", group.by = "seurat_annotations", pt.size = 0) +
   NoLegend()
 ```
@@ -142,5 +152,6 @@ VlnPlot(pbmc, features = "LYZ", group.by = "seurat_annotations", pt.size = 0) +
 ## Clean up
 
 ``` r
+
 unlink(h5seurat_path)
 ```

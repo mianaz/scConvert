@@ -1,6 +1,7 @@
 # Getting Started with scConvert
 
 ``` r
+
 suppressPackageStartupMessages({
   library(scConvert)
   library(Seurat)
@@ -16,6 +17,7 @@ conversion, and file I/O in under five minutes.
 Install scConvert from GitHub:
 
 ``` r
+
 remotes::install_github("mianaz/scConvert")
 ```
 
@@ -28,6 +30,7 @@ and it picks the fastest conversion path automatically. File formats are
 detected from extensions.
 
 ``` r
+
 h5ad_file <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
 
 h5seurat_out <- file.path(tempdir(), "pbmc.h5seurat")
@@ -49,6 +52,7 @@ readers. Each returns a standard Seurat object.
 ### From h5ad
 
 ``` r
+
 obj <- readH5AD(h5ad_file)
 obj
 #> An object of class Seurat 
@@ -59,6 +63,7 @@ obj
 ```
 
 ``` r
+
 dim(obj)
 #> [1] 2000  214
 head(obj[[]], n = 4)
@@ -77,6 +82,7 @@ head(obj[[]], n = 4)
 ### From h5Seurat
 
 ``` r
+
 obj2 <- readH5Seurat(h5seurat_out)
 obj2
 #> An object of class Seurat 
@@ -89,6 +95,7 @@ obj2
 ### From Zarr
 
 ``` r
+
 obj3 <- readZarr(zarr_out)
 obj3
 #> An object of class Seurat 
@@ -104,6 +111,7 @@ Starting from any Seurat object, write to the format your collaborators
 or downstream tools need.
 
 ``` r
+
 h5ad_out <- file.path(tempdir(), "output.h5ad")
 writeH5AD(obj, h5ad_out, verbose = FALSE)
 
@@ -115,6 +123,7 @@ writeZarr(obj, zarr_out2, verbose = FALSE)
 ```
 
 ``` r
+
 sizes <- data.frame(
   Format = c("h5ad", "h5Seurat", "Zarr"),
   Size_MB = round(c(
@@ -162,6 +171,7 @@ After converting, a quick sanity check confirms that dimensions and cell
 identifiers are preserved.
 
 ``` r
+
 original <- readH5AD(h5ad_file)
 converted <- readH5Seurat(h5seurat_out)
 

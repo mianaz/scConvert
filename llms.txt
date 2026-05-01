@@ -25,6 +25,7 @@ interface.
 ## Installation
 
 ``` r
+
 # Install from GitHub
 devtools::install_github("mianaz/scConvert")
 ```
@@ -32,6 +33,7 @@ devtools::install_github("mianaz/scConvert")
 ## Quick Start
 
 ``` r
+
 library(scConvert)
 
 # One-line conversion between any format pair
@@ -94,16 +96,16 @@ Three conversion tiers provide optimal speed for each format pair:
 
 ## Key Features
 
-| Feature         | Description                                                      |
-|-----------------|------------------------------------------------------------------|
-| **No Python**   | Pure R via hdf5r. No reticulate, no conda environments.          |
-| **Seurat v5**   | Full Assay5 support with layered counts/data/scale.data.         |
-| **Spatial**     | Visium roundtrip with image reconstruction and scale factors.    |
+| Feature | Description |
+|----|----|
+| **No Python** | Pure R via hdf5r. No reticulate, no conda environments. |
+| **Seurat v5** | Full Assay5 support with layered counts/data/scale.data. |
+| **Spatial** | Visium roundtrip with image reconstruction and scale factors. |
 | **SpatialData** | Read/write scverse SpatialData zarr stores with OME-NGFF images. |
-| **Multimodal**  | Native h5mu read/write for CITE-seq, ATAC+RNA, etc.              |
-| **TileDB-SOMA** | Read/write SOMA for CELLxGENE Census interoperability.           |
-| **BPCells**     | On-disk matrix loading – 87% memory reduction at atlas scale.    |
-| **C CLI**       | Standalone binary for streaming on-disk HDF5 conversion.         |
+| **Multimodal** | Native h5mu read/write for CITE-seq, ATAC+RNA, etc. |
+| **TileDB-SOMA** | Read/write SOMA for CELLxGENE Census interoperability. |
+| **BPCells** | On-disk matrix loading – 87% memory reduction at atlas scale. |
+| **C CLI** | Standalone binary for streaming on-disk HDF5 conversion. |
 
 ## Performance
 
@@ -132,14 +134,17 @@ Loom) without R or Python:
 
 ``` bash
 # Build (requires HDF5 headers)
-cd src && make
+cd src && make -f Makefile.cli
+
+# Optional: install into the R package tree so `library(scConvert)` picks it up
+make -f Makefile.cli install-bin   # copies to ../inst/bin/scconvert
 
 # Convert between any HDF5 format pair
-scconvert data.h5ad data.h5seurat
-scconvert data.h5seurat data.h5ad --assay RNA
-scconvert multimodal.h5mu multimodal.h5seurat
-scconvert data.h5ad data.loom
-scconvert data.loom data.h5seurat
+./scconvert data.h5ad data.h5seurat
+./scconvert data.h5seurat data.h5ad --assay RNA
+./scconvert multimodal.h5mu multimodal.h5seurat
+./scconvert data.h5ad data.loom
+./scconvert data.loom data.h5seurat
 ```
 
 Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`,

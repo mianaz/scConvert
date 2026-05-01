@@ -15,6 +15,7 @@ scConvert ships a 500-cell PBMC dataset in Loom format.
 loads it directly into a Seurat object.
 
 ``` r
+
 loom_file <- system.file("extdata", "pbmc_demo.loom", package = "scConvert")
 pbmc <- readLoom(loom_file)
 pbmc
@@ -29,6 +30,7 @@ The reader reconstructs cell metadata, gene metadata, and dimensional
 reductions from the Loom column and row attributes:
 
 ``` r
+
 cat("Cells:", ncol(pbmc), "\n")
 #> Cells: 500
 cat("Genes:", nrow(pbmc), "\n")
@@ -42,6 +44,7 @@ cat("Metadata columns:", paste(colnames(pbmc[[]]), collapse = ", "), "\n")
 The nine annotated cell types are preserved:
 
 ``` r
+
 DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
         label = TRUE, pt.size = 0.5) + NoLegend()
 ```
@@ -51,6 +54,7 @@ DimPlot(pbmc, reduction = "umap", group.by = "seurat_annotations",
 Expression data is fully available. LYZ is a monocyte marker:
 
 ``` r
+
 FeaturePlot(pbmc, features = "LYZ", pt.size = 0.5)
 ```
 
@@ -64,6 +68,7 @@ metadata as column attributes and gene metadata as row attributes.
 Dimensional reductions are stored as additional column attributes.
 
 ``` r
+
 pbmc_seurat <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 loom_path <- tempfile(fileext = ".loom")
 writeLoom(pbmc_seurat, filename = loom_path, overwrite = TRUE)
@@ -76,10 +81,12 @@ cat("Loom file size:", round(file.size(loom_path) / 1e6, 1), "MB\n")
 Read the written Loom file back and compare the UMAP projections.
 
 ``` r
+
 pbmc_rt <- readLoom(loom_path)
 ```
 
 ``` r
+
 library(patchwork)
 p1 <- DimPlot(pbmc_seurat, reduction = "umap", group.by = "seurat_annotations",
               label = TRUE, pt.size = 0.5) + NoLegend() + ggtitle("Original (.rds)")
@@ -95,14 +102,14 @@ p1 + p2
 Loom is a simpler format than h5ad or h5Seurat. Here is a summary of
 what round-trips and what does not:
 
-| Component               | Preserved? | Notes                                                                                                             |
-|-------------------------|:----------:|-------------------------------------------------------------------------------------------------------------------|
-| Expression matrix       |    Yes     | Stored as `/matrix`                                                                                               |
-| Raw counts              |    Yes     | Stored in `/layers/counts`                                                                                        |
-| Cell metadata           |    Yes     | Each column becomes a `/col_attrs` entry                                                                          |
-| Gene metadata           |    Yes     | Each column becomes a `/row_attrs` entry                                                                          |
-| PCA / UMAP embeddings   |    Yes     | Stored as column attributes                                                                                       |
-| Nearest-neighbor graphs |     No     | Not native to Loom; recompute with [`FindNeighbors()`](https://satijalab.org/seurat/reference/FindNeighbors.html) |
+| Component | Preserved? | Notes |
+|----|:--:|----|
+| Expression matrix | Yes | Stored as `/matrix` |
+| Raw counts | Yes | Stored in `/layers/counts` |
+| Cell metadata | Yes | Each column becomes a `/col_attrs` entry |
+| Gene metadata | Yes | Each column becomes a `/row_attrs` entry |
+| PCA / UMAP embeddings | Yes | Stored as column attributes |
+| Nearest-neighbor graphs | No | Not native to Loom; recompute with [`FindNeighbors()`](https://satijalab.org/seurat/reference/FindNeighbors.html) |
 
 ## Per-cluster expression
 
@@ -110,6 +117,7 @@ A violin plot confirms that per-cluster expression distributions are
 preserved through Loom conversion:
 
 ``` r
+
 VlnPlot(pbmc_rt, features = "LYZ", group.by = "seurat_annotations", pt.size = 0) +
   NoLegend()
 ```
@@ -142,5 +150,6 @@ print(adata)
 ## Clean up
 
 ``` r
+
 unlink(loom_path)
 ```

@@ -16,6 +16,7 @@ are the same regardless of whether rows represent genes or peaks.
 ## Load demo data
 
 ``` r
+
 obj <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 
 cat("Cells:", ncol(obj), "\n")
@@ -29,6 +30,7 @@ cat("Metadata columns:", paste(colnames(obj[[]]), collapse = ", "), "\n")
 ```
 
 ``` r
+
 DimPlot(obj, group.by = "seurat_annotations", label = TRUE, pt.size = 0.8) +
   ggtitle("PBMC clusters (original)")
 ```
@@ -40,6 +42,7 @@ DimPlot(obj, group.by = "seurat_annotations", label = TRUE, pt.size = 0.8) +
 Write the Seurat object to h5ad and read it back.
 
 ``` r
+
 h5ad_path <- file.path(tempdir(), "pbmc_atac_demo.h5ad")
 
 writeH5AD(obj, h5ad_path, overwrite = TRUE)
@@ -58,6 +61,7 @@ cat("Loaded:", ncol(loaded), "cells x", nrow(loaded), "features\n")
 ### Dimensions and barcodes
 
 ``` r
+
 cat("Cells match:", ncol(obj) == ncol(loaded), "\n")
 #> Cells match: TRUE
 cat("Features match:", nrow(obj) == nrow(loaded), "\n")
@@ -77,6 +81,7 @@ cat("Feature names identical:", identical(orig_features, rt_features), "\n")
 ### Count matrix
 
 ``` r
+
 common_cells <- intersect(colnames(obj), colnames(loaded))
 common_feats <- intersect(rownames(obj), rownames(loaded))
 
@@ -91,6 +96,7 @@ cat("Count values identical:", identical(orig_vals, rt_vals), "\n")
 ### Metadata
 
 ``` r
+
 shared_cols <- intersect(colnames(obj[[]]), colnames(loaded[[]]))
 cat("Metadata columns preserved:", length(shared_cols), "/", ncol(obj[[]]), "\n")
 #> Metadata columns preserved: 7 / 7
@@ -108,6 +114,7 @@ if ("seurat_annotations" %in% shared_cols) {
 ### Embeddings
 
 ``` r
+
 cat("Original reductions:", paste(names(obj@reductions), collapse = ", "), "\n")
 #> Original reductions: pca, umap
 cat("Loaded reductions:", paste(names(loaded@reductions), collapse = ", "), "\n")
@@ -125,6 +132,7 @@ if ("umap" %in% names(loaded@reductions)) {
 ## Compare plots
 
 ``` r
+
 library(patchwork)
 
 p1 <- DimPlot(obj, group.by = "seurat_annotations", label = TRUE, pt.size = 0.8) +
@@ -154,12 +162,12 @@ Signac-specific components require separate handling:
 
 ### Needs separate handling
 
-| Component            | Why                                 | Workaround                                                                                                |
-|----------------------|-------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| Fragment files       | Large tabix files, not part of h5ad | Copy `fragments.tsv.gz` + `.tbi` separately                                                               |
-| Gene annotations     | GRanges object (R-specific)         | Reload from EnsDb after import                                                                            |
-| Motif matrices       | Signac-specific slot                | Recompute with [`AddMotifs()`](https://stuartlab.org/signac/reference/AddMotifs.html)                     |
-| ChromatinAssay class | R S4 class, not in h5ad             | Upgrade with [`CreateChromatinAssay()`](https://stuartlab.org/signac/reference/CreateChromatinAssay.html) |
+| Component | Why | Workaround |
+|----|----|----|
+| Fragment files | Large tabix files, not part of h5ad | Copy `fragments.tsv.gz` + `.tbi` separately |
+| Gene annotations | GRanges object (R-specific) | Reload from EnsDb after import |
+| Motif matrices | Signac-specific slot | Recompute with [`AddMotifs()`](https://stuartlab.org/signac/reference/AddMotifs.html) |
+| ChromatinAssay class | R S4 class, not in h5ad | Upgrade with [`CreateChromatinAssay()`](https://stuartlab.org/signac/reference/CreateChromatinAssay.html) |
 
 ## Upgrading to ChromatinAssay (if Signac is available)
 
@@ -168,6 +176,7 @@ standard Seurat assay to a Signac `ChromatinAssay` for peak-aware
 analyses.
 
 ``` r
+
 library(Signac)
 
 # Load h5ad containing peak-by-cell matrix
@@ -212,14 +221,16 @@ sc.pl.umap(adata, color="seurat_clusters")
 ## Clean up
 
 ``` r
+
 unlink(h5ad_path)
 ```
 
 ## Session Info
 
 ``` r
+
 sessionInfo()
-#> R version 4.5.3 (2026-03-11)
+#> R version 4.6.0 (2026-04-24)
 #> Platform: x86_64-pc-linux-gnu
 #> Running under: Ubuntu 24.04.4 LTS
 #> 
@@ -240,7 +251,7 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#> [1] patchwork_1.3.2    ggplot2_4.0.2      Seurat_5.4.0       SeuratObject_5.4.0
+#> [1] patchwork_1.3.2    ggplot2_4.0.3      Seurat_5.5.0       SeuratObject_5.4.0
 #> [5] sp_2.2-1           scConvert_0.1.0   
 #> 
 #> loaded via a namespace (and not attached):
@@ -253,37 +264,37 @@ sessionInfo()
 #>  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            
 #>  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          
 #>  [25] igraph_2.3.0           mime_0.13              lifecycle_1.0.5       
-#>  [28] pkgconfig_2.0.3        Matrix_1.7-4           R6_2.6.1              
-#>  [31] fastmap_1.2.0          MatrixGenerics_1.22.0  fitdistrplus_1.2-6    
+#>  [28] pkgconfig_2.0.3        Matrix_1.7-5           R6_2.6.1              
+#>  [31] fastmap_1.2.0          MatrixGenerics_1.24.0  fitdistrplus_1.2-6    
 #>  [34] future_1.70.0          shiny_1.13.0           digest_0.6.39         
-#>  [37] S4Vectors_0.48.1       tensor_1.5.1           RSpectra_0.16-2       
-#>  [40] irlba_2.3.7            GenomicRanges_1.62.1   textshaping_1.0.5     
+#>  [37] S4Vectors_0.50.0       tensor_1.5.1           RSpectra_0.16-2       
+#>  [40] irlba_2.3.7            GenomicRanges_1.64.0   textshaping_1.0.5     
 #>  [43] labeling_0.4.3         progressr_0.19.0       spatstat.sparse_3.1-0 
 #>  [46] httr_1.4.8             polyclip_1.10-7        abind_1.4-8           
-#>  [49] compiler_4.5.3         bit64_4.8.0            withr_3.0.2           
-#>  [52] S7_0.2.1-1             fastDummies_1.7.5      MASS_7.3-65           
-#>  [55] tools_4.5.3            lmtest_0.9-40          otel_0.2.0            
+#>  [49] compiler_4.6.0         bit64_4.8.0            withr_3.0.2           
+#>  [52] S7_0.2.2               fastDummies_1.7.6      MASS_7.3-65           
+#>  [55] tools_4.6.0            lmtest_0.9-40          otel_0.2.0            
 #>  [58] httpuv_1.6.17          future.apply_1.20.2    goftest_1.2-3         
-#>  [61] glue_1.8.1             nlme_3.1-168           promises_1.5.0        
-#>  [64] grid_4.5.3             Rtsne_0.17             cluster_2.1.8.2       
+#>  [61] glue_1.8.1             nlme_3.1-169           promises_1.5.0        
+#>  [64] grid_4.6.0             Rtsne_0.17             cluster_2.1.8.2       
 #>  [67] reshape2_1.4.5         generics_0.1.4         hdf5r_1.3.12          
 #>  [70] gtable_0.3.6           spatstat.data_3.1-9    tidyr_1.3.2           
-#>  [73] data.table_1.18.2.1    BiocGenerics_0.56.0    BPCells_0.3.1         
+#>  [73] data.table_1.18.2.1    BiocGenerics_0.58.0    BPCells_0.3.1         
 #>  [76] spatstat.geom_3.7-3    RcppAnnoy_0.0.23       ggrepel_0.9.8         
 #>  [79] RANN_2.6.2             pillar_1.11.1          stringr_1.6.0         
 #>  [82] spam_2.11-3            RcppHNSW_0.6.0         later_1.4.8           
-#>  [85] splines_4.5.3          dplyr_1.2.1            lattice_0.22-9        
+#>  [85] splines_4.6.0          dplyr_1.2.1            lattice_0.22-9        
 #>  [88] survival_3.8-6         bit_4.6.0              deldir_2.0-4          
 #>  [91] tidyselect_1.2.1       miniUI_0.1.2           pbapply_1.7-4         
-#>  [94] knitr_1.51             gridExtra_2.3          Seqinfo_1.0.0         
-#>  [97] IRanges_2.44.0         scattermore_1.2        stats4_4.5.3          
+#>  [94] knitr_1.51             gridExtra_2.3          Seqinfo_1.2.0         
+#>  [97] IRanges_2.46.0         scattermore_1.2        stats4_4.6.0          
 #> [100] xfun_0.57              matrixStats_1.5.0      stringi_1.8.7         
 #> [103] lazyeval_0.2.3         yaml_2.3.12            evaluate_1.0.5        
 #> [106] codetools_0.2-20       tibble_3.3.1           cli_3.6.6             
 #> [109] uwot_0.2.4             xtable_1.8-8           reticulate_1.46.0     
-#> [112] systemfonts_1.3.2      jquerylib_0.1.4        Rcpp_1.1.1-1          
+#> [112] systemfonts_1.3.2      jquerylib_0.1.4        Rcpp_1.1.1-1.1        
 #> [115] globals_0.19.1         spatstat.random_3.4-5  png_0.1-9             
-#> [118] spatstat.univar_3.1-7  parallel_4.5.3         pkgdown_2.2.0         
+#> [118] spatstat.univar_3.1-7  parallel_4.6.0         pkgdown_2.2.0         
 #> [121] dotCall64_1.2          listenv_0.10.1         viridisLite_0.4.3     
 #> [124] scales_1.4.0           ggridges_0.5.7         purrr_1.2.2           
 #> [127] crayon_1.5.3           rlang_1.2.0            cowplot_1.2.0

@@ -1,6 +1,7 @@
 # In-Memory vs On-Disk Conversion
 
 ``` r
+
 library(scConvert)
 library(Seurat)
 library(ggplot2)
@@ -13,6 +14,7 @@ Seurat serialization formats for disk space.
 ## Three conversion modes
 
 ``` r
+
 obj <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 DimPlot(obj, group.by = "seurat_annotations", label = TRUE, pt.size = 1) +
   ggtitle("500 PBMCs — demo dataset") + NoLegend()
@@ -27,11 +29,12 @@ target format. This supports all format pairs but requires the full
 dataset in RAM.
 
 ``` r
+
 # Seurat object -> h5ad (in-memory)
 h5ad_path <- file.path(tempdir(), "pbmc_hub.h5ad")
 t1 <- system.time(writeH5AD(obj, h5ad_path, verbose = FALSE))
 cat("In-memory write:", round(t1["elapsed"], 2), "s\n")
-#> In-memory write: 3.03 s
+#> In-memory write: 3.37 s
 ```
 
 Use in-memory conversion when you need to manipulate the data in R, or
@@ -44,19 +47,20 @@ files without ever constructing a Seurat object. This keeps memory usage
 constant regardless of dataset size.
 
 ``` r
+
 # h5ad -> zarr (streaming, no Seurat object in memory)
 zarr_path <- file.path(tempdir(), "pbmc_stream.zarr")
 t2 <- system.time(H5ADToZarr(h5ad_path, zarr_path, stream = TRUE, verbose = FALSE))
 cat("Streaming h5ad -> zarr:", round(t2["elapsed"], 2), "s\n")
-#> Streaming h5ad -> zarr: 1.01 s
+#> Streaming h5ad -> zarr: 1.17 s
 ```
 
 Available streaming converters:
 
-| Function                                                                             | Direction       |
-|--------------------------------------------------------------------------------------|-----------------|
-| [`H5ADToZarr()`](https://mianaz.github.io/scConvert/reference/H5ADToZarr.md)         | h5ad → zarr     |
-| [`ZarrToH5AD()`](https://mianaz.github.io/scConvert/reference/ZarrToH5AD.md)         | zarr → h5ad     |
+| Function | Direction |
+|----|----|
+| [`H5ADToZarr()`](https://mianaz.github.io/scConvert/reference/H5ADToZarr.md) | h5ad → zarr |
+| [`ZarrToH5AD()`](https://mianaz.github.io/scConvert/reference/ZarrToH5AD.md) | zarr → h5ad |
 | [`H5SeuratToZarr()`](https://mianaz.github.io/scConvert/reference/H5SeuratToZarr.md) | h5Seurat → zarr |
 | [`ZarrToH5Seurat()`](https://mianaz.github.io/scConvert/reference/ZarrToH5Seurat.md) | zarr → h5Seurat |
 
@@ -70,6 +74,7 @@ binary copies datasets directly at the HDF5 level. It uses constant
 memory and is typically 10–50x faster than the R path.
 
 ``` r
+
 h5s_path <- file.path(tempdir(), "pbmc_cli.h5seurat")
 writeH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
 
@@ -77,7 +82,7 @@ h5ad_cli <- file.path(tempdir(), "pbmc_cli.h5ad")
 t3 <- system.time(scConvert_cli(h5s_path, h5ad_cli, verbose = FALSE))
 #> Validating h5Seurat file
 cat("C binary h5seurat -> h5ad:", round(t3["elapsed"], 2), "s\n")
-#> C binary h5seurat -> h5ad: 4.07 s
+#> C binary h5seurat -> h5ad: 4.15 s
 ```
 
 Build the binary with `cd src && make` (requires HDF5 headers).
@@ -104,6 +109,7 @@ the full object structure (assays, reductions, graphs, metadata,
 images).
 
 ``` r
+
 rds_path <- file.path(tempdir(), "pbmc.rds")
 h5s_path2 <- file.path(tempdir(), "pbmc.h5seurat")
 
@@ -165,6 +171,7 @@ Key differences:
 For sharing data with Python or other tools, use cross-language formats:
 
 ``` r
+
 h5ad_path2 <- file.path(tempdir(), "pbmc_exchange.h5ad")
 writeH5AD(obj, h5ad_path2, verbose = FALSE)
 
@@ -208,13 +215,13 @@ knitr::kable(exchange)
 
 ## When to use what
 
-| Goal                         | Recommended                                                                                                                                                           |
-|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Fast local save/load in R    | [`qs2::qs_save()`](https://rdrr.io/pkg/qs2/man/qs_save.html) / [`qs2::qs_read()`](https://rdrr.io/pkg/qs2/man/qs_read.html)                                           |
+| Goal | Recommended |
+|----|----|
+| Fast local save/load in R | [`qs2::qs_save()`](https://rdrr.io/pkg/qs2/man/qs_save.html) / [`qs2::qs_read()`](https://rdrr.io/pkg/qs2/man/qs_read.html) |
 | Selective loading (big data) | [`writeH5Seurat()`](https://mianaz.github.io/scConvert/reference/writeH5Seurat.md) / [`readH5Seurat()`](https://mianaz.github.io/scConvert/reference/readH5Seurat.md) |
-| Share with Python            | [`writeH5AD()`](https://mianaz.github.io/scConvert/reference/writeH5AD.md) or C binary                                                                                |
-| Batch convert many files     | C binary (`scconvert`)                                                                                                                                                |
-| Cloud storage                | [`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)                                                                                            |
-| Convert without loading      | [`scConvert_cli()`](https://mianaz.github.io/scConvert/reference/scConvert_cli.md) or streaming converters                                                            |
+| Share with Python | [`writeH5AD()`](https://mianaz.github.io/scConvert/reference/writeH5AD.md) or C binary |
+| Batch convert many files | C binary (`scconvert`) |
+| Cloud storage | [`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md) |
+| Convert without loading | [`scConvert_cli()`](https://mianaz.github.io/scConvert/reference/scConvert_cli.md) or streaming converters |
 
 ## Clean up

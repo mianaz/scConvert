@@ -10,6 +10,7 @@ quick example followed by the format specification.
 ## Quick example
 
 ``` r
+
 obj <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 
 h5s_path <- tempfile(fileext = ".h5Seurat")
@@ -60,16 +61,16 @@ Every h5Seurat file has the following layout:
 
 Each assay is stored under `assays/{name}/`:
 
-| Entry               | Type                          | Required | Description                                   |
-|---------------------|-------------------------------|:--------:|-----------------------------------------------|
-| `features`          | Dataset (string)              |   Yes    | Gene/feature names                            |
-| `data`              | Sparse group or dense dataset |   Yes    | Log-normalized expression (genes x cells)     |
-| `counts`            | Sparse group or dense dataset |    No    | Raw UMI counts                                |
-| `scale.data`        | Dense dataset                 |    No    | Scaled expression (variable features x cells) |
-| `scaled.features`   | Dataset (string)              |    No    | Feature names for scale.data                  |
-| `variable.features` | Dataset (string)              |    No    | Highly variable feature names                 |
-| `meta.features`     | Group or dataset              |    No    | Feature-level metadata (data frame)           |
-| `misc`              | Group                         |    No    | Additional assay data                         |
+| Entry | Type | Required | Description |
+|----|----|:--:|----|
+| `features` | Dataset (string) | Yes | Gene/feature names |
+| `data` | Sparse group or dense dataset | Yes | Log-normalized expression (genes x cells) |
+| `counts` | Sparse group or dense dataset | No | Raw UMI counts |
+| `scale.data` | Dense dataset | No | Scaled expression (variable features x cells) |
+| `scaled.features` | Dataset (string) | No | Feature names for scale.data |
+| `variable.features` | Dataset (string) | No | Highly variable feature names |
+| `meta.features` | Group or dataset | No | Feature-level metadata (data frame) |
+| `misc` | Group | No | Additional assay data |
 
 **Required attribute:** `key` (string) – the assay key prefix (e.g.,
 `"rna_"`).
@@ -81,12 +82,12 @@ with layers stored as separate matrices.
 
 Each reduction is stored under `reductions/{name}/`:
 
-| Entry                        | Type          | Required | Description                               |
-|------------------------------|---------------|:--------:|-------------------------------------------|
-| `cell.embeddings`            | Dense dataset |   Yes    | Embedding matrix (n_cells x n_components) |
-| `feature.loadings`           | Dense dataset |    No    | Gene loadings (PCA only)                  |
-| `feature.loadings.projected` | Dense dataset |    No    | Projected loadings                        |
-| `misc`                       | Group         |    No    | Additional data                           |
+| Entry | Type | Required | Description |
+|----|----|:--:|----|
+| `cell.embeddings` | Dense dataset | Yes | Embedding matrix (n_cells x n_components) |
+| `feature.loadings` | Dense dataset | No | Gene loadings (PCA only) |
+| `feature.loadings.projected` | Dense dataset | No | Projected loadings |
+| `misc` | Group | No | Additional data |
 
 **Required attributes:** `active.assay` (string), `key` (string),
 `global` (logical).
