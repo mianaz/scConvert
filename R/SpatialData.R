@@ -297,8 +297,9 @@ writeSpatialData <- function(object, path, table = "table",
   dir.create(parent, recursive = TRUE, showWarnings = FALSE)
   path <- tempfile(pattern = "scconvert-spatialdata-",
                    tmpdir = parent, fileext = ".zarr")
+  write_succeeded <- FALSE
   on.exit({
-    if (dir.exists(path) || file.exists(path)) {
+    if (!write_succeeded && (dir.exists(path) || file.exists(path))) {
       unlink(path, recursive = TRUE, force = TRUE)
     }
   }, add = TRUE)
@@ -471,7 +472,8 @@ writeSpatialData <- function(object, path, table = "table",
   }
 
   # Atomic rename — replace any pre-existing final path then move the temp
-  # store into place. The on.exit() above is disarmed by clearing `path`.
+  # store into place. Setting write_succeeded disarms the on.exit cleanup so
+  # it does not delete the freshly-renamed final output.
   if (dir.exists(final_path) || file.exists(final_path)) {
     unlink(final_path, recursive = TRUE, force = TRUE)
   }
@@ -479,6 +481,7 @@ writeSpatialData <- function(object, path, table = "table",
     stop("Failed to rename temporary SpatialData store to final path: ",
          final_path, call. = FALSE)
   }
+  write_succeeded <- TRUE
   path <- final_path
 
   if (verbose) {
