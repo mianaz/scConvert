@@ -47,7 +47,12 @@
 ^review\.md$
 ^Rplots\.pdf$
 ^agent\.md$
+^\.actrc$
+^\.cache$
+^package-lock\.json$
 ^tests/scverse-env\.yml$
+^tests/testthat/_problems$
+^tests/testthat/testthat-problems\.rds$
 
 # Large test data (not used by testthat; for local/integration testing only)
 ^tests/testdata/spatial$
@@ -61,3 +66,9 @@
 ^src/main\.c$
 ^src/main\.o$
 ^src/.*\.o$
+^src/Makefile\.cli$
+^src/cli_obj$
+
+# Rust native core (scaffolding for B2+; not part of R package build)
+^rust$
+^docs/unified-conversion-tool-improvement-plan\.md$

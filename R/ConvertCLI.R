@@ -15,22 +15,35 @@ NULL
 #' @keywords internal
 #'
 sc_find_cli <- function() {
-  # 1. Check package src/ directory (development / devtools::load_all)
+  # 0. Explicit user override
+  override <- getOption("scConvert.cli_path")
+  if (!is.null(override) && nzchar(override) && file.exists(override)) {
+    return(override)
+  }
+
+  # 1. Installed package inst/bin (becomes bin/ in installed tree)
+  pkg_bin <- system.file("bin", "scconvert", package = "scConvert")
+  if (nzchar(pkg_bin) && file.exists(pkg_bin)) {
+    return(pkg_bin)
+  }
+
+  # 2. Source tree src/ (devtools::load_all during development)
   pkg_src <- system.file("src", "scconvert", package = "scConvert")
   if (nzchar(pkg_src) && file.exists(pkg_src)) {
     return(pkg_src)
   }
 
-  # 2. Check relative to package root (devtools::load_all from source tree)
+  # 3. Relative to package root (another load_all shape)
   pkg_dir <- find.package("scConvert", quiet = TRUE)
   if (length(pkg_dir) > 0) {
-    src_bin <- file.path(pkg_dir, "src", "scconvert")
-    if (file.exists(src_bin)) {
-      return(src_bin)
+    for (rel in c(file.path("src", "scconvert"),
+                  file.path("bin", "scconvert"))) {
+      p <- file.path(pkg_dir, rel)
+      if (file.exists(p)) return(p)
     }
   }
 
-  # 3. Check system PATH
+  # 4. System PATH
   on_path <- Sys.which("scconvert")
   if (nzchar(on_path)) {
     return(unname(on_path))

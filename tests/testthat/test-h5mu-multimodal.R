@@ -177,3 +177,56 @@ test_that("Multimodal round-trip via writeH5MU/readH5MU preserves structure", {
   # Check metadata preserved
   expect_true("group" %in% colnames(loaded[[]]))
 })
+
+test_that("writeH5MU emits canonical /obsmap, /varmap, and /var groups", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("hdf5r")
+
+  set.seed(1)
+  rna <- matrix(rpois(60, 1), nrow = 6)
+  rownames(rna) <- paste0("Gene", 1:6)
+  colnames(rna) <- paste0("C", 1:10)
+  adt <- matrix(rpois(30, 2), nrow = 3)
+  rownames(adt) <- paste0("ADT", 1:3)
+  colnames(adt) <- paste0("C", 1:10)
+
+  obj <- Seurat::CreateSeuratObject(rna, assay = "RNA")
+  obj[["ADT"]] <- Seurat::CreateAssayObject(counts = adt)
+
+  tmp <- tempfile(fileext = ".h5mu")
+  on.exit(unlink(tmp), add = TRUE)
+  writeH5MU(obj, tmp, overwrite = TRUE, verbose = FALSE)
+
+  h <- hdf5r::H5File$new(tmp, mode = "r")
+  on.exit(h$close_all(), add = TRUE)
+
+  # Canonical top-level groups all present
+  expect_true(all(c("mod", "obs", "obsm", "obsmap", "var", "varmap")
+                  %in% names(h)))
+
+  mod_order <- hdf5r::h5attr(h[["mod"]], "mod-order")
+  expect_length(mod_order, 2L)
+
+  # /obsmap/{mod} is 0..n-1 (all cells shared across modalities in Seurat)
+  for (m in mod_order) {
+    ob <- h[[paste0("obsmap/", m)]][]
+    expect_equal(ob, 0:9)
+  }
+
+  # /varmap/{mod}: exactly n_mod_var entries point into the modality
+  # (0..n_mod_var-1) contiguously; the rest are -1.
+  n_vars <- length(h[["var/_index"]][])
+  expect_gt(n_vars, 0L)
+
+  seen_indices <- integer(0)
+  for (m in mod_order) {
+    vm <- h[[paste0("varmap/", m)]][]
+    expect_length(vm, n_vars)
+    mod_positions <- which(vm >= 0L)
+    seen_indices <- c(seen_indices, mod_positions)
+    # Contiguous, monotonic within the modality's block
+    expect_equal(vm[mod_positions], seq_along(mod_positions) - 1L)
+  }
+  # Every global var maps into exactly one modality
+  expect_setequal(seen_indices, seq_len(n_vars))
+})

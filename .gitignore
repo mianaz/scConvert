@@ -67,3 +67,23 @@ src/*.dll
 
 # Manuscript (separate repo at ~/Desktop/scConvert-manuscript)
 manuscript/
+
+# Local dev / scratch
+.actrc
+.cache/
+Rplots.pdf
+package-lock.json
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds
+
+# CLI build artifacts
+src/cli_obj/
+src/scconvert
+src/*.o
+src/*.so
+inst/bin/scconvert
+
+# Rust workspace build artifacts (Cargo.lock is committed since we ship a
+# binary crate; header is generated during release builds)
+rust/target/
+rust/scconvert.h

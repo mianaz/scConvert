@@ -282,13 +282,26 @@ writeSpatialData <- function(object, path, table = "table",
     stop("'object' must be a Seurat object", call. = FALSE)
   }
 
-  if (dir.exists(path) || file.exists(path)) {
-    if (!overwrite) {
-      stop("Output exists: ", path,
-           ". Use overwrite = TRUE to replace.", call. = FALSE)
-    }
-    unlink(path, recursive = TRUE)
+  if ((dir.exists(path) || file.exists(path)) && !overwrite) {
+    stop("Output exists: ", path,
+         ". Use overwrite = TRUE to replace.", call. = FALSE)
   }
+
+  # Atomic write: build the SpatialData store under a sibling temp name,
+  # then rename to the final path at the end. A mid-write crash therefore
+  # leaves the user's existing `path` untouched and no partial store at
+  # the final name.
+  final_path <- path
+  parent <- dirname(final_path)
+  if (!nzchar(parent)) parent <- "."
+  dir.create(parent, recursive = TRUE, showWarnings = FALSE)
+  path <- tempfile(pattern = "scconvert-spatialdata-",
+                   tmpdir = parent, fileext = ".zarr")
+  on.exit({
+    if (dir.exists(path) || file.exists(path)) {
+      unlink(path, recursive = TRUE, force = TRUE)
+    }
+  }, add = TRUE)
 
   # Determine region name
   image_names <- Images(object)
@@ -456,6 +469,17 @@ writeSpatialData <- function(object, path, table = "table",
       .write_spatialdata_points(pt_data, pt_path, verbose = verbose)
     }
   }
+
+  # Atomic rename — replace any pre-existing final path then move the temp
+  # store into place. The on.exit() above is disarmed by clearing `path`.
+  if (dir.exists(final_path) || file.exists(final_path)) {
+    unlink(final_path, recursive = TRUE, force = TRUE)
+  }
+  if (!file.rename(path, final_path)) {
+    stop("Failed to rename temporary SpatialData store to final path: ",
+         final_path, call. = FALSE)
+  }
+  path <- final_path
 
   if (verbose) {
     message("\nSuccessfully saved SpatialData store")

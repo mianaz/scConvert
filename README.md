@@ -140,14 +140,17 @@ Loom) without R or Python:
 
 ``` bash
 # Build (requires HDF5 headers)
-cd src && make
+cd src && make -f Makefile.cli
+
+# Optional: install into the R package tree so `library(scConvert)` picks it up
+make -f Makefile.cli install-bin   # copies to ../inst/bin/scconvert
 
 # Convert between any HDF5 format pair
-scconvert data.h5ad data.h5seurat
-scconvert data.h5seurat data.h5ad --assay RNA
-scconvert multimodal.h5mu multimodal.h5seurat
-scconvert data.h5ad data.loom
-scconvert data.loom data.h5seurat
+./scconvert data.h5ad data.h5seurat
+./scconvert data.h5seurat data.h5ad --assay RNA
+./scconvert multimodal.h5mu multimodal.h5seurat
+./scconvert data.h5ad data.loom
+./scconvert data.loom data.h5seurat
 ```
 
 Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`,

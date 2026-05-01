@@ -665,6 +665,10 @@ writeH5MU <- function(
     WriteDFGroup(h5parent, group_name, df, index_values, gzip = gzip)
   }
 
+  # Per-modality var rownames collected during the loop below; used after
+  # the loop to build the canonical global /var axis and /varmap/{mod}.
+  mod_var_names <- list()
+
   # ========== Root MuData attributes ==========
   dfile$create_attr(attr_name = 'encoding-type', robj = 'MuData',
                     dtype = CachedGuessDType('MuData'), space = ScalarSpace())
@@ -726,6 +730,7 @@ writeH5MU <- function(
       meta_features <- data.frame(row.names = gene_names)
     }
     write_df_group(mod_grp, "var", meta_features, gene_names)
+    mod_var_names[[modality]] <- gene_names
 
     # --- obsm (reductions associated with this assay) ---
     reducs <- Reductions(object)
@@ -868,6 +873,79 @@ writeH5MU <- function(
   if (verbose) message("  Writing global obs...")
   meta <- object[[]]
   write_df_group(dfile, "obs", meta, cell_names)
+
+  # ========== Global var (concat of modality vars, canonical MuData) ==========
+  # A Seurat object's modalities share the obs axis but have disjoint var
+  # axes. MuData's canonical layout is a single /var that concatenates all
+  # modality vars in mod-order, with /varmap/{m} pointing each global-var
+  # index back at its position in modality m (-1 for vars from other mods).
+  if (verbose) message("  Writing canonical global var + mapping...")
+
+  concat_var_names <- unlist(mod_var_names[mod_order], use.names = FALSE)
+  if (is.null(concat_var_names)) concat_var_names <- character(0)
+  # Deduplicate with modality prefix only where a gene name reappears in
+  # multiple modalities; otherwise preserve the original name so callers
+  # see their expected feature identifiers.
+  dup_mask <- duplicated(concat_var_names) |
+              duplicated(concat_var_names, fromLast = TRUE)
+  if (any(dup_mask)) {
+    mod_owner <- rep(mod_order,
+                     vapply(mod_order,
+                            function(m) length(mod_var_names[[m]]),
+                            integer(1)))
+    prefixed <- paste0(mod_owner, ":", concat_var_names)
+    concat_var_names[dup_mask] <- prefixed[dup_mask]
+  }
+  write_df_group(dfile, "var",
+                 data.frame(row.names = concat_var_names),
+                 concat_var_names)
+
+  # ========== /obsmap and /varmap ==========
+  # /obsmap/{mod}[i] = 0-based index of global cell i in modality mod's obs,
+  # or -1 if that cell is absent from the modality. Seurat objects share the
+  # obs axis across modalities, so every cell is present in every modality
+  # and the map is always 0..n-1.
+  #
+  # /varmap/{mod}[j] = 0-based index of global var j in modality mod's var,
+  # or -1 if that global var belongs to a different modality.
+  obsmap_grp <- dfile$create_group("obsmap")
+  obsmap_grp$create_attr(attr_name = 'encoding-type', robj = 'dict',
+                         dtype = CachedGuessDType('dict'), space = ScalarSpace())
+  obsmap_grp$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
+                         dtype = CachedGuessDType('0.1.0'),
+                         space = ScalarSpace())
+
+  varmap_grp <- dfile$create_group("varmap")
+  varmap_grp$create_attr(attr_name = 'encoding-type', robj = 'dict',
+                         dtype = CachedGuessDType('dict'), space = ScalarSpace())
+  varmap_grp$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
+                         dtype = CachedGuessDType('0.1.0'),
+                         space = ScalarSpace())
+
+  n_obs_global <- length(cell_names)
+  n_var_global <- length(concat_var_names)
+  var_offset <- 0L
+  for (assay_name in assays_to_export) {
+    modality <- modality_map[[assay_name]]
+    n_mod_var <- length(mod_var_names[[modality]])
+
+    obsmap_vec <- seq.int(0L, n_obs_global - 1L)
+    storage.mode(obsmap_vec) <- "integer"
+    obsmap_grp$create_dataset(modality, robj = obsmap_vec,
+                              chunk_dims = length(obsmap_vec),
+                              gzip_level = gzip)
+
+    varmap_vec <- rep(-1L, n_var_global)
+    if (n_mod_var > 0L) {
+      varmap_vec[(var_offset + 1L):(var_offset + n_mod_var)] <-
+        seq.int(0L, n_mod_var - 1L)
+    }
+    varmap_grp$create_dataset(modality, robj = varmap_vec,
+                              chunk_dims = length(varmap_vec),
+                              gzip_level = gzip)
+
+    var_offset <- var_offset + n_mod_var
+  }
 
   # ========== Global obsm (empty) ==========
   global_obsm <- dfile$create_group("obsm")
