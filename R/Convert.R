@@ -204,7 +204,7 @@ scConvert.character <- function(
           "RNA"
         }
       )
-      hfile_tmp$close_all()
+      tryCatch(hfile_tmp$close_all(), error = function(e) NULL)
     } else {
       assay <- 'RNA'
     }
@@ -217,7 +217,7 @@ scConvert.character <- function(
       dest <- paste(file_path_sans_ext(x = source), dtype, sep = '.')
     }
     hfile <- scConnect(filename = source, force = TRUE)
-    on.exit(expr = hfile$close_all(), add = TRUE)
+    on.exit(expr = tryCatch(hfile$close_all(), error = function(e) NULL), add = TRUE)
     dfile <- direct_fn(
       source = hfile, dest = dest, assay = assay,
       overwrite = overwrite, verbose = verbose,
