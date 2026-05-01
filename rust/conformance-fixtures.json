@@ -1,0 +1,65 @@
+{
+  "schema_version": "0.1",
+  "description": "Conformance fixtures used to validate scconvert-core against real files produced by R scConvert and the C CLI. B2+ tests load each entry, run the named route, and assert the fidelity report's `fields` match `expected.preserved`.",
+  "fixtures": [
+    {
+      "id": "pbmc_small.h5ad",
+      "path": "../inst/testdata/pbmc_small.h5ad",
+      "format": "h5ad",
+      "size_class": "small",
+      "description": "80-cell PBMC sample shipped with the R package; used by every roundtrip test.",
+      "expected": {
+        "n_obs": 80,
+        "n_vars": 230,
+        "has_obs": true,
+        "has_var": true,
+        "has_raw": false
+      }
+    },
+    {
+      "id": "pbmc_small.rds",
+      "path": "../inst/testdata/pbmc_small.rds",
+      "format": "rds",
+      "size_class": "small",
+      "description": "Same dataset as pbmc_small.h5ad, saved as a Seurat object."
+    }
+  ],
+  "routes": [
+    {
+      "src": "h5ad",
+      "dst": "h5seurat",
+      "priority": "p0",
+      "implementer": "scconvert-core (B2)"
+    },
+    {
+      "src": "h5seurat",
+      "dst": "h5ad",
+      "priority": "p0",
+      "implementer": "scconvert-core (B2)"
+    },
+    {
+      "src": "h5ad",
+      "dst": "h5mu",
+      "priority": "p1",
+      "implementer": "scconvert-core (B3)"
+    },
+    {
+      "src": "h5ad",
+      "dst": "loom",
+      "priority": "p1",
+      "implementer": "scconvert-core (B3)"
+    },
+    {
+      "src": "h5ad",
+      "dst": "zarr",
+      "priority": "p2",
+      "implementer": "scconvert-core (B4, via zarrs)"
+    },
+    {
+      "src": "h5ad",
+      "dst": "soma",
+      "priority": "p3",
+      "implementer": "ObjectMediated via tiledbsoma (never native)"
+    }
+  ]
+}

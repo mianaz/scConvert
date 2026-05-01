@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "scconvert-core",
+    "scconvert-capi",
+    "scconvert-cli",
+]
+
+[workspace.package]
+version = "0.1.0-alpha.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+repository = "https://github.com/mianaz/scConvert"
+readme = "README.md"
+
+[workspace.dependencies]
+# Core library exposes only pure Rust; format-specific IO deps live in
+# scconvert-core's own manifest so we can turn them into cargo features
+# once the h5ad/h5seurat/zarr work in Part B starts.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+# Anyhow is permitted in the CLI boundary (scconvert-cli) where lossy
+# error presentation is fine. Core library uses `thiserror`.
+anyhow = "1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

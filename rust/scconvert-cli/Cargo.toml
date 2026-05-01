@@ -1,0 +1,18 @@
+[package]
+name = "scconvert-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "scconvert command-line tool (Rust)"
+
+[[bin]]
+name = "scconvert"
+path = "src/main.rs"
+
+[dependencies]
+scconvert-core = { path = "../scconvert-core" }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

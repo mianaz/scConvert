@@ -1,0 +1,31 @@
+[package]
+name = "scconvert-capi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Stable C ABI over scconvert-core for R, Python, and other bindings"
+
+[lib]
+path = "src/lib.rs"
+# `cdylib` produces libscconvert_capi.{so,dylib,dll} for dlopen callers.
+# `staticlib` produces libscconvert_capi.a for cbindgen-consumers who
+# want static linkage. `rlib` is the normal Rust dep path used by the CLI.
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+scconvert-core = { path = "../scconvert-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[build-dependencies]
+# cbindgen 0.27+ works with edition 2021 and supports the simpler
+# PascalCase-to-snake_case mapping we want for the public surface.
+cbindgen = { version = "0.27", optional = true }
+
+[features]
+default = []
+# Enable the build-time header regeneration. Off by default so packagers
+# who already have a checked-in `scconvert.h` don't re-run cbindgen.
+regen-header = ["dep:cbindgen"]

@@ -1,0 +1,39 @@
+[package]
+name = "scconvert-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Native core for scConvert: data model, route planner, fidelity reporting"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# Native HDF5 bindings. `hdf5-metno` is the actively maintained fork of
+# the `hdf5` crate and is the path endorsed by the Part B plan. By default
+# it links against the system libhdf5 (pkg-config / env vars); set
+# HDF5_DIR=/opt/homebrew/opt/hdf5@1.10 locally to match the R package's
+# build. Flip the `hdf5-static` feature on this crate to vendor libhdf5
+# via `hdf5-src` for reproducible release builds.
+hdf5-metno = { version = "0.12", default-features = false }
+# hdf5-metno's read_slice / write_slice return/accept ndarray views. We
+# use ndarray only through those — no heavy linear-algebra operations.
+ndarray = "0.17"
+# Atomic writes stage output into a sibling tempfile. `tempfile` handles
+# collision-free naming; we rename it into place on success.
+tempfile = "3"
+
+[dev-dependencies]
+hdf5-metno = { version = "0.12", default-features = false }
+tempfile = "3"
+
+[features]
+default = []
+# Build libhdf5 from source (via hdf5-src). Slow first build (~10 min)
+# but reproducible across platforms. Used for release artifacts.
+hdf5-static = ["hdf5-metno/static"]
