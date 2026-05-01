@@ -68,9 +68,16 @@ NULL
     return(invisible(NULL))
   }
 
-  data_vals <- src_group[["data"]]$read()
-  indices   <- src_group[["indices"]]$read()
-  indptr    <- src_group[["indptr"]]$read()
+  src_data    <- src_group[["data"]]
+  src_indices <- src_group[["indices"]]
+  src_indptr  <- src_group[["indptr"]]
+
+  # indptr is (n_rows + 1) int32; small, read in one shot.
+  indptr <- as.integer(src_indptr$read())
+
+  # Total number-of-nonzeros = length of data/indices.
+  nnz <- as.integer(src_data$dims)
+  if (length(nnz) != 1L) nnz <- as.integer(prod(nnz))
 
   # Read shape from source
   shape <- NULL
@@ -80,16 +87,54 @@ NULL
     shape <- hdf5r::h5attr(src_group, "dims")
   }
 
-  chunk_size <- 65536L
+  # On-disk HDF5 chunk size (keeps compressor effective). Matches the
+  # historical default here.
+  disk_chunk <- 65536L
+
+  # Stream-read budget in bytes. 64 MiB by default; overridable for tests
+  # that exercise small budgets or users with tight memory caps. The
+  # multiplier 8 / 4 converts the byte budget into the element budget for
+  # float64 data and int32 indices respectively.
+  budget_bytes <- getOption("scConvert.stream_chunk_bytes",
+                            64L * 1024L * 1024L)
+  stream_chunk_data <- max(disk_chunk, as.integer(budget_bytes %/% 8L))
+  stream_chunk_idx  <- max(disk_chunk, as.integer(budget_bytes %/% 4L))
+
   grp <- dst_parent$create_group(dst_name)
-  grp$create_dataset("data", robj = as.numeric(data_vals),
-                     chunk_dims = min(length(data_vals), chunk_size),
-                     gzip_level = gzip)
-  grp$create_dataset("indices", robj = as.integer(indices),
-                     chunk_dims = min(length(indices), chunk_size),
-                     gzip_level = gzip)
-  grp$create_dataset("indptr", robj = as.integer(indptr),
-                     chunk_dims = min(length(indptr), chunk_size),
+  ds_data <- grp$create_dataset(
+    name = "data",
+    dtype = hdf5r::h5types$H5T_NATIVE_DOUBLE,
+    space = hdf5r::H5S$new(type = "simple", dims = nnz),
+    chunk_dims = min(nnz, disk_chunk),
+    gzip_level = gzip
+  )
+  ds_indices <- grp$create_dataset(
+    name = "indices",
+    dtype = hdf5r::h5types$H5T_NATIVE_INT32,
+    space = hdf5r::H5S$new(type = "simple", dims = nnz),
+    chunk_dims = min(nnz, disk_chunk),
+    gzip_level = gzip
+  )
+
+  # Stream data/indices in blocks of `stream_chunk_*` elements so peak
+  # R-side memory is O(stream_chunk * 8 bytes), independent of nnz.
+  if (nnz > 0L) {
+    pos <- 1L
+    while (pos <= nnz) {
+      last <- min(pos + stream_chunk_data - 1L, nnz)
+      ds_data[pos:last] <- as.numeric(src_data[pos:last])
+      pos <- last + 1L
+    }
+    pos <- 1L
+    while (pos <= nnz) {
+      last <- min(pos + stream_chunk_idx - 1L, nnz)
+      ds_indices[pos:last] <- as.integer(src_indices[pos:last])
+      pos <- last + 1L
+    }
+  }
+
+  grp$create_dataset("indptr", robj = indptr,
+                     chunk_dims = min(length(indptr), disk_chunk),
                      gzip_level = gzip)
 
   # Write shape/dims attribute

@@ -11,14 +11,25 @@ Sys.setenv(
   MKL_NUM_THREADS = "1"
 )
 
-# Skip entirely if reticulate not available or scverse env not found
+# Skip entirely if reticulate not available
 skip_if_not_installed("reticulate")
-
-scverse_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
-skip_if(!dir.exists(scverse_path), "scverse conda env not found")
-
 library(reticulate)
-use_condaenv("scverse", required = FALSE)
+
+# Python resolution order:
+#   1. RETICULATE_PYTHON env var (used by CI; points at the scverse env's python)
+#   2. Conda env named "scverse" if present (common local setup)
+#   3. Hardcoded macOS miniconda path (legacy local setup)
+# Skip cleanly if none resolves to an env that has anndata+scanpy.
+if (!nzchar(Sys.getenv("RETICULATE_PYTHON"))) {
+  tryCatch(use_condaenv("scverse", required = FALSE), error = function(e) NULL)
+  legacy_path <- "/opt/homebrew/Caskroom/miniconda/base/envs/scverse"
+  if (dir.exists(legacy_path)) {
+    tryCatch(
+      use_python(file.path(legacy_path, "bin", "python"), required = FALSE),
+      error = function(e) NULL
+    )
+  }
+}
 
 skip_if(!reticulate::py_module_available("anndata"), "anndata not available in Python")
 skip_if(!reticulate::py_module_available("scanpy"), "scanpy not available in Python")

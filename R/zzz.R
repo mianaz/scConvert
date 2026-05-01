@@ -1391,8 +1391,11 @@ SafeSetLayerData <- function(object, layer, value) {
     }
   } else {
     packageStartupMessage(
-      "scConvert: C binary not found. Run `cd ", system.file("src", package = pkgname),
-      " && make` for ~20x faster HDF5 file-to-file conversion."
+      "scConvert: optional `scconvert` C binary not found. ",
+      "HDF5 file-to-file paths will use the R fallback.\n",
+      "To build: from a source checkout, run `cd src && make -f Makefile.cli ",
+      "&& make -f Makefile.cli install-bin`, then reinstall the package.\n",
+      "Or set options(scConvert.cli_path = \"/path/to/scconvert\")."
     )
   }
 
@@ -1446,15 +1449,15 @@ SafeSetLayerData <- function(object, layer, value) {
   # Register SOMA format
   RegisterFormat(ext = 'soma', loader = function(source, ...) {
     readSOMA(source, ...)
-  }, saver = function(object, dest, ...) {
-    writeSOMA(object, dest, ...)
+  }, saver = function(object, filename, ...) {
+    writeSOMA(object, filename, ...)
   })
 
   # Register SpatialData zarr format (uses .spatialdata.zarr extension)
   RegisterFormat(ext = 'spatialdata.zarr', loader = function(source, ...) {
     readSpatialData(source, ...)
-  }, saver = function(object, dest, ...) {
-    writeSpatialData(object, dest, ...)
+  }, saver = function(object, filename, ...) {
+    writeSpatialData(object, filename, ...)
   })
 
   # Register vendor raw spatial formats (read-only, no corresponding saver).

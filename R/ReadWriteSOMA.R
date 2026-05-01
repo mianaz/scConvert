@@ -238,23 +238,6 @@ writeSOMA <- function(object, uri, measurement = NULL, overwrite = FALSE,
   if (!inherits(object, "Seurat")) {
     stop("'object' must be a Seurat object", call. = FALSE)
   }
-
-  # Handle overwrite
-  if (dir.exists(uri) || file.exists(uri)) {
-    if (!overwrite) {
-      stop("Output exists: ", uri, ". Use overwrite = TRUE.", call. = FALSE)
-    }
-    if (verbose) message("Removing existing SOMA at: ", uri)
-    unlink(uri, recursive = TRUE)
-  }
-
-  if (is.null(measurement)) {
-    measurement <- Seurat::DefaultAssay(object)
-  }
-
-  if (verbose) message("Writing Seurat object to SOMA: ", uri)
-
-  # Use tiledbsoma's built-in writer
   if (!.soma_has_write_soma()) {
     stop(
       "tiledbsoma::write_soma() is not available. ",
@@ -264,12 +247,40 @@ writeSOMA <- function(object, uri, measurement = NULL, overwrite = FALSE,
     )
   }
 
+  if ((dir.exists(uri) || file.exists(uri)) && !overwrite) {
+    stop("Output exists: ", uri, ". Use overwrite = TRUE.", call. = FALSE)
+  }
+
+  if (is.null(measurement)) {
+    measurement <- Seurat::DefaultAssay(object)
+  }
+
+  # Atomic write: tiledbsoma::write_soma creates a directory tree. Write it
+  # under a sibling temp name and rename on success so a mid-write crash
+  # leaves no plausible-but-corrupt store at `uri`.
+  parent <- dirname(uri)
+  if (!nzchar(parent)) parent <- "."
+  dir.create(parent, recursive = TRUE, showWarnings = FALSE)
+  tmp_uri <- tempfile(pattern = "scconvert-soma-", tmpdir = parent)
+
+  if (verbose) message("Writing Seurat object to SOMA: ", uri)
+
   tryCatch(
-    tiledbsoma::write_soma(object, uri = uri),
+    tiledbsoma::write_soma(object, uri = tmp_uri),
     error = function(e) {
+      unlink(tmp_uri, recursive = TRUE, force = TRUE)
       stop("Failed to write SOMA: ", e$message, call. = FALSE)
     }
   )
+
+  if (dir.exists(uri) || file.exists(uri)) {
+    unlink(uri, recursive = TRUE, force = TRUE)
+  }
+  if (!file.rename(tmp_uri, uri)) {
+    unlink(tmp_uri, recursive = TRUE, force = TRUE)
+    stop("Failed to rename temporary SOMA store to final path: ", uri,
+         call. = FALSE)
+  }
 
   if (verbose) message("Done: ", uri)
   invisible(uri)
