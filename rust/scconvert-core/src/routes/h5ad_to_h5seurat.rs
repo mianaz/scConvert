@@ -45,20 +45,20 @@ pub fn convert(src: &Path, dst: &Path, options: &ConvertOptions) -> Result<Fidel
     let started = Instant::now();
     let mut report = FidelityReport::new(Format::H5ad, Format::H5seurat);
 
-    // Atomic write: stream into a sibling tempfile, rename on success.
+    // Atomic write: stream into a sibling temp directory, rename on success.
+    // We use a TempDir + fixed filename rather than NamedTempFile because on
+    // Windows, dropping a NamedTempFile and immediately re-creating at the
+    // same path races against the OS's pending-delete state and trips
+    // ERROR_SHARING_VIOLATION.
     let parent = dst
         .parent()
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
     std::fs::create_dir_all(parent)?;
-    let tmp = tempfile::Builder::new()
+    let tmp_dir = tempfile::Builder::new()
         .prefix("scconvert-")
-        .suffix(".h5seurat")
-        .tempfile_in(parent)?;
-    let tmp_path = tmp.path().to_path_buf();
-    // We only needed the *name*. The file handle keeps the path alive on
-    // disk, so drop it and let HDF5 create at that path.
-    drop(tmp);
+        .tempdir_in(parent)?;
+    let tmp_path = tmp_dir.path().join("out.h5seurat");
 
     let src_file = File::open(src).map_err(io::hdf5_err)?;
     let dst_file = File::create(&tmp_path).map_err(io::hdf5_err)?;
