@@ -84,3 +84,26 @@ pub fn ensure_group(parent: &Group, path: &str) -> Result<Group> {
 pub(crate) fn hdf5_err(e: hdf5_metno::Error) -> ConvertError {
     ConvertError::Other(format!("hdf5: {e}"))
 }
+
+/// Rename `from` to `to` with a short retry on Windows
+/// `ERROR_SHARING_VIOLATION` (32). HDF5 on Windows occasionally holds a
+/// brief lock on a freshly-closed file (also seen with antivirus scans),
+/// which trips a non-retried `std::fs::rename` even though the Rust
+/// handle has been dropped. macOS/Linux release synchronously, so the
+/// retry is a no-op there.
+pub(crate) fn rename_with_retry(
+    from: &std::path::Path,
+    to: &std::path::Path,
+) -> std::io::Result<()> {
+    let mut attempt: u32 = 0;
+    loop {
+        match std::fs::rename(from, to) {
+            Ok(()) => return Ok(()),
+            Err(e) if attempt < 10 && e.raw_os_error() == Some(32) => {
+                attempt += 1;
+                std::thread::sleep(std::time::Duration::from_millis(50 * u64::from(attempt)));
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}

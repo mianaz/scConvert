@@ -104,8 +104,10 @@ pub fn convert(src: &Path, dst: &Path, options: &ConvertOptions) -> Result<Fidel
         chunk_bytes,
     )?;
     let dims_xyswapped = [shape.n_cols, shape.n_rows];
-    let layer = layers_grp.group(layer_name).map_err(io::hdf5_err)?;
-    io::write_i64_array_attr(&layer, "dims", &dims_xyswapped)?;
+    {
+        let layer = layers_grp.group(layer_name).map_err(io::hdf5_err)?;
+        io::write_i64_array_attr(&layer, "dims", &dims_xyswapped)?;
+    }
 
     report.fields.push(FieldRecord {
         path: format!("/assays/{DEFAULT_ASSAY}/layers/{layer_name}"),
@@ -170,11 +172,12 @@ pub fn convert(src: &Path, dst: &Path, options: &ConvertOptions) -> Result<Fidel
     drop(dst_file);
 
     // Atomic rename over any existing dst (only reachable if overwrite
-    // was set; we checked earlier).
+    // was set; we checked earlier). Uses retry-with-backoff to absorb the
+    // brief Windows file lock that lingers after HDF5 close.
     if dst.exists() {
         std::fs::remove_file(dst)?;
     }
-    std::fs::rename(&tmp_path, dst)?;
+    io::rename_with_retry(&tmp_path, dst)?;
 
     report.bytes_written = std::fs::metadata(dst).ok().map(|m| m.len());
     report.duration_ms = Some(started.elapsed().as_millis() as u64);
