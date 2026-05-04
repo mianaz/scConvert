@@ -100,7 +100,7 @@ df <- data.frame(
 WriteH5Group(x = df, name = 'df', hgroup = hfile)
 hfile[['df']]
 #> Class: H5Group
-#> Filename: /tmp/RtmpUOlrw8/file399f4e2284ec.h5
+#> Filename: /tmp/RtmpBgjaJd/file3745298c64da.h5
 #> Group: /df
 #> Attributes: colnames, _index
 #> Listing:
@@ -116,7 +116,7 @@ df$x <- factor(x = df$x)
 WriteH5Group(x = df, name = 'df.factor', hgroup = hfile)
 hfile[['df.factor']]
 #> Class: H5Group
-#> Filename: /tmp/RtmpUOlrw8/file399f4e2284ec.h5
+#> Filename: /tmp/RtmpBgjaJd/file3745298c64da.h5
 #> Group: /df.factor
 #> Attributes: colnames, _index
 #> Listing:
@@ -136,7 +136,7 @@ fctr <- factor(x = c('g1', 'g1', 'g2', 'g1', 'g2'))
 WriteH5Group(x = fctr, name = 'factor', hgroup = hfile)
 hfile[['factor']]
 #> Class: H5Group
-#> Filename: /tmp/RtmpUOlrw8/file399f4e2284ec.h5
+#> Filename: /tmp/RtmpBgjaJd/file3745298c64da.h5
 #> Group: /factor
 #> Listing:
 #>    name    obj_type dataset.dims dataset.type_class
@@ -155,7 +155,7 @@ WriteH5Group(c(TRUE, FALSE, NA), name = "logicals", hgroup = hfile)
 hfile[["logicals"]]
 #> Class: H5D
 #> Dataset: /logicals
-#> Filename: /tmp/RtmpUOlrw8/file399f4e2284ec.h5
+#> Filename: /tmp/RtmpBgjaJd/file3745298c64da.h5
 #> Access type: H5F_ACC_RDWR
 #> Attributes: s3class
 #> Datatype: H5T_STD_I32LE
