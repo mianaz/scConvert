@@ -66,7 +66,7 @@ round-trip.
 sd_path <- file.path(tempdir(), "brain.spatialdata.zarr")
 writeSpatialData(brain, sd_path, overwrite = TRUE, verbose = FALSE)
 cat("SpatialData store written to:", sd_path, "\n")
-#> SpatialData store written to: /tmp/RtmpV6mbpJ/brain.spatialdata.zarr
+#> SpatialData store written to: /tmp/Rtmp5VsWWf/brain.spatialdata.zarr
 ```
 
 ``` r
