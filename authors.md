@@ -11,12 +11,12 @@ Source:
 [`DESCRIPTION`](https://github.com/mianaz/scConvert/blob/main/DESCRIPTION)
 
 Zeng Z (2026). *scConvert: Universal Single-Cell Format Conversion for
-R*. R package version 0.1.0, <https://mianaz.github.io/scConvert/>.
+R*. R package version 0.2.0, <https://mianaz.github.io/scConvert/>.
 
     @Manual{,
       title = {scConvert: Universal Single-Cell Format Conversion for R},
       author = {Ziyu Zeng},
       year = {2026},
-      note = {R package version 0.1.0},
+      note = {R package version 0.2.0},
       url = {https://mianaz.github.io/scConvert/},
     }

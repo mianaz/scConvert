@@ -66,7 +66,7 @@ round-trip.
 sd_path <- file.path(tempdir(), "brain.spatialdata.zarr")
 writeSpatialData(brain, sd_path, overwrite = TRUE, verbose = FALSE)
 cat("SpatialData store written to:", sd_path, "\n")
-#> SpatialData store written to: /tmp/Rtmp0TNyfp/brain.spatialdata.zarr
+#> SpatialData store written to: /tmp/Rtmp00oLZO/brain.spatialdata.zarr
 ```
 
 ``` r
@@ -178,7 +178,7 @@ sessionInfo()
 #> 
 #> other attached packages:
 #> [1] patchwork_1.3.2    ggplot2_4.0.3      Seurat_5.5.0       SeuratObject_5.4.0
-#> [5] sp_2.2-1           scConvert_0.1.0   
+#> [5] sp_2.2-1           scConvert_0.2.0   
 #> 
 #> loaded via a namespace (and not attached):
 #>   [1] deldir_2.0-4           pbapply_1.7-4          gridExtra_2.3         

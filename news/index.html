@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scConvert</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,12 +61,68 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0.9001" id="scconvert-0109001-development">scConvert 0.1.0.9001 (development)<a class="anchor" aria-label="anchor" href="#scconvert-0109001-development"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.2.0" id="scconvert-020">scConvert 0.2.0<a class="anchor" aria-label="anchor" href="#scconvert-020"></a></h2>
 <blockquote>
-<p><strong>Status:</strong> unreleased; rolling development between 0.1.0 and the next tag.</p>
+<p><strong>Release Date:</strong> 2026-05-04</p>
 </blockquote>
 <div class="section level3">
-<h3 id="new-features-0-1-0-9001">New features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0-9001"></a></h3>
+<h3 id="breaking-changes-0-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-0"></a></h3>
+<ul><li>
+<strong>HDF5 1.14+ required.</strong> <code>SystemRequirements</code> bumped from <code>HDF5 (&gt;= 1.10.0)</code> to <code>HDF5 (&gt;= 1.14.0)</code>. The hdf5r close path segfaults on libhdf5 1.10.x when closing files with many open child IDs (groups/datasets opened via <code>[[]]</code> subsetting); this is upstream and not catchable in R. Modern Linux distros (Ubuntu 24.04+, Debian 12+, Fedora 38+), recent macOS packages, and Bioconductor’s <code>Rhdf5lib</code> all ship 1.14+, so this matches real deployments.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
+<div class="section level4">
+<h4 id="native-rust-core-preview-0-2-0">Native Rust core (preview)<a class="anchor" aria-label="anchor" href="#native-rust-core-preview-0-2-0"></a></h4>
+<ul><li>
+<strong><code>rust/</code> workspace.</strong> Three crates: <code>scconvert-core</code> (data model, typed errors with stable C ABI codes, fidelity report schema), <code>scconvert-capi</code> (stable C-compatible boundary: <code>sc_abi_version</code>, <code>sc_convert</code>, <code>sc_plan</code>, <code>sc_free_string</code>), and <code>scconvert-cli</code> (thin binary: <code>convert | plan | inspect</code>). Cross-platform CI on ubuntu/macOS/windows with HDF5 preinstalled, clippy <code>-D warnings</code> clean, fmt clean.</li>
+<li>
+<strong>First conversion slice: native h5ad → h5seurat sparse <code>X</code>.</strong> <code>routes::h5ad_to_h5seurat::convert()</code> copies <code>/X</code> (and <code>/raw/X</code> if present) into <code>/assays/RNA/layers/{data,counts}</code> with bounded-memory chunked CSR streaming and a zero-copy CSR↔︎CSC shape-attr swap. Bit-identical to the C CLI on float64 input. Errors loudly on other dtypes (a B2 follow-up will dispatch). The Rust binary is <strong>not yet wired</strong> as a default backend — the C CLI remains the production path for HDF5↔︎HDF5 conversions.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="existing-native-readers-carried-from-development-0-2-0">Existing native readers (carried from development)<a class="anchor" aria-label="anchor" href="#existing-native-readers-carried-from-development-0-2-0"></a></h4>
+<ul><li>
+<strong>Native Stereo-seq GEF reader (<code><a href="../reference/LoadStereoSeqGef.html">LoadStereoSeqGef()</a></code>).</strong> Pure-R reader for BGI <code>.gef</code> and <code>.cellbin.gef</code> files using <code>hdf5r</code> only. Handles both the square-bin and cell-bin schemas documented by STOmics. No Python, stereopy, or reticulate dependency. Spot coordinates are stored in <code>meta.data$spatial_x/y</code> and <code>misc$spatial_technology = "StereoSeq"</code>.</li>
+<li>
+<strong>Native CosMx SMI reader (<code><a href="../reference/LoadCosMx.html">LoadCosMx()</a></code>).</strong> Thin R wrapper around <code><a href="https://satijalab.org/seurat/reference/ReadNanostring.html" class="external-link">Seurat::LoadNanostring()</a></code> that validates the canonical flat-file bundle (<code>*exprMat*.csv</code>, <code>*metadata*.csv</code>, <code>*fov_positions*.csv</code>, <code>*tx_file*.csv</code>) and tags the result with <code>misc$spatial_technology = "CosMx"</code>. No squidpy or reticulate dependency.</li>
+<li>
+<strong>CLI auto-delegation for vendor raw formats.</strong> The <code>scconvert</code> C binary now auto-detects <code>.gef</code>, <code>.cellbin.gef</code>, and CosMx bundle directories and transparently delegates to the R backend via <code>Rscript</code> + <code>execvp()</code>. Users can write <code>scconvert mosta.gef mosta.h5ad</code> directly. <code>Rscript</code> lookup happens up-front; paths are absolutised; no shell-parsed command strings.</li>
+<li>
+<strong>FOV round-trip through h5ad.</strong> <code><a href="../reference/writeH5AD.html">writeH5AD()</a></code> now serializes <code>FOV@boundaries</code> and <code>FOV@molecules</code> into a stable <code>uns/spatial/{library}/segmentation/</code> and <code>uns/spatial/{library}/molecules/</code> contract. <code><a href="../reference/readH5AD.html">readH5AD()</a></code> automatically rebuilds any FOV library it finds on load. Backward-compatible with squidpy and scanpy (they ignore unknown <code>uns/spatial/{lib}/</code> children).</li>
+<li>
+<strong>CLI <code>varp</code> preservation.</strong> The new <code>sc_stream_varp()</code> in <code>src/sc_groups.c</code> mirrors <code>sc_stream_obsp()</code> and maps <code>/varp/</code> (h5ad) to <code>/misc/__varp__/</code> (h5seurat). Handles both sparse (CSR/CSC group) and dense (array dataset) varp entries. Closes the manuscript limitation “CLI does not preserve varp”.</li>
+<li>
+<strong>Loom factor-level preservation.</strong> <code><a href="../reference/writeLoom.html">writeLoom()</a></code> now stores factor levels and <code>ordered</code> flag under <code>/scConvert_extensions/col_factor_levels/{name}</code>, outside <code>col_attrs</code> so loompy/scanpy continue to read the file without errors. <code><a href="../reference/readLoom.html">readLoom()</a></code> restores the factors on load.</li>
+<li>
+<strong>h5mu per-modality <code>uns</code> round-trip.</strong> <code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> and <code><a href="../reference/readH5MU.html">readH5MU()</a></code> now mirror each modality’s <code>uns</code> group under <code>obj@misc[["__h5mu_uns_per_mod__"]][[modality]]</code> so per-modality uns entries survive h5mu round-trips instead of being flattened.</li>
+<li>
+<strong>IMC multi-image support.</strong> <code><a href="../reference/SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code> now iterates over every image in deterministic sorted order instead of processing only <code>Images()[1]</code>. Fixes the IMC 14/15 -&gt; 11/13 double-roundtrip degradation documented in <code>NOTES.md</code> section 3.</li>
+</ul></div>
+</div>
+<div class="section level3">
+<h3 id="p0-robustness-fixes-codex-review-response-part-a-0-2-0">P0 robustness fixes (Codex review response, Part A)<a class="anchor" aria-label="anchor" href="#p0-robustness-fixes-codex-review-response-part-a-0-2-0"></a></h3>
+<ul><li>
+<strong>SOMA / SpatialData generic dispatch.</strong> Lambdas registered for the <code>scConvert</code> generic now accept <code>filename =</code> so <code><a href="../reference/scConvert.html">scConvert.character()</a></code> reaches the right method. Adds <code>tests/testthat/test-generic-dispatch.R</code>.</li>
+<li>
+<strong>CLI build hygiene.</strong> CLI <code>.o</code> files are isolated to <code>src/cli_obj/</code>; <code>make -f Makefile.cli install-bin</code> copies the binary to <code>inst/bin/scconvert</code>; <code><a href="../reference/sc_find_cli.html">sc_find_cli()</a></code> prefers it over the source-tree <code>src/scconvert</code>.</li>
+<li>
+<strong>Bounded-memory R sparse streaming.</strong> <code><a href="../reference/dot-stream_sparse_group.html">.stream_sparse_group()</a></code> now reads in 64 MiB chunks (tunable via <code>options("scConvert.stream_chunk_bytes")</code>) instead of materialising whole sparse matrices. Adds <code>tests/testthat/test-stream-memory.R</code>.</li>
+<li>
+<strong>Canonical h5mu layout on write.</strong> <code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> now writes the top-level <code>/var</code> (concat of modalities), <code>/obsmap/{mod}</code> (always <code>0..n-1</code> for Seurat sources), and <code>/varmap/{mod}</code> (block-diagonal with <code>-1</code> sentinels) in the muon convention.</li>
+<li>
+<strong>Atomic SOMA / SpatialData writes.</strong> Both writers now build under a sibling temp name and rename on success, so a mid-write crash leaves the user’s existing path untouched. (<code><a href="../reference/writeSpatialData.html">writeSpatialData()</a></code> initially shipped with an <code>on.exit</code> that deleted its own freshly-renamed output; fixed in 2026-05-01 via a <code>write_succeeded</code> disarm flag.)</li>
+<li>
+<strong>Python-validation tests in CI.</strong> <code>tests/scverse-env.yml</code> + <code>setup-micromamba</code> make <code>tests/testthat/test-python-validation.R</code> runnable on the GitHub runner. Test no longer hardcodes the macOS conda path.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="robustness-0-2-0">Robustness<a class="anchor" aria-label="anchor" href="#robustness-0-2-0"></a></h3>
+<ul><li>
+<strong>C CLI memory-safety helpers.</strong> New <code>sc_xmalloc()</code>, <code>sc_xcalloc()</code>, <code>sc_xrealloc()</code>, and <code>sc_check_mul_size()</code> in <code>src/sc_util.c</code> replace raw <code>malloc()</code> calls with overflow-checked allocations at the dense-embedding transpose sites in <code>src/sc_zarr.c:1043, 1668, 1674</code> and the column-buffer allocation in <code>src/sc_loom.c:138</code>. Prevents SIZE_MAX overflow on chip-scale embeddings.</li>
+<li>
+<strong>Defensive <code>close_all</code> wrap on direct-path conversion.</strong> R/Convert.R wraps <code>hfile$close_all()</code> in <code>tryCatch</code> for HDF5 1.10.x graceful degradation. (1.14+ is required and tested; the wrap is no-op there.)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-0"></a></h3>
 <ul><li>
 <strong>Native Stereo-seq GEF reader (<code><a href="../reference/LoadStereoSeqGef.html">LoadStereoSeqGef()</a></code>).</strong> Pure-R reader for BGI <code>.gef</code> and <code>.cellbin.gef</code> files using <code>hdf5r</code> only. Handles both the square-bin and cell-bin schemas documented by STOmics. No Python, stereopy, or reticulate dependency. Spot coordinates are stored in <code>meta.data$spatial_x/y</code> and <code>misc$spatial_technology = "StereoSeq"</code>.</li>
 <li>
@@ -85,12 +141,12 @@
 <strong>IMC multi-image support.</strong> <code><a href="../reference/SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code> now iterates over every image in deterministic sorted order instead of processing only <code>Images()[1]</code>. Fixes the IMC 14/15 -&gt; 11/13 double-roundtrip degradation documented in <code>NOTES.md</code> section 3.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="robustness-0-1-0-9001">Robustness<a class="anchor" aria-label="anchor" href="#robustness-0-1-0-9001"></a></h3>
+<h3 id="robustness-0-2-0-1">Robustness<a class="anchor" aria-label="anchor" href="#robustness-0-2-0-1"></a></h3>
 <ul><li>
 <strong>C CLI memory-safety helpers.</strong> New <code>sc_xmalloc()</code>, <code>sc_xcalloc()</code>, <code>sc_xrealloc()</code>, and <code>sc_check_mul_size()</code> in <code>src/sc_util.c</code> replace raw <code>malloc()</code> calls with overflow-checked allocations at the dense-embedding transpose sites in <code>src/sc_zarr.c:1043, 1668, 1674</code> and the column-buffer allocation in <code>src/sc_loom.c:138</code>. Prevents SIZE_MAX overflow on chip-scale embeddings.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-0-1-0-9001">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-0-9001"></a></h3>
+<h3 id="bug-fixes-0-2-0-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-0-1"></a></h3>
 <ul><li>
 <strong><code><a href="../reference/readH5AD.html">readH5AD()</a></code>: handle unsorted CSR column indices.</strong> scanpy-processed files such as <code>scanpy.datasets.pbmc3k_processed()</code> ship with CSR matrices whose column indices are not sorted within each row. Previously these produced an invalid <code>dgCMatrix</code> on read. <code><a href="../reference/readH5AD.html">readH5AD()</a></code> and <code><a href="../reference/readH5MU.html">readH5MU()</a></code> now detect this condition via <code>.sort_dgc_indices()</code> in <code>R/LoadH5AD.R</code> (and the sibling helper in <code>R/LoadH5MU.R</code>) and sort indices column-wise before constructing the sparse matrix. A regression test has been added in <code>tests/testthat/test-regression-fixes.R</code>.</li>
 <li>
@@ -99,11 +155,23 @@
 <strong><code><a href="../reference/writeZarr.html">writeZarr()</a></code>: skip scale.data layer when its shape differs from X.</strong> <code><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">Seurat::ScaleData()</a></code> produces an <code>(n_hvg x n_cells)</code> matrix whose row count does not match <code>X</code>’s <code>n_genes</code>. AnnData requires all <code>layers/*</code> to match <code>X</code>’s shape, so <code><a href="../reference/writeZarr.html">writeZarr()</a></code> now skips any layer whose dimensions differ from the default assay’s data matrix. A regression test covers this case. (See <code>R/SaveZarr.R:131</code>.)</li>
 </ul></div>
 <div class="section level3">
-<h3 id="testing-0-1-0-9001">Testing<a class="anchor" aria-label="anchor" href="#testing-0-1-0-9001"></a></h3>
-<ul><li>Added <code>tests/testthat/test-regression-fixes.R</code> with three regression tests pinning the bugs listed above. The test suite is now <strong>140 <code>test_that</code> blocks</strong> with <strong>465 assertions</strong> (up from 137 / 448).</li>
+<h3 id="testing-0-2-0">Testing<a class="anchor" aria-label="anchor" href="#testing-0-2-0"></a></h3>
+<ul><li>Added <code>tests/testthat/test-regression-fixes.R</code> with three regression tests pinning the bugs listed above.</li>
+<li>Added <code>tests/testthat/test-generic-dispatch.R</code> (SOMA/SpatialData lambda signature pinning).</li>
+<li>Added <code>tests/testthat/test-stream-memory.R</code> (bounded-memory verification on tiny chunk budgets).</li>
+<li>Appended a canonical-h5mu-layout block to <code>tests/testthat/test-h5mu-multimodal.R</code>.</li>
+<li>Test suite is now <strong>166 <code>test_that</code> blocks</strong> with <strong>773 assertions</strong> on macOS / Ubuntu / Windows (was 137 / 448 at 0.1.0).</li>
+<li>19 vignettes build cleanly under <code><a href="https://rdrr.io/r/tools/buildVignettes.html" class="external-link">tools::buildVignettes()</a></code> including the 6 with live Python interop chunks via reticulate.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="documentation-0-1-0-9001">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-0-9001"></a></h3>
+<h3 id="ci-0-2-0">CI<a class="anchor" aria-label="anchor" href="#ci-0-2-0"></a></h3>
+<ul><li>
+<strong>Python validation in CI</strong> via <code>setup-micromamba</code> and <code>tests/scverse-env.yml</code>. anndata 0.12, scanpy 1.11, squidpy 1.8, mudata 0.3, loompy 3.0.</li>
+<li>
+<strong>Rust workspace CI</strong> — <code>.github/workflows/rust.yaml</code> runs fmt + clippy + test + release-build on ubuntu/macOS/windows with HDF5 preinstalled. Job-level <code>RUST_BACKTRACE=1</code> for diagnosable panics.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-0-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-2-0"></a></h3>
 <ul><li>Added <code>NOTES.md</code> describing the state of recent bug fixes, benchmark findings that are specific to the manuscript (not to users), and investigations into dataset-pipeline issues (Stereo-seq MOSTA and CosMx SMI – upstream format is not HDF5; see the notes file for details).</li>
 </ul></div>
 </div>
