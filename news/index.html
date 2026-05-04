@@ -73,13 +73,6 @@
 <div class="section level3">
 <h3 id="new-features-0-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
 <div class="section level4">
-<h4 id="native-rust-core-preview-0-2-0">Native Rust core (preview)<a class="anchor" aria-label="anchor" href="#native-rust-core-preview-0-2-0"></a></h4>
-<ul><li>
-<strong><code>rust/</code> workspace.</strong> Three crates: <code>scconvert-core</code> (data model, typed errors with stable C ABI codes, fidelity report schema), <code>scconvert-capi</code> (stable C-compatible boundary: <code>sc_abi_version</code>, <code>sc_convert</code>, <code>sc_plan</code>, <code>sc_free_string</code>), and <code>scconvert-cli</code> (thin binary: <code>convert | plan | inspect</code>). Cross-platform CI on ubuntu/macOS/windows with HDF5 preinstalled, clippy <code>-D warnings</code> clean, fmt clean.</li>
-<li>
-<strong>First conversion slice: native h5ad → h5seurat sparse <code>X</code>.</strong> <code>routes::h5ad_to_h5seurat::convert()</code> copies <code>/X</code> (and <code>/raw/X</code> if present) into <code>/assays/RNA/layers/{data,counts}</code> with bounded-memory chunked CSR streaming and a zero-copy CSR↔︎CSC shape-attr swap. Bit-identical to the C CLI on float64 input. Errors loudly on other dtypes (a B2 follow-up will dispatch). The Rust binary is <strong>not yet wired</strong> as a default backend — the C CLI remains the production path for HDF5↔︎HDF5 conversions.</li>
-</ul></div>
-<div class="section level4">
 <h4 id="existing-native-readers-carried-from-development-0-2-0">Existing native readers (carried from development)<a class="anchor" aria-label="anchor" href="#existing-native-readers-carried-from-development-0-2-0"></a></h4>
 <ul><li>
 <strong>Native Stereo-seq GEF reader (<code><a href="../reference/LoadStereoSeqGef.html">LoadStereoSeqGef()</a></code>).</strong> Pure-R reader for BGI <code>.gef</code> and <code>.cellbin.gef</code> files using <code>hdf5r</code> only. Handles both the square-bin and cell-bin schemas documented by STOmics. No Python, stereopy, or reticulate dependency. Spot coordinates are stored in <code>meta.data$spatial_x/y</code> and <code>misc$spatial_technology = "StereoSeq"</code>.</li>
@@ -167,8 +160,6 @@
 <h3 id="ci-0-2-0">CI<a class="anchor" aria-label="anchor" href="#ci-0-2-0"></a></h3>
 <ul><li>
 <strong>Python validation in CI</strong> via <code>setup-micromamba</code> and <code>tests/scverse-env.yml</code>. anndata 0.12, scanpy 1.11, squidpy 1.8, mudata 0.3, loompy 3.0.</li>
-<li>
-<strong>Rust workspace CI</strong> — <code>.github/workflows/rust.yaml</code> runs fmt + clippy + test + release-build on ubuntu/macOS/windows with HDF5 preinstalled. Job-level <code>RUST_BACKTRACE=1</code> for diagnosable panics.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-0-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-2-0"></a></h3>

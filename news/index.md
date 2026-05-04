@@ -16,24 +16,6 @@
 
 ### New features
 
-#### Native Rust core (preview)
-
-- **`rust/` workspace.** Three crates: `scconvert-core` (data model,
-  typed errors with stable C ABI codes, fidelity report schema),
-  `scconvert-capi` (stable C-compatible boundary: `sc_abi_version`,
-  `sc_convert`, `sc_plan`, `sc_free_string`), and `scconvert-cli` (thin
-  binary: `convert | plan | inspect`). Cross-platform CI on
-  ubuntu/macOS/windows with HDF5 preinstalled, clippy `-D warnings`
-  clean, fmt clean.
-- **First conversion slice: native h5ad → h5seurat sparse `X`.**
-  `routes::h5ad_to_h5seurat::convert()` copies `/X` (and `/raw/X` if
-  present) into `/assays/RNA/layers/{data,counts}` with bounded-memory
-  chunked CSR streaming and a zero-copy CSR↔︎CSC shape-attr swap.
-  Bit-identical to the C CLI on float64 input. Errors loudly on other
-  dtypes (a B2 follow-up will dispatch). The Rust binary is **not yet
-  wired** as a default backend — the C CLI remains the production path
-  for HDF5↔︎HDF5 conversions.
-
 #### Existing native readers (carried from development)
 
 - **Native Stereo-seq GEF reader
@@ -256,9 +238,6 @@
 - **Python validation in CI** via `setup-micromamba` and
   `tests/scverse-env.yml`. anndata 0.12, scanpy 1.11, squidpy 1.8,
   mudata 0.3, loompy 3.0.
-- **Rust workspace CI** — `.github/workflows/rust.yaml` runs fmt +
-  clippy + test + release-build on ubuntu/macOS/windows with HDF5
-  preinstalled. Job-level `RUST_BACKTRACE=1` for diagnosable panics.
 
 ### Documentation
 
