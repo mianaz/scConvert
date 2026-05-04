@@ -1,8 +1,118 @@
-# scConvert 0.1.0.9001 (development)
+# scConvert 0.2.0
 
-> **Status:** unreleased; rolling development between 0.1.0 and the next tag.
+> **Release Date:** 2026-05-04
+
+## Breaking changes
+
+- **HDF5 1.14+ required.** `SystemRequirements` bumped from `HDF5 (>= 1.10.0)`
+  to `HDF5 (>= 1.14.0)`. The hdf5r close path segfaults on libhdf5 1.10.x
+  when closing files with many open child IDs (groups/datasets opened via
+  `[[]]` subsetting); this is upstream and not catchable in R. Modern
+  Linux distros (Ubuntu 24.04+, Debian 12+, Fedora 38+), recent macOS
+  packages, and Bioconductor's `Rhdf5lib` all ship 1.14+, so this
+  matches real deployments.
 
 ## New features
+
+### Native Rust core (preview)
+
+- **`rust/` workspace.** Three crates: `scconvert-core` (data model, typed
+  errors with stable C ABI codes, fidelity report schema),
+  `scconvert-capi` (stable C-compatible boundary: `sc_abi_version`,
+  `sc_convert`, `sc_plan`, `sc_free_string`), and `scconvert-cli` (thin
+  binary: `convert | plan | inspect`). Cross-platform CI on
+  ubuntu/macOS/windows with HDF5 preinstalled, clippy `-D warnings`
+  clean, fmt clean.
+- **First conversion slice: native h5ad → h5seurat sparse `X`.**
+  `routes::h5ad_to_h5seurat::convert()` copies `/X` (and `/raw/X` if
+  present) into `/assays/RNA/layers/{data,counts}` with bounded-memory
+  chunked CSR streaming and a zero-copy CSR↔CSC shape-attr swap.
+  Bit-identical to the C CLI on float64 input. Errors loudly on other
+  dtypes (a B2 follow-up will dispatch). The Rust binary is **not yet
+  wired** as a default backend — the C CLI remains the production path
+  for HDF5↔HDF5 conversions.
+
+### Existing native readers (carried from development)
+
+- **Native Stereo-seq GEF reader (`LoadStereoSeqGef()`).** Pure-R reader for
+  BGI `.gef` and `.cellbin.gef` files using `hdf5r` only. Handles both the
+  square-bin and cell-bin schemas documented by STOmics. No Python,
+  stereopy, or reticulate dependency. Spot coordinates are stored in
+  `meta.data$spatial_x/y` and `misc$spatial_technology = "StereoSeq"`.
+- **Native CosMx SMI reader (`LoadCosMx()`).** Thin R wrapper around
+  `Seurat::LoadNanostring()` that validates the canonical flat-file bundle
+  (`*exprMat*.csv`, `*metadata*.csv`, `*fov_positions*.csv`, `*tx_file*.csv`)
+  and tags the result with `misc$spatial_technology = "CosMx"`. No squidpy
+  or reticulate dependency.
+- **CLI auto-delegation for vendor raw formats.** The `scconvert` C binary
+  now auto-detects `.gef`, `.cellbin.gef`, and CosMx bundle directories and
+  transparently delegates to the R backend via `Rscript` + `execvp()`. Users
+  can write `scconvert mosta.gef mosta.h5ad` directly. `Rscript` lookup
+  happens up-front; paths are absolutised; no shell-parsed command strings.
+- **FOV round-trip through h5ad.** `writeH5AD()` now serializes
+  `FOV@boundaries` and `FOV@molecules` into a stable
+  `uns/spatial/{library}/segmentation/` and `uns/spatial/{library}/molecules/`
+  contract. `readH5AD()` automatically rebuilds any FOV library it finds on
+  load. Backward-compatible with squidpy and scanpy (they ignore unknown
+  `uns/spatial/{lib}/` children).
+- **CLI `varp` preservation.** The new `sc_stream_varp()` in `src/sc_groups.c`
+  mirrors `sc_stream_obsp()` and maps `/varp/` (h5ad) to `/misc/__varp__/`
+  (h5seurat). Handles both sparse (CSR/CSC group) and dense (array dataset)
+  varp entries. Closes the manuscript limitation "CLI does not preserve
+  varp".
+- **Loom factor-level preservation.** `writeLoom()` now stores factor levels
+  and `ordered` flag under `/scConvert_extensions/col_factor_levels/{name}`,
+  outside `col_attrs` so loompy/scanpy continue to read the file without
+  errors. `readLoom()` restores the factors on load.
+- **h5mu per-modality `uns` round-trip.** `writeH5MU()` and `readH5MU()` now
+  mirror each modality's `uns` group under
+  `obj@misc[["__h5mu_uns_per_mod__"]][[modality]]` so per-modality uns
+  entries survive h5mu round-trips instead of being flattened.
+- **IMC multi-image support.** `SeuratSpatialToH5AD()` now iterates over
+  every image in deterministic sorted order instead of processing only
+  `Images()[1]`. Fixes the IMC 14/15 -> 11/13 double-roundtrip degradation
+  documented in `NOTES.md` section 3.
+
+## P0 robustness fixes (Codex review response, Part A)
+
+- **SOMA / SpatialData generic dispatch.** Lambdas registered for the
+  `scConvert` generic now accept `filename =` so `scConvert.character()`
+  reaches the right method. Adds `tests/testthat/test-generic-dispatch.R`.
+- **CLI build hygiene.** CLI `.o` files are isolated to `src/cli_obj/`;
+  `make -f Makefile.cli install-bin` copies the binary to
+  `inst/bin/scconvert`; `sc_find_cli()` prefers it over the source-tree
+  `src/scconvert`.
+- **Bounded-memory R sparse streaming.** `.stream_sparse_group()` now
+  reads in 64 MiB chunks (tunable via
+  `options("scConvert.stream_chunk_bytes")`) instead of materialising
+  whole sparse matrices. Adds `tests/testthat/test-stream-memory.R`.
+- **Canonical h5mu layout on write.** `writeH5MU()` now writes the
+  top-level `/var` (concat of modalities), `/obsmap/{mod}` (always
+  `0..n-1` for Seurat sources), and `/varmap/{mod}` (block-diagonal
+  with `-1` sentinels) in the muon convention.
+- **Atomic SOMA / SpatialData writes.** Both writers now build under a
+  sibling temp name and rename on success, so a mid-write crash leaves
+  the user's existing path untouched. (`writeSpatialData()` initially
+  shipped with an `on.exit` that deleted its own freshly-renamed
+  output; fixed in 2026-05-01 via a `write_succeeded` disarm flag.)
+- **Python-validation tests in CI.** `tests/scverse-env.yml` +
+  `setup-micromamba` make `tests/testthat/test-python-validation.R`
+  runnable on the GitHub runner. Test no longer hardcodes the macOS
+  conda path.
+
+## Robustness
+
+- **C CLI memory-safety helpers.** New `sc_xmalloc()`, `sc_xcalloc()`,
+  `sc_xrealloc()`, and `sc_check_mul_size()` in `src/sc_util.c` replace raw
+  `malloc()` calls with overflow-checked allocations at the dense-embedding
+  transpose sites in `src/sc_zarr.c:1043, 1668, 1674` and the column-buffer
+  allocation in `src/sc_loom.c:138`. Prevents SIZE_MAX overflow on
+  chip-scale embeddings.
+- **Defensive `close_all` wrap on direct-path conversion.** R/Convert.R
+  wraps `hfile$close_all()` in `tryCatch` for HDF5 1.10.x graceful
+  degradation. (1.14+ is required and tested; the wrap is no-op there.)
+
+## Bug fixes
 
 - **Native Stereo-seq GEF reader (`LoadStereoSeqGef()`).** Pure-R reader for
   BGI `.gef` and `.cellbin.gef` files using `hdf5r` only. Handles both the
@@ -77,8 +187,26 @@
 ## Testing
 
 - Added `tests/testthat/test-regression-fixes.R` with three regression tests
-  pinning the bugs listed above. The test suite is now **140 `test_that`
-  blocks** with **465 assertions** (up from 137 / 448).
+  pinning the bugs listed above.
+- Added `tests/testthat/test-generic-dispatch.R` (SOMA/SpatialData lambda
+  signature pinning).
+- Added `tests/testthat/test-stream-memory.R` (bounded-memory verification
+  on tiny chunk budgets).
+- Appended a canonical-h5mu-layout block to
+  `tests/testthat/test-h5mu-multimodal.R`.
+- Test suite is now **166 `test_that` blocks** with **773 assertions**
+  on macOS / Ubuntu / Windows (was 137 / 448 at 0.1.0).
+- 19 vignettes build cleanly under `tools::buildVignettes()` including
+  the 6 with live Python interop chunks via reticulate.
+
+## CI
+
+- **Python validation in CI** via `setup-micromamba` and
+  `tests/scverse-env.yml`. anndata 0.12, scanpy 1.11, squidpy 1.8,
+  mudata 0.3, loompy 3.0.
+- **Rust workspace CI** — `.github/workflows/rust.yaml` runs
+  fmt + clippy + test + release-build on ubuntu/macOS/windows with HDF5
+  preinstalled. Job-level `RUST_BACKTRACE=1` for diagnosable panics.
 
 ## Documentation
 
