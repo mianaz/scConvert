@@ -88,6 +88,42 @@ pub fn stream_csr_group(
     let src_indices = src.dataset("indices").map_err(hdf5_err)?;
     let src_indptr = src.dataset("indptr").map_err(hdf5_err)?;
 
+    // B2 first slice supports only the dtypes scConvert R produces:
+    // f64 for data, i32 for indices/indptr. Scanpy's float32 default and
+    // i64 indices need dispatch (B2 follow-up). Fail loudly here so the
+    // R wrapper falls back to the C CLI rather than silently up-casting.
+    use hdf5_metno::types::TypeDescriptor;
+    let data_dtype = src_data
+        .dtype()
+        .and_then(|d| d.to_descriptor())
+        .map_err(hdf5_err)?;
+    if !matches!(
+        data_dtype,
+        TypeDescriptor::Float(hdf5_metno::types::FloatSize::U8)
+    ) {
+        return Err(ConvertError::NotYetImplemented {
+            kind: format!(
+                "sparse data dtype {data_dtype:?}; Rust backend supports float64 only \
+                 in B2 first slice. Use the C CLI for other dtypes."
+            ),
+        });
+    }
+    let idx_dtype = src_indices
+        .dtype()
+        .and_then(|d| d.to_descriptor())
+        .map_err(hdf5_err)?;
+    if !matches!(
+        idx_dtype,
+        TypeDescriptor::Integer(hdf5_metno::types::IntSize::U4)
+    ) {
+        return Err(ConvertError::NotYetImplemented {
+            kind: format!(
+                "sparse indices dtype {idx_dtype:?}; Rust backend supports int32 only \
+                 in B2 first slice. Use the C CLI for other dtypes."
+            ),
+        });
+    }
+
     let shape = read_shape(src)?;
     let nnz = shape.nnz;
     let indptr_len = data_size(&src_indptr)?;

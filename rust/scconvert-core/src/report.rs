@@ -16,8 +16,10 @@ pub enum ReportFormat {
     // Yaml in a future minor version.
 }
 
+/// Forward-compat: deserializers ignore unknown fields so an older
+/// binding consuming a newer `scconvert-core`'s report does not error.
+/// New fields go in additively; renames/removals are breaking changes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct FidelityReport {
     /// Schema version of this report. Bump on breaking changes.
     pub schema_version: String,
@@ -65,7 +67,6 @@ impl FidelityReport {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct FieldRecord {
     /// Canonical field path. `/X`, `/obs/cell_type`, `/obsm/X_pca`, …
     pub path: String,

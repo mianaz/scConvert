@@ -70,6 +70,7 @@ manuscript/
 
 # Local dev / scratch
 .actrc
+.actcache/
 .cache/
 Rplots.pdf
 package-lock.json

@@ -23,6 +23,8 @@ jobs:
     defaults:
       run:
         working-directory: rust
+    env:
+      RUST_BACKTRACE: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -58,8 +60,6 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: cargo test
-        env:
-          RUST_BACKTRACE: 1
         run: cargo test --workspace
 
       - name: cargo build --release
