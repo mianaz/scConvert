@@ -19,10 +19,11 @@ jobs:
           - {os: ubuntu-latest, r: 'devel'}
           - {os: ubuntu-latest, r: 'release'}
           - {os: ubuntu-latest, r: 'oldrel'}
-          # ubuntu-22.04 ships libhdf5-dev 1.10.7; ubuntu-latest has 1.14.x.
-          # This entry guards against HDF5 API drift (H5Oget_info3,
-          # H5Aopen_by_idx, etc.) that our C code uses with 1.10 compat macros.
-          - {os: ubuntu-22.04, r: 'release'}
+          # HDF5 1.14+ is required: hdf5r close_all() segfaults at the C
+          # ABI on libhdf5 1.10.x (Ubuntu 22.04's libhdf5-dev) when closing
+          # files with many open child IDs. Not a tryCatch-able failure.
+          # ubuntu-latest, macOS, and Windows all ship 1.14.x. If you need
+          # 1.10 coverage, use Bioconductor's Rhdf5lib (which bundles 1.14).
           - {os: macOS-latest, r: 'release'}
           - {os: macOS-latest, r: 'oldrel'}
           - {os: windows-latest, r: 'release'}

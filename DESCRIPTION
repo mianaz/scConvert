@@ -19,7 +19,7 @@ BugReports: https://github.com/mianaz/scConvert/issues
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3
-SystemRequirements: HDF5 (>= 1.10.0)
+SystemRequirements: HDF5 (>= 1.14.0)
 Depends:
   R (>= 4.1.0)
 Imports:
