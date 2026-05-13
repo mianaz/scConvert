@@ -14,6 +14,7 @@
 #include <hdf5.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>  /* POSIX strcasecmp -- not in <string.h> */
 #include <stdio.h>
 #include <stdint.h>
 

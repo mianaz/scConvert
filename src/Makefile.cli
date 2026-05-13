@@ -5,7 +5,10 @@
 # Uses H5Oget_info3/H5Aopen_by_idx (HDF5 1.12+ native; 1.10.x with compat macros).
 
 CC       ?= cc
-CFLAGS   ?= -O2 -Wall -Wextra -Wpedantic -std=c11
+# main.c uses strtok_r and PATH_MAX, which glibc hides under strict -std=c11
+# unless _POSIX_C_SOURCE is set. macOS exposes them unconditionally, which is
+# why this Makefile built fine locally but failed on the first Linux CI run.
+CFLAGS   ?= -O2 -Wall -Wextra -Wpedantic -std=c11 -D_POSIX_C_SOURCE=200809L
 LDFLAGS  ?=
 
 # Auto-detect HDF5 via pkg-config, then brew, then fallback
