@@ -93,9 +93,9 @@ int sc_get_str_attr(hid_t loc, const char *name, char *buf, size_t buflen) {
     char *tmp = NULL;
 
     if (H5Tis_variable_str(tid) > 0) {
-        hid_t memtype = sc_create_vlen_str_type();
-        H5Aread(attr, memtype, &tmp);
-        H5Tclose(memtype);
+        /* Use the attribute's own file type to avoid HDF5 2.x's strict
+         * ASCII<->UTF-8 cset conversion refusal. */
+        if (H5Aread(attr, tid, &tmp) < 0) tmp = NULL;
         if (tmp) {
             strncpy(buf, tmp, buflen - 1);
             buf[buflen - 1] = '\0';
@@ -139,38 +139,76 @@ int sc_get_str_array_attr(hid_t loc, const char *name,
     H5Sget_simple_extent_dims(space, &dims, NULL);
     *n = dims;
 
-    hid_t memtype = sc_create_vlen_str_type();
-    char **raw = (char **)calloc(dims, sizeof(char *));
-    if (!raw) {
-        H5Tclose(memtype);
+    /* Use the attribute's own file type as the memtype: HDF5 >=2.0 refuses
+     * to convert between ASCII and UTF-8 vlen strings, so forcing a
+     * UTF-8 memtype against an ASCII-cset attribute (as hdf5r writes)
+     * silently fails the H5Aread and we get back all empty strings. */
+    hid_t ftype = H5Aget_type(attr);
+    if (ftype < 0 || H5Tget_class(ftype) != H5T_STRING) {
+        if (ftype >= 0) H5Tclose(ftype);
         H5Sclose(space);
         H5Aclose(attr);
         return SC_ERR;
     }
-    H5Aread(attr, memtype, raw);
+    htri_t is_vlen = H5Tis_variable_str(ftype);
 
-    /* Deep copy so we can free HDF5's memory */
     *values = (char **)calloc(dims, sizeof(char *));
     if (!*values) {
-        for (hsize_t i = 0; i < dims; i++)
-            if (raw[i]) H5free_memory(raw[i]);
-        free(raw);
-        H5Tclose(memtype);
+        H5Tclose(ftype);
         H5Sclose(space);
         H5Aclose(attr);
         return SC_ERR;
     }
-    for (hsize_t i = 0; i < dims; i++) {
-        if (raw[i]) {
-            (*values)[i] = strdup(raw[i]);
-            H5free_memory(raw[i]);
-        } else {
-            (*values)[i] = strdup("");
-        }
-    }
-    free(raw);
 
-    H5Tclose(memtype);
+    if (is_vlen > 0) {
+        char **raw = (char **)calloc(dims, sizeof(char *));
+        if (!raw) {
+            free(*values); *values = NULL;
+            H5Tclose(ftype); H5Sclose(space); H5Aclose(attr);
+            return SC_ERR;
+        }
+        if (H5Aread(attr, ftype, raw) < 0) {
+            free(raw);
+            free(*values); *values = NULL;
+            H5Tclose(ftype); H5Sclose(space); H5Aclose(attr);
+            *n = 0;
+            return SC_ERR_HDF;
+        }
+        for (hsize_t i = 0; i < dims; i++) {
+            if (raw[i]) {
+                (*values)[i] = strdup(raw[i]);
+                H5free_memory(raw[i]);
+            } else {
+                (*values)[i] = strdup("");
+            }
+        }
+        free(raw);
+    } else {
+        size_t fixed_sz = H5Tget_size(ftype);
+        char *buf = (char *)calloc(dims, fixed_sz);
+        if (!buf) {
+            free(*values); *values = NULL;
+            H5Tclose(ftype); H5Sclose(space); H5Aclose(attr);
+            return SC_ERR;
+        }
+        if (H5Aread(attr, ftype, buf) < 0) {
+            free(buf);
+            free(*values); *values = NULL;
+            H5Tclose(ftype); H5Sclose(space); H5Aclose(attr);
+            *n = 0;
+            return SC_ERR_HDF;
+        }
+        for (hsize_t i = 0; i < dims; i++) {
+            (*values)[i] = (char *)malloc(fixed_sz + 1);
+            if ((*values)[i]) {
+                memcpy((*values)[i], buf + i * fixed_sz, fixed_sz);
+                (*values)[i][fixed_sz] = '\0';
+            }
+        }
+        free(buf);
+    }
+
+    H5Tclose(ftype);
     H5Sclose(space);
     H5Aclose(attr);
     return SC_OK;
@@ -236,24 +274,27 @@ int sc_copy_group_attrs(hid_t src, hid_t dst) {
                                      H5P_DEFAULT, H5P_DEFAULT);
 
         if (H5Tget_class(type) == H5T_STRING && H5Tis_variable_str(type) > 0) {
-            hid_t memtype = sc_create_vlen_str_type();
+            /* Use the source attribute's own type (matches dst_attr type
+             * since dst_attr was created with `type`). Avoids HDF5 2.x's
+             * strict ASCII/UTF-8 conversion refusal. */
             int ndims = H5Sget_simple_extent_ndims(space);
             if (ndims == 0) {
                 char *str = NULL;
-                H5Aread(attr, memtype, &str);
-                H5Awrite(dst_attr, memtype, &str);
-                if (str) H5free_memory(str);
+                if (H5Aread(attr, type, &str) >= 0) {
+                    H5Awrite(dst_attr, type, &str);
+                    if (str) H5free_memory(str);
+                }
             } else {
                 hsize_t dims;
                 H5Sget_simple_extent_dims(space, &dims, NULL);
                 char **strs = (char **)calloc(dims, sizeof(char *));
-                H5Aread(attr, memtype, strs);
-                H5Awrite(dst_attr, memtype, strs);
-                for (hsize_t j = 0; j < dims; j++)
-                    if (strs[j]) H5free_memory(strs[j]);
+                if (strs && H5Aread(attr, type, strs) >= 0) {
+                    H5Awrite(dst_attr, type, strs);
+                    for (hsize_t j = 0; j < dims; j++)
+                        if (strs[j]) H5free_memory(strs[j]);
+                }
                 free(strs);
             }
-            H5Tclose(memtype);
         } else {
             size_t sz = H5Aget_storage_size(attr);
             if (sz > 0) {

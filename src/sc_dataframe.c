@@ -47,30 +47,31 @@ static herr_t copy_attr_cb(hid_t src_loc, const char *name,
         return SC_ERR_HDF;
     }
 
-    /* For variable-length strings, need special handling */
+    /* For variable-length strings, need special handling.
+     * Use src attribute's own type as memtype: HDF5 >=2.x refuses to convert
+     * between ASCII and UTF-8 vlen strings, so a forced UTF-8 memtype against
+     * an ASCII-cset source silently fails the read. */
     if (H5Tget_class(type) == H5T_STRING && H5Tis_variable_str(type) > 0) {
-        hid_t memtype = sc_create_vlen_str_type();
         int ndims = H5Sget_simple_extent_ndims(space);
         if (ndims == 0) {
             /* Scalar string */
             char *str = NULL;
-            H5Aread(attr, memtype, &str);
-            H5Awrite(dst_attr, memtype, &str);
-            if (str) H5free_memory(str);
+            if (H5Aread(attr, type, &str) >= 0) {
+                H5Awrite(dst_attr, type, &str);
+                if (str) H5free_memory(str);
+            }
         } else {
             /* Array of strings */
             hsize_t dims;
             H5Sget_simple_extent_dims(space, &dims, NULL);
             char **strs = (char **)calloc(dims, sizeof(char *));
-            if (strs) {
-                H5Aread(attr, memtype, strs);
-                H5Awrite(dst_attr, memtype, strs);
+            if (strs && H5Aread(attr, type, strs) >= 0) {
+                H5Awrite(dst_attr, type, strs);
                 for (hsize_t i = 0; i < dims; i++)
                     if (strs[i]) H5free_memory(strs[i]);
-                free(strs);
             }
+            free(strs);
         }
-        H5Tclose(memtype);
     } else {
         H5Aread(attr, type, buf);
         H5Awrite(dst_attr, type, buf);
@@ -258,22 +259,28 @@ static int convert_factors_in_group(hid_t obs_grp) {
             continue;
         }
 
-        /* Read levels (string array) */
+        /* Read levels (string array). Use the dataset's own type as
+         * memtype to avoid HDF5 2.x's strict ASCII<->UTF-8 conversion
+         * refusal. We still create a UTF-8 vlen type for writing the
+         * new categorical group below (anndata expects UTF-8). */
         hid_t lev_dset = H5Dopen2(child, "levels", H5P_DEFAULT);
         hid_t lev_space = H5Dget_space(lev_dset);
         hsize_t n_levels;
         H5Sget_simple_extent_dims(lev_space, &n_levels, NULL);
+        hid_t src_str_type = H5Dget_type(lev_dset);
 
         hid_t str_type = sc_create_vlen_str_type();
         char **levels = (char **)calloc(n_levels, sizeof(char *));
         if (!levels) {
+            H5Tclose(src_str_type);
             H5Tclose(str_type);
             H5Sclose(lev_space);
             H5Dclose(lev_dset);
             H5Gclose(child);
             continue;
         }
-        H5Dread(lev_dset, str_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, levels);
+        H5Dread(lev_dset, src_str_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, levels);
+        H5Tclose(src_str_type);
         H5Sclose(lev_space);
         H5Dclose(lev_dset);
 
@@ -381,22 +388,27 @@ static int convert_categoricals_to_factors(hid_t meta_grp) {
             continue;
         }
 
-        /* Read categories (string array) */
+        /* Read categories (string array). Use dataset's own type for the
+         * read; keep a UTF-8 vlen type for writing the h5seurat factor
+         * levels dataset below. */
         hid_t cat_dset = H5Dopen2(child, "categories", H5P_DEFAULT);
         hid_t cat_space = H5Dget_space(cat_dset);
         hsize_t n_cats;
         H5Sget_simple_extent_dims(cat_space, &n_cats, NULL);
+        hid_t src_str_type = H5Dget_type(cat_dset);
 
         hid_t str_type = sc_create_vlen_str_type();
         char **cats = (char **)calloc(n_cats, sizeof(char *));
         if (!cats) {
+            H5Tclose(src_str_type);
             H5Tclose(str_type);
             H5Sclose(cat_space);
             H5Dclose(cat_dset);
             H5Gclose(child);
             continue;
         }
-        H5Dread(cat_dset, str_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, cats);
+        H5Dread(cat_dset, src_str_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, cats);
+        H5Tclose(src_str_type);
         H5Sclose(cat_space);
         H5Dclose(cat_dset);
 

@@ -49,26 +49,27 @@ int sc_copy_group_recursive(hid_t src, hid_t dst, int gzip_level) {
                                      H5P_DEFAULT, H5P_DEFAULT);
 
         if (H5Tget_class(type) == H5T_STRING && H5Tis_variable_str(type) > 0) {
+            /* Use src attribute's own type as memtype: HDF5 >=2.x rejects
+             * implicit ASCII<->UTF-8 vlen conversion. dst_attr was created
+             * with `type` so symmetric read/write is consistent. */
             int ndims = H5Sget_simple_extent_ndims(space);
-            hid_t memtype = sc_create_vlen_str_type();
             if (ndims == 0) {
                 char *str = NULL;
-                H5Aread(attr, memtype, &str);
-                H5Awrite(dst_attr, memtype, &str);
-                if (str) H5free_memory(str);
+                if (H5Aread(attr, type, &str) >= 0) {
+                    H5Awrite(dst_attr, type, &str);
+                    if (str) H5free_memory(str);
+                }
             } else {
                 hsize_t dims;
                 H5Sget_simple_extent_dims(space, &dims, NULL);
                 char **strs = (char **)calloc(dims, sizeof(char *));
-                if (strs) {
-                    H5Aread(attr, memtype, strs);
-                    H5Awrite(dst_attr, memtype, strs);
+                if (strs && H5Aread(attr, type, strs) >= 0) {
+                    H5Awrite(dst_attr, type, strs);
                     for (hsize_t j = 0; j < dims; j++)
                         if (strs[j]) H5free_memory(strs[j]);
-                    free(strs);
                 }
+                free(strs);
             }
-            H5Tclose(memtype);
         } else {
             size_t sz = H5Aget_storage_size(attr);
             if (sz > 0) {
@@ -121,26 +122,26 @@ int sc_copy_group_recursive(hid_t src, hid_t dst, int gzip_level) {
 
                     if (H5Tget_class(at) == H5T_STRING &&
                         H5Tis_variable_str(at) > 0) {
-                        hid_t mt = sc_create_vlen_str_type();
+                        /* Use src attribute's own type to bypass HDF5 2.x's
+                         * strict ASCII<->UTF-8 vlen conversion rules. */
                         int nd = H5Sget_simple_extent_ndims(as);
                         if (nd == 0) {
                             char *s = NULL;
-                            H5Aread(sa, mt, &s);
-                            H5Awrite(da, mt, &s);
-                            if (s) H5free_memory(s);
+                            if (H5Aread(sa, at, &s) >= 0) {
+                                H5Awrite(da, at, &s);
+                                if (s) H5free_memory(s);
+                            }
                         } else {
                             hsize_t d;
                             H5Sget_simple_extent_dims(as, &d, NULL);
                             char **ss = calloc(d, sizeof(char*));
-                            if (ss) {
-                                H5Aread(sa, mt, ss);
-                                H5Awrite(da, mt, ss);
+                            if (ss && H5Aread(sa, at, ss) >= 0) {
+                                H5Awrite(da, at, ss);
                                 for (hsize_t j = 0; j < d; j++)
                                     if (ss[j]) H5free_memory(ss[j]);
-                                free(ss);
                             }
+                            free(ss);
                         }
-                        H5Tclose(mt);
                     } else {
                         size_t asz = H5Aget_storage_size(sa);
                         if (asz > 0) {
