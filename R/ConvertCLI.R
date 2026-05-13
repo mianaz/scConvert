@@ -15,6 +15,10 @@ NULL
 #' @keywords internal
 #'
 sc_find_cli <- function() {
+  # Binary is named scconvert.exe on Windows, scconvert elsewhere. Sys.which
+  # auto-resolves the .exe suffix on Windows so we pass the bare name there.
+  bin_name <- if (.Platform$OS.type == "windows") "scconvert.exe" else "scconvert"
+
   # 0. Explicit user override
   override <- getOption("scConvert.cli_path")
   if (!is.null(override) && nzchar(override) && file.exists(override)) {
@@ -22,13 +26,13 @@ sc_find_cli <- function() {
   }
 
   # 1. Installed package inst/bin (becomes bin/ in installed tree)
-  pkg_bin <- system.file("bin", "scconvert", package = "scConvert")
+  pkg_bin <- system.file("bin", bin_name, package = "scConvert")
   if (nzchar(pkg_bin) && file.exists(pkg_bin)) {
     return(pkg_bin)
   }
 
   # 2. Source tree src/ (devtools::load_all during development)
-  pkg_src <- system.file("src", "scconvert", package = "scConvert")
+  pkg_src <- system.file("src", bin_name, package = "scConvert")
   if (nzchar(pkg_src) && file.exists(pkg_src)) {
     return(pkg_src)
   }
@@ -36,8 +40,8 @@ sc_find_cli <- function() {
   # 3. Relative to package root (another load_all shape)
   pkg_dir <- find.package("scConvert", quiet = TRUE)
   if (length(pkg_dir) > 0) {
-    for (rel in c(file.path("src", "scconvert"),
-                  file.path("bin", "scconvert"))) {
+    for (rel in c(file.path("src", bin_name),
+                  file.path("bin", bin_name))) {
       p <- file.path(pkg_dir, rel)
       if (file.exists(p)) return(p)
     }

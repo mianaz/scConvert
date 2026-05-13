@@ -82,3 +82,5 @@ src/scconvert
 src/*.o
 src/*.so
 inst/bin/scconvert
+inst/bin/scconvert.exe
+inst/bin/*.dll

@@ -35,7 +35,15 @@ SRCS     = main.c sc_h5ad.c sc_h5mu.c sc_loom.c sc_zarr.c sc_json.c sc_modality.
 # into objects that then fail to link against libR when used standalone.
 OBJDIR   = cli_obj
 OBJS     = $(SRCS:%.c=$(OBJDIR)/%.o)
-TARGET   = scconvert
+
+# .exe suffix on Windows (mingw/MSYS2 set OS=Windows_NT). install-bin uses
+# $(TARGET) directly so it inherits the suffix without separate handling.
+ifeq ($(OS),Windows_NT)
+  EXE := .exe
+else
+  EXE :=
+endif
+TARGET   = scconvert$(EXE)
 
 .PHONY: all clean install install-bin
 

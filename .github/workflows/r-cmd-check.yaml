@@ -70,14 +70,43 @@ jobs:
       # Build the standalone scconvert CLI binary and install it to inst/bin/
       # so it ships with the source tarball that rcmdcheck builds. Without
       # this step, sc_find_cli() returns NULL on CI and the entire
-      # test-cli-integration.R file is skipped. Linux + macOS only; the
-      # Windows toolchain needs separate work (.exe suffix, msys2 path).
-      - name: Build CLI binary
+      # test-cli-integration.R file is skipped.
+      - name: Build CLI binary (Linux + macOS)
         if: runner.os != 'Windows'
         run: |
           cd src
           make -f Makefile.cli
           make -f Makefile.cli install-bin
+
+      # Windows build runs inside MSYS2 bash because the toolchain (gcc, make,
+      # pkg-config) and HDF5 install live under /ucrt64. We ship the
+      # ucrt64 runtime DLLs alongside scconvert.exe so users without MSYS2
+      # can run it -- Windows resolves implicit-load DLLs from the exe's own
+      # directory first, so colocation in inst/bin/ is sufficient.
+      - name: Build CLI binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-pkgconf make"
+
+          # CHERE_INVOKING keeps the bash login shell in the invoked cwd
+          # instead of $HOME; MSYSTEM=UCRT64 selects the ucrt64 toolchain.
+          $env:CHERE_INVOKING = "1"
+          $env:MSYSTEM = "UCRT64"
+          C:\msys64\usr\bin\bash.exe -lc "cd src && make -f Makefile.cli && make -f Makefile.cli install-bin"
+
+          # ldd lists every implicit-load DLL with its full path; we copy
+          # the /ucrt64/ ones and skip Windows system DLLs (kernel32 etc.).
+          C:\msys64\usr\bin\bash.exe -lc "ldd inst/bin/scconvert.exe | awk '/ucrt64/ {print \$3}' | while read dll; do cp \"\$dll\" inst/bin/; done"
+
+          Get-ChildItem inst\bin\
+
+          # If a runtime DLL is missing the exe fails to start with
+          # 0xC0000135 (STATUS_DLL_NOT_FOUND) -- catch that here, not in tests.
+          & .\inst\bin\scconvert.exe --version
+          if ($LASTEXITCODE -ne 0) {
+            throw "scconvert.exe smoke test failed (exit $LASTEXITCODE) -- runtime DLL missing?"
+          }
 
       - uses: r-lib/actions/setup-r@v2
         with:
