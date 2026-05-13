@@ -20,10 +20,15 @@
 #include "sc_convert.h"
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <dirent.h>
 #include <limits.h>
 #include <errno.h>
+#ifndef _WIN32
+/* fork/waitpid/execvp are POSIX -- not available on mingw. Vendor-raw
+ * delegation is therefore Linux/macOS-only; Windows callers fall back
+ * to the R streaming path via scConvert_cli() in R/ConvertCLI.R. */
+#  include <sys/wait.h>
+#endif
 
 static void print_usage(const char *prog) {
     fprintf(stderr,
@@ -135,6 +140,18 @@ static int rscript_available(void) {
  * stdout and stderr are inherited from the parent so users see R messages
  * directly.
  */
+#ifdef _WIN32
+static int delegate_to_r(const sc_opts_t *opts) {
+    /* mingw lacks fork/execvp/waitpid. Vendor raw formats on Windows are
+     * handled by scConvert_cli() in R, which catches our non-zero exit and
+     * falls through to the R streaming path. */
+    fprintf(stderr,
+        "Error: '%s' requires the R backend; the Windows C build cannot "
+        "delegate. Call scConvert() from R instead.\n",
+        opts->input_path);
+    return SC_ERR;
+}
+#else
 static int delegate_to_r(const sc_opts_t *opts) {
     if (!rscript_available()) {
         fprintf(stderr,
@@ -252,6 +269,7 @@ static int delegate_to_r(const sc_opts_t *opts) {
     }
     return SC_OK;
 }
+#endif  /* _WIN32 */
 
 static sc_direction_t detect_direction(const char *input, const char *output) {
     /* h5ad ↔ h5seurat */
