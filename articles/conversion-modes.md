@@ -34,7 +34,7 @@ dataset in RAM.
 h5ad_path <- file.path(tempdir(), "pbmc_hub.h5ad")
 t1 <- system.time(writeH5AD(obj, h5ad_path, verbose = FALSE))
 cat("In-memory write:", round(t1["elapsed"], 2), "s\n")
-#> In-memory write: 1.9 s
+#> In-memory write: 2.2 s
 ```
 
 Use in-memory conversion when you need to manipulate the data in R, or
@@ -52,7 +52,7 @@ constant regardless of dataset size.
 zarr_path <- file.path(tempdir(), "pbmc_stream.zarr")
 t2 <- system.time(H5ADToZarr(h5ad_path, zarr_path, stream = TRUE, verbose = FALSE))
 cat("Streaming h5ad -> zarr:", round(t2["elapsed"], 2), "s\n")
-#> Streaming h5ad -> zarr: 0.83 s
+#> Streaming h5ad -> zarr: 0.96 s
 ```
 
 Available streaming converters:
@@ -82,7 +82,7 @@ h5ad_cli <- file.path(tempdir(), "pbmc_cli.h5ad")
 t3 <- system.time(scConvert_cli(h5s_path, h5ad_cli, verbose = FALSE))
 #> Validating h5Seurat file
 cat("C binary h5seurat -> h5ad:", round(t3["elapsed"], 2), "s\n")
-#> C binary h5seurat -> h5ad: 3.61 s
+#> C binary h5seurat -> h5ad: 4.16 s
 ```
 
 Build the binary with `cd src && make` (requires HDF5 headers).
