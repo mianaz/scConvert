@@ -71,4 +71,4 @@ install: $(TARGET)
 # Run this from src/ after 'make -f Makefile.cli', then reinstall the R package.
 install-bin: $(TARGET)
 	mkdir -p ../inst/bin
-	install -m 755 $(TARGET) ../inst/bin/scconvert
+	install -m 755 $(TARGET) ../inst/bin/$(TARGET)
