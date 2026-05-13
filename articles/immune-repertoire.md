@@ -185,14 +185,14 @@ sessionInfo()
 #> 
 #> loaded via a namespace (and not attached):
 #>   [1] RColorBrewer_1.1-3     jsonlite_2.0.0         magrittr_2.0.5        
-#>   [4] spatstat.utils_3.2-2   farver_2.1.2           rmarkdown_2.31        
+#>   [4] spatstat.utils_3.2-3   farver_2.1.2           rmarkdown_2.31        
 #>   [7] fs_2.1.0               ragg_1.5.2             vctrs_0.7.3           
 #>  [10] ROCR_1.0-12            spatstat.explore_3.8-0 htmltools_0.5.9       
 #>  [13] sass_0.4.10            sctransform_0.4.3      parallelly_1.47.0     
 #>  [16] KernSmooth_2.23-26     bslib_0.10.0           htmlwidgets_1.6.4     
 #>  [19] desc_1.4.3             ica_1.0-3              plyr_1.8.9            
 #>  [22] plotly_4.12.0          zoo_1.8-15             cachem_1.1.0          
-#>  [25] igraph_2.3.0           mime_0.13              lifecycle_1.0.5       
+#>  [25] igraph_2.3.1           mime_0.13              lifecycle_1.0.5       
 #>  [28] pkgconfig_2.0.3        Matrix_1.7-5           R6_2.6.1              
 #>  [31] fastmap_1.2.0          MatrixGenerics_1.24.0  fitdistrplus_1.2-6    
 #>  [34] future_1.70.0          shiny_1.13.0           digest_0.6.39         
@@ -208,7 +208,7 @@ sessionInfo()
 #>  [64] promises_1.5.0         grid_4.6.0             Rtsne_0.17            
 #>  [67] cluster_2.1.8.2        reshape2_1.4.5         generics_0.1.4        
 #>  [70] hdf5r_1.3.12           gtable_0.3.6           spatstat.data_3.1-9   
-#>  [73] tidyr_1.3.2            data.table_1.18.2.1    BiocGenerics_0.58.0   
+#>  [73] tidyr_1.3.2            data.table_1.18.4      BiocGenerics_0.58.0   
 #>  [76] BPCells_0.3.1          spatstat.geom_3.7-3    RcppAnnoy_0.0.23      
 #>  [79] ggrepel_0.9.8          RANN_2.6.2             pillar_1.11.1         
 #>  [82] stringr_1.6.0          spam_2.11-3            RcppHNSW_0.6.0        

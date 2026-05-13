@@ -66,7 +66,7 @@ round-trip.
 sd_path <- file.path(tempdir(), "brain.spatialdata.zarr")
 writeSpatialData(brain, sd_path, overwrite = TRUE, verbose = FALSE)
 cat("SpatialData store written to:", sd_path, "\n")
-#> SpatialData store written to: /tmp/RtmpsLVqa3/brain.spatialdata.zarr
+#> SpatialData store written to: /tmp/RtmpuVYYfH/brain.spatialdata.zarr
 ```
 
 ``` r
@@ -191,7 +191,7 @@ sessionInfo()
 #>  [22] promises_1.5.0         rmarkdown_2.31         ragg_1.5.2            
 #>  [25] bit_4.6.0              purrr_1.2.2            xfun_0.57             
 #>  [28] cachem_1.1.0           jsonlite_2.0.0         goftest_1.2-3         
-#>  [31] later_1.4.8            spatstat.utils_3.2-2   irlba_2.3.7           
+#>  [31] later_1.4.8            spatstat.utils_3.2-3   irlba_2.3.7           
 #>  [34] parallel_4.6.0         cluster_2.1.8.2        R6_2.6.1              
 #>  [37] ica_1.0-3              spatstat.data_3.1-9    bslib_0.10.0          
 #>  [40] stringi_1.8.7          RColorBrewer_1.1-3     reticulate_1.46.0     
@@ -199,7 +199,7 @@ sessionInfo()
 #>  [46] jquerylib_0.1.4        scattermore_1.2        Rcpp_1.1.1-1.1        
 #>  [49] knitr_1.51             tensor_1.5.1           future.apply_1.20.2   
 #>  [52] zoo_1.8-15             sctransform_0.4.3      httpuv_1.6.17         
-#>  [55] Matrix_1.7-5           splines_4.6.0          igraph_2.3.0          
+#>  [55] Matrix_1.7-5           splines_4.6.0          igraph_2.3.1          
 #>  [58] tidyselect_1.2.1       abind_1.4-8            yaml_2.3.12           
 #>  [61] spatstat.random_3.4-5  spatstat.explore_3.8-0 codetools_0.2-20      
 #>  [64] miniUI_0.1.2           listenv_0.10.1         plyr_1.8.9            
@@ -211,7 +211,7 @@ sessionInfo()
 #>  [82] KernSmooth_2.23-26     plotly_4.12.0          generics_0.1.4        
 #>  [85] RcppHNSW_0.6.0         scales_1.4.0           globals_0.19.1        
 #>  [88] xtable_1.8-8           glue_1.8.1             lazyeval_0.2.3        
-#>  [91] tools_4.6.0            data.table_1.18.2.1    RSpectra_0.16-2       
+#>  [91] tools_4.6.0            data.table_1.18.4      RSpectra_0.16-2       
 #>  [94] RANN_2.6.2             fs_2.1.0               dotCall64_1.2         
 #>  [97] cowplot_1.2.0          grid_4.6.0             tidyr_1.3.2           
 #> [100] nlme_3.1-169           cli_3.6.6              spatstat.sparse_3.1-0 
