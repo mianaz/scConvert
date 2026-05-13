@@ -27,7 +27,7 @@ DimPlot(obj, reduction = "umap", group.by = "seurat_annotations") +
 h5s_path <- tempfile(fileext = ".h5Seurat")
 writeH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
 cat("Saved:", h5s_path, "\n")
-#> Saved: /tmp/RtmpF8hzPX/file494a7e629a66.h5Seurat
+#> Saved: /tmp/RtmpQI7OAA/file46595a16f61c.h5Seurat
 ```
 
 ## Using the C binary from the shell
@@ -66,7 +66,7 @@ scConvert_cli(h5s_path, h5ad_path, verbose = FALSE)
 #> Validating h5Seurat file
 #> [1] TRUE
 cat("Converted to:", h5ad_path, "\n")
-#> Converted to: /tmp/RtmpF8hzPX/file494a229392a3.h5ad
+#> Converted to: /tmp/RtmpQI7OAA/file4659515601a1.h5ad
 ```
 
 Verify the round-tripped data is intact:
