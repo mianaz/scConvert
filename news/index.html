@@ -61,6 +61,19 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="scconvert-021-development">scConvert 0.2.1 (development)<a class="anchor" aria-label="anchor" href="#scconvert-021-development"></a></h2>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-1"></a></h3>
+<ul><li><p><strong>C reader: respect source string encoding (HDF5 &gt;= 2.0 compat).</strong> <code>sc_get_str_attr</code>, <code>sc_get_str_array_attr</code>, <code>sc_copy_group_attrs</code>, the <code>copy_attr_cb</code> in <code>sc_dataframe.c</code>, the h5seurat-factor and h5ad-categorical readers, and the group-copy attribute paths in <code>sc_groups.c</code> all forced <code>sc_create_vlen_str_type()</code> (UTF-8 vlen) as the H5Aread/H5Dread memtype. hdf5r writes vlen strings with CSET=ASCII; HDF5 &gt;= 2.0 refuses the implicit ASCII&lt;-&gt;UTF-8 conversion and the read silently fails. Symptom: on HDF5 2.x, <code><a href="../reference/readH5AD.html">readH5AD()</a></code> dropped every obs metadata column past <code>nFeature_RNA</code> because the <code>column-order</code> attribute read returned all empty strings. Fix: use the source attribute / dataset’s own datatype as the memtype and check H5Aread / H5Dread return values explicitly. CI did not catch this because the CI matrix uses HDF5 1.14, which permits the implicit conversion.</p></li>
+<li><p><strong>writeH5AD: normalize obsm embedding orientation.</strong> Both <code>.writeH5AD_c</code> and <code><a href="../reference/DirectSeuratToH5AD.html">DirectSeuratToH5AD()</a></code> now defensively transpose reduction embeddings whose first dim doesn’t match <code>n_cells</code>, and skip with a warning if neither dim matches. Prevents the C writer from emitting <code>obsm</code> datasets with HDF5 shape <code>(n_dims, n_cells)</code>, which fails <code>anndata.read_h5ad()</code>. Test: <code>tests/testthat/test-regression-fixes.R</code> asserts <code>f['obsm/X_pca'].shape == (n_cells, n_dims)</code> via h5py for both writer paths.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-0-2-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-2-1"></a></h3>
+<ul><li>
+<strong>pkgdown site no longer publishes internal developer notes.</strong> Moved <code>NOTES.md</code> into <code>dev/NOTES.md</code> so pkgdown’s home-page scanner stops rendering <code>NOTES.html</code> onto the public site. Workflow deploy now uses <code>clean: true</code> to purge stale internal pages (<code>findings.html</code>, <code>NOTES.html</code>) from gh-pages.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="scconvert-020">scConvert 0.2.0<a class="anchor" aria-label="anchor" href="#scconvert-020"></a></h2>
 <blockquote>
 <p><strong>Release Date:</strong> 2026-05-04</p>
@@ -89,7 +102,7 @@
 <li>
 <strong>h5mu per-modality <code>uns</code> round-trip.</strong> <code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> and <code><a href="../reference/readH5MU.html">readH5MU()</a></code> now mirror each modality’s <code>uns</code> group under <code>obj@misc[["__h5mu_uns_per_mod__"]][[modality]]</code> so per-modality uns entries survive h5mu round-trips instead of being flattened.</li>
 <li>
-<strong>IMC multi-image support.</strong> <code><a href="../reference/SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code> now iterates over every image in deterministic sorted order instead of processing only <code>Images()[1]</code>. Fixes the IMC 14/15 -&gt; 11/13 double-roundtrip degradation documented in <code>NOTES.md</code> section 3.</li>
+<strong>IMC multi-image support.</strong> <code><a href="../reference/SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code> now iterates over every image in deterministic sorted order instead of processing only <code>Images()[1]</code>. Fixes the IMC 14/15 -&gt; 11/13 double-roundtrip degradation documented in <code>dev/NOTES.md</code> section 3.</li>
 </ul></div>
 </div>
 <div class="section level3">
@@ -131,7 +144,7 @@
 <li>
 <strong>h5mu per-modality <code>uns</code> round-trip.</strong> <code><a href="../reference/writeH5MU.html">writeH5MU()</a></code> and <code><a href="../reference/readH5MU.html">readH5MU()</a></code> now mirror each modality’s <code>uns</code> group under <code>obj@misc[["__h5mu_uns_per_mod__"]][[modality]]</code> so per-modality uns entries survive h5mu round-trips instead of being flattened.</li>
 <li>
-<strong>IMC multi-image support.</strong> <code><a href="../reference/SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code> now iterates over every image in deterministic sorted order instead of processing only <code>Images()[1]</code>. Fixes the IMC 14/15 -&gt; 11/13 double-roundtrip degradation documented in <code>NOTES.md</code> section 3.</li>
+<strong>IMC multi-image support.</strong> <code><a href="../reference/SeuratSpatialToH5AD.html">SeuratSpatialToH5AD()</a></code> now iterates over every image in deterministic sorted order instead of processing only <code>Images()[1]</code>. Fixes the IMC 14/15 -&gt; 11/13 double-roundtrip degradation documented in <code>dev/NOTES.md</code> section 3.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="robustness-0-2-0-1">Robustness<a class="anchor" aria-label="anchor" href="#robustness-0-2-0-1"></a></h3>
@@ -163,7 +176,7 @@
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-0-2-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-2-0"></a></h3>
-<ul><li>Added <code>NOTES.md</code> describing the state of recent bug fixes, benchmark findings that are specific to the manuscript (not to users), and investigations into dataset-pipeline issues (Stereo-seq MOSTA and CosMx SMI – upstream format is not HDF5; see the notes file for details).</li>
+<ul><li>Added <code>dev/NOTES.md</code> describing the state of recent bug fixes, benchmark findings that are specific to the manuscript (not to users), and investigations into dataset-pipeline issues (Stereo-seq MOSTA and CosMx SMI – upstream format is not HDF5; see the notes file for details).</li>
 </ul></div>
 </div>
     <div class="section level2">
