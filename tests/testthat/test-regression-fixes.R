@@ -392,3 +392,69 @@ test_that("scConvert writes obsm reductions with n_obs as the HDF5 first axis", 
   scConvert(obj, dest = tmp_r, overwrite = TRUE, verbose = FALSE)
   expect_h5py_obsm_shape(tmp_r)
 })
+
+# ---------------------------------------------------------------------------
+# Regression 6: HDF5 2.x strict datatype conversion (CSET mismatch)
+#
+# hdf5r writes vlen string attributes with H5T_CSET_ASCII. The C reader
+# previously hardcoded an H5T_CSET_UTF8 vlen memtype for H5Aread calls,
+# which HDF5 1.14 silently converted but HDF5 2.x refuses with
+# "no appropriate function for conversion path". The downstream symptom
+# is that h5ad categorical columns (seurat_annotations, seurat_clusters,
+# RNA_snn_res.0.5) get dropped during CLI h5ad -> h5seurat, breaking
+# DimPlot(group.by = "seurat_annotations") with "undefined columns".
+# Fix: read each string attribute using the file's own datatype so the
+# converter is bypassed. See commit 71f9207.
+# ---------------------------------------------------------------------------
+test_that("CLI preserves h5ad categoricals across HDF5 2.x cset boundary", {
+  cli_bin <- scConvert:::sc_find_cli()
+  skip_if(is.null(cli_bin), "CLI binary not present")
+  skip_if_not_installed("hdf5r")
+
+  h5ad_in <- system.file("testdata", "pbmc_small.h5ad", package = "scConvert")
+  skip_if(!nzchar(h5ad_in), "Shipped pbmc_small.h5ad not found")
+
+  # Source dataset has four h5ad categorical columns. Each maps to a
+  # h5seurat factor group {levels, values} after CLI conversion.
+  expected_factor_cols <- c(
+    "RNA_snn_res.0.5", "orig.ident",
+    "seurat_annotations", "seurat_clusters"
+  )
+
+  tmp_h5s <- tempfile(fileext = ".h5seurat")
+  on.exit(unlink(tmp_h5s), add = TRUE)
+
+  ok <- scConvert_cli(h5ad_in, tmp_h5s, overwrite = TRUE, verbose = FALSE)
+  expect_true(ok)
+
+  h5s <- hdf5r::H5File$new(tmp_h5s, mode = "r")
+  on.exit(try(h5s$close_all(), silent = TRUE), add = TRUE)
+
+  meta <- h5s[["meta.data"]]
+  meta_names <- names(meta)
+
+  for (col in expected_factor_cols) {
+    expect_true(
+      col %in% meta_names,
+      info = paste("meta.data missing factor column", col,
+                   "-- HDF5 2.x cset bug regression")
+    )
+    grp <- meta[[col]]
+    expect_true(inherits(grp, "H5Group"),
+                info = paste(col, "should be a factor group, not a dataset"))
+    expect_true("levels" %in% names(grp),
+                info = paste(col, "missing levels dataset"))
+    expect_true("values" %in% names(grp),
+                info = paste(col, "missing values dataset"))
+
+    levels_chr <- grp[["levels"]]$read()
+    expect_gt(length(levels_chr), 0L)
+    expect_true(all(nzchar(levels_chr)),
+                info = paste(col, "levels contains empty strings"))
+
+    values_int <- grp[["values"]]$read()
+    expect_true(all(values_int >= 1L & values_int <= length(levels_chr)),
+                info = paste(col, "values out of range -- 0-based codes leaked"))
+    grp$close()
+  }
+})

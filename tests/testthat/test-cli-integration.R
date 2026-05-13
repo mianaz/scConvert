@@ -477,6 +477,158 @@ test_that("full roundtrip h5ad -> h5seurat -> h5ad preserves data", {
   expect_equal(sort(rownames(loaded)), sort(rownames(ref_h5ad)))
 })
 
+# ===========================================================================
+# 14. h5mu -> h5seurat  (CLI multimodal path: src/sc_h5mu.c)
+# ===========================================================================
+
+test_that("scConvert_cli: h5mu -> h5seurat preserves both modalities", {
+  cli_bin <- scConvert:::sc_find_cli()
+  skip_if(is.null(cli_bin), "CLI binary not present")
+  skip_if_not_installed("Seurat")
+
+  set.seed(42)
+  n_cells <- 12L
+  rna <- matrix(rpois(20L * n_cells, 5L), 20L, n_cells)
+  rownames(rna) <- paste0("Gene", seq_len(20L))
+  colnames(rna) <- paste0("Cell", seq_len(n_cells))
+  adt <- matrix(rpois(5L * n_cells, 10L), 5L, n_cells)
+  rownames(adt) <- paste0("ADT", seq_len(5L))
+  colnames(adt) <- colnames(rna)
+
+  obj <- Seurat::CreateSeuratObject(counts = rna)
+  obj[["ADT"]] <- Seurat::CreateAssayObject(counts = adt)
+  obj$group <- factor(sample(c("A", "B"), n_cells, replace = TRUE))
+
+  tmp_h5mu <- tempfile(fileext = ".h5mu")
+  tmp_h5s  <- tempfile(fileext = ".h5Seurat")
+  on.exit(unlink(c(tmp_h5mu, tmp_h5s)), add = TRUE)
+
+  writeH5MU(obj, tmp_h5mu, overwrite = TRUE, verbose = FALSE)
+  expect_true(file.exists(tmp_h5mu))
+
+  ok <- scConvert_cli(tmp_h5mu, tmp_h5s,
+                     overwrite = TRUE, verbose = FALSE)
+  expect_true(ok)
+  expect_true(file.exists(tmp_h5s))
+  expect_gt(file.info(tmp_h5s)$size, 0)
+
+  loaded <- readH5Seurat(tmp_h5s, verbose = FALSE)
+  expect_s4_class(loaded, "Seurat")
+  expect_equal(ncol(loaded), n_cells)
+  assays_present <- Seurat::Assays(loaded)
+  expect_true("RNA" %in% assays_present)
+  expect_true("ADT" %in% assays_present)
+})
+
+# ===========================================================================
+# 15. h5ad -> h5mu  (CLI single-modality wrap path)
+# ===========================================================================
+
+test_that("scConvert_cli: h5ad -> h5mu wraps single modality", {
+  cli_bin <- scConvert:::sc_find_cli()
+  skip_if(is.null(cli_bin), "CLI binary not present")
+  skip_if_not_installed("hdf5r")
+
+  tmp_h5mu <- tempfile(fileext = ".h5mu")
+  on.exit(unlink(tmp_h5mu), add = TRUE)
+
+  ok <- scConvert_cli(h5ad_path, tmp_h5mu,
+                     assay = "RNA",
+                     overwrite = TRUE, verbose = FALSE)
+  expect_true(ok)
+  expect_true(file.exists(tmp_h5mu))
+
+  # Verify the h5mu has the standard /mod/<modality> structure.
+  # The CLI normalizes the modality slot to lower-case "rna" by default
+  # regardless of the --assay flag, matching the muon convention.
+  h5 <- hdf5r::H5File$new(tmp_h5mu, mode = "r")
+  on.exit(try(h5$close_all(), silent = TRUE), add = TRUE)
+  expect_true("mod" %in% names(h5))
+  mod_members <- names(h5[["mod"]])
+  expect_gt(length(mod_members), 0L)
+})
+
+# ===========================================================================
+# 16. Dense-X h5ad CLI roundtrip (spatial-style fixtures: IMC, CODEX, MERFISH)
+#
+# sc_h5ad.c has a dense-X code path that was added for spatial datasets
+# where X is stored as a 2D dense dataset, not the sparse data/indices/indptr
+# triple. This path was previously untested in CI -- the shipped pbmc_small.h5ad
+# uses sparse X.
+# ===========================================================================
+
+test_that("scConvert_cli: dense-X h5ad -> h5seurat -> h5ad roundtrips", {
+  cli_bin <- scConvert:::sc_find_cli()
+  skip_if(is.null(cli_bin), "CLI binary not present")
+  skip_if_not_installed("hdf5r")
+
+  n_cells <- 10L
+  n_genes <- 12L
+  set.seed(7)
+  x_dense <- matrix(round(runif(n_cells * n_genes, 0, 10), 2),
+                    nrow = n_cells, ncol = n_genes)
+  # Seurat enforces no-underscore in feature names, so we use dashes here
+  # to avoid spurious round-trip mismatches that are not the CLI's fault.
+  cell_names <- paste0("Cell-", seq_len(n_cells))
+  gene_names <- paste0("Gene-", seq_len(n_genes))
+
+  tmp_h5ad <- tempfile(fileext = ".h5ad")
+  tmp_h5s  <- tempfile(fileext = ".h5Seurat")
+  tmp_rt   <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(c(tmp_h5ad, tmp_h5s, tmp_rt)), add = TRUE)
+
+  str_vlen  <- hdf5r::H5T_STRING$new(size = Inf)
+  scalar_sp <- hdf5r::H5S$new(type = "scalar")
+
+  h5 <- hdf5r::H5File$new(tmp_h5ad, mode = "w")
+  # Dense X dataset with the encoding attrs anndata expects.
+  h5$create_dataset("X", robj = x_dense,
+                    dtype = hdf5r::h5types$H5T_NATIVE_DOUBLE)
+  x_ds <- h5[["X"]]
+  x_ds$create_attr("encoding-type", robj = "array",
+                   dtype = str_vlen, space = scalar_sp)
+  x_ds$create_attr("encoding-version", robj = "0.2.0",
+                   dtype = str_vlen, space = scalar_sp)
+  x_ds$close()
+
+  obs <- h5$create_group("obs")
+  obs$create_dataset("_index", robj = cell_names)
+  obs$create_attr("encoding-type", robj = "dataframe",
+                  dtype = str_vlen, space = scalar_sp)
+  obs$create_attr("_index", robj = "_index",
+                  dtype = str_vlen, space = scalar_sp)
+
+  var <- h5$create_group("var")
+  var$create_dataset("_index", robj = gene_names)
+  var$create_attr("encoding-type", robj = "dataframe",
+                  dtype = str_vlen, space = scalar_sp)
+  var$create_attr("_index", robj = "_index",
+                  dtype = str_vlen, space = scalar_sp)
+
+  h5$close_all()
+
+  ok_fwd <- scConvert_cli(tmp_h5ad, tmp_h5s,
+                          overwrite = TRUE, verbose = FALSE)
+  expect_true(ok_fwd)
+  expect_true(file.exists(tmp_h5s))
+
+  loaded <- readH5Seurat(tmp_h5s, verbose = FALSE)
+  expect_s4_class(loaded, "Seurat")
+  expect_equal(ncol(loaded), n_cells)
+  expect_equal(nrow(loaded), n_genes)
+
+  ok_rev <- scConvert_cli(tmp_h5s, tmp_rt,
+                          overwrite = TRUE, verbose = FALSE)
+  expect_true(ok_rev)
+  expect_true(file.exists(tmp_rt))
+
+  rt <- readH5AD(tmp_rt, verbose = FALSE)
+  expect_equal(ncol(rt), n_cells)
+  expect_equal(nrow(rt), n_genes)
+  expect_equal(sort(colnames(rt)), sort(cell_names))
+  expect_equal(sort(rownames(rt)), sort(gene_names))
+})
+
 # ---------------------------------------------------------------------------
 # Cleanup: flush HDF5 finalizers before testthat's own teardown.
 # On HDF5 >= 1.12 / 2.x, hdf5r's R6 finalizers throw H5Fclose errors

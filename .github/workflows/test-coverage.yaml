@@ -20,6 +20,16 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y libhdf5-dev
 
+      # Build the standalone scconvert CLI binary and install it to inst/bin/
+      # so it ships with the package that covr installs. Without this step,
+      # sc_find_cli() returns NULL during covr and test-cli-integration.R
+      # is entirely skipped -- C code never contributes to coverage.
+      - name: Build CLI binary
+        run: |
+          cd src
+          make -f Makefile.cli
+          make -f Makefile.cli install-bin
+
       # Install the scverse Python stack so test-python-validation.R runs
       # in CI instead of skipping. micromamba is faster than full conda and
       # supports activation via setup-micromamba's built-in shell hook.
