@@ -328,3 +328,67 @@ test_that("CLI obs transfer renames column-order <-> colnames without crash", {
   obs_rt$close()
   h5rt$close_all()
 })
+
+# ---------------------------------------------------------------------------
+# Regression 5: h5ad writers must write obsm as cells x dimensions
+#
+# A previous C writer regression wrote Seurat reductions to /obsm with the
+# HDF5 shape dimensions x cells. AnnData requires obsm arrays to have the
+# observation axis first, so such files failed anndata.read_h5ad().
+# ---------------------------------------------------------------------------
+test_that("scConvert writes obsm reductions with n_obs as the HDF5 first axis", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("Matrix")
+  skip_if(Sys.which("python3") == "", "python3 not available")
+
+  h5py_check <- system2("python3", c("-c", shQuote("import h5py")),
+                        stdout = TRUE, stderr = TRUE)
+  skip_if(!is.null(attr(h5py_check, "status")), "Python h5py not available")
+
+  set.seed(11)
+  n_cells <- 12L
+  n_genes <- 20L
+  counts <- matrix(rpois(n_cells * n_genes, 3),
+                   nrow = n_genes, ncol = n_cells,
+                   dimnames = list(paste0("g", seq_len(n_genes)),
+                                   paste0("c", seq_len(n_cells))))
+  counts <- Matrix::Matrix(counts, sparse = TRUE)
+
+  obj <- Seurat::CreateSeuratObject(counts = counts)
+  obj <- Seurat::NormalizeData(obj, verbose = FALSE)
+  Seurat::VariableFeatures(obj) <- rownames(obj)
+  obj <- Seurat::ScaleData(obj, verbose = FALSE)
+  obj <- Seurat::RunPCA(obj, npcs = 3, verbose = FALSE)
+
+  expect_h5py_obsm_shape <- function(path) {
+    code <- sprintf(
+      paste(
+        "import h5py",
+        "f = h5py.File(%s, 'r')",
+        "print(','.join(map(str, f['obsm/X_pca'].shape)))",
+        "print(str(f['obs/_index'].shape[0]))",
+        sep = "\n"
+      ),
+      shQuote(path)
+    )
+    out <- system2("python3", c("-c", shQuote(code)),
+                   stdout = TRUE, stderr = TRUE)
+    expect_null(attr(out, "status"), info = paste(out, collapse = "\n"))
+    expect_equal(out[1], paste(n_cells, 3L, sep = ","))
+    expect_equal(out[2], as.character(n_cells))
+  }
+
+  # Single-assay Seurat objects exercise the fast C writer.
+  tmp_c <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(tmp_c), add = TRUE)
+  scConvert(obj, dest = tmp_c, overwrite = TRUE, verbose = FALSE)
+  expect_h5py_obsm_shape(tmp_c)
+
+  # A second assay forces the R/hdf5r direct writer fallback.
+  obj[["extra"]] <- Seurat::CreateAssayObject(counts = counts)
+  tmp_r <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(tmp_r), add = TRUE)
+  scConvert(obj, dest = tmp_r, overwrite = TRUE, verbose = FALSE)
+  expect_h5py_obsm_shape(tmp_r)
+})

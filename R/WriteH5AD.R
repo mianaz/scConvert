@@ -247,6 +247,7 @@ writeH5AD <- function(
     rownames = rownames(mat),
     colnames = colnames(mat)
   )
+  n_cells <- ncol(mat)
 
   meta <- as.list(object@meta.data)
 
@@ -254,6 +255,15 @@ writeH5AD <- function(
   for (rname in names(object@reductions)) {
     reduc <- object@reductions[[rname]]
     emb <- Embeddings(reduc)
+    if (nrow(emb) != n_cells && ncol(emb) == n_cells) {
+      emb <- t(emb)
+    }
+    if (nrow(emb) != n_cells) {
+      warning("Skipping reduction '", rname, "' because its embeddings have ",
+              nrow(emb), " rows but the object has ", n_cells, " cells",
+              call. = FALSE)
+      next
+    }
     attr(emb, "key") <- Key(reduc)
     reductions[[rname]] <- emb
   }
@@ -424,6 +434,15 @@ DirectSeuratToH5AD <- function(
     for (reduc_name in reducs) {
       emb <- tryCatch(Embeddings(object, reduction = reduc_name), error = function(e) NULL)
       if (!is.null(emb) && nrow(emb) > 0) {
+        if (nrow(emb) != n_cells && ncol(emb) == n_cells) {
+          emb <- t(emb)
+        }
+        if (nrow(emb) != n_cells) {
+          warning("Skipping reduction '", reduc_name, "' because its embeddings have ",
+                  nrow(emb), " rows but the object has ", n_cells, " cells",
+                  call. = FALSE)
+          next
+        }
         key_name <- paste0("X_", reduc_name)
         # scTranspose: hdf5r writes R (n_cells, n_dims) as HDF5 (n_dims, n_cells)
         # anndata expects (n_cells, n_dims), so we write t(emb)
