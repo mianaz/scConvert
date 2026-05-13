@@ -60,7 +60,10 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
   }
 
   h5ad <- H5File$new(file, mode = "r")
-  on.exit(h5ad$close_all())
+  # close_all() throws on hdf5r/HDF5 1.12.1 (CRAN Windows binary) when a
+  # leaf-object ID isn't fully released. Read already succeeded by then.
+  # Matches the write-path wrap in R/WriteH5AD.R (commit cf362e0).
+  on.exit(tryCatch(h5ad$close_all(), error = function(e) NULL))
 
   if (verbose) {
     message("Loading H5AD file: ", file)
@@ -293,7 +296,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     }
 
     # Close hdf5r handle before BPCells opens the file (avoid lock conflicts)
-    h5ad$close_all()
+    tryCatch(h5ad$close_all(), error = function(e) NULL)
 
     if (isTRUE(use.bpcells)) {
       # use.bpcells = TRUE: read directly from h5ad (backed by HDF5)
@@ -1102,7 +1105,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
   needs_hdf5r <- any(c("varp", "layers", "uns") %in% components)
   if (needs_hdf5r) {
     h5ad <- H5File$new(file, mode = "r")
-    on.exit(h5ad$close_all())
+    on.exit(tryCatch(h5ad$close_all(), error = function(e) NULL))
 
     # raw/X handling: set counts and data layers
     if ("layers" %in% components || "X" %in% components) {

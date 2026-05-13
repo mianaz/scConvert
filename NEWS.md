@@ -1,6 +1,29 @@
 # scConvert 0.2.1 (development)
 
+## New features
+
+- **C CLI binary now ships on Windows.** Previous releases built and bundled
+  `scconvert` (Linux + macOS) only, and Windows users silently fell through
+  to the slower R streaming path. The package's CI now compiles a Windows
+  `scconvert.exe` against MSYS2's ucrt64 toolchain and bundles the four
+  required runtime DLLs (`hdf5.dll`, `zlib1.dll`, `libgcc_s_seh-1.dll`,
+  `libwinpthread-1.dll`) alongside the exe in `inst/bin/`. Windows resolves
+  implicit-load DLLs from the exe's own directory first, so users do not
+  need MSYS2 or any HDF5 installation. Adds roughly 7 MB to the installed
+  package on Windows.
+
 ## Bug fixes
+
+- **`readH5AD()` no longer aborts on `close_all()` errors.**
+  The Windows CRAN binary of hdf5r 1.3.12 bundles HDF5 1.12.1, which
+  refuses to close a file when any leaf-object ID is still held by the
+  reference counter. The error propagated out of `on.exit()`, surfaced
+  as `scConvert_cli(h5ad -> rds)` returning `FALSE`, and broke a handful
+  of Windows test expectations. The three `close_all()` sites in
+  `R/LoadH5AD.R` are now wrapped in `tryCatch(..., error = function(e)
+  NULL)`, matching the pattern already used in `R/WriteH5AD.R`. The read
+  has fully completed by the time `close_all()` runs; cleanup failure
+  is best-effort.
 
 - **C reader: respect source string encoding (HDF5 >= 2.0 compat).**
   `sc_get_str_attr`, `sc_get_str_array_attr`, `sc_copy_group_attrs`, the
