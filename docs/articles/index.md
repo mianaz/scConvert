@@ -2,6 +2,8 @@
 
 ### Getting Started
 
+- [Getting Started with
+  scConvert](https://mianaz.github.io/scConvert/articles/getting-started.md):
 - [Convert Between Seurat and AnnData
   (h5ad)](https://mianaz.github.io/scConvert/articles/convert-anndata.md):
 - [Working with h5Seurat
@@ -13,6 +15,8 @@
 
 ### Format Guides
 
+- [Convert Between Seurat and
+  SingleCellExperiment](https://mianaz.github.io/scConvert/articles/convert-sce.md):
 - [Convert to Loom
   Format](https://mianaz.github.io/scConvert/articles/convert-loom.md):
 - [Convert to Zarr

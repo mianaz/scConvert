@@ -181,13 +181,8 @@ if (has_bp) {
   cat("BPCells not installed. Install with:\n")
   cat('  remotes::install_github("bnprks/BPCells/r")\n')
 }
-#> Warning: Matrix compression performs poorly with non-integers.
-#> • Consider calling convert_matrix_type if a compressed integer matrix is intended.
-#> This message is displayed once every 8 hours.
-#> Standard object size: 3377.9 Kb 
-#> BPCells object size:  1362.7 Kb 
-#> Matrix class (standard): dgCMatrix 
-#> Matrix class (BPCells):  RenameDims
+#> BPCells not installed. Install with:
+#>   remotes::install_github("bnprks/BPCells/r")
 ```
 
 ``` r
@@ -201,8 +196,6 @@ if (has_bp) {
   p1 + p2
 }
 ```
-
-![](atlas-bpcells_files/figure-html/demo-plots-1.png)
 
 ## Converting atlas-scale data
 

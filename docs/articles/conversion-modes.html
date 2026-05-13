@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scConvert</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,12 +35,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -113,7 +115,7 @@ dataset in RAM.</p>
 <span><span class="va">h5ad_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc_hub.h5ad"</span><span class="op">)</span></span>
 <span><span class="va">t1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">h5ad_path</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"In-memory write:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">t1</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"s\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; In-memory write: 1.51 s</span></span></code></pre></div>
+<span><span class="co">#&gt; In-memory write: 0.02 s</span></span></code></pre></div>
 <p>Use in-memory conversion when you need to manipulate the data in R,
 or when the source/destination formats don’t share the same on-disk
 layout.</p>
@@ -129,7 +131,7 @@ constant regardless of dataset size.</p>
 <span><span class="va">zarr_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc_stream.zarr"</span><span class="op">)</span></span>
 <span><span class="va">t2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/H5ADToZarr.html">H5ADToZarr</a></span><span class="op">(</span><span class="va">h5ad_path</span>, <span class="va">zarr_path</span>, stream <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Streaming h5ad -&gt; zarr:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">t2</span><span class="op">[</span><span class="st">"elapsed"</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>, <span class="st">"s\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Streaming h5ad -&gt; zarr: 0.33 s</span></span></code></pre></div>
+<span><span class="co">#&gt; Streaming h5ad -&gt; zarr: 0.32 s</span></span></code></pre></div>
 <p>Available streaming converters:</p>
 <table class="table">
 <thead><tr class="header">
@@ -236,12 +238,6 @@ metadata, images).</p>
 <span><span class="va">sizes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">sizes</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Format <span class="op">=</span> <span class="st">"RDS (.rds)"</span>, Size_KB <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">rds_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">sizes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">sizes</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Format <span class="op">=</span> <span class="st">"h5Seurat (.h5seurat)"</span>, Size_KB <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">h5s_path2</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"qs"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">qs_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc.qs"</span><span class="op">)</span></span>
-<span>  <span class="fu">qs</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs/man/qsave.html" class="external-link">qsave</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">qs_path</span><span class="op">)</span></span>
-<span>  <span class="va">sizes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">sizes</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Format <span class="op">=</span> <span class="st">"qs (.qs)"</span>, Size_KB <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.info.html" class="external-link">file.size</a></span><span class="op">(</span><span class="va">qs_path</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1024</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"qs2"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">qs2_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbmc.qs2"</span><span class="op">)</span></span>
 <span>  <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_save.html" class="external-link">qs_save</a></span><span class="op">(</span><span class="va">obj</span>, <span class="va">qs2_path</span><span class="op">)</span></span>
@@ -271,14 +267,10 @@ metadata, images).</p>
 <td align="right">2.16</td>
 </tr>
 <tr class="odd">
-<td align="left">qs (.qs)</td>
-<td align="right">1.64</td>
+<td align="left">qs2 (.qs2)</td>
+<td align="right">1.50</td>
 </tr>
 <tr class="even">
-<td align="left">qs2 (.qs2)</td>
-<td align="right">1.52</td>
-</tr>
-<tr class="odd">
 <td align="left">RData (.RData)</td>
 <td align="right">1.57</td>
 </tr>
@@ -308,18 +300,12 @@ metadata, images).</p>
 <td>R only</td>
 </tr>
 <tr class="odd">
-<td><strong>qs</strong></td>
-<td>lz4 / zstd</td>
-<td>No (full load)</td>
-<td>R only</td>
-</tr>
-<tr class="even">
 <td><strong>qs2</strong></td>
 <td>zstd</td>
 <td>No (full load)</td>
 <td>R only</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>h5Seurat</strong></td>
 <td>gzip (HDF5)</td>
 <td>Yes (selective load)</td>
@@ -330,9 +316,11 @@ metadata, images).</p>
 <p>Key differences:</p>
 <ul>
 <li>
-<strong>qs / qs2</strong> are the fastest R serialization formats
+<strong>qs2</strong> is among the fastest R serialization formats
 (2–5x faster than <code>saveRDS</code>), with similar or better
-compression. Use them for local caching.</li>
+compression. Use it for local caching. The original <strong>qs</strong>
+package was archived from CRAN in 2026 and superseded by
+<strong>qs2</strong>.</li>
 <li>
 <strong>h5Seurat</strong> is the only format that supports
 <strong>selective loading</strong> — read just one assay or one
@@ -390,12 +378,12 @@ formats:</p>
 <tbody>
 <tr class="odd">
 <td align="left">h5ad (AnnData)</td>
-<td align="right">0.93</td>
+<td align="right">0.87</td>
 <td align="left">scanpy, CELLxGENE</td>
 </tr>
 <tr class="even">
 <td align="left">Loom</td>
-<td align="right">2.17</td>
+<td align="right">2.20</td>
 <td align="left">loompy, velocyto</td>
 </tr>
 <tr class="odd">

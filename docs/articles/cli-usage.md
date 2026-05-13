@@ -27,7 +27,7 @@ DimPlot(obj, reduction = "umap", group.by = "seurat_annotations") +
 h5s_path <- tempfile(fileext = ".h5Seurat")
 writeH5Seurat(obj, h5s_path, overwrite = TRUE, verbose = FALSE)
 cat("Saved:", h5s_path, "\n")
-#> Saved: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp9UNTGA/file158ab13581d98.h5Seurat
+#> Saved: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp3gQpKx/file10a996b31f772.h5Seurat
 ```
 
 ## Using the C binary from the shell
@@ -65,7 +65,7 @@ h5ad_path <- tempfile(fileext = ".h5ad")
 scConvert_cli(h5s_path, h5ad_path, verbose = FALSE)
 #> [1] TRUE
 cat("Converted to:", h5ad_path, "\n")
-#> Converted to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp9UNTGA/file158ab4fd90e23.h5ad
+#> Converted to: /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//Rtmp3gQpKx/file10a996318a368.h5ad
 ```
 
 Verify the round-tripped data is intact:
@@ -73,9 +73,10 @@ Verify the round-tripped data is intact:
 ``` r
 
 obj_rt <- readH5AD(h5ad_path, verbose = FALSE)
+#> Warning: Layer 'data' is empty
 cat("Cells:", ncol(obj_rt), "| Genes:", nrow(obj_rt), "\n")
 #> Cells: 500 | Genes: 2000
-cat("Reductions:", paste(Reductions(obj_rt), collapse = ", "), "\n")
+cat("Reductions:", paste(names(obj_rt@reductions), collapse = ", "), "\n")
 #> Reductions: pca, umap
 
 FeaturePlot(obj_rt, features = "LYZ", reduction = "umap") +

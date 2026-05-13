@@ -1,3 +1,38 @@
+# scConvert 0.2.1 (development)
+
+## Bug fixes
+
+- **C reader: respect source string encoding (HDF5 >= 2.0 compat).**
+  `sc_get_str_attr`, `sc_get_str_array_attr`, `sc_copy_group_attrs`, the
+  `copy_attr_cb` in `sc_dataframe.c`, the h5seurat-factor and h5ad-categorical
+  readers, and the group-copy attribute paths in `sc_groups.c` all forced
+  `sc_create_vlen_str_type()` (UTF-8 vlen) as the H5Aread/H5Dread memtype.
+  hdf5r writes vlen strings with CSET=ASCII; HDF5 >= 2.0 refuses the
+  implicit ASCII<->UTF-8 conversion and the read silently fails. Symptom:
+  on HDF5 2.x, `readH5AD()` dropped every obs metadata column past
+  `nFeature_RNA` because the `column-order` attribute read returned all
+  empty strings. Fix: use the source attribute / dataset's own datatype
+  as the memtype and check H5Aread / H5Dread return values explicitly.
+  CI did not catch this because the CI matrix uses HDF5 1.14, which
+  permits the implicit conversion.
+
+- **writeH5AD: normalize obsm embedding orientation.** Both
+  `.writeH5AD_c` and `DirectSeuratToH5AD()` now defensively transpose
+  reduction embeddings whose first dim doesn't match `n_cells`, and skip
+  with a warning if neither dim matches. Prevents the C writer from
+  emitting `obsm` datasets with HDF5 shape `(n_dims, n_cells)`, which
+  fails `anndata.read_h5ad()`. Test: `tests/testthat/test-regression-fixes.R`
+  asserts `f['obsm/X_pca'].shape == (n_cells, n_dims)` via h5py for both
+  writer paths.
+
+## Documentation
+
+- **pkgdown site no longer publishes internal developer notes.** Moved
+  `NOTES.md` into `dev/NOTES.md` so pkgdown's home-page scanner stops
+  rendering `NOTES.html` onto the public site. Workflow deploy now uses
+  `clean: true` to purge stale internal pages (`findings.html`,
+  `NOTES.html`) from gh-pages.
+
 # scConvert 0.2.0
 
 > **Release Date:** 2026-05-04
@@ -53,7 +88,7 @@
 - **IMC multi-image support.** `SeuratSpatialToH5AD()` now iterates over
   every image in deterministic sorted order instead of processing only
   `Images()[1]`. Fixes the IMC 14/15 -> 11/13 double-roundtrip degradation
-  documented in `NOTES.md` section 3.
+  documented in `dev/NOTES.md` section 3.
 
 ## P0 robustness fixes (Codex review response, Part A)
 
@@ -133,7 +168,7 @@
 - **IMC multi-image support.** `SeuratSpatialToH5AD()` now iterates over
   every image in deterministic sorted order instead of processing only
   `Images()[1]`. Fixes the IMC 14/15 -> 11/13 double-roundtrip degradation
-  documented in `NOTES.md` section 3.
+  documented in `dev/NOTES.md` section 3.
 
 ## Robustness
 
@@ -189,7 +224,7 @@
 
 ## Documentation
 
-- Added `NOTES.md` describing the state of recent bug fixes, benchmark
+- Added `dev/NOTES.md` describing the state of recent bug fixes, benchmark
   findings that are specific to the manuscript (not to users), and
   investigations into dataset-pipeline issues (Stereo-seq MOSTA and CosMx
   SMI -- upstream format is not HDF5; see the notes file for details).

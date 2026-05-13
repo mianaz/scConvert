@@ -35,7 +35,7 @@ cat("Cells:", ncol(pbmc), "\n")
 #> Cells: 500
 cat("Genes:", nrow(pbmc), "\n")
 #> Genes: 2000
-cat("Reductions:", paste(Reductions(pbmc), collapse = ", "), "\n")
+cat("Reductions:", paste(names(pbmc@reductions), collapse = ", "), "\n")
 #> Reductions: pca, umap
 cat("Metadata columns:", paste(colnames(pbmc[[]]), collapse = ", "), "\n")
 #> Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, seurat_annotations, percent.mt, RNA_snn_res.0.5, seurat_clusters
@@ -73,7 +73,7 @@ pbmc_seurat <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConv
 h5ad_path <- tempfile(fileext = ".h5ad")
 writeH5AD(pbmc_seurat, h5ad_path, overwrite = TRUE)
 cat("h5ad file size:", round(file.size(h5ad_path) / 1e6, 1), "MB\n")
-#> h5ad file size: 1 MB
+#> h5ad file size: 0.9 MB
 ```
 
 ## Verify the round-trip
@@ -101,7 +101,7 @@ p1 + p2
 ## One-liner format conversion
 
 For quick format conversion without loading data into R, use the
-[`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert-package.html)
+[`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert.md)
 dispatcher. It detects source and destination formats from file
 extensions and picks the most efficient conversion path:
 
@@ -110,7 +110,7 @@ extensions and picks the most efficient conversion path:
 h5seurat_path <- tempfile(fileext = ".h5seurat")
 scConvert(h5ad_path, dest = h5seurat_path, overwrite = TRUE)
 cat("Converted h5ad to h5Seurat:", round(file.size(h5seurat_path) / 1e6, 1), "MB\n")
-#> Converted h5ad to h5Seurat: 1 MB
+#> Converted h5ad to h5Seurat: 0.9 MB
 ```
 
 ## Layer mapping reference

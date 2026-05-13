@@ -35,10 +35,10 @@ cat("Cells:", ncol(pbmc), "\n")
 #> Cells: 500
 cat("Genes:", nrow(pbmc), "\n")
 #> Genes: 2000
-cat("Reductions:", paste(Reductions(pbmc), collapse = ", "), "\n")
+cat("Reductions:", paste(names(pbmc@reductions), collapse = ", "), "\n")
 #> Reductions: umap
 cat("Metadata columns:", paste(colnames(pbmc[[]]), collapse = ", "), "\n")
-#> Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, RNA_snn_res.0.5, percent.mt, seurat_annotations, seurat_clusters, pca
+#> Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, RNA_snn_res.0.5, percent.mt, seurat_annotations, seurat_clusters
 ```
 
 The nine annotated cell types are preserved:
@@ -109,7 +109,7 @@ what round-trips and what does not:
 | Cell metadata | Yes | Each column becomes a `/col_attrs` entry |
 | Gene metadata | Yes | Each column becomes a `/row_attrs` entry |
 | PCA / UMAP embeddings | Yes | Stored as column attributes |
-| Nearest-neighbor graphs | No | Not native to Loom; recompute with `FindNeighbors()` |
+| Nearest-neighbor graphs | No | Not native to Loom; recompute with [`FindNeighbors()`](https://satijalab.org/seurat/reference/FindNeighbors.html) |
 
 ## Per-cluster expression
 

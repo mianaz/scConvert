@@ -34,7 +34,7 @@ dataset in RAM.
 h5ad_path <- file.path(tempdir(), "pbmc_hub.h5ad")
 t1 <- system.time(writeH5AD(obj, h5ad_path, verbose = FALSE))
 cat("In-memory write:", round(t1["elapsed"], 2), "s\n")
-#> In-memory write: 1.51 s
+#> In-memory write: 0.02 s
 ```
 
 Use in-memory conversion when you need to manipulate the data in R, or
@@ -52,7 +52,7 @@ constant regardless of dataset size.
 zarr_path <- file.path(tempdir(), "pbmc_stream.zarr")
 t2 <- system.time(H5ADToZarr(h5ad_path, zarr_path, stream = TRUE, verbose = FALSE))
 cat("Streaming h5ad -> zarr:", round(t2["elapsed"], 2), "s\n")
-#> Streaming h5ad -> zarr: 0.33 s
+#> Streaming h5ad -> zarr: 0.32 s
 ```
 
 Available streaming converters:
@@ -121,12 +121,6 @@ sizes <- data.frame(
 sizes <- rbind(sizes, data.frame(Format = "RDS (.rds)", Size_KB = file.size(rds_path) / 1024))
 sizes <- rbind(sizes, data.frame(Format = "h5Seurat (.h5seurat)", Size_KB = file.size(h5s_path2) / 1024))
 
-if (requireNamespace("qs", quietly = TRUE)) {
-  qs_path <- file.path(tempdir(), "pbmc.qs")
-  qs::qsave(obj, qs_path)
-  sizes <- rbind(sizes, data.frame(Format = "qs (.qs)", Size_KB = file.size(qs_path) / 1024))
-}
-
 if (requireNamespace("qs2", quietly = TRUE)) {
   qs2_path <- file.path(tempdir(), "pbmc.qs2")
   qs2::qs_save(obj, qs2_path)
@@ -147,8 +141,7 @@ knitr::kable(sizes[, c("Format", "Size_MB")], col.names = c("Format", "Size (MB)
 |:---------------------|----------:|
 | RDS (.rds)           |      1.57 |
 | h5Seurat (.h5seurat) |      2.16 |
-| qs (.qs)             |      1.64 |
-| qs2 (.qs2)           |      1.52 |
+| qs2 (.qs2)           |      1.50 |
 | RData (.RData)       |      1.57 |
 
 ### Format comparison
@@ -157,15 +150,15 @@ knitr::kable(sizes[, c("Format", "Size_MB")], col.names = c("Format", "Size (MB)
 |--------------|-------------|----------------------|----------|
 | **RDS**      | gzip        | No (full load)       | R only   |
 | **RData**    | gzip        | No (full load)       | R only   |
-| **qs**       | lz4 / zstd  | No (full load)       | R only   |
 | **qs2**      | zstd        | No (full load)       | R only   |
 | **h5Seurat** | gzip (HDF5) | Yes (selective load) | R, C     |
 
 Key differences:
 
-- **qs / qs2** are the fastest R serialization formats (2–5x faster than
-  `saveRDS`), with similar or better compression. Use them for local
-  caching.
+- **qs2** is among the fastest R serialization formats (2–5x faster than
+  `saveRDS`), with similar or better compression. Use it for local
+  caching. The original **qs** package was archived from CRAN in 2026
+  and superseded by **qs2**.
 - **h5Seurat** is the only format that supports **selective loading** —
   read just one assay or one reduction without loading the entire
   object.
@@ -215,8 +208,8 @@ knitr::kable(exchange)
 
 | Format         | Size_MB | Ecosystem         |
 |:---------------|--------:|:------------------|
-| h5ad (AnnData) |    0.93 | scanpy, CELLxGENE |
-| Loom           |    2.17 | loompy, velocyto  |
+| h5ad (AnnData) |    0.87 | scanpy, CELLxGENE |
+| Loom           |    2.20 | loompy, velocyto  |
 | Zarr           |    0.64 | cloud / AnnData   |
 
 ## When to use what

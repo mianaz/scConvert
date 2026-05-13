@@ -16,12 +16,13 @@ obj <- readRDS(system.file("extdata", "pbmc_demo.rds", package = "scConvert"))
 h5ad_path <- tempfile(fileext = ".h5ad")
 writeH5AD(obj, h5ad_path, overwrite = TRUE, verbose = FALSE)
 obj_rt <- readH5AD(h5ad_path, verbose = FALSE)
+#> Warning: Layer 'data' is empty
 
 cat("Original:", ncol(obj), "cells x", nrow(obj), "genes\n")
 #> Original: 500 cells x 2000 genes
 cat("Round-trip:", ncol(obj_rt), "cells x", nrow(obj_rt), "genes\n")
 #> Round-trip: 500 cells x 2000 genes
-cat("Reductions preserved:", paste(Reductions(obj_rt), collapse = ", "), "\n")
+cat("Reductions preserved:", paste(names(obj_rt@reductions), collapse = ", "), "\n")
 #> Reductions preserved: pca, umap
 
 DimPlot(obj_rt, reduction = "umap", group.by = "seurat_annotations") +
@@ -55,7 +56,7 @@ Y = preserved, – = not supported or lost in conversion.
 |----|----|----|
 | `GetAssayData(layer = "data")` | `X` | Primary matrix (log-normalized) |
 | `GetAssayData(layer = "counts")` | `raw/X` | Raw counts |
-| `VariableFeatures()` | `var['highly_variable']` | Boolean column |
+| [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | `var['highly_variable']` | Boolean column |
 | `meta.data` | `obs` | Factors become categoricals |
 | `meta.features` | `var` | Gene-level metadata |
 | `Embeddings(, "pca")` | `obsm['X_pca']` | PCA coordinates |
@@ -68,8 +69,9 @@ Y = preserved, – = not supported or lost in conversion.
 | `misc` | `uns` | Unstructured metadata |
 
 **Notes:** Scale data is not stored in h5ad (recompute with
-`ScaleData()` or `sc.pp.scale()`). Data (all genes) is written to `X`;
-scale.data (variable features only) is skipped.
+[`ScaleData()`](https://satijalab.org/seurat/reference/ScaleData.html)
+or `sc.pp.scale()`). Data (all genes) is written to `X`; scale.data
+(variable features only) is skipped.
 
 ## h5ad to Seurat
 
@@ -79,7 +81,7 @@ scale.data (variable features only) is skipped.
 | `raw/X` | `counts` layer | Raw counts (if present) |
 | `obs` | `meta.data` | Categoricals become R factors |
 | `var` | Feature metadata | All columns preserved |
-| `var['highly_variable']` | `VariableFeatures()` | Boolean TRUE = variable |
+| `var['highly_variable']` | [`VariableFeatures()`](https://satijalab.github.io/seurat-object/reference/VariableFeatures.html) | Boolean TRUE = variable |
 | `obsm/X_pca` | `reductions$pca` | Auto-detected by prefix |
 | `obsm/X_umap` | `reductions$umap` | Auto-detected by prefix |
 | `obsm/X_tsne` | `reductions$tsne` | Auto-detected by prefix |

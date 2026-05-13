@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scConvert</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,12 +35,14 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Getting Started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting Started with scConvert</a></li>
     <li><a class="dropdown-item" href="../articles/convert-anndata.html">Convert Between Seurat and AnnData (h5ad)</a></li>
     <li><a class="dropdown-item" href="../articles/h5Seurat-load.html">Working with h5Seurat Files</a></li>
     <li><a class="dropdown-item" href="../articles/cli-usage.html">Command-Line Interface</a></li>
     <li><a class="dropdown-item" href="../articles/conversion-modes.html">In-Memory vs On-Disk Conversion</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Format Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/convert-sce.html">Convert Between Seurat and SingleCellExperiment</a></li>
     <li><a class="dropdown-item" href="../articles/convert-loom.html">Convert to Loom Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-zarr.html">Convert to Zarr Format</a></li>
     <li><a class="dropdown-item" href="../articles/convert-soma.html">TileDB-SOMA and CELLxGENE Census</a></li>
@@ -286,13 +288,8 @@ demo.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"BPCells not installed. Install with:\n"</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">'  remotes::install_github("bnprks/BPCells/r")\n'</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; Warning: Matrix compression performs poorly with non-integers.</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">•</span> Consider calling convert_matrix_type if a compressed integer matrix is intended.</span></span>
-<span><span class="co">#&gt; <span style="color: #555555;">This message is displayed once every 8 hours.</span></span></span>
-<span><span class="co">#&gt; Standard object size: 3377.9 Kb </span></span>
-<span><span class="co">#&gt; BPCells object size:  1362.7 Kb </span></span>
-<span><span class="co">#&gt; Matrix class (standard): dgCMatrix </span></span>
-<span><span class="co">#&gt; Matrix class (BPCells):  RenameDims</span></span></code></pre></div>
+<span><span class="co">#&gt; BPCells not installed. Install with:</span></span>
+<span><span class="co">#&gt;   remotes::install_github("bnprks/BPCells/r")</span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="va">has_bp</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
@@ -302,7 +299,6 @@ demo.</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"BPCells (on-disk)"</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/SeuratTheme.html" class="external-link">NoLegend</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  <span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p><img src="atlas-bpcells_files/figure-html/demo-plots-1.png" class="r-plt" alt="" width="1152"></p>
 </div>
 <div class="section level2">
 <h2 id="converting-atlas-scale-data">Converting atlas-scale data<a class="anchor" aria-label="anchor" href="#converting-atlas-scale-data"></a>
@@ -318,7 +314,7 @@ into R:</p>
 <span><span class="co">#&gt;   elapsed: 55.5 s  (1.6 GB file)</span></span>
 <span></span>
 <span><span class="co"># Or use the one-liner (auto-detects the fastest path)</span></span>
-<span><span class="fu"><a href="https://mianaz.github.io/scConvert/reference/scConvert-package.html">scConvert</a></span><span class="op">(</span><span class="st">"immune_tcells.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/scConvert.html">scConvert</a></span><span class="op">(</span><span class="st">"immune_tcells.h5ad"</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="subset-and-export-after-bpcells-loading">Subset and export after BPCells loading<a class="anchor" aria-label="anchor" href="#subset-and-export-after-bpcells-loading"></a>

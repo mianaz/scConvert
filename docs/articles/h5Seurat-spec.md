@@ -22,9 +22,9 @@ obj_loaded <- readH5Seurat(h5s_path, verbose = FALSE)
 #> Adding a command log without an assay associated with it
 cat("Cells:", ncol(obj_loaded), "| Genes:", nrow(obj_loaded), "\n")
 #> Cells: 500 | Genes: 2000
-cat("Assays:", paste(Assays(obj_loaded), collapse = ", "), "\n")
+cat("Assays:", paste(names(obj_loaded@assays), collapse = ", "), "\n")
 #> Assays: RNA
-cat("Reductions:", paste(Reductions(obj_loaded), collapse = ", "), "\n")
+cat("Reductions:", paste(names(obj_loaded@reductions), collapse = ", "), "\n")
 #> Reductions: pca, umap
 
 DimPlot(obj_loaded, reduction = "umap", group.by = "seurat_annotations") +
