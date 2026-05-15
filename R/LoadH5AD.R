@@ -501,33 +501,60 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
       for (layer_name in layer_names) {
         if (verbose) message("  Adding layer: ", layer_name)
 
-        layer_matrix <- ReadH5ADMatrix(h5ad[["layers"]][[layer_name]], transpose = TRUE)
-
-        # Ensure dimensions match
-        if (nrow(layer_matrix) == nrow(expr_matrix) && ncol(layer_matrix) == ncol(expr_matrix)) {
-          rownames(layer_matrix) <- feature.names
-          colnames(layer_matrix) <- cell.names
-
-          # Map layer names to Seurat slots
-          seurat_slot <- switch(layer_name,
-            "counts" = "counts",
-            "data" = "data",
-            "log_normalized" = "data",
-            "scale.data" = "scale.data",
-            "scaled" = "scale.data",
-            layer_name
-          )
-
-          tryCatch({
-            seurat_obj[[assay.name]] <- SetAssayData(
-              object = seurat_obj[[assay.name]],
-              layer = seurat_slot,
-              new.data = layer_matrix
-            )
-          }, error = function(e) {
-            if (verbose) message("Could not add layer ", layer_name, ": ", e$message)
-          })
+        # hdf5r reads a dense h5py (cells x features) dataset as an R matrix
+        # already shaped (features x cells), matching Seurat's expr_matrix
+        # convention. ReadH5ADMatrix(..., transpose = TRUE) used to add a
+        # second t() on top of that, leaving every dense layer in the wrong
+        # orientation and silently failing the shape check that follows.
+        # For dense layers, read at the natural hdf5r orientation; for
+        # sparse, ReadH5ADMatrix already builds a (features x cells)
+        # dgCMatrix.
+        layer_obj <- h5ad[["layers"]][[layer_name]]
+        layer_matrix <- if (inherits(layer_obj, "H5D")) {
+          layer_obj[,]
+        } else {
+          ReadH5ADMatrix(layer_obj, transpose = TRUE)
         }
+
+        # Layers must match X's (features x cells) shape. A mismatch means
+        # the h5ad is malformed (ragged across slots). Previously we silently
+        # skipped the layer with no diagnostic; that let bad files through
+        # and made fidelity checks pass-by-omission. Refuse instead.
+        if (nrow(layer_matrix) != nrow(expr_matrix) ||
+            ncol(layer_matrix) != ncol(expr_matrix)) {
+          cond <- structure(
+            class = c("scConvert_data_error", "error", "condition"),
+            list(message = sprintf(
+                   "Malformed h5ad: layer '/layers/%s' has shape (%d x %d) but X has shape (%d x %d)",
+                   layer_name,
+                   nrow(layer_matrix), ncol(layer_matrix),
+                   nrow(expr_matrix),  ncol(expr_matrix)),
+                 call = NULL,
+                 layer = layer_name))
+          stop(cond)
+        }
+        rownames(layer_matrix) <- feature.names
+        colnames(layer_matrix) <- cell.names
+
+        # Map layer names to Seurat slots
+        seurat_slot <- switch(layer_name,
+          "counts" = "counts",
+          "data" = "data",
+          "log_normalized" = "data",
+          "scale.data" = "scale.data",
+          "scaled" = "scale.data",
+          layer_name
+        )
+
+        tryCatch({
+          seurat_obj[[assay.name]] <- SetAssayData(
+            object = seurat_obj[[assay.name]],
+            layer = seurat_slot,
+            new.data = layer_matrix
+          )
+        }, error = function(e) {
+          if (verbose) message("Could not add layer ", layer_name, ": ", e$message)
+        })
       }
     }
   }
@@ -1206,31 +1233,42 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
       }
     }
 
-    # Layers
+    # Layers. Mirror the R-reader behaviour: a shape mismatch between a
+    # layer and X is structurally malformed; raise scConvert_data_error
+    # instead of silently dropping the layer.
     if ("layers" %in% components && h5ad$exists("layers")) {
       if (verbose) message("Adding layers...")
       for (layer_name in names(h5ad[["layers"]])) {
+        layer_obj <- h5ad[["layers"]][[layer_name]]
+        if (inherits(layer_obj, "H5Group") && layer_obj$exists("data")) {
+          ld <- layer_obj[["data"]][]; li <- layer_obj[["indices"]][]; lp <- layer_obj[["indptr"]][]
+          layer_matrix <- new("dgCMatrix", i = as.integer(li), p = as.integer(lp),
+                              x = as.numeric(ld), Dim = c(as.integer(length(feature.names)),
+                                                           as.integer(length(cell.names))))
+        } else if (inherits(layer_obj, "H5D")) {
+          layer_matrix <- t(layer_obj[,])
+        } else next
+        if (nrow(layer_matrix) != nrow(expr_matrix) ||
+            ncol(layer_matrix) != ncol(expr_matrix)) {
+          cond <- structure(
+            class = c("scConvert_data_error", "error", "condition"),
+            list(message = sprintf(
+                   "Malformed h5ad: layer '/layers/%s' has shape (%d x %d) but X has shape (%d x %d)",
+                   layer_name,
+                   nrow(layer_matrix), ncol(layer_matrix),
+                   nrow(expr_matrix),  ncol(expr_matrix)),
+                 call = NULL, layer = layer_name))
+          stop(cond)
+        }
         tryCatch({
-          layer_obj <- h5ad[["layers"]][[layer_name]]
-          if (inherits(layer_obj, "H5Group") && layer_obj$exists("data")) {
-            ld <- layer_obj[["data"]][]; li <- layer_obj[["indices"]][]; lp <- layer_obj[["indptr"]][]
-            # CSR of (cells x features) == CSC of (features x cells)
-            layer_matrix <- new("dgCMatrix", i = as.integer(li), p = as.integer(lp),
-                                x = as.numeric(ld), Dim = c(as.integer(length(feature.names)),
-                                                             as.integer(length(cell.names))))
-          } else if (inherits(layer_obj, "H5D")) {
-            layer_matrix <- t(layer_obj[,])
-          } else next
-          if (nrow(layer_matrix) == nrow(expr_matrix) && ncol(layer_matrix) == ncol(expr_matrix)) {
-            rownames(layer_matrix) <- feature.names
-            colnames(layer_matrix) <- cell.names
-            seurat_slot <- switch(layer_name,
-              "counts" = "counts", "data" = "data",
-              "log_normalized" = "data", "scale.data" = "scale.data",
-              "scaled" = "scale.data", layer_name)
-            seurat_obj[[assay.name]] <- SetAssayData(seurat_obj[[assay.name]],
-                                                     layer = seurat_slot, new.data = layer_matrix)
-          }
+          rownames(layer_matrix) <- feature.names
+          colnames(layer_matrix) <- cell.names
+          seurat_slot <- switch(layer_name,
+            "counts" = "counts", "data" = "data",
+            "log_normalized" = "data", "scale.data" = "scale.data",
+            "scaled" = "scale.data", layer_name)
+          seurat_obj[[assay.name]] <- SetAssayData(seurat_obj[[assay.name]],
+                                                   layer = seurat_slot, new.data = layer_matrix)
         }, error = function(e) {
           if (verbose) message("Could not add layer ", layer_name, ": ", e$message)
         })
