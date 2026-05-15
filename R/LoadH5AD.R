@@ -36,6 +36,32 @@
            missing = missing))
     stop(cond)
   }
+
+  # Sparse X consistency: when /X is a group with data/indices/indptr, the
+  # lengths must agree. A truncated /X/data triggers a C-level segfault in
+  # the fast reader; catching it here keeps the failure recoverable.
+  .check_sparse_consistency <- function(Xg, label) {
+    if (!inherits(Xg, "H5Group")) return(invisible(NULL))
+    if (!(Xg$exists("data") && Xg$exists("indices") && Xg$exists("indptr"))) {
+      return(invisible(NULL))
+    }
+    n_data    <- Xg[["data"]]$dims[1]
+    n_indices <- Xg[["indices"]]$dims[1]
+    if (is.null(n_data) || is.null(n_indices)) return(invisible(NULL))
+    if (n_data != n_indices) {
+      cond <- structure(
+        class = c("scConvert_data_error", "error", "condition"),
+        list(message = sprintf(
+               "Malformed h5ad: /%s/data has %d entries but /%s/indices has %d",
+               label, n_data, label, n_indices),
+             call = NULL))
+      stop(cond)
+    }
+  }
+  if (h$exists("X")) .check_sparse_consistency(h[["X"]], "X")
+  if (h$exists("raw") && h[["raw"]]$exists("X")) {
+    .check_sparse_consistency(h[["raw"]][["X"]], "raw/X")
+  }
   invisible(TRUE)
 }
 
@@ -123,9 +149,45 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     if (inherits(h5_obj, "H5Group")) {
       # Sparse matrix (CSR or CSC format in h5ad)
       if (h5_obj$exists("data") && h5_obj$exists("indices") && h5_obj$exists("indptr")) {
+        # Pre-read structural sanity check: indptr[length(indptr)] is the
+        # number of stored non-zeros, which must equal both length(data) and
+        # length(indices). A truncated /X/data would otherwise read in
+        # quietly and the downstream sparseMatrix call may segfault inside
+        # the C-level constructor. Compare HDF5-reported dataset sizes
+        # before pulling data into memory.
+        data_d   <- h5_obj[["data"]]
+        indices_d <- h5_obj[["indices"]]
+        indptr_d <- h5_obj[["indptr"]]
+        n_data_h5    <- if (!is.null(data_d$dims))    data_d$dims[1]    else NA_integer_
+        n_indices_h5 <- if (!is.null(indices_d$dims)) indices_d$dims[1] else NA_integer_
+        n_indptr_h5  <- if (!is.null(indptr_d$dims))  indptr_d$dims[1]  else NA_integer_
+        if (!is.na(n_data_h5) && !is.na(n_indices_h5) &&
+            n_data_h5 != n_indices_h5) {
+          cond <- structure(
+            class = c("scConvert_data_error", "error", "condition"),
+            list(message = sprintf(
+                   "Malformed h5ad sparse group: data has %d entries but indices has %d",
+                   n_data_h5, n_indices_h5),
+                 call = NULL))
+          stop(cond)
+        }
+        # We can also cross-check against indptr[-1] once indptr is read.
         data_vals <- h5_obj[["data"]][]
         indices <- h5_obj[["indices"]][]   # 0-based
         indptr <- h5_obj[["indptr"]][]
+        if (length(indptr) >= 1L) {
+          declared_nnz <- as.integer(indptr[length(indptr)])
+          if (declared_nnz != length(data_vals) ||
+              declared_nnz != length(indices)) {
+            cond <- structure(
+              class = c("scConvert_data_error", "error", "condition"),
+              list(message = sprintf(
+                     "Malformed h5ad sparse group: indptr declares %d nonzeros but data has %d and indices has %d",
+                     declared_nnz, length(data_vals), length(indices)),
+                   call = NULL))
+            stop(cond)
+          }
+        }
 
         # Detect encoding type: CSR vs CSC
         encoding <- tryCatch(h5attr(h5_obj, "encoding-type"), error = function(e) "csr_matrix")
