@@ -357,3 +357,38 @@ test_that("readH5AD rejects malformed h5ad with scConvert_data_error class", {
                    error = function(e) e)
   expect_s3_class(err2, "scConvert_data_error")
 })
+
+test_that("readH5AD detects truncated sparse data in auxiliary slots", {
+  skip_if_not_installed("hdf5r")
+
+  # Build a minimally-valid h5ad with a truncated /obsp/distances:
+  # data has 5 entries but indices has 8 -- internally inconsistent.
+  tmp <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(tmp), add = TRUE)
+  h5 <- hdf5r::H5File$new(tmp, mode = "w")
+
+  # Well-formed core skeleton
+  Xg  <- h5$create_group("X")
+  Xg$create_dataset("data",    robj = as.numeric(seq_len(4)))
+  Xg$create_dataset("indices", robj = as.integer(c(0, 1, 0, 1)))
+  Xg$create_dataset("indptr",  robj = as.integer(c(0, 2, 4)))
+  obsg <- h5$create_group("obs")
+  obsg$create_dataset("_index", robj = c("c1", "c2"))
+  varg <- h5$create_group("var")
+  varg$create_dataset("_index", robj = c("g1", "g2"))
+
+  # Malformed auxiliary: obsp/distances with mismatched data/indices
+  obsp <- h5$create_group("obsp")
+  obsp_dist <- obsp$create_group("distances")
+  obsp_dist$create_dataset("data",    robj = as.numeric(seq_len(5)))
+  obsp_dist$create_dataset("indices", robj = as.integer(seq_len(8) - 1L))
+  obsp_dist$create_dataset("indptr",  robj = as.integer(c(0, 4, 8)))
+  h5$close_all()
+
+  err <- tryCatch(readH5AD(tmp, verbose = FALSE),
+                  error = function(e) e)
+  expect_s3_class(err, "scConvert_data_error")
+  expect_match(conditionMessage(err), "obsp/distances", fixed = TRUE)
+  expect_match(conditionMessage(err), "5 entries", fixed = TRUE)
+  expect_match(conditionMessage(err), "indices has 8", fixed = TRUE)
+})

@@ -1,25 +1,63 @@
+#' Construct a typed scConvert_data_error condition.
+#' @keywords internal
+#' @noRd
+.scconvert_data_error <- function(msg, ...) {
+  structure(
+    class = c("scConvert_data_error", "error", "condition"),
+    list(message = msg, call = NULL, ...)
+  )
+}
+
+#' Check that a sparse h5ad group has internally consistent
+#' `data`/`indices` lengths. Returns silently on a non-sparse group;
+#' raises a scConvert_data_error condition on mismatch. Used to catch
+#' truncated payloads up-front so the C-level sparse reader never sees
+#' a partial buffer.
+#' @keywords internal
+#' @noRd
+.h5ad_check_sparse_lengths <- function(grp, label) {
+  if (!inherits(grp, "H5Group")) return(invisible(NULL))
+  if (!(grp$exists("data") && grp$exists("indices") && grp$exists("indptr"))) {
+    return(invisible(NULL))
+  }
+  n_data    <- grp[["data"]]$dims[1]
+  n_indices <- grp[["indices"]]$dims[1]
+  if (is.null(n_data) || is.null(n_indices)) return(invisible(NULL))
+  if (n_data != n_indices) {
+    stop(.scconvert_data_error(sprintf(
+      "Malformed h5ad: /%s/data has %d entries but /%s/indices has %d",
+      label, n_data, label, n_indices)))
+  }
+  invisible(TRUE)
+}
+
 #' Structural validation for h5ad inputs.
 #'
-#' Raises a `scConvert_data_error`-class condition if the file is missing
-#' any of the three top-level groups that the AnnData on-disk spec
-#' requires: `/X` (or its modern equivalent in `/raw/X`), `/obs`, and
-#' `/var`. The condition class lets benchmark harnesses and downstream
-#' callers distinguish a malformed-input refusal from a generic R error.
+#' Two-tier check:
+#'   * Required skeleton: `/X` (or `/raw/X`), `/obs`, `/var` must exist.
+#'     Missing any of these raises `scConvert_data_error` immediately;
+#'     the reader cannot recover.
+#'   * Sparse-payload consistency: every sparse group reachable under
+#'     `/X`, `/raw/X`, `/layers/*`, `/obsp/*`, and `/varp/*` is checked
+#'     for `len(data) == len(indices)`. A truncated payload here would
+#'     otherwise segfault the C-level sparse constructor; raising the
+#'     typed condition lets the harness catch and report it.
+#'
+#' Auxiliary slot integrity (per-component shape vs `n_cells` /
+#' `n_features` for `obsm`/`varm`, etc.) is enforced by the readers at
+#' load time with skip-and-warn semantics, since a single corrupt
+#' embedding should not prevent the rest of the object from loading.
 #'
 #' @keywords internal
 #' @noRd
 .h5ad_validate_minimum_structure <- function(file) {
   h <- tryCatch(hdf5r::H5File$new(file, mode = "r"),
                 error = function(e) {
-                  cond <- structure(
-                    class = c("scConvert_data_error", "error", "condition"),
-                    list(message = sprintf("Cannot open as HDF5: %s",
-                                           conditionMessage(e)),
-                         call = NULL))
-                  stop(cond)
+                  stop(.scconvert_data_error(sprintf(
+                    "Cannot open as HDF5: %s", conditionMessage(e))))
                 })
   on.exit(tryCatch(h$close_all(), error = function(e) NULL), add = TRUE)
-  has_X    <- h$exists("X") || (h$exists("raw") && h$exists("raw/X"))
+  has_X    <- h$exists("X") || (h$exists("raw") && h[["raw"]]$exists("X"))
   has_obs  <- h$exists("obs")
   has_var  <- h$exists("var")
   missing <- character()
@@ -27,40 +65,25 @@
   if (!has_obs) missing <- c(missing, "/obs")
   if (!has_var) missing <- c(missing, "/var")
   if (length(missing) > 0L) {
-    cond <- structure(
-      class = c("scConvert_data_error", "error", "condition"),
-      list(message = sprintf(
-             "Malformed h5ad: missing required group(s): %s",
-             paste(missing, collapse = ", ")),
-           call = NULL,
-           missing = missing))
-    stop(cond)
+    stop(.scconvert_data_error(sprintf(
+      "Malformed h5ad: missing required group(s): %s",
+      paste(missing, collapse = ", ")), missing = missing))
   }
 
-  # Sparse X consistency: when /X is a group with data/indices/indptr, the
-  # lengths must agree. A truncated /X/data triggers a C-level segfault in
-  # the fast reader; catching it here keeps the failure recoverable.
-  .check_sparse_consistency <- function(Xg, label) {
-    if (!inherits(Xg, "H5Group")) return(invisible(NULL))
-    if (!(Xg$exists("data") && Xg$exists("indices") && Xg$exists("indptr"))) {
-      return(invisible(NULL))
-    }
-    n_data    <- Xg[["data"]]$dims[1]
-    n_indices <- Xg[["indices"]]$dims[1]
-    if (is.null(n_data) || is.null(n_indices)) return(invisible(NULL))
-    if (n_data != n_indices) {
-      cond <- structure(
-        class = c("scConvert_data_error", "error", "condition"),
-        list(message = sprintf(
-               "Malformed h5ad: /%s/data has %d entries but /%s/indices has %d",
-               label, n_data, label, n_indices),
-             call = NULL))
-      stop(cond)
-    }
-  }
-  if (h$exists("X")) .check_sparse_consistency(h[["X"]], "X")
+  # Walk every sparse-encoded matrix and check data/indices length parity.
+  if (h$exists("X")) .h5ad_check_sparse_lengths(h[["X"]], "X")
   if (h$exists("raw") && h[["raw"]]$exists("X")) {
-    .check_sparse_consistency(h[["raw"]][["X"]], "raw/X")
+    .h5ad_check_sparse_lengths(h[["raw"]][["X"]], "raw/X")
+  }
+  for (parent in c("layers", "obsm", "obsp", "varm", "varp")) {
+    if (!h$exists(parent)) next
+    pg <- h[[parent]]
+    if (!inherits(pg, "H5Group")) next
+    for (nm in names(pg)) {
+      child <- tryCatch(pg[[nm]], error = function(e) NULL)
+      if (is.null(child)) next
+      .h5ad_check_sparse_lengths(child, sprintf("%s/%s", parent, nm))
+    }
   }
   invisible(TRUE)
 }
@@ -755,9 +778,14 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
             embeddings <- t(embeddings)
           }
 
-          # Check dimensions
+          # Check dimensions. An embedding whose first dim doesn't match
+          # n_cells is a malformed obsm entry; skip with a warning rather
+          # than silently dropping it so the user is alerted.
           if (nrow(embeddings) != length(cell.names)) {
-            if (verbose) message("Skipping reduction ", clean_name, " - dimension mismatch")
+            warning(sprintf(
+              "Skipping obsm/%s: embedding shape (%d x %d) does not match n_cells = %d",
+              reduc_name, nrow(embeddings), ncol(embeddings),
+              length(cell.names)), call. = FALSE)
             next
           }
 
@@ -876,18 +904,27 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     } # end else (non-compound var)
   }
 
-  # 10. Add neighbor graphs from obsp
+  # 10. Add neighbor graphs from obsp. Auxiliary slot: a single corrupt
+  # graph should warn and skip rather than abort the whole load, matching
+  # the varp pattern below.
   if (h5ad$exists("obsp")) {
     if (verbose) message("Adding neighbor graphs...")
 
     for (graph_name in names(h5ad[["obsp"]])) {
       if (verbose) message("  Adding graph: ", graph_name)
 
-      # obsp stores CSR; read as-is then transpose to get correct orientation
-      graph_matrix <- Matrix::t(ReadH5ADMatrix(h5ad[["obsp"]][[graph_name]], transpose = FALSE))
+      tryCatch({
+        # obsp stores CSR; read as-is then transpose to get correct orientation
+        graph_matrix <- Matrix::t(ReadH5ADMatrix(h5ad[["obsp"]][[graph_name]], transpose = FALSE))
 
-      # Ensure square matrix with correct dimensions
-      if (nrow(graph_matrix) == ncol(graph_matrix) && nrow(graph_matrix) == ncol(seurat_obj)) {
+        if (nrow(graph_matrix) != ncol(graph_matrix) ||
+            nrow(graph_matrix) != ncol(seurat_obj)) {
+          warning(sprintf(
+            "Skipping obsp/%s: shape (%d x %d) does not match n_cells = %d",
+            graph_name, nrow(graph_matrix), ncol(graph_matrix), ncol(seurat_obj)),
+            call. = FALSE)
+          return(invisible(NULL))
+        }
         rownames(graph_matrix) <- cell.names
         colnames(graph_matrix) <- cell.names
 
@@ -901,7 +938,10 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
         graph_obj <- as.Graph(graph_matrix)
         DefaultAssay(graph_obj) <- assay.name
         seurat_obj@graphs[[seurat_graph_name]] <- graph_obj
-      }
+      }, error = function(e) {
+        warning(sprintf("Skipping obsp/%s: %s", graph_name,
+                        conditionMessage(e)), call. = FALSE)
+      })
     }
   }
 
