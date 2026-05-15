@@ -330,3 +330,30 @@ test_that("readH5AD handles missing X matrix gracefully", {
   # Should error because there's no X matrix (may fail at different points)
   expect_error(readH5AD(tmp, verbose = FALSE))
 })
+
+test_that("readH5AD rejects malformed h5ad with scConvert_data_error class", {
+  skip_if_not_installed("hdf5r")
+
+  tmp <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(tmp), add = TRUE)
+  h5 <- hdf5r::H5File$new(tmp, mode = "w")
+  Xg  <- h5$create_group("X")
+  Xg$create_dataset("data",    robj = c(1.0, 2.0))
+  Xg$create_dataset("indices", robj = c(0L, 1L))
+  Xg$create_dataset("indptr",  robj = c(0L, 1L, 2L))
+  varg <- h5$create_group("var")
+  varg$create_dataset("_index", robj = c("g1"))
+  h5$close_all()
+
+  err <- tryCatch(readH5AD(tmp, verbose = FALSE),
+                  error = function(e) e)
+  expect_s3_class(err, "scConvert_data_error")
+  expect_match(conditionMessage(err), "/obs", fixed = TRUE)
+
+  bad <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(bad), add = TRUE)
+  writeLines("not an HDF5 file", bad)
+  err2 <- tryCatch(readH5AD(bad, verbose = FALSE),
+                   error = function(e) e)
+  expect_s3_class(err2, "scConvert_data_error")
+})

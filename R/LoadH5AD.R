@@ -1,3 +1,44 @@
+#' Structural validation for h5ad inputs.
+#'
+#' Raises a `scConvert_data_error`-class condition if the file is missing
+#' any of the three top-level groups that the AnnData on-disk spec
+#' requires: `/X` (or its modern equivalent in `/raw/X`), `/obs`, and
+#' `/var`. The condition class lets benchmark harnesses and downstream
+#' callers distinguish a malformed-input refusal from a generic R error.
+#'
+#' @keywords internal
+#' @noRd
+.h5ad_validate_minimum_structure <- function(file) {
+  h <- tryCatch(hdf5r::H5File$new(file, mode = "r"),
+                error = function(e) {
+                  cond <- structure(
+                    class = c("scConvert_data_error", "error", "condition"),
+                    list(message = sprintf("Cannot open as HDF5: %s",
+                                           conditionMessage(e)),
+                         call = NULL))
+                  stop(cond)
+                })
+  on.exit(tryCatch(h$close_all(), error = function(e) NULL), add = TRUE)
+  has_X    <- h$exists("X") || (h$exists("raw") && h$exists("raw/X"))
+  has_obs  <- h$exists("obs")
+  has_var  <- h$exists("var")
+  missing <- character()
+  if (!has_X)   missing <- c(missing, "/X")
+  if (!has_obs) missing <- c(missing, "/obs")
+  if (!has_var) missing <- c(missing, "/var")
+  if (length(missing) > 0L) {
+    cond <- structure(
+      class = c("scConvert_data_error", "error", "condition"),
+      list(message = sprintf(
+             "Malformed h5ad: missing required group(s): %s",
+             paste(missing, collapse = ", ")),
+           call = NULL,
+           missing = missing))
+    stop(cond)
+  }
+  invisible(TRUE)
+}
+
 #' Load an AnnData H5AD file as a Seurat object
 #'
 #' Direct conversion from H5AD format to Seurat object without intermediate h5Seurat.
@@ -35,6 +76,14 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
   if (!file.exists(file)) {
     stop("File not found: ", file, call. = FALSE)
   }
+
+  # Structural validation: the AnnData spec requires /X, /obs, and /var.
+  # We reject inputs that are missing any of the three rather than silently
+  # substituting empty placeholders, which previously let malformed files
+  # through and produced a Seurat object with auto-generated cell/feature
+  # names. Errors raised here inherit from "scConvert_data_error" so callers
+  # can distinguish a malformed-input refusal from a library-side bug.
+  .h5ad_validate_minimum_structure(file)
 
   # Normalize components parameter
   all_components <- c("X", "obs", "var", "obsm", "obsp", "varp", "layers", "uns")
