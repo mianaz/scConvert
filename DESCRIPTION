@@ -1,8 +1,8 @@
 Package: scConvert
 Type: Package
 Title: Universal Single-Cell Format Conversion for R
-Version: 0.2.0
-Date: 2026-05-04
+Version: 0.2.1
+Date: 2026-05-18
 Authors@R: c(
   person(given = 'Ziyu', family = 'Zeng', email = 'zzeng4@nd.edu', role = c('aut', 'cre', 'cph'), comment = c(ORCID = '0009-0005-4055-8492'))
   )
