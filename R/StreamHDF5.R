@@ -1688,14 +1688,13 @@ H5SeuratToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), use streaming. If FALSE, load into R.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5MUToH5AD <- function(source, dest, assay = NULL, overwrite = FALSE,
-                        gzip = 4L, verbose = TRUE, stream = TRUE) {
+                        gzip = 4L, verbose = TRUE) {
   if (!file.exists(source))
     stop("Input file not found: ", source, call. = FALSE)
   if (file.exists(dest)) {
@@ -1703,32 +1702,16 @@ H5MUToH5AD <- function(source, dest, assay = NULL, overwrite = FALSE,
       stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
     unlink(dest)
   }
-  if (stream) {
-    tmp <- tempfile(fileext = ".h5seurat")
-    on.exit(unlink(tmp), add = TRUE)
-    .stream_h5mu_to_h5seurat(source, tmp, gzip = gzip, verbose = verbose)
-    # Detect assay from the temp h5seurat if not specified
-    if (is.null(assay)) {
-      h5tmp <- hdf5r::H5File$new(tmp, mode = "r")
-      assay <- tryCatch(hdf5r::h5attr(h5tmp, "active.assay"),
-                        error = function(e) "RNA")
-      h5tmp$close_all()
-    }
-    # h5seurat -> h5ad via existing infrastructure
-    obj <- readH5Seurat(tmp, verbose = verbose)
-    writeH5AD(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
-  } else {
-    obj <- readH5MU(source, verbose = verbose)
-    if (is.null(assay)) assay <- Seurat::DefaultAssay(obj)
-    writeH5AD(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
-  }
+  obj <- readH5MU(source, verbose = verbose)
+  if (is.null(assay)) assay <- Seurat::DefaultAssay(obj)
+  writeH5AD(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
   invisible(dest)
 }
 
 #' Convert an h5ad file to h5mu format
 #'
-#' Converts via streaming: h5ad -> h5seurat (temp) -> h5mu.
-#' Creates a single-modality h5mu file.
+#' Reads the h5ad into a Seurat object and writes it as a single-modality
+#' h5mu file.
 #'
 #' @param source Path to input .h5ad file
 #' @param dest Path for output .h5mu file
@@ -1736,14 +1719,13 @@ H5MUToH5AD <- function(source, dest, assay = NULL, overwrite = FALSE,
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), use streaming. If FALSE, load into R.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5ADToH5MU <- function(source, dest, assay = "RNA", overwrite = FALSE,
-                        gzip = 4L, verbose = TRUE, stream = TRUE) {
+                        gzip = 4L, verbose = TRUE) {
   if (!file.exists(source))
     stop("Input file not found: ", source, call. = FALSE)
   if (file.exists(dest)) {
@@ -1751,23 +1733,14 @@ H5ADToH5MU <- function(source, dest, assay = "RNA", overwrite = FALSE,
       stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
     unlink(dest)
   }
-  if (stream) {
-    tmp <- tempfile(fileext = ".h5seurat")
-    on.exit(unlink(tmp), add = TRUE)
-    # h5ad -> h5seurat via existing infrastructure, then stream to h5mu
-    obj <- readH5AD(source, verbose = verbose)
-    writeH5Seurat(obj, tmp, overwrite = FALSE, verbose = verbose)
-    .stream_h5seurat_to_h5mu(tmp, dest, gzip = gzip, verbose = verbose)
-  } else {
-    obj <- readH5AD(source, verbose = verbose)
-    writeH5MU(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
+  obj <- readH5AD(source, verbose = verbose)
+  writeH5MU(obj, dest, overwrite = FALSE, verbose = verbose)
   invisible(dest)
 }
 
 #' Convert a loom file to h5ad format
 #'
-#' Converts via streaming: loom -> h5seurat (temp) -> h5ad.
+#' Reads the loom into a Seurat object and writes it as h5ad.
 #'
 #' @param source Path to input .loom file
 #' @param dest Path for output .h5ad file
@@ -1775,14 +1748,13 @@ H5ADToH5MU <- function(source, dest, assay = "RNA", overwrite = FALSE,
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), use streaming. If FALSE, load into R.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 LoomToH5AD <- function(source, dest, assay = "RNA", overwrite = FALSE,
-                        gzip = 4L, verbose = TRUE, stream = TRUE) {
+                        gzip = 4L, verbose = TRUE) {
   if (!file.exists(source))
     stop("Input file not found: ", source, call. = FALSE)
   if (file.exists(dest)) {
@@ -1790,38 +1762,27 @@ LoomToH5AD <- function(source, dest, assay = "RNA", overwrite = FALSE,
       stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
     unlink(dest)
   }
-  if (stream) {
-    tmp <- tempfile(fileext = ".h5seurat")
-    on.exit(unlink(tmp), add = TRUE)
-    .stream_loom_to_h5seurat(source, tmp, assay = assay, gzip = gzip,
-                             verbose = verbose)
-    # h5seurat -> h5ad via existing infrastructure
-    obj <- readH5Seurat(tmp, verbose = verbose)
-    writeH5AD(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
-  } else {
-    obj <- readLoom(source, verbose = verbose)
-    writeH5AD(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
+  obj <- readLoom(source, verbose = verbose)
+  writeH5AD(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
   invisible(dest)
 }
 
 #' Convert an h5ad file to loom format
 #'
-#' Converts via streaming: h5ad -> h5seurat (temp) -> loom.
+#' Reads the h5ad into a Seurat object and writes it as loom.
 #'
 #' @param source Path to input .h5ad file
 #' @param dest Path for output .loom file
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), use streaming. If FALSE, load into R.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5ADToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
-                        verbose = TRUE, stream = TRUE) {
+                        verbose = TRUE) {
   if (!file.exists(source))
     stop("Input file not found: ", source, call. = FALSE)
   if (file.exists(dest)) {
@@ -1829,17 +1790,8 @@ H5ADToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
       stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
     unlink(dest)
   }
-  if (stream) {
-    tmp <- tempfile(fileext = ".h5seurat")
-    on.exit(unlink(tmp), add = TRUE)
-    # h5ad -> h5seurat via existing infrastructure, then stream to loom
-    obj <- readH5AD(source, verbose = verbose)
-    writeH5Seurat(obj, tmp, overwrite = FALSE, verbose = verbose)
-    .stream_h5seurat_to_loom(tmp, dest, gzip = gzip, verbose = verbose)
-  } else {
-    obj <- readH5AD(source, verbose = verbose)
-    writeLoom(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
+  obj <- readH5AD(source, verbose = verbose)
+  writeLoom(obj, dest, overwrite = FALSE, verbose = verbose)
   invisible(dest)
 }
 

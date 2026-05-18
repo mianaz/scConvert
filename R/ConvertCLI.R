@@ -158,13 +158,13 @@ scConvert_cli <- function(
     # loom <-> h5seurat (R streaming)
     "loom|h5seurat"  = function() LoomToH5Seurat(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5seurat|loom"  = function() H5SeuratToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # h5mu <-> h5ad (R streaming via h5seurat)
+    # h5mu <-> h5ad (direct: source -> Seurat in memory -> dest)
     "h5mu|h5ad"      = function() H5MUToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5ad|h5mu"      = function() H5ADToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom <-> h5ad (R streaming via h5seurat)
+    # loom <-> h5ad (direct: source -> Seurat in memory -> dest)
     "loom|h5ad"      = function() LoomToH5AD(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5ad|loom"      = function() H5ADToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose),
-    # loom <-> h5mu (R streaming via h5seurat)
+    # loom <-> h5mu (HDF5 chunk streaming via temp h5seurat — avoids materialization)
     "loom|h5mu"      = function() LoomToH5MU(input, output, assay = assay, overwrite = overwrite, gzip = gzip, verbose = verbose),
     "h5mu|loom"      = function() H5MUToLoom(input, output, overwrite = overwrite, gzip = gzip, verbose = verbose)
   )

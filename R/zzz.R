@@ -1039,17 +1039,7 @@ SafeSetLayerData <- function(object, layer, value) {
 }
 
 .h5ad_loader <- function(file, assay = 'RNA', verbose = TRUE, ...) {
-  temp <- tempfile(fileext = '.h5seurat')
-  on.exit(unlink(temp), add = TRUE)
-  hfile <- scConnect(filename = file, force = TRUE)
-  h5s <- H5ADToH5Seurat(source = hfile, dest = temp, assay = assay,
-                         overwrite = TRUE, verbose = verbose)
-  # close_all() on HDF5 1.12.1 (CRAN Windows hdf5r 1.3.12) errors when leaf
-  # IDs remain live; read has fully completed. Match the cleanup-is-best-effort
-  # pattern in R/LoadH5AD.R / R/WriteH5AD.R.
-  tryCatch(h5s$close_all(), error = function(e) NULL)
-  tryCatch(hfile$close_all(), error = function(e) NULL)
-  readH5Seurat(file = temp, verbose = verbose)
+  readH5AD(file = file, assay = assay, verbose = verbose, ...)
 }
 
 .h5ad_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
@@ -1429,25 +1419,16 @@ SafeSetLayerData <- function(object, layer, value) {
     function(source, dest, ...) H5SeuratToLoom(source, dest, stream = TRUE, ...)
   ))
 
-  # Register streaming composite HDF5 paths (via h5seurat hub)
-  RegisterDirectPath('h5mu', 'h5ad', .make_cli_direct(
-    function(source, dest, ...) H5MUToH5AD(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('h5ad', 'h5mu', .make_cli_direct(
-    function(source, dest, ...) H5ADToH5MU(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('loom', 'h5ad', .make_cli_direct(
-    function(source, dest, ...) LoomToH5AD(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('h5ad', 'loom', .make_cli_direct(
-    function(source, dest, ...) H5ADToLoom(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('loom', 'h5mu', .make_cli_direct(
-    function(source, dest, ...) LoomToH5MU(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('h5mu', 'loom', .make_cli_direct(
-    function(source, dest, ...) H5MUToLoom(source, dest, stream = TRUE, ...)
-  ))
+  # Composite HDF5 paths.
+  # h5mu/h5ad and loom/h5ad pairs go via Seurat in memory (direct writers).
+  # loom<->h5mu pairs still stream via a temp h5seurat at the HDF5 chunk
+  # level; a direct loom<->h5mu streamer would need new C code.
+  RegisterDirectPath('h5mu', 'h5ad', .make_cli_direct(H5MUToH5AD))
+  RegisterDirectPath('h5ad', 'h5mu', .make_cli_direct(H5ADToH5MU))
+  RegisterDirectPath('loom', 'h5ad', .make_cli_direct(LoomToH5AD))
+  RegisterDirectPath('h5ad', 'loom', .make_cli_direct(H5ADToLoom))
+  RegisterDirectPath('loom', 'h5mu', .make_cli_direct(LoomToH5MU))
+  RegisterDirectPath('h5mu', 'loom', .make_cli_direct(H5MUToLoom))
 
   # Register SOMA format
   RegisterFormat(ext = 'soma', loader = function(source, ...) {
