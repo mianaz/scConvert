@@ -1044,8 +1044,11 @@ SafeSetLayerData <- function(object, layer, value) {
   hfile <- scConnect(filename = file, force = TRUE)
   h5s <- H5ADToH5Seurat(source = hfile, dest = temp, assay = assay,
                          overwrite = TRUE, verbose = verbose)
-  h5s$close_all()
-  hfile$close_all()
+  # close_all() on HDF5 1.12.1 (CRAN Windows hdf5r 1.3.12) errors when leaf
+  # IDs remain live; read has fully completed. Match the cleanup-is-best-effort
+  # pattern in R/LoadH5AD.R / R/WriteH5AD.R.
+  tryCatch(h5s$close_all(), error = function(e) NULL)
+  tryCatch(hfile$close_all(), error = function(e) NULL)
   readH5Seurat(file = temp, verbose = verbose)
 }
 

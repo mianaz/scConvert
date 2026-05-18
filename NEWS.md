@@ -25,6 +25,19 @@
   has fully completed by the time `close_all()` runs; cleanup failure
   is best-effort.
 
+- **`.h5ad_loader` and `readH5Seurat.character` close_all wrapped.**
+  The previous fix covered `readH5AD()` itself, but the hub h5ad loader
+  (`R/zzz.R:.h5ad_loader`) and the h5Seurat character-method reader
+  (`R/LoadH5Seurat.R:readH5Seurat.character`) still had unwrapped
+  `close_all()` calls. The hub h5ad loader is what powers
+  `scConvert(<file.h5ad>, dest = "<file.rds>")` and the
+  `scConvert_cli(h5ad -> rds)` fallback path; on Windows / HDF5 1.12.1
+  the close error escaped and the CLI returned `FALSE`. Both sites are
+  now wrapped to match the LoadH5AD pattern. Tests
+  `scConvert_cli: h5ad -> rds` and
+  `full roundtrip h5ad -> rds -> h5ad` in
+  `tests/testthat/test-cli-integration.R` exercise both paths.
+
 - **C reader: respect source string encoding (HDF5 >= 2.0 compat).**
   `sc_get_str_attr`, `sc_get_str_array_attr`, `sc_copy_group_attrs`, the
   `copy_attr_cb` in `sc_dataframe.c`, the h5seurat-factor and h5ad-categorical

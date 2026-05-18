@@ -202,7 +202,9 @@ readH5Seurat.character <- function(
   ...
 ) {
   hfile <- h5Seurat$new(filename = file, mode = 'r')
-  on.exit(expr = hfile$close_all())
+  # Best-effort cleanup: HDF5 1.12.1 errors on close when leaf IDs are still
+  # held; read has completed by then. Same wrap as R/LoadH5AD.R.
+  on.exit(expr = tryCatch(hfile$close_all(), error = function(e) NULL))
   return(readH5Seurat(
     file = hfile,
     assays = assays,
