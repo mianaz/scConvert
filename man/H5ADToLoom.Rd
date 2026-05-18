@@ -4,14 +4,7 @@
 \alias{H5ADToLoom}
 \title{Convert an h5ad file to loom format}
 \usage{
-H5ADToLoom(
-  source,
-  dest,
-  overwrite = FALSE,
-  gzip = 4L,
-  verbose = TRUE,
-  stream = TRUE
-)
+H5ADToLoom(source, dest, overwrite = FALSE, gzip = 4L, verbose = TRUE)
 }
 \arguments{
 \item{source}{Path to input .h5ad file}
@@ -23,12 +16,10 @@ H5ADToLoom(
 \item{gzip}{Gzip compression level (0-9)}
 
 \item{verbose}{Show progress messages}
-
-\item{stream}{If TRUE (default), use streaming. If FALSE, load into R.}
 }
 \value{
 Invisibly returns \code{dest}
 }
 \description{
-Converts via streaming: h5ad -> h5seurat (temp) -> loom.
+Reads the h5ad into a Seurat object and writes it as loom.
 }

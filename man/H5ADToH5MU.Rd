@@ -10,8 +10,7 @@ H5ADToH5MU(
   assay = "RNA",
   overwrite = FALSE,
   gzip = 4L,
-  verbose = TRUE,
-  stream = TRUE
+  verbose = TRUE
 )
 }
 \arguments{
@@ -26,13 +25,11 @@ H5ADToH5MU(
 \item{gzip}{Gzip compression level (0-9)}
 
 \item{verbose}{Show progress messages}
-
-\item{stream}{If TRUE (default), use streaming. If FALSE, load into R.}
 }
 \value{
 Invisibly returns \code{dest}
 }
 \description{
-Converts via streaming: h5ad -> h5seurat (temp) -> h5mu.
-Creates a single-modality h5mu file.
+Reads the h5ad into a Seurat object and writes it as a single-modality
+h5mu file.
 }

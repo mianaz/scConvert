@@ -10,8 +10,7 @@ H5MUToH5AD(
   assay = NULL,
   overwrite = FALSE,
   gzip = 4L,
-  verbose = TRUE,
-  stream = TRUE
+  verbose = TRUE
 )
 }
 \arguments{
@@ -26,8 +25,6 @@ H5MUToH5AD(
 \item{gzip}{Gzip compression level (0-9)}
 
 \item{verbose}{Show progress messages}
-
-\item{stream}{If TRUE (default), use streaming. If FALSE, load into R.}
 }
 \value{
 Invisibly returns \code{dest}
