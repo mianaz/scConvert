@@ -4,14 +4,19 @@
 \alias{readZarr}
 \title{Load an AnnData Zarr store as a Seurat object}
 \usage{
-readZarr(file, assay.name = "RNA", verbose = TRUE, ...)
+readZarr(file, assay.name = "RNA", verbose = TRUE, cache = TRUE, ...)
 }
 \arguments{
-\item{file}{Path to .zarr directory}
+\item{file}{Path to a local .zarr directory, or a remote
+\code{s3://}/\code{gs://} URL.}
 
 \item{assay.name}{Name for the primary assay (default: "RNA")}
 
 \item{verbose}{Show progress messages}
+
+\item{cache}{For remote URLs: \code{TRUE} to persist the download under
+\code{tools::R_user_dir("scConvert", "cache")}; \code{FALSE} to use a
+tempdir that is discarded with the R session. Ignored for local paths.}
 
 \item{...}{Additional arguments (currently unused)}
 }
@@ -23,4 +28,12 @@ Direct conversion from AnnData Zarr format (.zarr directory) to Seurat object.
 Supports zarr v2 stores as produced by Python anndata. This enables reading
 of cloud-native AnnData stores from CELLxGENE, Human Cell Atlas, and
 SpatialData workflows.
+}
+\details{
+\code{file} may also be a remote URL: \code{s3://bucket/key.zarr},
+\code{gs://bucket/key.zarr}. Anonymous (public) buckets only; private
+buckets requiring SigV4 signing are not supported. When \code{cache} is
+\code{TRUE}, the downloaded store is kept under
+\code{tools::R_user_dir("scConvert", "cache")} and reused on subsequent
+calls with the same URL.
 }

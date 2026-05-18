@@ -12,19 +12,36 @@ NULL
 #' of cloud-native AnnData stores from CELLxGENE, Human Cell Atlas, and
 #' SpatialData workflows.
 #'
-#' @param file Path to .zarr directory
+#' \code{file} may also be a remote URL: \code{s3://bucket/key.zarr},
+#' \code{gs://bucket/key.zarr}. Anonymous (public) buckets only; private
+#' buckets requiring SigV4 signing are not supported. When \code{cache} is
+#' \code{TRUE}, the downloaded store is kept under
+#' \code{tools::R_user_dir("scConvert", "cache")} and reused on subsequent
+#' calls with the same URL.
+#'
+#' @param file Path to a local .zarr directory, or a remote
+#'   \code{s3://}/\code{gs://} URL.
 #' @param assay.name Name for the primary assay (default: "RNA")
 #' @param verbose Show progress messages
+#' @param cache For remote URLs: \code{TRUE} to persist the download under
+#'   \code{tools::R_user_dir("scConvert", "cache")}; \code{FALSE} to use a
+#'   tempdir that is discarded with the R session. Ignored for local paths.
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return A \code{Seurat} object
 #'
 #' @export
 #'
-readZarr <- function(file, assay.name = "RNA", verbose = TRUE, ...) {
+readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
+                     cache = TRUE, ...) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
     stop("jsonlite package required for readZarr. ",
          "Install with: install.packages('jsonlite')", call. = FALSE)
+  }
+
+  if (.is_remote_zarr_url(file)) {
+    cache_dir <- if (isTRUE(cache)) .scconvert_cache_dir() else NULL
+    file <- .zarr_fetch_remote(file, cache_dir = cache_dir, verbose = verbose)
   }
 
   if (!dir.exists(file)) {
