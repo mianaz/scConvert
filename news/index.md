@@ -1,6 +1,6 @@
 # Changelog
 
-## scConvert 0.2.1 (development)
+## scConvert 0.2.1
 
 ### New features
 
