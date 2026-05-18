@@ -1,15 +1,13 @@
-
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
 # scConvert <img src="man/figures/graphical_abstract.png" alt="scConvert graphical abstract showing format conversion paths" align="right" width="45%" />
 
 <!-- badges: start -->
 
-[![CRAN
-status](https://www.r-pkg.org/badges/version/scConvert)](https://CRAN.R-project.org/package=scConvert)
+[![GitHub
+release](https://img.shields.io/github/v/release/mianaz/scConvert?label=release)](https://github.com/mianaz/scConvert/releases)
 [![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://github.com/mianaz/scConvert)
+experimental](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![R-CMD-check](https://github.com/mianaz/scConvert/actions/workflows/r-cmd-check.yaml/badge.svg)](https://github.com/mianaz/scConvert/actions/workflows/r-cmd-check.yaml)
+[![pkgdown](https://github.com/mianaz/scConvert/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/mianaz/scConvert/actions/workflows/pkgdown.yaml)
 [![Codecov](https://codecov.io/gh/mianaz/scConvert/graph/badge.svg)](https://codecov.io/gh/mianaz/scConvert)
 <!-- badges: end -->
 

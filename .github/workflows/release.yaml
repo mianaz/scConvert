@@ -1,0 +1,52 @@
+name: release
+
+# Auto-create a GitHub Release whenever a v* tag is pushed. The release body
+# is the matching section of NEWS.md, extracted by tag (e.g. tag v0.2.1 ->
+# `# scConvert 0.2.1` ... up to next `# scConvert` heading). Idempotent: if
+# the release already exists, the step is a no-op.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract NEWS section for this tag
+        id: notes
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          version="${tag#v}"
+          # awk: start on the matching heading, stop at the next `# scConvert`
+          awk -v ver="$version" '
+            $0 ~ "^# scConvert " ver "$" { flag = 1; next }
+            flag && /^# scConvert / { flag = 0 }
+            flag
+          ' NEWS.md > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "No NEWS.md section found for $version" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.notes.outputs.tag }}"
+          version="${{ steps.notes.outputs.version }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; skipping."
+            exit 0
+          fi
+          gh release create "$tag" \
+            --title "scConvert $version" \
+            --notes-file release_notes.md
