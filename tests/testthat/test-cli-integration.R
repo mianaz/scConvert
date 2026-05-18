@@ -8,24 +8,22 @@ library(scConvert)
 skip_if_not_installed("Seurat")
 skip_if_not_installed("hdf5r")
 
-# HDF5 >= 1.12 / 2.x has strict H5Fclose that errors when dataset handles
-# are still open during R finalizer cleanup. This is a benign hdf5r issue
-# (data is read correctly), but the unhandled finalizer error crashes the
-# test runner. Detect the issue up front and skip if affected.
-# When the C CLI binary is absent (always during R CMD check), scConvert_cli
-# falls back to R streaming which uses hdf5r. On HDF5 >= 1.12 / 2.x, hdf5r's
-# R6 finalizers throw H5Fclose errors during GC that crash the test runner.
-# These errors cannot be caught by tryCatch (R swallows finalizer errors).
-# Detect: no CLI binary + HDF5 >= 1.12.
-# When the C CLI binary is absent (always during R CMD check), scConvert_cli
-# falls back to R streaming which uses hdf5r for ALL format conversions.
-# On HDF5 >= 1.12 / 2.x, hdf5r's R6 finalizers throw uncatchable H5Fclose
-# errors during GC that crash the test runner. Skip the entire file.
-.no_cli <- is.null(tryCatch(scConvert:::sc_find_cli(), error = function(e) NULL))
+# HDF5 1.12.1 — bundled by the CRAN hdf5r 1.3.12 Windows binary — has a
+# strict H5Fclose that errors when dataset handles are still held by R6 ID
+# bookkeeping. hdf5r's per-ID finalizer runs at GC and calls
+# private$closeFun(id); these errors propagate through R CMD check as test
+# failures and cannot be caught by tryCatch in user code (finalizers run
+# outside the calling context). Wrapping our own close_all() sites is
+# necessary but not sufficient — the GC finalizer still fires on dangling
+# IDs. Linux/macOS CI uses HDF5 1.14+ which is fine; only the CRAN Windows
+# binary is affected.
 .hv <- as.integer(strsplit(as.character(hdf5r::h5version()), "\\.")[[1]])
+.is_windows <- .Platform$OS.type == "windows"
+.hdf5_finalizer_broken <- .is_windows && .hv[1] == 1L && .hv[2] == 12L
+.no_cli <- is.null(tryCatch(scConvert:::sc_find_cli(), error = function(e) NULL))
 skip_if(
-  .no_cli && (.hv[1] > 1 || (.hv[1] == 1 && .hv[2] >= 12)),
-  "No CLI binary + HDF5 >= 1.12: hdf5r finalizer H5Fclose crashes test runner"
+  .no_cli && .hdf5_finalizer_broken,
+  "No CLI binary + Windows HDF5 1.12.x: hdf5r finalizer H5Fclose crashes test runner"
 )
 
 # ---------------------------------------------------------------------------
@@ -187,6 +185,13 @@ test_that("scConvert_cli: h5ad -> loom", {
 # ===========================================================================
 
 test_that("scConvert_cli: h5ad -> rds", {
+  # rds is not in cli_formats, so this path goes through the R hub
+  # (.h5ad_loader -> readH5Seurat -> saveRDS) which uses hdf5r. On
+  # HDF5 >= 1.12 the per-ID R6 finalizer fires at GC and reports
+  # H5Fclose errors that R CMD check surfaces as test failures.
+  skip_if(.hdf5_finalizer_broken,
+          "hdf5r finalizer H5Fclose bug on HDF5 >= 1.12 (h5ad->rds uses R hub)")
+
   out <- tempfile(fileext = ".rds")
   on.exit(unlink(out), add = TRUE)
 
@@ -429,6 +434,11 @@ test_that("scConvert_cli: errors on missing input file", {
 # ===========================================================================
 
 test_that("full roundtrip h5ad -> rds -> h5ad preserves data", {
+  # First leg (h5ad -> rds) is the R-hub path; same hdf5r finalizer issue
+  # as the h5ad -> rds test above.
+  skip_if(.hdf5_finalizer_broken,
+          "hdf5r finalizer H5Fclose bug on HDF5 >= 1.12 (h5ad->rds uses R hub)")
+
   rds_tmp <- tempfile(fileext = ".rds")
   h5ad_out <- tempfile(fileext = ".h5ad")
   on.exit(unlink(c(rds_tmp, h5ad_out)), add = TRUE)
