@@ -2,6 +2,18 @@
 
 ## New features
 
+- **`writeZarr()` gains pluggable compression via `compressor=`.** Accepts
+  `"zstd"`, `"zlib"` (alias `"gzip"`), `"blosc"`, `"none"`, or an explicit
+  list spec; `NULL` (default) auto-selects Zstd when a Zstd codec package
+  is on the search path, otherwise zlib (current behavior). `.zarr_compress`
+  and `.zarr_decompress` now know the Zstd codec. **Caveat:** as of 2026
+  no maintained CRAN Zstd-bytes wrapper exists for R (zstdlite was
+  removed in 2024 for policy violation); the auto default therefore falls
+  through to zlib for most users. The codec framework is wired in so that
+  the default flips automatically when an ecosystem provider is installed.
+  Users who want Zstd today can install zstdlite from source. Blosc
+  remains available via the optional `blosc` package.
+
 - **`readSOMA()` documented for CELLxGENE Census workflows.** The existing
   cloud-URI support (passed through to `tiledbsoma::SOMAExperimentOpen`,
   which uses S3 byte-range requests internally) is now demonstrated with

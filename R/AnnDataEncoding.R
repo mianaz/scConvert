@@ -278,6 +278,15 @@ SeuratLayerToAnnData <- function(name) {
   comp_id <- compressor$id
   if (comp_id %in% c("zlib", "gzip")) {
     memDecompress(raw_data, type = "gzip")
+  } else if (comp_id == "zstd") {
+    if (!requireNamespace("zstdlite", quietly = TRUE)) {
+      stop("Reading zstd-compressed zarr data requires a Zstd codec ",
+           "package. No suitable provider was found on the search path. ",
+           "zstdlite is currently the supported provider; see ",
+           "https://github.com/coolbutuseless/zstdlite for installation.",
+           call. = FALSE)
+    }
+    zstdlite::zstd_decompress_raw(raw_data)
   } else if (comp_id == "blosc") {
     if (!requireNamespace("blosc", quietly = TRUE)) {
       stop("blosc package required for blosc-compressed zarr data. ",
@@ -286,7 +295,7 @@ SeuratLayerToAnnData <- function(name) {
     blosc::blosc_decompress(raw_data)
   } else {
     stop("Unsupported zarr compressor: ", comp_id,
-         ". Supported: zlib, gzip, blosc.", call. = FALSE)
+         ". Supported: zlib, gzip, zstd, blosc.", call. = FALSE)
   }
 }
 
@@ -304,6 +313,15 @@ SeuratLayerToAnnData <- function(name) {
   comp_id <- compressor$id
   if (comp_id %in% c("zlib", "gzip")) {
     memCompress(raw_data, type = "gzip")
+  } else if (comp_id == "zstd") {
+    if (!requireNamespace("zstdlite", quietly = TRUE)) {
+      stop("Writing zstd-compressed zarr data requires a Zstd codec ",
+           "package; none was found on the search path. ",
+           "See https://github.com/coolbutuseless/zstdlite. ",
+           "Use compressor = 'zlib' to fall back to gzip.", call. = FALSE)
+    }
+    level <- compressor$level %||% 3L
+    zstdlite::zstd_compress_raw(raw_data, level = as.integer(level))
   } else if (comp_id == "blosc") {
     if (!requireNamespace("blosc", quietly = TRUE)) {
       stop("blosc package required for blosc compression", call. = FALSE)
@@ -312,6 +330,48 @@ SeuratLayerToAnnData <- function(name) {
   } else {
     stop("Unsupported compressor: ", comp_id, call. = FALSE)
   }
+}
+
+#' Resolve a writer-side compressor spec to a zarr-codec list
+#'
+#' Accepts a user-supplied compressor argument and returns a list
+#' \code{list(id, level, ...)} suitable for \code{.zarr_compress()} and for
+#' writing into a \code{.zarray} \code{compressor} field. \code{NULL} means
+#' "auto": Zstd when a Zstd codec package (currently \pkg{zstdlite}) is on
+#' the search path; otherwise zlib at the current package compression level.
+#' As of 2026 there is no maintained CRAN Zstd-bytes wrapper, so the auto
+#' path almost always lands on zlib; the resolver still picks Zstd if the
+#' user has installed a provider out of band.
+#'
+#' @param x One of \code{NULL}, a string (\code{"zstd"}, \code{"gzip"},
+#'   \code{"zlib"}, \code{"blosc"}, \code{"none"}), or a list with at least
+#'   an \code{id} field.
+#' @param level Override the codec level. When \code{NULL}, a per-codec
+#'   default is used.
+#'
+#' @return Either \code{NULL} (no compression) or a list with \code{id} and
+#'   typically \code{level}.
+#'
+#' @keywords internal
+#'
+.zarr_resolve_compressor <- function(x = NULL, level = NULL) {
+  if (is.list(x) && !is.null(x$id)) return(x)
+  if (identical(x, "none") || identical(x, FALSE)) return(NULL)
+  if (is.null(x) || identical(x, "auto")) {
+    if (requireNamespace("zstdlite", quietly = TRUE)) {
+      return(list(id = "zstd", level = as.integer(level %||% 3L)))
+    }
+    return(list(id = "zlib", level = as.integer(level %||% GetCompressionLevel())))
+  }
+  id <- tolower(as.character(x))
+  if (id == "gzip") id <- "zlib"
+  switch(id,
+    zlib  = list(id = "zlib",  level = as.integer(level %||% GetCompressionLevel())),
+    zstd  = list(id = "zstd",  level = as.integer(level %||% 3L)),
+    blosc = list(id = "blosc", level = as.integer(level %||% 5L)),
+    stop("Unsupported zarr compressor: ", id,
+         ". Supported: zstd, zlib (gzip), blosc, none.", call. = FALSE)
+  )
 }
 
 #' Parse zarr v2 dtype string to R type info

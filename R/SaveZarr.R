@@ -15,6 +15,18 @@ NULL
 #' @param filename Path for the output .zarr directory
 #' @param assay Name of assay to export (default: \code{DefaultAssay(object)})
 #' @param overwrite If TRUE, overwrite existing zarr store
+#' @param compressor Compression codec. \code{NULL} (default) auto-selects:
+#'   Zstd when a Zstd codec package is on the search path, otherwise zlib.
+#'   As of 2026 there is no maintained CRAN Zstd-bytes wrapper for R, so
+#'   the default falls through to zlib for most users; install
+#'   \href{https://github.com/coolbutuseless/zstdlite}{zstdlite} from source
+#'   to enable Zstd. Other accepted values: \code{"zstd"},
+#'   \code{"zlib"}/\code{"gzip"}, \code{"blosc"} (requires the \pkg{blosc}
+#'   package), \code{"none"}, or a list \code{list(id = ..., level = ...)}
+#'   matching the Zarr v2 compressor schema. Zstd at level 3 typically gives
+#'   1.5--2x smaller files than zlib level 6 and decompresses 3--5x faster.
+#' @param compression_level Override the per-codec default level. \code{NULL}
+#'   uses zstd 3, zlib \code{GetCompressionLevel()}, blosc 5.
 #' @param verbose Show progress messages
 #' @param ... Additional arguments (currently unused)
 #'
@@ -23,7 +35,8 @@ NULL
 #' @export
 #'
 writeZarr <- function(object, filename, assay = DefaultAssay(object),
-                     overwrite = FALSE, verbose = TRUE, ...) {
+                     overwrite = FALSE, compressor = NULL,
+                     compression_level = NULL, verbose = TRUE, ...) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
     stop("jsonlite package required for writeZarr. ",
          "Install with: install.packages('jsonlite')", call. = FALSE)
@@ -53,7 +66,7 @@ writeZarr <- function(object, filename, assay = DefaultAssay(object),
   assay_obj <- object[[assay]]
   feature.names <- rownames(assay_obj)
 
-  compressor <- list(id = "zlib", level = GetCompressionLevel())
+  compressor <- .zarr_resolve_compressor(compressor, level = compression_level)
 
   # 1. Create root group
   .zarr_create_group(filename, attrs = list(
