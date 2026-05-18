@@ -34,7 +34,7 @@ dataset in RAM.
 h5ad_path <- file.path(tempdir(), "pbmc_hub.h5ad")
 t1 <- system.time(writeH5AD(obj, h5ad_path, verbose = FALSE))
 cat("In-memory write:", round(t1["elapsed"], 2), "s\n")
-#> In-memory write: 2.08 s
+#> In-memory write: 2.1 s
 ```
 
 Use in-memory conversion when you need to manipulate the data in R, or
@@ -82,7 +82,7 @@ h5ad_cli <- file.path(tempdir(), "pbmc_cli.h5ad")
 t3 <- system.time(scConvert_cli(h5s_path, h5ad_cli, verbose = FALSE))
 #> Validating h5Seurat file
 cat("C binary h5seurat -> h5ad:", round(t3["elapsed"], 2), "s\n")
-#> C binary h5seurat -> h5ad: 3.67 s
+#> C binary h5seurat -> h5ad: 3.71 s
 ```
 
 Build the binary with `cd src && make` (requires HDF5 headers).

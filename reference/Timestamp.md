@@ -125,7 +125,7 @@ scConvert:::TSFormats()
 
 # Create a timestamp
 scConvert:::Timestamp()
-#> [1] "20260513T204912Z"
+#> [1] "20260518T183900Z"
 
 # Format a timestamp for easy viewing
 time <- "20200804T214148Z"
