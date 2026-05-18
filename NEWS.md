@@ -2,6 +2,15 @@
 
 ## New features
 
+- **`readSOMA()` documented for CELLxGENE Census workflows.** The existing
+  cloud-URI support (passed through to `tiledbsoma::SOMAExperimentOpen`,
+  which uses S3 byte-range requests internally) is now demonstrated with
+  a realistic Census slice in `?readSOMA`, with a pointer to the
+  `cellxgene.census` R package for release-version pinning. An opt-in
+  integration test (`SCCONVERT_TEST_SOMA=true`) exercises the path end
+  to end. No code change: this codifies and verifies behavior that was
+  already present.
+
 - **`readZarr()` accepts `s3://` and `gs://` URLs.** Public, anonymous
   buckets only: SigV4 signing for private S3 is not supported. The remote
   store is mirrored to a local directory before reading (uses the existing
