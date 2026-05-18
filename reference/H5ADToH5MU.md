@@ -1,7 +1,7 @@
 # Convert an h5ad file to h5mu format
 
-Converts via streaming: h5ad -\> h5seurat (temp) -\> h5mu. Creates a
-single-modality h5mu file.
+Reads the h5ad into a Seurat object and writes it as a single-modality
+h5mu file.
 
 ## Usage
 
@@ -12,8 +12,7 @@ H5ADToH5MU(
   assay = "RNA",
   overwrite = FALSE,
   gzip = 4L,
-  verbose = TRUE,
-  stream = TRUE
+  verbose = TRUE
 )
 ```
 
@@ -42,10 +41,6 @@ H5ADToH5MU(
 - verbose:
 
   Show progress messages
-
-- stream:
-
-  If TRUE (default), use streaming. If FALSE, load into R.
 
 ## Value
 

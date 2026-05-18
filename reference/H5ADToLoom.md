@@ -1,18 +1,11 @@
 # Convert an h5ad file to loom format
 
-Converts via streaming: h5ad -\> h5seurat (temp) -\> loom.
+Reads the h5ad into a Seurat object and writes it as loom.
 
 ## Usage
 
 ``` r
-H5ADToLoom(
-  source,
-  dest,
-  overwrite = FALSE,
-  gzip = 4L,
-  verbose = TRUE,
-  stream = TRUE
-)
+H5ADToLoom(source, dest, overwrite = FALSE, gzip = 4L, verbose = TRUE)
 ```
 
 ## Arguments
@@ -36,10 +29,6 @@ H5ADToLoom(
 - verbose:
 
   Show progress messages
-
-- stream:
-
-  If TRUE (default), use streaming. If FALSE, load into R.
 
 ## Value
 

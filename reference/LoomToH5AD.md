@@ -1,6 +1,6 @@
 # Convert a loom file to h5ad format
 
-Converts via streaming: loom -\> h5seurat (temp) -\> h5ad.
+Reads the loom into a Seurat object and writes it as h5ad.
 
 ## Usage
 
@@ -11,8 +11,7 @@ LoomToH5AD(
   assay = "RNA",
   overwrite = FALSE,
   gzip = 4L,
-  verbose = TRUE,
-  stream = TRUE
+  verbose = TRUE
 )
 ```
 
@@ -41,10 +40,6 @@ LoomToH5AD(
 - verbose:
 
   Show progress messages
-
-- stream:
-
-  If TRUE (default), use streaming. If FALSE, load into R.
 
 ## Value
 

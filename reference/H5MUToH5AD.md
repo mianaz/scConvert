@@ -12,8 +12,7 @@ H5MUToH5AD(
   assay = NULL,
   overwrite = FALSE,
   gzip = 4L,
-  verbose = TRUE,
-  stream = TRUE
+  verbose = TRUE
 )
 ```
 
@@ -42,10 +41,6 @@ H5MUToH5AD(
 - verbose:
 
   Show progress messages
-
-- stream:
-
-  If TRUE (default), use streaming. If FALSE, load into R.
 
 ## Value
 
