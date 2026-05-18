@@ -182,12 +182,15 @@
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-fast_create_seurat.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-h5ad_write_dict_group.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-h5seurat_write_scaffold.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-is_remote_zarr_url.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-modality_to_assay.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-ome_ngff_to_hwc.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-raw_to_r_type.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-read_ome_ngff_image.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-read_spatialdata_points.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-read_spatialdata_shapes.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-scconvert_cache_dir.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-scconvert_hash_url.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-sd_read_column.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-soma_has_write_soma.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-soma_read_extra_measurements.html</loc></url>
@@ -214,9 +217,11 @@
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_compress.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_create_group.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_decompress.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_fetch_remote.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_get_n_obs.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_get_n_vars.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_list_children.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_list_remote_keys.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_node_type.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_parallel_write.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_parse_dtype.html</loc></url>
@@ -230,6 +235,7 @@
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_numeric.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_strings.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_store_version.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_translate_url.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_write_anndata_dataframe.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_write_attrs.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_write_numeric.html</loc></url>

@@ -61,6 +61,19 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="scconvert-030-development">scConvert 0.3.0 (development)<a class="anchor" aria-label="anchor" href="#scconvert-030-development"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-3-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-3-0"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/readZarr.html">readZarr()</a></code> accepts <code>s3://</code> and <code>gs://</code> URLs.</strong> Public, anonymous buckets only: SigV4 signing for private S3 is not supported. The remote store is mirrored to a local directory before reading (uses the existing local-fs zarr reader). When <code>cache = TRUE</code> (default), the download is kept under <code>tools::R_user_dir("scConvert", "cache")</code> and reused on subsequent calls with the same URL; set <code>cache = FALSE</code> for a tempdir that is discarded with the R session. Requires <code>httr</code> and <code>xml2</code> in <code>Suggests</code> (installed on demand).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="architectural-changes-0-3-0">Architectural changes<a class="anchor" aria-label="anchor" href="#architectural-changes-0-3-0"></a></h3>
+<ul><li><p><strong>Cross-format converters no longer detour through <code>.h5seurat</code>.</strong> <code>H5MUToH5AD</code>, <code>H5ADToH5MU</code>, <code>LoomToH5AD</code>, and <code>H5ADToLoom</code> previously routed through a temporary <code>.h5seurat</code> file with no streaming benefit – both branches materialized the Seurat object via <code>readH5Seurat(tmp)</code> or <code>readH5AD(source)</code> anyway. The <code>stream</code> parameter has been removed from these four functions; each now reads the source into a Seurat object and writes the destination directly. <code>LoomToH5MU</code> and <code>H5MUToLoom</code> keep their <code>.h5seurat</code> intermediate, which is genuine HDF5 chunk streaming and avoids materializing large objects.</p></li>
+<li><p><strong><code>.h5ad_loader</code> no longer writes a temporary <code>.h5seurat</code>.</strong> The hub h5ad loader used by <code><a href="../reference/scConvert.html">scConvert()</a></code> for cross-format conversions (e.g. <code>scConvert("x.h5ad", "x.rds")</code>) now calls <code><a href="../reference/readH5AD.html">readH5AD()</a></code> directly instead of converting h5ad to h5seurat first. The standalone <code><a href="../reference/readH5AD.html">readH5AD()</a></code> was already direct; only hub-mediated paths went via h5seurat. Removes one full HDF5 read+write cycle per cross-format conversion from h5ad.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="scconvert-021">scConvert 0.2.1<a class="anchor" aria-label="anchor" href="#scconvert-021"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-2-1">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-1"></a></h3>

@@ -1,5 +1,42 @@
 # Changelog
 
+## scConvert 0.3.0 (development)
+
+### New features
+
+- **[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
+  accepts `s3://` and `gs://` URLs.** Public, anonymous buckets only:
+  SigV4 signing for private S3 is not supported. The remote store is
+  mirrored to a local directory before reading (uses the existing
+  local-fs zarr reader). When `cache = TRUE` (default), the download is
+  kept under `tools::R_user_dir("scConvert", "cache")` and reused on
+  subsequent calls with the same URL; set `cache = FALSE` for a tempdir
+  that is discarded with the R session. Requires `httr` and `xml2` in
+  `Suggests` (installed on demand).
+
+### Architectural changes
+
+- **Cross-format converters no longer detour through `.h5seurat`.**
+  `H5MUToH5AD`, `H5ADToH5MU`, `LoomToH5AD`, and `H5ADToLoom` previously
+  routed through a temporary `.h5seurat` file with no streaming benefit
+  – both branches materialized the Seurat object via `readH5Seurat(tmp)`
+  or `readH5AD(source)` anyway. The `stream` parameter has been removed
+  from these four functions; each now reads the source into a Seurat
+  object and writes the destination directly. `LoomToH5MU` and
+  `H5MUToLoom` keep their `.h5seurat` intermediate, which is genuine
+  HDF5 chunk streaming and avoids materializing large objects.
+
+- **`.h5ad_loader` no longer writes a temporary `.h5seurat`.** The hub
+  h5ad loader used by
+  [`scConvert()`](https://mianaz.github.io/scConvert/reference/scConvert.md)
+  for cross-format conversions (e.g. `scConvert("x.h5ad", "x.rds")`) now
+  calls
+  [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
+  directly instead of converting h5ad to h5seurat first. The standalone
+  [`readH5AD()`](https://mianaz.github.io/scConvert/reference/readH5AD.md)
+  was already direct; only hub-mediated paths went via h5seurat. Removes
+  one full HDF5 read+write cycle per cross-format conversion from h5ad.
+
 ## scConvert 0.2.1
 
 ### New features

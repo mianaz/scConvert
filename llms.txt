@@ -912,6 +912,9 @@ Internal functions and methods
 - [`.h5seurat_write_scaffold()`](https://mianaz.github.io/scConvert/reference/dot-h5seurat_write_scaffold.md)
   : Write required h5seurat root attributes and empty groups
 
+- [`.is_remote_zarr_url()`](https://mianaz.github.io/scConvert/reference/dot-is_remote_zarr_url.md)
+  : Detect remote zarr URL
+
 - [`.modality_to_assay()`](https://mianaz.github.io/scConvert/reference/dot-modality_to_assay.md)
   : Map h5mu modality name to Seurat assay name
 
@@ -929,6 +932,12 @@ Internal functions and methods
 
 - [`.read_spatialdata_shapes()`](https://mianaz.github.io/scConvert/reference/dot-read_spatialdata_shapes.md)
   : Read shapes from a SpatialData shapes directory
+
+- [`.scconvert_cache_dir()`](https://mianaz.github.io/scConvert/reference/dot-scconvert_cache_dir.md)
+  : User cache directory for scConvert
+
+- [`.scconvert_hash_url()`](https://mianaz.github.io/scConvert/reference/dot-scconvert_hash_url.md)
+  : Stable hash of a URL string for cache directory naming
 
 - [`.sd_read_column()`](https://mianaz.github.io/scConvert/reference/dot-sd_read_column.md)
   : Read a single column from a zarr DataFrame
@@ -1008,6 +1017,9 @@ Internal functions and methods
 - [`.zarr_decompress()`](https://mianaz.github.io/scConvert/reference/dot-zarr_decompress.md)
   : Decompress chunk data
 
+- [`.zarr_fetch_remote()`](https://mianaz.github.io/scConvert/reference/dot-zarr_fetch_remote.md)
+  : Mirror a remote zarr store to a local directory
+
 - [`.zarr_get_n_obs()`](https://mianaz.github.io/scConvert/reference/dot-zarr_get_n_obs.md)
   : Get number of observations from zarr store
 
@@ -1016,6 +1028,9 @@ Internal functions and methods
 
 - [`.zarr_list_children()`](https://mianaz.github.io/scConvert/reference/dot-zarr_list_children.md)
   : List children of a zarr group
+
+- [`.zarr_list_remote_keys()`](https://mianaz.github.io/scConvert/reference/dot-zarr_list_remote_keys.md)
+  : List all object keys under a prefix in an S3/GCS bucket
 
 - [`.zarr_node_type()`](https://mianaz.github.io/scConvert/reference/dot-zarr_node_type.md)
   : Determine zarr node type
@@ -1055,6 +1070,9 @@ Internal functions and methods
 
 - [`.zarr_store_version()`](https://mianaz.github.io/scConvert/reference/dot-zarr_store_version.md)
   : Detect zarr store format version
+
+- [`.zarr_translate_url()`](https://mianaz.github.io/scConvert/reference/dot-zarr_translate_url.md)
+  : Translate cloud URL scheme to HTTPS base URL
 
 - [`.zarr_write_anndata_dataframe()`](https://mianaz.github.io/scConvert/reference/dot-zarr_write_anndata_dataframe.md)
   : Write an AnnData DataFrame (obs or var) to zarr store
