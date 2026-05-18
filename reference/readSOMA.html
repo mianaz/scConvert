@@ -144,8 +144,28 @@ If none are present, synthetic names (<code>cell_1</code>, <code>cell_2</code>, 
 are generated.</p>
     </div>
     <div class="section level2">
+    <h2 id="cellxgene-census-workflow">CELLxGENE Census workflow<a class="anchor" aria-label="anchor" href="#cellxgene-census-workflow"></a></h2>
+
+
+<p>CELLxGENE Census exposes 60M+ cells as a single SOMA experiment hosted
+on public S3 (<code>s3://cellxgene-census-public-us-west-2/</code>).
+<code>readSOMA()</code> can stream a filtered slice directly via
+<span class="pkg">tiledbsoma</span>, which uses S3 byte-range requests — no full download.
+For programmatic Census workflows (release version pinning, metadata
+discovery, source-collection lookups), prefer the dedicated
+<span class="pkg">cellxgene.census</span> R package; <code>readSOMA()</code> converts the resulting
+SOMA experiment to Seurat in a single step.</p>
+<p>The hub dispatcher (<code><a href="scConvert.html">scConvert</a></code>) recognises only file-extension
+formats; SOMA URIs do not have one and therefore cannot be passed to
+<code>scConvert("s3://...", "out.h5ad")</code> directly. Use the explicit
+two-step pattern instead:</p><div class="sourceCode"><pre><code><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/readSOMA.html">readSOMA</a></span><span class="op">(</span><span class="st">"s3://..."</span>, obs_query <span class="op">=</span> <span class="st">"..."</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/writeH5AD.html">writeH5AD</a></span><span class="op">(</span><span class="va">obj</span>, <span class="st">"out.h5ad"</span><span class="op">)</span></span></code></pre></div>
+
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="writeSOMA.html">writeSOMA</a></code>, <code><a href="scConvert.html">scConvert</a></code></p></div>
+    <div class="dont-index"><p><code><a href="writeSOMA.html">writeSOMA</a></code>, <code><a href="scConvert.html">scConvert</a></code>,
+  <a href="https://chanzuckerberg.github.io/cellxgene-census/r/" class="external-link">cellxgene.census</a></p></div>
     </div>
 
     <div class="section level2">
@@ -154,10 +174,14 @@ are generated.</p>
 <span class="r-in"><span><span class="co"># Read a local SOMA experiment</span></span></span>
 <span class="r-in"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">readSOMA</span><span class="op">(</span><span class="st">"path/to/experiment"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Read from CELLxGENE Census with filtering</span></span></span>
+<span class="r-in"><span><span class="co"># Stream a filtered slice from CELLxGENE Census public S3</span></span></span>
+<span class="r-in"><span><span class="va">census_uri</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"s3://cellxgene-census-public-us-west-2/"</span>,</span></span>
+<span class="r-in"><span>  <span class="st">"cell-census/2024-07-01/soma/census_data/homo_sapiens"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">obj</span> <span class="op">&lt;-</span> <span class="fu">readSOMA</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  uri <span class="op">=</span> <span class="st">"s3://cellxgene-census/soma/..."</span>,</span></span>
-<span class="r-in"><span>  obs_query <span class="op">=</span> <span class="st">"cell_type == 'T cell' &amp; tissue == 'blood'"</span></span></span>
+<span class="r-in"><span>  uri <span class="op">=</span> <span class="va">census_uri</span>,</span></span>
+<span class="r-in"><span>  obs_query <span class="op">=</span> <span class="st">"cell_type == 'T cell' &amp; tissue_general == 'blood'"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Read a specific measurement</span></span></span>

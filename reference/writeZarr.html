@@ -78,6 +78,8 @@ and any tool supporting the AnnData on-disk specification.</p>
 <span>  <span class="va">filename</span>,</span>
 <span>  assay <span class="op">=</span> <span class="fu"><a href="h5Seurat-bindings.html">DefaultAssay</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  compressor <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  compression_level <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -101,6 +103,24 @@ and any tool supporting the AnnData on-disk specification.</p>
 
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
 <dd><p>If TRUE, overwrite existing zarr store</p></dd>
+
+
+<dt id="arg-compressor">compressor<a class="anchor" aria-label="anchor" href="#arg-compressor"></a></dt>
+<dd><p>Compression codec. <code>NULL</code> (default) auto-selects:
+Zstd when a Zstd codec package is on the search path, otherwise zlib.
+As of 2026 there is no maintained CRAN Zstd-bytes wrapper for R, so
+the default falls through to zlib for most users; install
+<a href="https://github.com/coolbutuseless/zstdlite" class="external-link">zstdlite</a> from source
+to enable Zstd. Other accepted values: <code>"zstd"</code>,
+<code>"zlib"</code>/<code>"gzip"</code>, <code>"blosc"</code> (requires the <span class="pkg">blosc</span>
+package), <code>"none"</code>, or a list <code>list(id = ..., level = ...)</code>
+matching the Zarr v2 compressor schema. Zstd at level 3 typically gives
+1.5–2x smaller files than zlib level 6 and decompresses 3–5x faster.</p></dd>
+
+
+<dt id="arg-compression-level">compression_level<a class="anchor" aria-label="anchor" href="#arg-compression-level"></a></dt>
+<dd><p>Override the per-codec default level. <code>NULL</code>
+uses zstd 3, zlib <code><a href="GetCompressionLevel.html">GetCompressionLevel()</a></code>, blosc 5.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

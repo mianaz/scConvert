@@ -886,6 +886,9 @@ Internal functions and methods
 - [`.zarr_read_strings()`](https://mianaz.github.io/scConvert/reference/dot-zarr_read_strings.md)
   : Read a vlen-utf8 encoded string array from zarr v2 store
 
+- [`.zarr_resolve_compressor()`](https://mianaz.github.io/scConvert/reference/dot-zarr_resolve_compressor.md)
+  : Resolve a writer-side compressor spec to a zarr-codec list
+
 - [`.zarr_store_version()`](https://mianaz.github.io/scConvert/reference/dot-zarr_store_version.md)
   : Detect zarr store format version
 

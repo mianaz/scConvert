@@ -4,6 +4,31 @@
 
 ### New features
 
+- **[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
+  gains pluggable compression via `compressor=`.** Accepts `"zstd"`,
+  `"zlib"` (alias `"gzip"`), `"blosc"`, `"none"`, or an explicit list
+  spec; `NULL` (default) auto-selects Zstd when a Zstd codec package is
+  on the search path, otherwise zlib (current behavior).
+  `.zarr_compress` and `.zarr_decompress` now know the Zstd codec.
+  **Caveat:** as of 2026 no maintained CRAN Zstd-bytes wrapper exists
+  for R (zstdlite was removed in 2024 for policy violation); the auto
+  default therefore falls through to zlib for most users. The codec
+  framework is wired in so that the default flips automatically when an
+  ecosystem provider is installed. Users who want Zstd today can install
+  zstdlite from source. Blosc remains available via the optional `blosc`
+  package.
+
+- **[`readSOMA()`](https://mianaz.github.io/scConvert/reference/readSOMA.md)
+  documented for CELLxGENE Census workflows.** The existing cloud-URI
+  support (passed through to `tiledbsoma::SOMAExperimentOpen`, which
+  uses S3 byte-range requests internally) is now demonstrated with a
+  realistic Census slice in
+  [`?readSOMA`](https://mianaz.github.io/scConvert/reference/readSOMA.md),
+  with a pointer to the `cellxgene.census` R package for release-version
+  pinning. An opt-in integration test (`SCCONVERT_TEST_SOMA=true`)
+  exercises the path end to end. No code change: this codifies and
+  verifies behavior that was already present.
+
 - **[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
   accepts `s3://` and `gs://` URLs.** Public, anonymous buckets only:
   SigV4 signing for private S3 is not supported. The remote store is

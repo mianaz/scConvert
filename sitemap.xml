@@ -234,6 +234,7 @@
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_json.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_numeric.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_strings.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_resolve_compressor.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_store_version.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_translate_url.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_write_anndata_dataframe.html</loc></url>
