@@ -82,6 +82,7 @@ Collate:
     'V5LayerSupport.R'
     'WriteH5AD.R'
     'ZarrRemote.R'
+    'ZarrStore.R'
     'h5Seurat_bindings.R'
 NeedsCompilation: yes
 Suggests:
