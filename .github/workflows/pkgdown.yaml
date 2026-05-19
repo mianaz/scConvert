@@ -51,14 +51,20 @@ jobs:
 
       - name: Build site
         shell: Rscript {0}
-        # clean_site() wipes docs/ first; build_site() then rebuilds all
-        # articles. Pre-built articles in vignettes/articles/ are skipped at
-        # evaluation time (CI env var disables chunk eval) and restored by the
-        # next step, which overwrites the empty CI-built HTML with the
-        # committed pre-built version.
+        # Pre-built articles in vignettes/articles/ require external network
+        # access (CELLxGENE Census S3) and are knitted locally. We build all
+        # other articles here; the next step restores the committed pre-built
+        # HTML into docs/articles/ so the live site always shows real output.
         run: |
           pkgdown::clean_site(force = TRUE)
-          pkgdown::build_site(new_process = FALSE)
+          pkgdown::build_home()
+          pkgdown::build_reference()
+          pkgdown::build_news()
+          pkg        <- pkgdown::as_pkgdown(".")
+          pre_built  <- "articles/soma-census-real"
+          for (nm in setdiff(pkg$vignettes$name, pre_built)) {
+            pkgdown::build_article(nm, pkg = pkg)
+          }
 
       - name: Restore pre-built articles
         shell: bash
