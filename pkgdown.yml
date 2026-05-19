@@ -19,9 +19,10 @@ articles:
   multimodal-citeseq: multimodal-citeseq.html
   multimodal-h5mu: multimodal-h5mu.html
   scatac-signac: scatac-signac.html
+  articles/soma-census-real: soma-census-real.html
   spatial-technologies: spatial-technologies.html
   spatial-visium: spatial-visium.html
-last_built: 2026-05-19T16:52Z
+last_built: 2026-05-19T20:50Z
 urls:
   reference: https://mianaz.github.io/scConvert/reference
   article: https://mianaz.github.io/scConvert/articles
