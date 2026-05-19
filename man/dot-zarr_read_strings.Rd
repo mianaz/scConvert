@@ -4,7 +4,7 @@
 \alias{.zarr_read_strings}
 \title{Read a vlen-utf8 encoded string array from zarr v2 store}
 \usage{
-.zarr_read_strings(store_path, rel_path)
+.zarr_read_strings(store_path, rel_path, slice_idx = NULL)
 }
 \arguments{
 \item{store_path}{Path to zarr store}

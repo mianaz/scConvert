@@ -4,12 +4,17 @@
 \alias{.zarr_read_numeric}
 \title{Read a zarr v2 numeric array from disk}
 \usage{
-.zarr_read_numeric(store_path, rel_path)
+.zarr_read_numeric(store_path, rel_path, slice = NULL)
 }
 \arguments{
 \item{store_path}{Path to zarr store}
 
 \item{rel_path}{Relative path to array within store}
+
+\item{slice}{Optional named list of per-dimension index vectors:
+\code{list(d1 = 1L:1000L)} (1D), \code{list(d1 = ..., d2 = ...)}
+(2D). \code{NULL} on a dim means "all". When supplied, only the
+chunks that intersect the requested indices are fetched.}
 }
 \value{
 Numeric vector or matrix

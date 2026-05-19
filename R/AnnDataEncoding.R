@@ -404,12 +404,16 @@ SeuratLayerToAnnData <- function(name) {
 #'
 #' @param store_path Path to zarr store
 #' @param rel_path Relative path to array within store
+#' @param slice Optional named list of per-dimension index vectors:
+#'   \code{list(d1 = 1L:1000L)} (1D), \code{list(d1 = ..., d2 = ...)}
+#'   (2D). \code{NULL} on a dim means "all". When supplied, only the
+#'   chunks that intersect the requested indices are fetched.
 #'
 #' @return Numeric vector or matrix
 #'
 #' @keywords internal
 #'
-.zarr_read_numeric <- function(store_path, rel_path) {
+.zarr_read_numeric <- function(store_path, rel_path, slice = NULL) {
   store <- .zarr_make_store(store_path)
   meta <- store$read_json(file.path(rel_path, ".zarray"))
 
@@ -419,9 +423,15 @@ SeuratLayerToAnnData <- function(name) {
   compressor <- meta$compressor
   order <- meta$order %||% "C"
   n_elements <- prod(shape)
+  ndim <- length(shape)
+
+  # Slice path: chunk-selective fetch.
+  if (!is.null(slice)) {
+    return(.zarr_read_numeric_sliced(store, rel_path, meta, dtype_info,
+                                      shape, chunks, compressor, slice))
+  }
 
   # Calculate chunk grid
-  ndim <- length(shape)
   n_chunks_per_dim <- ceiling(shape / chunks)
   total_chunks <- prod(n_chunks_per_dim)
 
@@ -444,6 +454,79 @@ SeuratLayerToAnnData <- function(name) {
     return(matrix(values, nrow = shape[1], ncol = shape[2], byrow = (order == "C")))
   }
   values
+}
+
+#' Chunk-selective read of a 1D or 2D zarr v2 numeric array
+#'
+#' @param slice Named list with \code{d1}, optionally \code{d2}: each
+#'   either \code{NULL} (full dim) or an integer vector of 1-based
+#'   indices into that dim.
+#'
+#' @keywords internal
+.zarr_read_numeric_sliced <- function(store, rel_path, meta, dtype_info,
+                                       shape, chunks, compressor, slice) {
+  ndim <- length(shape)
+  order <- meta$order %||% "C"
+  resolve <- function(idx, dim_size) {
+    if (is.null(idx)) return(seq_len(dim_size))
+    if (is.logical(idx)) idx <- which(idx)
+    idx <- as.integer(idx)
+    if (any(idx < 1L | idx > dim_size)) {
+      stop("slice index out of range for dim of size ", dim_size,
+           call. = FALSE)
+    }
+    idx
+  }
+
+  if (ndim == 1L) {
+    idx <- resolve(slice$d1, shape[1])
+    chunk_size <- chunks[1]
+    out <- numeric(length(idx))
+    chunk_ids <- unique((idx - 1L) %/% chunk_size)
+    for (cid in chunk_ids) {
+      chunk_key <- .zarr_chunk_path_v2(rel_path, cid)
+      if (!store$exists(chunk_key)) next
+      raw <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
+      chunk_vals <- .raw_to_r_type(raw, dtype_info, chunk_size)
+      lo <- cid * chunk_size + 1L
+      hi <- lo + chunk_size - 1L
+      in_chunk <- idx >= lo & idx <= hi
+      within_pos <- idx[in_chunk] - lo + 1L
+      out[in_chunk] <- chunk_vals[within_pos]
+    }
+    return(out)
+  }
+
+  if (ndim == 2L) {
+    row_idx <- resolve(slice$d1, shape[1])
+    col_idx <- resolve(slice$d2, shape[2])
+    cr <- chunks[1]; cc <- chunks[2]
+    out <- matrix(0, nrow = length(row_idx), ncol = length(col_idx))
+    row_chunk_ids <- unique((row_idx - 1L) %/% cr)
+    col_chunk_ids <- unique((col_idx - 1L) %/% cc)
+    for (rci in row_chunk_ids) {
+      r_lo <- rci * cr + 1L; r_hi <- r_lo + cr - 1L
+      rows_in_chunk <- row_idx >= r_lo & row_idx <= r_hi
+      r_within <- row_idx[rows_in_chunk] - r_lo + 1L
+      out_r_pos <- which(rows_in_chunk)
+      for (cci in col_chunk_ids) {
+        chunk_key <- .zarr_chunk_path_v2(rel_path, c(rci, cci))
+        if (!store$exists(chunk_key)) next
+        raw <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
+        chunk_size <- cr * cc
+        chunk_vals <- .raw_to_r_type(raw, dtype_info, chunk_size)
+        chunk_mat <- matrix(chunk_vals, nrow = cr, ncol = cc,
+                            byrow = (order == "C"))
+        c_lo <- cci * cc + 1L; c_hi <- c_lo + cc - 1L
+        cols_in_chunk <- col_idx >= c_lo & col_idx <= c_hi
+        c_within <- col_idx[cols_in_chunk] - c_lo + 1L
+        out_c_pos <- which(cols_in_chunk)
+        out[out_r_pos, out_c_pos] <- chunk_mat[r_within, c_within, drop = FALSE]
+      }
+    }
+    return(out)
+  }
+  stop("Sliced read for >2D arrays not supported", call. = FALSE)
 }
 
 #' Build chunk file path for zarr v2
@@ -568,7 +651,7 @@ SeuratLayerToAnnData <- function(name) {
 #'
 #' @keywords internal
 #'
-.zarr_read_strings <- function(store_path, rel_path) {
+.zarr_read_strings <- function(store_path, rel_path, slice_idx = NULL) {
   store <- .zarr_make_store(store_path)
 
   # Read array metadata
@@ -577,21 +660,56 @@ SeuratLayerToAnnData <- function(name) {
   total_n <- prod(shape)
   chunks <- if (is.list(meta$chunks)) unlist(meta$chunks) else meta$chunks
   compressor <- meta$compressor
+  chunk_size <- chunks[1]
 
-  n_chunks <- ceiling(total_n / chunks[1])
+  if (!is.null(slice_idx)) {
+    if (is.logical(slice_idx)) slice_idx <- which(slice_idx)
+    slice_idx <- as.integer(slice_idx)
+    if (any(slice_idx < 1L | slice_idx > total_n)) {
+      stop("string-array slice index out of range (1..", total_n, ")",
+           call. = FALSE)
+    }
+    out <- character(length(slice_idx))
+    chunk_ids <- unique((slice_idx - 1L) %/% chunk_size)
+    for (cid in chunk_ids) {
+      chunk_key <- file.path(rel_path, as.character(cid))
+      lo <- cid * chunk_size + 1L
+      hi <- min(lo + chunk_size - 1L, total_n)
+      n_in_chunk <- hi - lo + 1L
+      in_slice <- slice_idx >= lo & slice_idx <= hi
+      out_pos <- which(in_slice)
+      within <- slice_idx[in_slice] - lo + 1L
+      if (!store$exists(chunk_key)) {
+        out[out_pos] <- ""
+        next
+      }
+      raw_data <- store$read_bytes(chunk_key)
+      if (length(raw_data) == 0L) {
+        out[out_pos] <- ""
+        next
+      }
+      raw_data <- .zarr_decompress(raw_data, compressor)
+      chunk_strings <- .decode_vlen_utf8(raw_data, n_in_chunk)
+      out[out_pos] <- chunk_strings[within]
+    }
+    return(out)
+  }
+
+  n_chunks <- ceiling(total_n / chunk_size)
   all_strings <- character(0)
 
   for (chunk_idx in seq_len(n_chunks) - 1L) {
     chunk_key <- file.path(rel_path, as.character(chunk_idx))
     if (!store$exists(chunk_key)) {
       # Fill with empty strings for missing chunks
-      all_strings <- c(all_strings, rep("", min(chunks[1], total_n - length(all_strings))))
+      all_strings <- c(all_strings,
+                       rep("", min(chunk_size, total_n - length(all_strings))))
       next
     }
     raw_data <- store$read_bytes(chunk_key)
     if (length(raw_data) == 0) next
     raw_data <- .zarr_decompress(raw_data, compressor)
-    n_in_chunk <- min(chunks[1], total_n - length(all_strings))
+    n_in_chunk <- min(chunk_size, total_n - length(all_strings))
     strings <- .decode_vlen_utf8(raw_data, n_in_chunk)
     all_strings <- c(all_strings, strings)
   }

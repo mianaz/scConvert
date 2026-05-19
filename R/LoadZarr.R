@@ -48,6 +48,11 @@ NULL
 #'   or \code{NULL} (default) for all, or \code{character(0)} to skip all
 #'   layers entirely. Skipping unused layers avoids their chunk fetches
 #'   on remote stores.
+#' @param obs_idx,var_idx Integer indices (1-based) selecting cells / features
+#'   to keep. \code{NULL} (default) reads all. Index slicing pushes down to
+#'   chunk fetches: only chunks of the cell / feature index, obs columns,
+#'   obsm embeddings, var columns, and sparse \code{indptr}-resolved data
+#'   blocks containing the requested indices are pulled.
 #' @param obsm,obsp,varm,varp,uns Same semantics as \code{layers} for the
 #'   corresponding AnnData groups: \code{NULL} keeps everything,
 #'   \code{character()} drops the entire group, otherwise reads only the
@@ -65,6 +70,7 @@ NULL
 #'
 readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
                      cache = TRUE,
+                     obs_idx = NULL, var_idx = NULL,
                      layers = NULL, obsm = NULL, obsp = NULL,
                      varm = NULL, varp = NULL, uns = NULL,
                      include_x = TRUE, ...) {
@@ -95,21 +101,39 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
   # Read root attributes to verify it's an AnnData store
   root_attrs <- .zarr_read_attrs(file)
 
-  # 1. Read cell names
+  # Resolve obs_idx / var_idx into integer vectors (1-based). These are
+  # threaded through every downstream chunk-aware read so that the lazy
+  # HTTP store only fetches blocks containing the requested indices.
+  n_obs_full <- .zarr_get_n_obs(file)
+  n_var_full <- .zarr_get_n_vars(file)
+  if (!is.null(obs_idx)) {
+    if (is.logical(obs_idx)) obs_idx <- which(obs_idx)
+    obs_idx <- as.integer(obs_idx)
+    if (any(obs_idx < 1L | obs_idx > n_obs_full)) {
+      stop("obs_idx out of range (1..", n_obs_full, ")", call. = FALSE)
+    }
+  }
+  if (!is.null(var_idx)) {
+    if (is.logical(var_idx)) var_idx <- which(var_idx)
+    var_idx <- as.integer(var_idx)
+    if (any(var_idx < 1L | var_idx > n_var_full)) {
+      stop("var_idx out of range (1..", n_var_full, ")", call. = FALSE)
+    }
+  }
+
+  # 1. Read cell names (sliced)
   if (verbose) message("Reading cell names...")
-  cell.names <- .zarr_read_anndata_index(file, "obs")
+  cell.names <- .zarr_read_anndata_index(file, "obs", slice_idx = obs_idx)
 
-  # 2. Read feature names
+  # 2. Read feature names (sliced)
   if (verbose) message("Reading feature names...")
-  feature.names <- .zarr_read_anndata_index(file, "var")
+  feature.names <- .zarr_read_anndata_index(file, "var", slice_idx = var_idx)
 
-  # Generate fallback names if needed
-  if (is.null(cell.names)) {
-    cell.names <- paste0("Cell", seq_len(.zarr_get_n_obs(file)))
-  }
-  if (is.null(feature.names)) {
-    feature.names <- paste0("Gene", seq_len(.zarr_get_n_vars(file)))
-  }
+  # Generate fallback names if needed (using sliced length, not full).
+  n_obs_kept <- if (is.null(obs_idx)) n_obs_full else length(obs_idx)
+  n_var_kept <- if (is.null(var_idx)) n_var_full else length(var_idx)
+  if (is.null(cell.names)) cell.names <- paste0("Cell", seq_len(n_obs_kept))
+  if (is.null(feature.names)) feature.names <- paste0("Gene", seq_len(n_var_kept))
 
   # 3. Read expression matrix (or skip if include_x = FALSE)
   x_path <- "X"
@@ -118,7 +142,9 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
     if (.zarr_node_type(file, x_path) == "missing") {
       stop("No expression matrix (X) found in zarr store", call. = FALSE)
     }
-    expr_matrix <- .zarr_read_anndata_matrix(file, x_path)
+    expr_matrix <- .zarr_read_anndata_matrix(file, x_path,
+                                              obs_idx = obs_idx,
+                                              var_idx = var_idx)
 
     # Handle dimension mismatches
     if (nrow(expr_matrix) != length(feature.names)) {
@@ -162,7 +188,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
       if (verbose) message("  Adding layer: ", layer_name)
       tryCatch({
         layer_matrix <- .zarr_read_anndata_matrix(
-          file, file.path(layers_path, layer_name)
+          file, file.path(layers_path, layer_name),
+          obs_idx = obs_idx, var_idx = var_idx
         )
         if (nrow(layer_matrix) == nrow(expr_matrix) &&
             ncol(layer_matrix) == ncol(expr_matrix)) {
@@ -207,7 +234,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
       if (.zarr_node_type(file, col_path) == "missing") next
       if (verbose) message("  Adding metadata: ", col)
       tryCatch({
-        meta_values <- .zarr_read_anndata_column(file, col_path)
+        meta_values <- .zarr_read_anndata_column(file, col_path,
+                                                  slice_idx = obs_idx)
         if (!is.null(meta_values) && length(meta_values) == ncol(seurat_obj)) {
           seurat_obj[[col]] <- meta_values
         }
@@ -231,7 +259,10 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
       if (verbose) message("  Adding reduction: ", clean_name)
 
       tryCatch({
-        embeddings <- .zarr_read_numeric(file, file.path(obsm_path, reduc_name))
+        # obsm is (n_obs, n_components) — slice rows with obs_idx only.
+        obsm_slice <- if (is.null(obs_idx)) NULL else list(d1 = obs_idx)
+        embeddings <- .zarr_read_numeric(file, file.path(obsm_path, reduc_name),
+                                          slice = obsm_slice)
 
         # Handle row-major vs column-major dimension ordering
         if (nrow(embeddings) != length(cell.names) &&
@@ -285,7 +316,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
       if (verbose) message("  Adding feature metadata: ", col)
 
       tryCatch({
-        meta_values <- .zarr_read_anndata_column(file, col_path)
+        meta_values <- .zarr_read_anndata_column(file, col_path,
+                                                  slice_idx = var_idx)
         if (is.null(meta_values)) next
 
         # Special handling for highly_variable
@@ -324,7 +356,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
       if (verbose) message("  Adding graph: ", graph_name)
       tryCatch({
         graph_matrix <- .zarr_read_anndata_matrix(
-          file, file.path(obsp_path, graph_name), transpose = FALSE
+          file, file.path(obsp_path, graph_name), transpose = FALSE,
+          obs_idx = obs_idx, var_idx = obs_idx
         )
         if (nrow(graph_matrix) == ncol(graph_matrix) &&
             nrow(graph_matrix) == ncol(seurat_obj)) {
@@ -356,7 +389,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
     for (varp_name in varp_names) {
       tryCatch({
         varp_mat <- .zarr_read_anndata_matrix(
-          file, file.path(varp_path, varp_name), transpose = FALSE
+          file, file.path(varp_path, varp_name), transpose = FALSE,
+          obs_idx = var_idx, var_idx = var_idx
         )
         if (nrow(varp_mat) == length(feature.names) && ncol(varp_mat) == length(feature.names)) {
           rownames(varp_mat) <- feature.names
@@ -436,19 +470,21 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 #'
 #' @keywords internal
 #'
-.zarr_read_anndata_index <- function(store_path, group) {
+.zarr_read_anndata_index <- function(store_path, group, slice_idx = NULL) {
   attrs <- .zarr_read_attrs(store_path, group)
   index_col <- attrs[["_index"]] %||% "_index"
 
   index_path <- file.path(group, index_col)
   if (.zarr_node_type(store_path, index_path) != "missing") {
-    return(as.character(.zarr_read_strings(store_path, index_path)))
+    return(as.character(.zarr_read_strings(store_path, index_path,
+                                            slice_idx = slice_idx)))
   }
 
   # Try "index" as fallback
   index_path <- file.path(group, "index")
   if (.zarr_node_type(store_path, index_path) != "missing") {
-    return(as.character(.zarr_read_strings(store_path, index_path)))
+    return(as.character(.zarr_read_strings(store_path, index_path,
+                                            slice_idx = slice_idx)))
   }
 
   NULL
@@ -466,7 +502,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 #'
 #' @keywords internal
 #'
-.zarr_read_anndata_matrix <- function(store_path, rel_path, transpose = TRUE) {
+.zarr_read_anndata_matrix <- function(store_path, rel_path, transpose = TRUE,
+                                       obs_idx = NULL, var_idx = NULL) {
   node_type <- .zarr_node_type(store_path, rel_path)
 
   if (node_type == "group") {
@@ -474,34 +511,34 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
     encoding_type <- attrs[["encoding-type"]] %||% ""
 
     if (encoding_type %in% c("csr_matrix", "csc_matrix")) {
-      # Sparse matrix
-      data <- .zarr_read_numeric(store_path, file.path(rel_path, "data"))
-      indices <- .zarr_read_numeric(store_path, file.path(rel_path, "indices"))
-      indptr <- .zarr_read_numeric(store_path, file.path(rel_path, "indptr"))
       shape <- attrs[["shape"]]
       if (is.list(shape)) shape <- unlist(shape)
+      shape <- as.integer(shape)
 
-      if (encoding_type == "csc_matrix") {
-        # CSC: indptr = column pointers, indices = row indices (0-based)
-        # Directly construct dgCMatrix (R's native CSC format)
-        mat <- sparseMatrix(
-          i = as.integer(indices) + 1L,
-          p = as.integer(indptr),
-          x = as.numeric(data),
-          dims = as.integer(shape),
-          repr = "C"
-        )
-        if (transpose) mat <- t(mat)
-        return(mat)
+      if (is.null(obs_idx) && is.null(var_idx)) {
+        # Full read (existing path)
+        data <- .zarr_read_numeric(store_path, file.path(rel_path, "data"))
+        indices <- .zarr_read_numeric(store_path, file.path(rel_path, "indices"))
+        indptr <- .zarr_read_numeric(store_path, file.path(rel_path, "indptr"))
+        if (encoding_type == "csc_matrix") {
+          mat <- sparseMatrix(
+            i = as.integer(indices) + 1L,
+            p = as.integer(indptr),
+            x = as.numeric(data),
+            dims = shape, repr = "C"
+          )
+          if (transpose) mat <- t(mat)
+          return(mat)
+        }
+        return(ReconstructSparseCSR(
+          data = data, indices = indices, indptr = indptr,
+          shape = shape, transpose = transpose
+        ))
       }
 
-      return(ReconstructSparseCSR(
-        data = data,
-        indices = indices,
-        indptr = indptr,
-        shape = as.integer(shape),
-        transpose = transpose
-      ))
+      # Sliced read via indptr pushdown
+      return(.zarr_read_sparse_sliced(store_path, rel_path, encoding_type,
+                                       shape, transpose, obs_idx, var_idx))
     }
 
     # Group but not sparse - check for sub-arrays
@@ -509,8 +546,13 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
   }
 
   if (node_type == "array") {
-    # Dense matrix
-    mat <- .zarr_read_numeric(store_path, rel_path)
+    # Dense matrix. AnnData convention: rows = cells, cols = features.
+    # obs_idx selects rows; var_idx selects cols (pre-transpose).
+    slice <- NULL
+    if (!is.null(obs_idx) || !is.null(var_idx)) {
+      slice <- list(d1 = obs_idx, d2 = var_idx)
+    }
+    mat <- .zarr_read_numeric(store_path, rel_path, slice = slice)
     if (!is.matrix(mat)) {
       stop("Expected 2D array for expression matrix", call. = FALSE)
     }
@@ -519,6 +561,107 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
   }
 
   stop("Matrix node not found at: ", rel_path, call. = FALSE)
+}
+
+#' Sparse-matrix slice via indptr pushdown
+#'
+#' AnnData stores sparse X as rows = cells / cols = features in CSR, or the
+#' reverse in CSC. For CSR we use indptr to locate the data/indices ranges
+#' for the requested rows (cells = obs_idx) and only fetch those chunks of
+#' \code{data}/\code{indices}; columns (var_idx) are then filtered in
+#' memory. For CSC the same trick works on var_idx; obs_idx falls back to
+#' a memory subset.
+#'
+#' @keywords internal
+.zarr_read_sparse_sliced <- function(store_path, rel_path, encoding_type,
+                                      shape, transpose, obs_idx, var_idx) {
+  store <- .zarr_make_store(store_path)
+
+  # Always read the full indptr (small: 4*(n_outer+1) bytes uncompressed).
+  indptr <- as.integer(.zarr_read_numeric(store,
+                                          file.path(rel_path, "indptr")))
+
+  if (encoding_type == "csr_matrix") {
+    # outer = rows = cells; inner = cols = features
+    n_obs <- shape[1]; n_var <- shape[2]
+    if (is.logical(obs_idx)) obs_idx <- which(obs_idx)
+    if (is.null(obs_idx)) obs_idx <- seq_len(n_obs)
+    obs_idx <- as.integer(obs_idx)
+    if (any(obs_idx < 1L | obs_idx > n_obs)) {
+      stop("obs_idx out of range", call. = FALSE)
+    }
+
+    # For each selected row, the on-disk range is indptr[i]:indptr[i+1]-1
+    # (indptr is 0-based offsets into the flat data/indices arrays).
+    starts <- indptr[obs_idx]
+    ends   <- indptr[obs_idx + 1L] - 1L
+    nz_per_row <- ends - starts + 1L
+    flat_idx <- unlist(mapply(seq.int, starts + 1L, ends + 1L,
+                              SIMPLIFY = FALSE))  # 1-based
+
+    if (length(flat_idx) == 0L) {
+      sub <- sparseMatrix(i = integer(0), j = integer(0), x = numeric(0),
+                          dims = c(length(obs_idx), n_var), repr = "R")
+    } else {
+      sub_data    <- .zarr_read_numeric(store, file.path(rel_path, "data"),
+                                         slice = list(d1 = flat_idx))
+      sub_indices <- .zarr_read_numeric(store, file.path(rel_path, "indices"),
+                                         slice = list(d1 = flat_idx))
+      new_indptr <- as.integer(c(0L, cumsum(nz_per_row)))
+      sub <- ReconstructSparseCSR(
+        data = as.numeric(sub_data),
+        indices = as.integer(sub_indices),
+        indptr = new_indptr,
+        shape = as.integer(c(length(obs_idx), n_var)),
+        transpose = FALSE
+      )
+    }
+    # Column filter in memory (CSR cannot push columns down efficiently).
+    if (!is.null(var_idx)) {
+      if (is.logical(var_idx)) var_idx <- which(var_idx)
+      sub <- sub[, as.integer(var_idx), drop = FALSE]
+    }
+    if (transpose) sub <- t(sub)
+    return(sub)
+  }
+
+  # CSC
+  n_obs <- shape[1]; n_var <- shape[2]
+  if (is.logical(var_idx)) var_idx <- which(var_idx)
+  if (is.null(var_idx)) var_idx <- seq_len(n_var)
+  var_idx <- as.integer(var_idx)
+  if (any(var_idx < 1L | var_idx > n_var)) {
+    stop("var_idx out of range", call. = FALSE)
+  }
+
+  starts <- indptr[var_idx]
+  ends   <- indptr[var_idx + 1L] - 1L
+  nz_per_col <- ends - starts + 1L
+  flat_idx <- unlist(mapply(seq.int, starts + 1L, ends + 1L,
+                            SIMPLIFY = FALSE))
+
+  if (length(flat_idx) == 0L) {
+    sub <- sparseMatrix(i = integer(0), j = integer(0), x = numeric(0),
+                        dims = c(n_obs, length(var_idx)), repr = "C")
+  } else {
+    sub_data    <- .zarr_read_numeric(store, file.path(rel_path, "data"),
+                                       slice = list(d1 = flat_idx))
+    sub_indices <- .zarr_read_numeric(store, file.path(rel_path, "indices"),
+                                       slice = list(d1 = flat_idx))
+    new_indptr <- as.integer(c(0L, cumsum(nz_per_col)))
+    sub <- sparseMatrix(
+      i = as.integer(sub_indices) + 1L,
+      p = new_indptr,
+      x = as.numeric(sub_data),
+      dims = c(n_obs, length(var_idx)), repr = "C"
+    )
+  }
+  if (!is.null(obs_idx)) {
+    if (is.logical(obs_idx)) obs_idx <- which(obs_idx)
+    sub <- sub[as.integer(obs_idx), , drop = FALSE]
+  }
+  if (transpose) sub <- t(sub)
+  sub
 }
 
 #' Read an AnnData DataFrame column from zarr store
@@ -532,8 +675,9 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 #'
 #' @keywords internal
 #'
-.zarr_read_anndata_column <- function(store_path, col_path) {
+.zarr_read_anndata_column <- function(store_path, col_path, slice_idx = NULL) {
   node_type <- .zarr_node_type(store_path, col_path)
+  slice1d <- if (is.null(slice_idx)) NULL else list(d1 = slice_idx)
 
   if (node_type == "group") {
     # Could be categorical encoding: group with codes/ and categories/ sub-arrays
@@ -542,8 +686,9 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
     if (encoding_type == "categorical") {
       store <- .zarr_make_store(store_path)
-      codes <- .zarr_read_numeric(store, file.path(col_path, "codes"))
-      # Categories may be strings or numeric
+      codes <- .zarr_read_numeric(store, file.path(col_path, "codes"),
+                                   slice = slice1d)
+      # Categories are global (not row-aligned), always read in full.
       cats_path <- file.path(col_path, "categories")
       cats_meta <- store$read_json(file.path(cats_path, ".zarray"))
       if (!is.null(cats_meta$dtype) && cats_meta$dtype == "|O") {
@@ -563,11 +708,11 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
     if (!is.null(meta$dtype) && meta$dtype == "|O") {
       # String array
-      return(.zarr_read_strings(store_path, col_path))
+      return(.zarr_read_strings(store_path, col_path, slice_idx = slice_idx))
     }
 
     # Numeric or boolean array
-    values <- .zarr_read_numeric(store_path, col_path)
+    values <- .zarr_read_numeric(store_path, col_path, slice = slice1d)
 
     # Check for boolean encoding
     if (!is.null(meta$dtype) && grepl("^[|<>]?b1$", meta$dtype)) {

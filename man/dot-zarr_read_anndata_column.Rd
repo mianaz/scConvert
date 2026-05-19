@@ -4,7 +4,7 @@
 \alias{.zarr_read_anndata_column}
 \title{Read an AnnData DataFrame column from zarr store}
 \usage{
-.zarr_read_anndata_column(store_path, col_path)
+.zarr_read_anndata_column(store_path, col_path, slice_idx = NULL)
 }
 \arguments{
 \item{store_path}{Path to zarr store}

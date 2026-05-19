@@ -9,6 +9,8 @@ readZarr(
   assay.name = "RNA",
   verbose = TRUE,
   cache = TRUE,
+  obs_idx = NULL,
+  var_idx = NULL,
   layers = NULL,
   obsm = NULL,
   obsp = NULL,
@@ -30,6 +32,12 @@ readZarr(
 \item{cache}{For remote URLs: \code{TRUE} to persist the download under
 \code{tools::R_user_dir("scConvert", "cache")}; \code{FALSE} to use a
 tempdir that is discarded with the R session. Ignored for local paths.}
+
+\item{obs_idx, var_idx}{Integer indices (1-based) selecting cells / features
+to keep. \code{NULL} (default) reads all. Index slicing pushes down to
+chunk fetches: only chunks of the cell / feature index, obs columns,
+obsm embeddings, var columns, and sparse \code{indptr}-resolved data
+blocks containing the requested indices are pulled.}
 
 \item{layers}{Character vector of \code{/layers/*} groups to read,
 or \code{NULL} (default) for all, or \code{character(0)} to skip all

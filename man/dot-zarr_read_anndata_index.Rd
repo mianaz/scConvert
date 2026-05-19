@@ -4,7 +4,7 @@
 \alias{.zarr_read_anndata_index}
 \title{Read AnnData index from obs or var group}
 \usage{
-.zarr_read_anndata_index(store_path, group)
+.zarr_read_anndata_index(store_path, group, slice_idx = NULL)
 }
 \arguments{
 \item{store_path}{Path to zarr store}

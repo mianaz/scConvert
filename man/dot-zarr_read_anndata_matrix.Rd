@@ -4,7 +4,13 @@
 \alias{.zarr_read_anndata_matrix}
 \title{Read an AnnData matrix (dense or sparse) from zarr store}
 \usage{
-.zarr_read_anndata_matrix(store_path, rel_path, transpose = TRUE)
+.zarr_read_anndata_matrix(
+  store_path,
+  rel_path,
+  transpose = TRUE,
+  obs_idx = NULL,
+  var_idx = NULL
+)
 }
 \arguments{
 \item{store_path}{Path to zarr store}

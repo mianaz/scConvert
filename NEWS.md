@@ -2,6 +2,17 @@
 
 ## New features
 
+- **`readZarr()` index slicing: `obs_idx` and `var_idx` push down to
+  chunk fetches.** Caller supplies integer indices (or a logical mask)
+  for cells / features; only the chunks containing those indices are
+  pulled from the store. The pushdown covers obs/var cell-and-feature
+  index reads, obs/var metadata columns, obsm embeddings, obsp graphs,
+  varp matrices, dense X / layers (row + column chunk selection), and
+  sparse X in CSR/CSC via indptr (a small pre-read locates the data
+  ranges for the requested rows/cols; only those blocks are fetched).
+  CSR + column slicing and CSC + row slicing fall back to an in-memory
+  subset of the row/col axis they cannot push down efficiently.
+
 - **`readZarr()` selection API: skip whole AnnData groups you don't need.**
   New arguments `layers`, `obsm`, `obsp`, `varm`, `varp`, `uns`, and
   `include_x` let callers narrow what the reader pulls from the store.
