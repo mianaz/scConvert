@@ -5,6 +5,24 @@
 #' @importFrom SeuratObject Cells
 NULL
 
+#' Apply a user-supplied selection filter to a vector of available names
+#'
+#' \itemize{
+#'   \item \code{NULL} returns \code{available} unchanged (keep all).
+#'   \item \code{character(0)} returns \code{character(0)} (drop all).
+#'   \item Otherwise returns the intersection.
+#' }
+#'
+#' @keywords internal
+.zarr_select_keep <- function(filter, available) {
+  if (is.null(filter)) return(available)
+  if (!is.character(filter)) {
+    stop("filter must be NULL or a character vector", call. = FALSE)
+  }
+  if (length(filter) == 0L) return(character(0))
+  intersect(filter, available)
+}
+
 #' Load an AnnData Zarr store as a Seurat object
 #'
 #' Direct conversion from AnnData Zarr format (.zarr directory) to Seurat object.
@@ -26,6 +44,19 @@ NULL
 #' @param cache For remote URLs: \code{TRUE} to persist the download under
 #'   \code{tools::R_user_dir("scConvert", "cache")}; \code{FALSE} to use a
 #'   tempdir that is discarded with the R session. Ignored for local paths.
+#' @param layers Character vector of \code{/layers/*} groups to read,
+#'   or \code{NULL} (default) for all, or \code{character(0)} to skip all
+#'   layers entirely. Skipping unused layers avoids their chunk fetches
+#'   on remote stores.
+#' @param obsm,obsp,varm,varp,uns Same semantics as \code{layers} for the
+#'   corresponding AnnData groups: \code{NULL} keeps everything,
+#'   \code{character()} drops the entire group, otherwise reads only the
+#'   named items.
+#' @param include_x If \code{FALSE}, skip reading the main expression
+#'   matrix entirely. Useful for metadata-only reads from a remote store.
+#'   Default \code{TRUE}. (If \code{FALSE}, a zero-row placeholder assay
+#'   is constructed so the returned Seurat object still has the right
+#'   number of cells.)
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return A \code{Seurat} object
@@ -33,7 +64,10 @@ NULL
 #' @export
 #'
 readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
-                     cache = TRUE, ...) {
+                     cache = TRUE,
+                     layers = NULL, obsm = NULL, obsp = NULL,
+                     varm = NULL, varp = NULL, uns = NULL,
+                     include_x = TRUE, ...) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
     stop("jsonlite package required for readZarr. ",
          "Install with: install.packages('jsonlite')", call. = FALSE)
@@ -77,27 +111,34 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
     feature.names <- paste0("Gene", seq_len(.zarr_get_n_vars(file)))
   }
 
-  # 3. Read expression matrix
-  if (verbose) message("Reading expression matrix...")
+  # 3. Read expression matrix (or skip if include_x = FALSE)
   x_path <- "X"
-  if (.zarr_node_type(file, x_path) == "missing") {
-    stop("No expression matrix (X) found in zarr store", call. = FALSE)
-  }
+  if (include_x) {
+    if (verbose) message("Reading expression matrix...")
+    if (.zarr_node_type(file, x_path) == "missing") {
+      stop("No expression matrix (X) found in zarr store", call. = FALSE)
+    }
+    expr_matrix <- .zarr_read_anndata_matrix(file, x_path)
 
-  expr_matrix <- .zarr_read_anndata_matrix(file, x_path)
-
-  # Handle dimension mismatches
-  if (nrow(expr_matrix) != length(feature.names)) {
-    warning("Adjusting feature names to match matrix dimensions", immediate. = TRUE)
-    feature.names <- feature.names[seq_len(nrow(expr_matrix))]
+    # Handle dimension mismatches
+    if (nrow(expr_matrix) != length(feature.names)) {
+      warning("Adjusting feature names to match matrix dimensions", immediate. = TRUE)
+      feature.names <- feature.names[seq_len(nrow(expr_matrix))]
+    }
+    if (ncol(expr_matrix) != length(cell.names)) {
+      warning("Adjusting cell names to match matrix dimensions", immediate. = TRUE)
+      cell.names <- cell.names[seq_len(ncol(expr_matrix))]
+    }
+    rownames(expr_matrix) <- feature.names
+    colnames(expr_matrix) <- cell.names
+  } else {
+    if (verbose) message("Skipping expression matrix (include_x = FALSE)")
+    expr_matrix <- Matrix::sparseMatrix(
+      i = integer(0), j = integer(0), x = numeric(0),
+      dims = c(length(feature.names), length(cell.names)),
+      dimnames = list(feature.names, cell.names)
+    )
   }
-  if (ncol(expr_matrix) != length(cell.names)) {
-    warning("Adjusting cell names to match matrix dimensions", immediate. = TRUE)
-    cell.names <- cell.names[seq_len(ncol(expr_matrix))]
-  }
-
-  rownames(expr_matrix) <- feature.names
-  colnames(expr_matrix) <- cell.names
 
   # 4. Create Seurat object
   if (verbose) message("Creating Seurat object...")
@@ -111,9 +152,12 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
   # 5. Add layers if present
   layers_path <- "layers"
-  if (.zarr_node_type(file, layers_path) == "group") {
+  layer_names <- .zarr_select_keep(layers,
+    if (.zarr_node_type(file, layers_path) == "group") {
+      .zarr_list_children(file, layers_path)
+    } else character(0))
+  if (length(layer_names) > 0L) {
     if (verbose) message("Adding layers...")
-    layer_names <- .zarr_list_children(file, layers_path)
     for (layer_name in layer_names) {
       if (verbose) message("  Adding layer: ", layer_name)
       tryCatch({
@@ -176,10 +220,12 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
   # 7. Add dimensional reductions
   obsm_path <- "obsm"
-  if (.zarr_node_type(file, obsm_path) == "group") {
+  reduc_names <- .zarr_select_keep(obsm,
+    if (.zarr_node_type(file, obsm_path) == "group") {
+      .zarr_list_children(file, obsm_path)
+    } else character(0))
+  if (length(reduc_names) > 0L) {
     if (verbose) message("Adding dimensional reductions...")
-    reduc_names <- .zarr_list_children(file, obsm_path)
-
     for (reduc_name in reduc_names) {
       clean_name <- gsub("^X_", "", reduc_name)
       if (verbose) message("  Adding reduction: ", clean_name)
@@ -268,10 +314,12 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
   # 9. Add neighbor graphs from obsp
   obsp_path <- "obsp"
-  if (.zarr_node_type(file, obsp_path) == "group") {
+  graph_names <- .zarr_select_keep(obsp,
+    if (.zarr_node_type(file, obsp_path) == "group") {
+      .zarr_list_children(file, obsp_path)
+    } else character(0))
+  if (length(graph_names) > 0L) {
     if (verbose) message("Adding neighbor graphs...")
-    graph_names <- .zarr_list_children(file, obsp_path)
-
     for (graph_name in graph_names) {
       if (verbose) message("  Adding graph: ", graph_name)
       tryCatch({
@@ -298,10 +346,13 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
   # 9b. Add varp (pairwise variable annotations) to misc
   varp_path <- "varp"
-  if (.zarr_node_type(file, varp_path) == "group") {
+  varp_names <- .zarr_select_keep(varp,
+    if (.zarr_node_type(file, varp_path) == "group") {
+      .zarr_list_children(file, varp_path)
+    } else character(0))
+  if (length(varp_names) > 0L) {
     if (verbose) message("Adding pairwise variable annotations (varp)...")
     varp_list <- list()
-    varp_names <- .zarr_list_children(file, varp_path)
     for (varp_name in varp_names) {
       tryCatch({
         varp_mat <- .zarr_read_anndata_matrix(
@@ -325,10 +376,12 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
   # 10. Add uns (unstructured) data to misc
   uns_path <- "uns"
-  if (.zarr_node_type(file, uns_path) == "group") {
+  uns_children <- .zarr_select_keep(uns,
+    if (.zarr_node_type(file, uns_path) == "group") {
+      .zarr_list_children(file, uns_path)
+    } else character(0))
+  if (length(uns_children) > 0L) {
     if (verbose) message("Adding unstructured data...")
-    uns_children <- .zarr_list_children(file, uns_path)
-
     for (item in uns_children) {
       item_path <- file.path(uns_path, item)
       tryCatch({

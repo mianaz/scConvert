@@ -4,7 +4,20 @@
 \alias{readZarr}
 \title{Load an AnnData Zarr store as a Seurat object}
 \usage{
-readZarr(file, assay.name = "RNA", verbose = TRUE, cache = TRUE, ...)
+readZarr(
+  file,
+  assay.name = "RNA",
+  verbose = TRUE,
+  cache = TRUE,
+  layers = NULL,
+  obsm = NULL,
+  obsp = NULL,
+  varm = NULL,
+  varp = NULL,
+  uns = NULL,
+  include_x = TRUE,
+  ...
+)
 }
 \arguments{
 \item{file}{Path to a local .zarr directory, or a remote
@@ -17,6 +30,22 @@ readZarr(file, assay.name = "RNA", verbose = TRUE, cache = TRUE, ...)
 \item{cache}{For remote URLs: \code{TRUE} to persist the download under
 \code{tools::R_user_dir("scConvert", "cache")}; \code{FALSE} to use a
 tempdir that is discarded with the R session. Ignored for local paths.}
+
+\item{layers}{Character vector of \code{/layers/*} groups to read,
+or \code{NULL} (default) for all, or \code{character(0)} to skip all
+layers entirely. Skipping unused layers avoids their chunk fetches
+on remote stores.}
+
+\item{obsm, obsp, varm, varp, uns}{Same semantics as \code{layers} for the
+corresponding AnnData groups: \code{NULL} keeps everything,
+\code{character()} drops the entire group, otherwise reads only the
+named items.}
+
+\item{include_x}{If \code{FALSE}, skip reading the main expression
+matrix entirely. Useful for metadata-only reads from a remote store.
+Default \code{TRUE}. (If \code{FALSE}, a zero-row placeholder assay
+is constructed so the returned Seurat object still has the right
+number of cells.)}
 
 \item{...}{Additional arguments (currently unused)}
 }
