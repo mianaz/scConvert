@@ -2026,13 +2026,6 @@
 
         <dt>
 
-          <code><a href="dot-zarr_fetch_remote.html">.zarr_fetch_remote()</a></code>
-
-        </dt>
-        <dd>Mirror a remote zarr store to a local directory</dd>
-
-        <dt>
-
           <code><a href="dot-zarr_get_n_obs.html">.zarr_get_n_obs()</a></code>
 
         </dt>
@@ -2058,6 +2051,13 @@
 
         </dt>
         <dd>List all object keys under a prefix in an S3/GCS bucket</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_make_store.html">.zarr_make_store()</a></code>
+
+        </dt>
+        <dd>Storage abstraction for zarr v2 stores</dd>
 
         <dt>
 
@@ -2138,6 +2138,20 @@
 
         <dt>
 
+          <code><a href="dot-zarr_read_numeric_sliced.html">.zarr_read_numeric_sliced()</a></code>
+
+        </dt>
+        <dd>Chunk-selective read of a 1D or 2D zarr v2 numeric array</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_read_sparse_sliced.html">.zarr_read_sparse_sliced()</a></code>
+
+        </dt>
+        <dd>Sparse-matrix slice via indptr pushdown</dd>
+
+        <dt>
+
           <code><a href="dot-zarr_read_strings.html">.zarr_read_strings()</a></code>
 
         </dt>
@@ -2149,6 +2163,27 @@
 
         </dt>
         <dd>Resolve a writer-side compressor spec to a zarr-codec list</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_select_keep.html">.zarr_select_keep()</a></code>
+
+        </dt>
+        <dd>Apply a user-supplied selection filter to a vector of available names</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_store_http.html">.zarr_store_http()</a></code>
+
+        </dt>
+        <dd>HTTP-backed zarr store with per-chunk lazy fetch</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_store_local.html">.zarr_store_local()</a></code>
+
+        </dt>
+        <dd>Local filesystem zarr store</dd>
 
         <dt>
 

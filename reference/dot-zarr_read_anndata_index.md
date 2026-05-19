@@ -5,7 +5,7 @@ Read AnnData index from obs or var group
 ## Usage
 
 ``` r
-.zarr_read_anndata_index(store_path, group)
+.zarr_read_anndata_index(store_path, group, slice_idx = NULL)
 ```
 
 ## Arguments

@@ -67,7 +67,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">.zarr_read_numeric</span><span class="op">(</span><span class="va">store_path</span>, <span class="va">rel_path</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">.zarr_read_numeric</span><span class="op">(</span><span class="va">store_path</span>, <span class="va">rel_path</span>, slice <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -80,6 +80,13 @@
 
 <dt id="arg-rel-path">rel_path<a class="anchor" aria-label="anchor" href="#arg-rel-path"></a></dt>
 <dd><p>Relative path to array within store</p></dd>
+
+
+<dt id="arg-slice">slice<a class="anchor" aria-label="anchor" href="#arg-slice"></a></dt>
+<dd><p>Optional named list of per-dimension index vectors:
+<code>list(d1 = 1L:1000L)</code> (1D), <code>list(d1 = ..., d2 = ...)</code>
+(2D). <code>NULL</code> on a dim means "all". When supplied, only the
+chunks that intersect the requested indices are fetched.</p></dd>
 
 </dl></div>
     <div class="section level2">

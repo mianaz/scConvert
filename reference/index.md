@@ -835,9 +835,6 @@ Internal functions and methods
 - [`.zarr_decompress()`](https://mianaz.github.io/scConvert/reference/dot-zarr_decompress.md)
   : Decompress chunk data
 
-- [`.zarr_fetch_remote()`](https://mianaz.github.io/scConvert/reference/dot-zarr_fetch_remote.md)
-  : Mirror a remote zarr store to a local directory
-
 - [`.zarr_get_n_obs()`](https://mianaz.github.io/scConvert/reference/dot-zarr_get_n_obs.md)
   : Get number of observations from zarr store
 
@@ -849,6 +846,9 @@ Internal functions and methods
 
 - [`.zarr_list_remote_keys()`](https://mianaz.github.io/scConvert/reference/dot-zarr_list_remote_keys.md)
   : List all object keys under a prefix in an S3/GCS bucket
+
+- [`.zarr_make_store()`](https://mianaz.github.io/scConvert/reference/dot-zarr_make_store.md)
+  : Storage abstraction for zarr v2 stores
 
 - [`.zarr_node_type()`](https://mianaz.github.io/scConvert/reference/dot-zarr_node_type.md)
   : Determine zarr node type
@@ -883,11 +883,27 @@ Internal functions and methods
 - [`.zarr_read_numeric()`](https://mianaz.github.io/scConvert/reference/dot-zarr_read_numeric.md)
   : Read a zarr v2 numeric array from disk
 
+- [`.zarr_read_numeric_sliced()`](https://mianaz.github.io/scConvert/reference/dot-zarr_read_numeric_sliced.md)
+  : Chunk-selective read of a 1D or 2D zarr v2 numeric array
+
+- [`.zarr_read_sparse_sliced()`](https://mianaz.github.io/scConvert/reference/dot-zarr_read_sparse_sliced.md)
+  : Sparse-matrix slice via indptr pushdown
+
 - [`.zarr_read_strings()`](https://mianaz.github.io/scConvert/reference/dot-zarr_read_strings.md)
   : Read a vlen-utf8 encoded string array from zarr v2 store
 
 - [`.zarr_resolve_compressor()`](https://mianaz.github.io/scConvert/reference/dot-zarr_resolve_compressor.md)
   : Resolve a writer-side compressor spec to a zarr-codec list
+
+- [`.zarr_select_keep()`](https://mianaz.github.io/scConvert/reference/dot-zarr_select_keep.md)
+  : Apply a user-supplied selection filter to a vector of available
+  names
+
+- [`.zarr_store_http()`](https://mianaz.github.io/scConvert/reference/dot-zarr_store_http.md)
+  : HTTP-backed zarr store with per-chunk lazy fetch
+
+- [`.zarr_store_local()`](https://mianaz.github.io/scConvert/reference/dot-zarr_store_local.md)
+  : Local filesystem zarr store
 
 - [`.zarr_store_version()`](https://mianaz.github.io/scConvert/reference/dot-zarr_store_version.md)
   : Detect zarr store format version

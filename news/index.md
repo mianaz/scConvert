@@ -4,6 +4,40 @@
 
 ### New features
 
+- **[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
+  index slicing: `obs_idx` and `var_idx` push down to chunk fetches.**
+  Caller supplies integer indices (or a logical mask) for cells /
+  features; only the chunks containing those indices are pulled from the
+  store. The pushdown covers obs/var cell-and-feature index reads,
+  obs/var metadata columns, obsm embeddings, obsp graphs, varp matrices,
+  dense X / layers (row + column chunk selection), and sparse X in
+  CSR/CSC via indptr (a small pre-read locates the data ranges for the
+  requested rows/cols; only those blocks are fetched). CSR + column
+  slicing and CSC + row slicing fall back to an in-memory subset of the
+  row/col axis they cannot push down efficiently.
+
+- **[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
+  selection API: skip whole AnnData groups you don’t need.** New
+  arguments `layers`, `obsm`, `obsp`, `varm`, `varp`, `uns`, and
+  `include_x` let callers narrow what the reader pulls from the store.
+  Each accepts `NULL` (read all, current behavior), `character(0)` (drop
+  the whole group), or a character vector of item names (read only
+  those). `include_x = FALSE` skips the main expression matrix entirely
+  and returns a Seurat object with a zero-entry placeholder. On remote
+  S3/GCS stores this directly translates to fewer HTTP GETs: a
+  metadata-only read of a 50 GB AnnData-Zarr now fetches only the obs
+  columns, not the X chunks. (Per-cell / per-gene index slicing –
+  `obs_idx`, `var_idx` – is the next step and is not in this release.)
+
+- **[`readZarr()`](https://mianaz.github.io/scConvert/reference/readZarr.md)
+  for remote URLs is now per-chunk lazy.** A new storage abstraction
+  (`R/ZarrStore.R`) replaces the previous download-then-read mirror.
+  Each chunk is fetched on demand via HTTP GET, with an optional disk
+  cache keyed by URL hash so subsequent calls reuse local copies. The 8
+  low-level zarr-read helpers in `R/AnnDataEncoding.R` now accept either
+  a string path or a store object; the 70 existing call sites in the
+  local-fs conversion path are unchanged.
+
 - **[`writeZarr()`](https://mianaz.github.io/scConvert/reference/writeZarr.md)
   gains pluggable compression via `compressor=`.** Accepts `"zstd"`,
   `"zlib"` (alias `"gzip"`), `"blosc"`, `"none"`, or an explicit list

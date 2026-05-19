@@ -7,7 +7,7 @@ length prefix followed by that many bytes of UTF-8 text.
 ## Usage
 
 ``` r
-.zarr_read_strings(store_path, rel_path)
+.zarr_read_strings(store_path, rel_path, slice_idx = NULL)
 ```
 
 ## Arguments

@@ -5,7 +5,7 @@ Handles categorical, string-array, and numeric encodings.
 ## Usage
 
 ``` r
-.zarr_read_anndata_column(store_path, col_path)
+.zarr_read_anndata_column(store_path, col_path, slice_idx = NULL)
 ```
 
 ## Arguments

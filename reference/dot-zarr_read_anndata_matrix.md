@@ -5,7 +5,13 @@ Dispatches based on encoding-type attribute.
 ## Usage
 
 ``` r
-.zarr_read_anndata_matrix(store_path, rel_path, transpose = TRUE)
+.zarr_read_anndata_matrix(
+  store_path,
+  rel_path,
+  transpose = TRUE,
+  obs_idx = NULL,
+  var_idx = NULL
+)
 ```
 
 ## Arguments

@@ -217,11 +217,11 @@
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_compress.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_create_group.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_decompress.html</loc></url>
-<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_fetch_remote.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_get_n_obs.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_get_n_vars.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_list_children.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_list_remote_keys.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_make_store.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_node_type.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_parallel_write.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_parse_dtype.html</loc></url>
@@ -233,8 +233,13 @@
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_chunked.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_json.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_numeric.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_numeric_sliced.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_sparse_sliced.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_read_strings.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_resolve_compressor.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_select_keep.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_store_http.html</loc></url>
+<url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_store_local.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_store_version.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_translate_url.html</loc></url>
 <url><loc>https://mianaz.github.io/scConvert/reference/dot-zarr_write_anndata_dataframe.html</loc></url>
