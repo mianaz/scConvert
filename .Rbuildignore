@@ -11,6 +11,9 @@
 ^README\.html$
 ^cran-comments\.md$
 
+# Pre-built articles (knitted locally; not built by R CMD check or CI)
+^vignettes/articles$
+
 # Vignette data artifacts
 ^vignettes/.*\.loom$
 ^vignettes/.*\.h5ad$

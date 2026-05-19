@@ -1,0 +1,202 @@
+---
+title: "CELLxGENE Census: Real-world Atlas Query"
+description: >
+  Stream CD4 T cells from the 60M-cell CELLxGENE Census directly into
+  Seurat, run a standard analysis pipeline, and export to h5ad — no
+  intermediate download required.
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CELLxGENE Census: Real-world Atlas Query}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+.eval <- !nzchar(Sys.getenv("CI"))
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  eval      = .eval,
+  fig.width = 7,
+  fig.height = 5,
+  message   = FALSE,
+  warning   = FALSE
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Overview
+
+[CELLxGENE Census](https://chanzuckerberg.github.io/cellxgene-census/)
+hosts 60M+ cells across 900+ datasets as a single queryable
+[TileDB-SOMA](https://github.com/single-cell-data/TileDB-SOMA) experiment
+on public S3. This article demonstrates the two-step pattern that
+scConvert enables:
+
+1. Issue a Census slice query via `cellxgene.census`
+2. Pass the URI directly to `readSOMA()` — Seurat object materialised on
+   the fly, no intermediate file written
+
+We then run a standard Seurat analysis pipeline and export to h5ad for
+Python interoperability.
+
+### Prerequisites
+
+```r
+install.packages("cellxgene.census",
+  repos = c(
+    "https://chanzuckerberg.r-universe.dev",
+    "https://cloud.r-project.org"
+  )
+)
+install.packages("tiledbsoma",
+  repos = c(
+    "https://tiledb-inc.r-universe.dev",
+    "https://cloud.r-project.org"
+  )
+)
+```
+
+```{r pkg-check, include = FALSE}
+has_census <- requireNamespace("cellxgene.census", quietly = TRUE) &&
+              requireNamespace("tiledbsoma",        quietly = TRUE)
+```
+
+## Step 1 — Open Census and obtain the slice URI
+
+```{r open-census}
+library(cellxgene.census)
+library(tiledbsoma)
+
+census <- open_soma(census_version = "stable")
+human_uri <- census$get("census_data")$get("homo_sapiens")$uri
+cat("Human Census URI:", human_uri, "\n")
+```
+
+## Step 2 — Stream CD4 T cells into Seurat
+
+`readSOMA()` opens the URI with tiledbsoma, applies the value filter
+server-side (only matching chunks are fetched over the wire), and
+materialises a Seurat object.
+
+```{r read-soma}
+obs_filter <- paste(
+  "cell_type == 'CD4-positive, alpha-beta T cell'",
+  "& tissue_general == 'blood'",
+  "& is_primary_data == True"
+)
+
+cd4 <- readSOMA(
+  uri         = human_uri,
+  measurement = "RNA",
+  obs_query   = obs_filter
+)
+
+census$close()
+cat("Loaded:", ncol(cd4), "cells x", nrow(cd4), "genes\n")
+cd4
+```
+
+```{r donor-summary}
+donors <- table(cd4$donor_id)
+cat("Donors:", length(donors), "\n")
+cat("Datasets:", length(unique(cd4$dataset_id)), "\n")
+```
+
+## Step 3 — Standard Seurat pipeline
+
+```{r seurat-pipeline}
+cd4 <- NormalizeData(cd4, verbose = FALSE)
+cd4 <- FindVariableFeatures(cd4, nfeatures = 2000L, verbose = FALSE)
+cd4 <- ScaleData(cd4, verbose = FALSE)
+cd4 <- RunPCA(cd4, npcs = 30L, verbose = FALSE)
+cd4 <- RunUMAP(cd4, dims = 1:20, verbose = FALSE)
+cd4 <- FindNeighbors(cd4, dims = 1:20, verbose = FALSE)
+cd4 <- FindClusters(cd4, resolution = 0.4, verbose = FALSE)
+```
+
+## Step 4 — Visualisation
+
+### UMAP coloured by cluster
+
+```{r umap-cluster, fig.height = 5}
+DimPlot(cd4, reduction = "umap", label = TRUE, pt.size = 0.4) +
+  ggtitle("CD4 T cells (CELLxGENE Census, blood)") +
+  NoLegend()
+```
+
+### Key marker expression
+
+CD4 itself, the IL7R memory marker, and CCR7 (naive/central-memory).
+
+```{r feature-plot, fig.height = 4}
+FeaturePlot(
+  cd4,
+  features  = c("CD4", "IL7R", "CCR7", "FOXP3"),
+  ncol      = 2L,
+  pt.size   = 0.3,
+  order     = TRUE
+)
+```
+
+### Donor composition per cluster
+
+```{r donor-heatmap, fig.height = 5}
+donor_mat <- table(
+  cluster = Idents(cd4),
+  donor   = cd4$donor_id
+)
+donor_frac <- sweep(donor_mat, 1L, rowSums(donor_mat), "/")
+pheatmap::pheatmap(
+  donor_frac,
+  cluster_rows = TRUE,
+  cluster_cols = TRUE,
+  main         = "Donor fraction per cluster",
+  fontsize      = 8L
+)
+```
+
+## Step 5 — Export to h5ad
+
+```{r write-h5ad}
+h5ad_path <- file.path(tempdir(), "census_cd4.h5ad")
+writeH5AD(cd4, h5ad_path)
+cat("Written:", h5ad_path, "\n")
+cat("File size:", round(file.info(h5ad_path)$size / 1e6, 1), "MB\n")
+```
+
+### Verify with readH5AD
+
+```{r roundtrip}
+cd4_rt <- readH5AD(h5ad_path)
+stopifnot(
+  ncol(cd4_rt)  == ncol(cd4),
+  nrow(cd4_rt)  == nrow(cd4)
+)
+cat("Round-trip OK:", ncol(cd4_rt), "cells x", nrow(cd4_rt), "genes\n")
+```
+
+```{r cleanup, include = FALSE}
+unlink(h5ad_path)
+```
+
+## Key takeaways
+
+- **No download required**: tiledbsoma streams only the requested cells
+  via S3 byte-range requests; the full 60M-cell Census never touches disk.
+- **Two-step pattern**: `open_soma()` + `readSOMA()` is the recommended
+  route for Census queries; scConvert handles the SOMA-to-Seurat conversion.
+- **Format portability**: `writeH5AD()` produces a scanpy-compatible h5ad
+  from any Seurat object in one call, enabling downstream Python analysis
+  without reloading from Census.
+
+## Session Info
+
+```{r session-info}
+sessionInfo()
+```

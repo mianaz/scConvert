@@ -51,12 +51,22 @@ jobs:
 
       - name: Build site
         shell: Rscript {0}
-        # clean_site() wipes the checked-in docs/ directory (which holds a
-        # stale pre-built site). Without it, pkgdown::build_site() aborts
-        # because it refuses to overwrite a directory it did not create.
+        # clean_site() wipes docs/ first; build_site() then rebuilds all
+        # articles. Pre-built articles in vignettes/articles/ are skipped at
+        # evaluation time (CI env var disables chunk eval) and restored by the
+        # next step, which overwrites the empty CI-built HTML with the
+        # committed pre-built version.
         run: |
           pkgdown::clean_site(force = TRUE)
           pkgdown::build_site(new_process = FALSE)
+
+      - name: Restore pre-built articles
+        shell: bash
+        run: |
+          mkdir -p docs/articles
+          for f in vignettes/articles/*.html; do
+            [ -f "$f" ] && cp "$f" docs/articles/ && echo "Restored: $(basename $f)"
+          done
 
       - name: Deploy to GitHub pages
         uses: JamesIves/github-pages-deploy-action@v4.6.8
