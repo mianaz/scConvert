@@ -46,7 +46,7 @@ jobs:
         with:
           # See r-cmd-check.yaml for the rationale behind excluding Enhances.
           dependencies: 'c("Depends", "Imports", "LinkingTo", "Suggests")'
-          extra-packages: any::pkgdown
+          extra-packages: any::pkgdown, local::.
           cache-version: 1
 
       - name: Build site
