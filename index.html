@@ -82,18 +82,18 @@
 </h1></div>
 <!-- badges: start -->
 
-<p><strong>Universal single-cell format conversion for R. No Python required.</strong></p>
-<p>scConvert converts between <strong>9 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>50+ conversion paths</strong> from a single <code><a href="reference/scConvert.html">scConvert()</a></code> interface.</p>
+<p><strong>Load any single-cell format as a Seurat object. Write a Seurat object as any format. Convert any two formats in your terminal.</strong></p>
+<p>scConvert bridges <strong>11 single-cell data formats</strong> through a hub architecture using Seurat as a universal intermediate, providing <strong>50+ conversion paths</strong> from a single <code><a href="reference/scConvert.html">scConvert()</a></code> call in R or one <code>scconvert</code> command in the shell.</p>
 <div class="section level2">
 <h2 id="supported-formats">Supported Formats<a class="anchor" aria-label="anchor" href="#supported-formats"></a>
 </h2>
 <table class="table">
 <colgroup>
-<col width="32%">
-<col width="19%">
-<col width="29%">
+<col width="30%">
+<col width="24%">
+<col width="27%">
 <col width="8%">
-<col width="10%">
+<col width="9%">
 </colgroup>
 <thead><tr>
 <th>Format</th>
@@ -107,6 +107,13 @@
 <td>AnnData</td>
 <td><code>.h5ad</code></td>
 <td>scanpy / CELLxGENE</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+</tr>
+<tr>
+<td>Spatial AnnData</td>
+<td><code>.h5ad</code></td>
+<td>Visium / squidpy</td>
 <td align="center">yes</td>
 <td align="center">yes</td>
 </tr>
@@ -163,6 +170,15 @@
 <td>SingleCellExperiment</td>
 <td>in-memory</td>
 <td>Bioconductor</td>
+<td align="center">yes</td>
+<td align="center">–</td>
+</tr>
+<tr>
+<td>Stereo-seq GEF</td>
+<td>
+<code>.gef</code> / <code>.cellbin.gef</code>
+</td>
+<td>STOmics</td>
 <td align="center">yes</td>
 <td align="center">–</td>
 </tr>
