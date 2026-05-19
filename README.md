@@ -177,8 +177,8 @@ Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`,
 
 If you use scConvert in your research, please cite:
 
-> Zeng Z. scConvert: a pure R, universal converter for single-cell data
-> formats. *bioRxiv* (2026).
+> Zeng Z. (2026). scConvert: a pure R, universal converter for single-cell data
+> formats. GitHub. https://github.com/mianaz/scConvert
 
 ## License
 
