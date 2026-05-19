@@ -39,18 +39,24 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
          "Install with: install.packages('jsonlite')", call. = FALSE)
   }
 
-  if (.is_remote_zarr_url(file)) {
-    cache_dir <- if (isTRUE(cache)) .scconvert_cache_dir() else NULL
-    file <- .zarr_fetch_remote(file, cache_dir = cache_dir, verbose = verbose)
-  }
-
-  if (!dir.exists(file)) {
-    stop("Zarr store not found: ", file, call. = FALSE)
+  is_remote <- .is_remote_zarr_url(file)
+  if (is_remote) {
+    if (verbose) message("Opening remote Zarr store (lazy fetch): ", file)
+    store <- .zarr_make_store(file, cache = cache)
+    # Subsequent helpers receive the store object and reuse the same manifest
+    # + chunk cache; no download-then-read mirror.
+    file <- store
+  } else {
+    if (!dir.exists(file)) {
+      stop("Zarr store not found: ", file, call. = FALSE)
+    }
   }
 
   # Validate zarr store
   version <- .zarr_store_version(file)
-  if (verbose) message("Loading Zarr store (v", version, "): ", file)
+  if (verbose && !is_remote) {
+    message("Loading Zarr store (v", version, "): ", file)
+  }
 
   # Read root attributes to verify it's an AnnData store
   root_attrs <- .zarr_read_attrs(file)
@@ -329,7 +335,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
         node_type <- .zarr_node_type(file, item_path)
         if (node_type == "array") {
           # Try reading as numeric, fall back to string
-          meta <- .zarr_read_json(file.path(file, item_path, ".zarray"))
+          .uns_store <- .zarr_make_store(file)
+          meta <- .uns_store$read_json(file.path(item_path, ".zarray"))
           if (!is.null(meta$dtype) && meta$dtype == "|O") {
             seurat_obj@misc[[item]] <- .zarr_read_strings(file, item_path)
           } else {
@@ -481,10 +488,11 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
     encoding_type <- attrs[["encoding-type"]] %||% ""
 
     if (encoding_type == "categorical") {
-      codes <- .zarr_read_numeric(store_path, file.path(col_path, "codes"))
+      store <- .zarr_make_store(store_path)
+      codes <- .zarr_read_numeric(store, file.path(col_path, "codes"))
       # Categories may be strings or numeric
       cats_path <- file.path(col_path, "categories")
-      cats_meta <- .zarr_read_json(file.path(store_path, cats_path, ".zarray"))
+      cats_meta <- store$read_json(file.path(cats_path, ".zarray"))
       if (!is.null(cats_meta$dtype) && cats_meta$dtype == "|O") {
         categories <- .zarr_read_strings(store_path, cats_path)
       } else {
@@ -497,7 +505,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
   }
 
   if (node_type == "array") {
-    meta <- .zarr_read_json(file.path(store_path, col_path, ".zarray"))
+    store <- .zarr_make_store(store_path)
+    meta <- store$read_json(file.path(col_path, ".zarray"))
 
     if (!is.null(meta$dtype) && meta$dtype == "|O") {
       # String array
@@ -531,7 +540,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
     if (!is.null(shape)) return(shape[[1]])
   }
   if (x_type == "array") {
-    meta <- .zarr_read_json(file.path(store_path, "X", ".zarray"))
+    store <- .zarr_make_store(store_path)
+    meta <- store$read_json("X/.zarray")
     return(meta$shape[[1]])
   }
   stop("Cannot determine number of observations", call. = FALSE)
@@ -549,7 +559,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
     if (!is.null(shape)) return(shape[[2]])
   }
   if (x_type == "array") {
-    meta <- .zarr_read_json(file.path(store_path, "X", ".zarray"))
+    store <- .zarr_make_store(store_path)
+    meta <- store$read_json("X/.zarray")
     return(meta$shape[[2]])
   }
   stop("Cannot determine number of variables", call. = FALSE)

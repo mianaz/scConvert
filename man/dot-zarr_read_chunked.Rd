@@ -5,7 +5,8 @@
 \title{Read multi-chunk zarr v2 numeric array}
 \usage{
 .zarr_read_chunked(
-  array_dir,
+  store_or_path,
+  array_rel,
   meta,
   dtype_info,
   shape,

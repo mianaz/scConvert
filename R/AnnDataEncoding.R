@@ -169,10 +169,10 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_store_version <- function(store_path) {
-  if (file.exists(file.path(store_path, ".zgroup")) ||
-      file.exists(file.path(store_path, ".zarray"))) return(2L)
-  if (file.exists(file.path(store_path, "zarr.json"))) return(3L)
-  stop("Not a valid zarr store: ", store_path, call. = FALSE)
+  store <- .zarr_make_store(store_path)
+  if (store$exists(".zgroup") || store$exists(".zarray")) return(2L)
+  if (store$exists("zarr.json")) return(3L)
+  stop("Not a valid zarr store: ", store$root, call. = FALSE)
 }
 
 #' Read and parse a JSON file
@@ -200,17 +200,15 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_read_attrs <- function(store_path, rel_path = "") {
-  full_path <- if (nchar(rel_path) > 0) {
-    file.path(store_path, rel_path)
-  } else {
-    store_path
+  store <- .zarr_make_store(store_path)
+  version <- .zarr_store_version(store)
+  inner <- function(name) {
+    if (nzchar(rel_path)) file.path(rel_path, name) else name
   }
-  version <- .zarr_store_version(store_path)
-
   if (version == 2L) {
-    .zarr_read_json(file.path(full_path, ".zattrs"))
+    store$read_json(inner(".zattrs"))
   } else {
-    meta <- .zarr_read_json(file.path(full_path, "zarr.json"))
+    meta <- store$read_json(inner("zarr.json"))
     meta$attributes %||% list()
   }
 }
@@ -225,21 +223,21 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_node_type <- function(store_path, rel_path) {
-  full_path <- file.path(store_path, rel_path)
-  if (!dir.exists(full_path) && !file.exists(full_path)) return("missing")
+  store <- .zarr_make_store(store_path)
+  if (!store$exists(rel_path)) return("missing")
 
-  version <- .zarr_store_version(store_path)
-
+  version <- .zarr_store_version(store)
+  inner <- function(name) {
+    if (nzchar(rel_path)) file.path(rel_path, name) else name
+  }
   if (version == 2L) {
-    if (file.exists(file.path(full_path, ".zarray"))) return("array")
-    if (file.exists(file.path(full_path, ".zgroup"))) return("group")
+    if (store$exists(inner(".zarray"))) return("array")
+    if (store$exists(inner(".zgroup"))) return("group")
     return("missing")
   }
-
   # v3
-  zj <- file.path(full_path, "zarr.json")
-  if (!file.exists(zj)) return("missing")
-  meta <- .zarr_read_json(zj)
+  if (!store$exists(inner("zarr.json"))) return("missing")
+  meta <- store$read_json(inner("zarr.json"))
   meta$node_type %||% "missing"
 }
 
@@ -253,15 +251,8 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_list_children <- function(store_path, rel_path = "") {
-  full_path <- if (nchar(rel_path) > 0) {
-    file.path(store_path, rel_path)
-  } else {
-    store_path
-  }
-  if (!dir.exists(full_path)) return(character(0))
-  entries <- list.dirs(full_path, full.names = FALSE, recursive = FALSE)
-  # Filter out zarr metadata entries
-  entries[!grepl("^\\.|^c$|^__", entries)]
+  store <- .zarr_make_store(store_path)
+  store$list_dirs(rel_path)
 }
 
 #' Decompress chunk data
@@ -419,8 +410,8 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_read_numeric <- function(store_path, rel_path) {
-  full_path <- file.path(store_path, rel_path)
-  meta <- .zarr_read_json(file.path(full_path, ".zarray"))
+  store <- .zarr_make_store(store_path)
+  meta <- store$read_json(file.path(rel_path, ".zarray"))
 
   dtype_info <- .zarr_parse_dtype(meta$dtype)
   shape <- if (is.list(meta$shape)) unlist(meta$shape) else meta$shape
@@ -436,16 +427,16 @@ SeuratLayerToAnnData <- function(name) {
 
   if (total_chunks == 1) {
     # Single chunk - most common for AnnData arrays
-    chunk_file <- .zarr_chunk_path_v2(full_path, rep(0L, ndim))
-    raw_data <- readBin(chunk_file, "raw", file.info(chunk_file)$size)
+    chunk_key <- .zarr_chunk_path_v2(rel_path, rep(0L, ndim))
+    raw_data <- store$read_bytes(chunk_key)
     raw_data <- .zarr_decompress(raw_data, compressor)
     values <- .raw_to_r_type(raw_data, dtype_info, prod(chunks))
     # Trim to actual shape if chunks > shape
     values <- values[seq_len(n_elements)]
   } else {
     # Multi-chunk: assemble from chunk grid
-    values <- .zarr_read_chunked(full_path, meta, dtype_info, shape, chunks,
-                                  n_chunks_per_dim, compressor)
+    values <- .zarr_read_chunked(store, rel_path, meta, dtype_info, shape,
+                                  chunks, n_chunks_per_dim, compressor)
   }
 
   if (ndim == 1) return(values)
@@ -465,28 +456,30 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_chunk_path_v2 <- function(array_dir, chunk_coords) {
-  if (length(chunk_coords) == 1) {
-    file.path(array_dir, as.character(chunk_coords))
+  key <- if (length(chunk_coords) == 1) {
+    as.character(chunk_coords)
   } else {
-    file.path(array_dir, paste(chunk_coords, collapse = "."))
+    paste(chunk_coords, collapse = ".")
   }
+  if (nzchar(array_dir)) file.path(array_dir, key) else key
 }
 
 #' Read multi-chunk zarr v2 numeric array
 #'
 #' @keywords internal
 #'
-.zarr_read_chunked <- function(array_dir, meta, dtype_info, shape, chunks,
-                                n_chunks_per_dim, compressor) {
+.zarr_read_chunked <- function(store_or_path, array_rel, meta, dtype_info,
+                                shape, chunks, n_chunks_per_dim, compressor) {
+  store <- .zarr_make_store(store_or_path)
   ndim <- length(shape)
   n_elements <- prod(shape)
 
   if (ndim == 1) {
     values <- numeric(n_elements)
     for (ci in seq_len(n_chunks_per_dim) - 1L) {
-      chunk_file <- .zarr_chunk_path_v2(array_dir, ci)
-      if (!file.exists(chunk_file)) next
-      raw_data <- readBin(chunk_file, "raw", file.info(chunk_file)$size)
+      chunk_key <- .zarr_chunk_path_v2(array_rel, ci)
+      if (!store$exists(chunk_key)) next
+      raw_data <- store$read_bytes(chunk_key)
       raw_data <- .zarr_decompress(raw_data, compressor)
       chunk_vals <- .raw_to_r_type(raw_data, dtype_info, chunks)
       start_idx <- ci * chunks + 1L
@@ -503,9 +496,9 @@ SeuratLayerToAnnData <- function(name) {
     values <- numeric(n_elements)
     for (ci in seq_len(n_chunks_per_dim[1]) - 1L) {
       for (cj in seq_len(n_chunks_per_dim[2]) - 1L) {
-        chunk_file <- .zarr_chunk_path_v2(array_dir, c(ci, cj))
-        if (!file.exists(chunk_file)) next
-        raw_data <- readBin(chunk_file, "raw", file.info(chunk_file)$size)
+        chunk_key <- .zarr_chunk_path_v2(array_rel, c(ci, cj))
+        if (!store$exists(chunk_key)) next
+        raw_data <- store$read_bytes(chunk_key)
         raw_data <- .zarr_decompress(raw_data, compressor)
         chunk_size <- prod(chunks)
         chunk_vals <- .raw_to_r_type(raw_data, dtype_info, chunk_size)
@@ -576,10 +569,10 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_read_strings <- function(store_path, rel_path) {
-  full_path <- file.path(store_path, rel_path)
+  store <- .zarr_make_store(store_path)
 
   # Read array metadata
-  meta <- .zarr_read_json(file.path(full_path, ".zarray"))
+  meta <- store$read_json(file.path(rel_path, ".zarray"))
   shape <- if (is.list(meta$shape)) unlist(meta$shape) else meta$shape
   total_n <- prod(shape)
   chunks <- if (is.list(meta$chunks)) unlist(meta$chunks) else meta$chunks
@@ -589,13 +582,13 @@ SeuratLayerToAnnData <- function(name) {
   all_strings <- character(0)
 
   for (chunk_idx in seq_len(n_chunks) - 1L) {
-    chunk_file <- file.path(full_path, as.character(chunk_idx))
-    if (!file.exists(chunk_file)) {
+    chunk_key <- file.path(rel_path, as.character(chunk_idx))
+    if (!store$exists(chunk_key)) {
       # Fill with empty strings for missing chunks
       all_strings <- c(all_strings, rep("", min(chunks[1], total_n - length(all_strings))))
       next
     }
-    raw_data <- readBin(chunk_file, "raw", file.info(chunk_file)$size)
+    raw_data <- store$read_bytes(chunk_key)
     if (length(raw_data) == 0) next
     raw_data <- .zarr_decompress(raw_data, compressor)
     n_in_chunk <- min(chunks[1], total_n - length(all_strings))
