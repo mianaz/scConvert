@@ -1,4 +1,5 @@
 *.html
+!articles/*.html
 *.R
 *.pdf
 *.h5ad
