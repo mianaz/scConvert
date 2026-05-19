@@ -11,25 +11,27 @@ experimental](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimenta
 [![Codecov](https://codecov.io/gh/mianaz/scConvert/graph/badge.svg)](https://codecov.io/gh/mianaz/scConvert)
 <!-- badges: end -->
 
-**Universal single-cell format conversion for R. No Python required.**
+**Load any single-cell format as a Seurat object. Write a Seurat object as any format. Convert any two formats in your terminal.**
 
-scConvert converts between **9 single-cell data formats** through a hub
-architecture using Seurat as a universal intermediate, providing **50+
-conversion paths** from a single `scConvert()` interface.
+scConvert bridges **11 single-cell data formats** through a hub architecture
+using Seurat as a universal intermediate, providing **50+ conversion paths**
+from a single `scConvert()` call in R or one `scconvert` command in the shell.
 
 ## Supported Formats
 
-| Format               | Extension   | Ecosystem          | Read | Write |
-|----------------------|-------------|--------------------|:----:|:-----:|
-| AnnData              | `.h5ad`     | scanpy / CELLxGENE | yes  |  yes  |
-| h5Seurat             | `.h5Seurat` | Seurat             | yes  |  yes  |
-| MuData               | `.h5mu`     | muon / multimodal  | yes  |  yes  |
-| Loom                 | `.loom`     | loompy / HCA       | yes  |  yes  |
-| Zarr                 | `.zarr`     | cloud AnnData      | yes  |  yes  |
-| TileDB-SOMA          | `soma://`   | CELLxGENE Census   | yes  |  yes  |
-| SpatialData          | `.zarr`     | scverse spatial    | yes  |  yes  |
-| RDS                  | `.rds`      | R native           | yes  |  yes  |
-| SingleCellExperiment | in-memory   | Bioconductor       | yes  |   –   |
+| Format               | Extension        | Ecosystem          | Read | Write |
+|----------------------|------------------|--------------------|:----:|:-----:|
+| AnnData              | `.h5ad`          | scanpy / CELLxGENE | yes  |  yes  |
+| Spatial AnnData      | `.h5ad`          | Visium / squidpy   | yes  |  yes  |
+| h5Seurat             | `.h5Seurat`      | Seurat             | yes  |  yes  |
+| MuData               | `.h5mu`          | muon / multimodal  | yes  |  yes  |
+| Loom                 | `.loom`          | loompy / HCA       | yes  |  yes  |
+| Zarr                 | `.zarr`          | cloud AnnData      | yes  |  yes  |
+| TileDB-SOMA          | `soma://`        | CELLxGENE Census   | yes  |  yes  |
+| SpatialData          | `.zarr`          | scverse spatial    | yes  |  yes  |
+| RDS                  | `.rds`           | R native           | yes  |  yes  |
+| SingleCellExperiment | in-memory        | Bioconductor       | yes  |   –   |
+| Stereo-seq GEF       | `.gef` / `.cellbin.gef` | STOmics   | yes  |   –   |
 
 ## Installation
 
