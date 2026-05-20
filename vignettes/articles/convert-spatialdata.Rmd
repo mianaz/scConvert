@@ -36,68 +36,26 @@ in a unified hierarchy. All major spatial technologies now have SpatialData
 representations via the
 [spatialdata-io](https://spatialdata-io.scverse.org) package.
 
-scConvert provides `readSpatialData()` to load the expression table from a SpatialData
-store into a Seurat object, and `SpatialDataToH5AD()` / `H5ADToSpatialData()` for
-format conversion.
-
-This article uses the `blobs` example store bundled with scConvert, a synthetic
-26-cell x 3-channel dataset that exercises the full SpatialData Zarr schema.
+This article demonstrates the Python–R interop workflow: Python reads the native
+SpatialData Zarr store, exports an h5ad, and scConvert loads it into Seurat for
+downstream analysis.
 
 ---
 
-## 1  Read a SpatialData store
+## 1  Python: native SpatialData reading
 
-`readSpatialData()` reads the `tables/table` AnnData table from the store and returns a
-Seurat object. Images and coordinate systems are attached when present.
+The Python spatialdata library reads the store directly, preserving the full
+multi-element hierarchy (tables, images, shapes, points).
 
-```{r read-spatialdata}
-sd_path <- "../blobs.spatialdata.zarr"
-
-t0 <- proc.time()
-blobs <- readSpatialData(sd_path, verbose = FALSE)
-elapsed <- (proc.time() - t0)[["elapsed"]]
-
-cat(sprintf("Loaded: %d cells x %d features in %.2fs\n",
-            ncol(blobs), nrow(blobs), elapsed))
-```
-
-```{r inspect-spatialdata}
-blobs
-head(blobs[[]], 6)
-```
-
-The three features (`channel_0_sum`, `channel_1_sum`, `channel_2_sum`) correspond to
-summarised intensity channels from the synthetic image blobs. This structure is
-representative of imaging-based spatial proteomics platforms (CODEX, IMC, CyCIF) where
-channels map to protein markers rather than gene transcripts.
-
----
-
-## 2  Export to h5ad
-
-`SpatialDataToH5AD()` extracts the expression table and spatial coordinates and writes
-a spec-compliant h5ad. The resulting file can be loaded directly into scanpy or
-squidpy for downstream analysis.
-
-```{r spatialdata-to-h5ad}
-h5ad_out <- file.path(tempdir(), "blobs.h5ad")
-
-t0 <- proc.time()
-SpatialDataToH5AD(sd_path, h5ad_out, overwrite = TRUE, verbose = FALSE)
-elapsed <- (proc.time() - t0)[["elapsed"]]
-
-cat(sprintf("SpatialData -> h5ad: %.2fs | %.1f MB\n",
-            elapsed, file.size(h5ad_out) / 1e6))
-```
-
----
-
-## 3  Python validation with spatialdata
-
-```{r python-setup}
+```{r python-setup, include=FALSE}
 library(reticulate)
 Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
 use_condaenv("scverse")
+```
+
+```{r setup-paths}
+sd_path   <- normalizePath("../blobs.spatialdata.zarr")
+h5ad_path <- file.path(tempdir(), "blobs.h5ad")
 ```
 
 ```{python py-spatialdata, eval=TRUE}
@@ -108,25 +66,73 @@ import matplotlib.pyplot as plt
 
 sdata = spatialdata.read_zarr(r.sd_path)
 print(sdata)
-print(f"Tables: {list(sdata.tables.keys())}")
-print(f"Images: {list(sdata.images.keys())}")
-print(f"Shapes: {list(sdata.shapes.keys())}")
-print(f"Points: {list(sdata.points.keys())}")
-```
-
-```{python py-h5ad-validate, eval=TRUE}
-import anndata
-adata = anndata.read_h5ad(r.h5ad_out)
-print(adata)
-print(f"obs columns: {list(adata.obs.columns)}")
+print(f"\nTables : {list(sdata.tables.keys())}")
+print(f"Images : {list(sdata.images.keys())}")
+print(f"Shapes : {list(sdata.shapes.keys())}")
+print(f"Points : {list(sdata.points.keys())}")
 ```
 
 ---
 
-## 4  Direct converter reference
+## 2  Python: export table to h5ad
 
-All four SpatialData <-> Seurat format converters are available as exported functions.
-The `scConvert()` dispatcher also handles `.spatialdata.zarr` paths automatically.
+The `table` element of a SpatialData store is a standard AnnData object.
+Exporting it to h5ad makes it immediately readable by scConvert.
+
+```{python py-export-h5ad, eval=TRUE}
+import os
+
+adata = sdata.tables["table"]
+print(f"Table: {adata.n_obs} cells x {adata.n_vars} features")
+print(f"obs columns: {list(adata.obs.columns)}")
+
+adata.write_h5ad(r.h5ad_path, compression="gzip")
+print(f"Written: {os.path.getsize(r.h5ad_path) / 1e3:.1f} KB -> {r.h5ad_path}")
+```
+
+---
+
+## 3  R: load h5ad with scConvert
+
+`readH5AD()` loads the exported h5ad into a standard Seurat object. All cell
+metadata and spatial coordinates are preserved.
+
+```{r read-h5ad}
+t0 <- proc.time()
+blobs <- readH5AD(h5ad_path, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Loaded: %d cells x %d features in %.2fs\n",
+            ncol(blobs), nrow(blobs), elapsed))
+cat(sprintf("Metadata: %s\n", paste(names(blobs[[]]), collapse = ", ")))
+```
+
+```{r inspect-blobs}
+head(blobs[[]], 6)
+```
+
+---
+
+## 4  Spatial coordinates in Seurat
+
+Spatial coordinates written by Python are stored in `obsm['spatial']` in the h5ad
+and mapped to a Seurat `FOV` image when loading with `readH5AD()`. This allows
+`SpatialFeaturePlot()` and related Seurat spatial functions to work without further
+setup.
+
+```{r check-coords}
+cat(sprintf("Reductions: %s\n",
+            paste(names(blobs@reductions), collapse = ", ")))
+cat(sprintf("Images   : %s\n",
+            paste(names(blobs@images), collapse = ", ")))
+```
+
+---
+
+## 5  scConvert API reference
+
+For zarr v2 SpatialData stores, scConvert provides direct R-to-R conversion
+functions without requiring Python.
 
 ```{r direct-converters, eval=FALSE}
 SpatialDataToH5AD(
@@ -147,21 +153,15 @@ SpatialDataToH5Seurat(
   overwrite = TRUE
 )
 
-H5SeuratToSpatialData(
-  source    = "sample.h5seurat",
-  dest      = "sample.spatialdata.zarr",
-  overwrite = TRUE
-)
-
 scConvert("sample.spatialdata.zarr", dest = "sample.h5ad")
 ```
 
 ---
 
-## 5  Technology coverage
+## 6  Technology coverage
 
 The following spatial technologies produce SpatialData stores via `spatialdata-io`.
-scConvert interoperates with all of them through the paths above.
+scConvert interoperates with all of them through the h5ad bridge above.
 
 | Technology | Vendor | Modality | spatialdata-io reader |
 |------------|--------|----------|-----------------------|
@@ -175,8 +175,8 @@ scConvert interoperates with all of them through the paths above.
 
 ---
 
-## 6  Cleanup
+## 7  Cleanup
 
 ```{r cleanup}
-unlink(h5ad_out)
+unlink(h5ad_path)
 ```

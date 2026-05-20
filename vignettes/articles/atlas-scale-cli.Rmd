@@ -41,7 +41,7 @@ T cells, B cells, myeloid cells, and other immune populations sampled across
 24 human tissues.
 
 ```{r dataset-info}
-ts_path <- "/Users/miana/Desktop/scConvert-manuscript/data/tabula_sapiens_immune.h5ad"
+ts_path <- "/Users/miana/Desktop/scConvert-manuscript/data/tier3/10x_3__v3/tabula_sapiens_immune.h5ad"
 
 file_gb <- round(file.size(ts_path) / 1e9, 2)
 

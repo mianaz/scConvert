@@ -137,9 +137,12 @@ set.seed(42L)
 cbmc <- RunPCA(cbmc, verbose = FALSE)
 
 DefaultAssay(cbmc) <- adt_name
+VariableFeatures(cbmc) <- rownames(cbmc[[adt_name]])
+cbmc <- ScaleData(cbmc, verbose = FALSE)
 n_adt <- nrow(cbmc[[adt_name]])
 adt_dims <- min(18L, n_adt - 1L)
-cbmc <- RunPCA(cbmc, reduction.name = "apca", verbose = FALSE)
+cbmc <- RunPCA(cbmc, features = rownames(cbmc[[adt_name]]),
+               reduction.name = "apca", verbose = FALSE)
 
 cbmc <- FindMultiModalNeighbors(
   cbmc,
