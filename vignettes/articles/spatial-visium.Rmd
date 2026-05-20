@@ -136,38 +136,17 @@ use_condaenv("scverse")
 
 ```{python py-validate, eval=TRUE}
 import anndata
+import squidpy as sq
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import numpy as np
 
 adata = anndata.read_h5ad(r.out_h5ad)
 print(f"Loaded: {adata.n_obs} spots x {adata.n_vars} genes")
 print(f"Has spatial: {'spatial' in adata.obsm}")
 print(f"Clusters: {adata.obs['seurat_clusters'].nunique()}")
 
-try:
-    import squidpy as sq
-    img_keys = [k for v in adata.uns.get("spatial", {}).values()
-                for k in v.get("images", {}).keys()]
-    chosen_key = "lowres" if "lowres" in img_keys else (img_keys[0] if img_keys else None)
-    sq.pl.spatial_scatter(adata, color="seurat_clusters",
-                          img_key=chosen_key, figsize=(6, 5))
-except Exception:
-    coords   = adata.obsm["spatial"]
-    clusters = adata.obs["seurat_clusters"].astype("category")
-    n_cl     = len(clusters.cat.categories)
-    palette  = plt.cm.get_cmap("tab20", n_cl)
-    fig, ax  = plt.subplots(figsize=(6, 5))
-    for i, cl in enumerate(clusters.cat.categories):
-        mask = clusters == cl
-        ax.scatter(coords[mask, 0], coords[mask, 1],
-                   c=[palette(i)], s=4, label=cl, alpha=0.8)
-    ax.set_title("Spatial clusters: mouse brain anterior")
-    ax.invert_yaxis()
-    ax.axis("off")
-    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left",
-              fontsize=6, ncol=2, markerscale=2)
+sq.pl.spatial_scatter(adata, color="seurat_clusters", figsize=(6, 5))
 plt.tight_layout()
 plt.show()
 ```

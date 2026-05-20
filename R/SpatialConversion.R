@@ -347,22 +347,22 @@ SeuratSpatialToH5AD <- function(seurat_obj, h5ad_file,
           images_group <- lib_group$create_group("images")
           # aperm reverses the R (h, w, c) layout so that after hdf5r writes
           # it row-major, Python readers see (h, w, c).
+          img_arr <- aperm(img_data, c(3, 2, 1))
           images_group$create_dataset(
-            name = "lowres",
-            robj = aperm(img_data, c(3, 2, 1)),
+            name  = "lowres",
+            robj  = img_arr,
             dtype = h5types$H5T_NATIVE_DOUBLE
           )
           if (verbose) message("  [", current_lib, "] Wrote lowres tissue image")
 
-          hires <- attr(img_data, "hires.image")
-          if (!is.null(hires)) {
-            images_group$create_dataset(
-              name = "hires",
-              robj = aperm(hires, c(3, 2, 1)),
-              dtype = h5types$H5T_NATIVE_DOUBLE
-            )
-            if (verbose) message("  [", current_lib, "] Wrote hires tissue image")
-          }
+          hires     <- attr(img_data, "hires.image")
+          hires_arr <- if (!is.null(hires)) aperm(hires, c(3, 2, 1)) else img_arr
+          images_group$create_dataset(
+            name  = "hires",
+            robj  = hires_arr,
+            dtype = h5types$H5T_NATIVE_DOUBLE
+          )
+          if (verbose) message("  [", current_lib, "] Wrote hires tissue image")
         }
       }, error = function(e) {
         if (verbose) message("  [", current_lib, "] Could not write tissue images: ", e$message)
