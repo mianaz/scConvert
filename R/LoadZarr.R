@@ -423,8 +423,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
         if (node_type == "array") {
           # Try reading as numeric, fall back to string
           .uns_store <- .zarr_make_store(file)
-          meta <- .uns_store$read_json(file.path(item_path, ".zarray"))
-          if (!is.null(meta$dtype) && meta$dtype == "|O") {
+          meta <- .zarr_read_array_meta(.uns_store, item_path)
+          if (meta$is_string) {
             seurat_obj@misc[[item]] <- .zarr_read_strings(file, item_path)
           } else {
             seurat_obj@misc[[item]] <- .zarr_read_numeric(file, item_path)
@@ -690,8 +690,8 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
                                    slice = slice1d)
       # Categories are global (not row-aligned), always read in full.
       cats_path <- file.path(col_path, "categories")
-      cats_meta <- store$read_json(file.path(cats_path, ".zarray"))
-      if (!is.null(cats_meta$dtype) && cats_meta$dtype == "|O") {
+      cats_meta <- .zarr_read_array_meta(store, cats_path)
+      if (cats_meta$is_string) {
         categories <- .zarr_read_strings(store_path, cats_path)
       } else {
         categories <- as.character(.zarr_read_numeric(store_path, cats_path))
@@ -704,18 +704,15 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
 
   if (node_type == "array") {
     store <- .zarr_make_store(store_path)
-    meta <- store$read_json(file.path(col_path, ".zarray"))
+    meta  <- .zarr_read_array_meta(store, col_path)
 
-    if (!is.null(meta$dtype) && meta$dtype == "|O") {
-      # String array
+    if (meta$is_string) {
       return(.zarr_read_strings(store_path, col_path, slice_idx = slice_idx))
     }
 
-    # Numeric or boolean array
     values <- .zarr_read_numeric(store_path, col_path, slice = slice1d)
 
-    # Check for boolean encoding
-    if (!is.null(meta$dtype) && grepl("^[|<>]?b1$", meta$dtype)) {
+    if (meta$is_bool) {
       values <- as.logical(values)
     }
 
@@ -739,7 +736,7 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
   }
   if (x_type == "array") {
     store <- .zarr_make_store(store_path)
-    meta <- store$read_json("X/.zarray")
+    meta <- .zarr_read_array_meta(store, "X")
     return(meta$shape[[1]])
   }
   stop("Cannot determine number of observations", call. = FALSE)
@@ -758,7 +755,7 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
   }
   if (x_type == "array") {
     store <- .zarr_make_store(store_path)
-    meta <- store$read_json("X/.zarray")
+    meta <- .zarr_read_array_meta(store, "X")
     return(meta$shape[[2]])
   }
   stop("Cannot determine number of variables", call. = FALSE)

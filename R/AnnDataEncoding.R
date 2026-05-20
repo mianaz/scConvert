@@ -175,6 +175,145 @@ SeuratLayerToAnnData <- function(name) {
   stop("Not a valid zarr store: ", store$root, call. = FALSE)
 }
 
+#' Normalise zarr v3 codecs to a list of row-like entries
+#'
+#' jsonlite::fromJSON(simplifyVector=TRUE) collapses an array of objects
+#' into a data.frame. We need each row as a list with name and configuration
+#' sub-list. Use jsonlite::fromJSON(simplifyVector=FALSE) parsing path or
+#' re-parse the dataframe rows carefully preserving nested structure.
+#'
+#' @keywords internal
+.zarr_codecs_as_list <- function(codecs) {
+  if (is.null(codecs)) return(list())
+  if (is.data.frame(codecs)) {
+    lapply(seq_len(nrow(codecs)), function(i) {
+      cfg_col <- codecs[["configuration"]]
+      cfg <- if (is.data.frame(cfg_col)) {
+        as.list(cfg_col[i, , drop = FALSE])
+      } else if (is.list(cfg_col)) {
+        cfg_col[[i]]
+      } else {
+        list()
+      }
+      list(name = codecs[["name"]][[i]], configuration = cfg)
+    })
+  } else if (is.list(codecs)) {
+    codecs
+  } else {
+    list()
+  }
+}
+
+#' Parse zarr v3 data_type string into dtype_info struct
+#'
+#' @keywords internal
+.zarr_parse_dtype_v3 <- function(data_type, codecs = NULL) {
+  endian <- "little"
+  codec_list <- .zarr_codecs_as_list(codecs)
+  for (codec in codec_list) {
+    if (identical(codec$name, "bytes")) {
+      cfg <- codec$configuration
+      if (is.data.frame(cfg)) cfg <- as.list(cfg[1, , drop = FALSE])
+      endian <- cfg$endian %||% "little"
+      if (is.na(endian)) endian <- "little"
+      break
+    }
+  }
+  switch(data_type,
+    float64  = list(r_type = "double",    size = 8L, endian = endian, signed = TRUE,  is_object = FALSE),
+    float32  = list(r_type = "double",    size = 4L, endian = endian, signed = TRUE,  is_object = FALSE),
+    float16  = list(r_type = "double",    size = 2L, endian = endian, signed = TRUE,  is_object = FALSE),
+    int64    = list(r_type = "integer",   size = 8L, endian = endian, signed = TRUE,  is_object = FALSE),
+    int32    = list(r_type = "integer",   size = 4L, endian = endian, signed = TRUE,  is_object = FALSE),
+    int16    = list(r_type = "integer",   size = 2L, endian = endian, signed = TRUE,  is_object = FALSE),
+    int8     = list(r_type = "integer",   size = 1L, endian = endian, signed = TRUE,  is_object = FALSE),
+    uint64   = list(r_type = "integer",   size = 8L, endian = endian, signed = FALSE, is_object = FALSE),
+    uint32   = list(r_type = "integer",   size = 4L, endian = endian, signed = FALSE, is_object = FALSE),
+    uint16   = list(r_type = "integer",   size = 2L, endian = endian, signed = FALSE, is_object = FALSE),
+    uint8    = list(r_type = "integer",   size = 1L, endian = endian, signed = FALSE, is_object = FALSE),
+    bool     = list(r_type = "logical",   size = 1L, endian = endian, signed = TRUE,  is_object = FALSE),
+    string   = list(r_type = "character", size = 0L, endian = "little", signed = TRUE, is_object = TRUE),
+             list(r_type = "double",    size = 8L, endian = endian, signed = TRUE,  is_object = FALSE)
+  )
+}
+
+#' Extract compressor spec from zarr v3 codecs array
+#'
+#' @keywords internal
+.zarr_extract_compressor_v3 <- function(codecs) {
+  codec_list <- .zarr_codecs_as_list(codecs)
+  if (length(codec_list) == 0L) return(NULL)
+  skip <- c("bytes", "vlen-utf8", "transpose")
+  for (codec in codec_list) {
+    if (is.null(codec$name) || codec$name %in% skip) next
+    cfg <- codec$configuration %||% list()
+    if (is.data.frame(cfg)) cfg <- as.list(cfg[1, , drop = FALSE])
+    level <- cfg$level %||% 0L
+    if (!is.null(level) && !is.na(level)) level <- as.integer(level) else level <- 0L
+    return(list(id = codec$name, level = level))
+  }
+  NULL
+}
+
+#' Read and normalise zarr array metadata (v2 and v3)
+#'
+#' Returns a uniform list regardless of zarr format version:
+#' shape, chunks, dtype_info, compressor, fill_value, order,
+#' version, chunk_prefix, chunk_sep, is_string.
+#'
+#' @keywords internal
+.zarr_read_array_meta <- function(store, rel_path) {
+  store <- .zarr_make_store(store)
+
+  # Detect format from array-level metadata files, not store root.
+  # This makes the function work even when the parent directory is not a
+  # properly formed zarr store root (e.g., bare temp directories in tests).
+  zarray_path <- if (nzchar(rel_path)) file.path(rel_path, ".zarray") else ".zarray"
+  zjson_path  <- if (nzchar(rel_path)) file.path(rel_path, "zarr.json") else "zarr.json"
+
+  version <- if (store$exists(zarray_path)) 2L else if (store$exists(zjson_path)) 3L else {
+    # Fall back to store-level version detection
+    .zarr_store_version(store)
+  }
+
+  if (version == 2L) {
+    raw      <- store$read_json(file.path(rel_path, ".zarray"))
+    shape    <- if (is.list(raw$shape))  unlist(raw$shape)  else raw$shape
+    chunks   <- if (is.list(raw$chunks)) unlist(raw$chunks) else raw$chunks
+    di       <- .zarr_parse_dtype(raw$dtype %||% "<f8")
+    comp     <- raw$compressor
+    fv       <- raw$fill_value
+    ord      <- raw$order %||% "C"
+    pfx      <- ""
+    sep      <- "."
+  } else {
+    raw      <- store$read_json(file.path(rel_path, "zarr.json"))
+    shape    <- unlist(raw$shape)
+    chunks   <- unlist(raw$chunk_grid$configuration$chunk_shape)
+    di       <- .zarr_parse_dtype_v3(raw$data_type %||% "float64", raw$codecs)
+    comp     <- .zarr_extract_compressor_v3(raw$codecs)
+    fv       <- raw$fill_value
+    ord      <- "C"
+    pfx      <- "c"
+    sep      <- "/"
+  }
+
+  list(
+    shape        = shape,
+    chunks       = chunks,
+    dtype_info   = di,
+    compressor   = comp,
+    fill_value   = fv,
+    order        = ord,
+    version      = version,
+    chunk_prefix = pfx,
+    chunk_sep    = sep,
+    is_string    = di$r_type == "character",
+    is_bool      = di$r_type == "logical",
+    dtype        = if (version == 2L) (raw$dtype %||% "") else NULL
+  )
+}
+
 #' Read and parse a JSON file
 #'
 #' @param path Path to JSON file
@@ -277,7 +416,7 @@ SeuratLayerToAnnData <- function(name) {
            "https://github.com/coolbutuseless/zstdlite for installation.",
            call. = FALSE)
     }
-    zstdlite::zstd_decompress_raw(raw_data)
+    zstdlite::zstd_decompress(raw_data)
   } else if (comp_id == "blosc") {
     if (!requireNamespace("blosc", quietly = TRUE)) {
       stop("blosc package required for blosc-compressed zarr data. ",
@@ -312,7 +451,7 @@ SeuratLayerToAnnData <- function(name) {
            "Use compressor = 'zlib' to fall back to gzip.", call. = FALSE)
     }
     level <- compressor$level %||% 3L
-    zstdlite::zstd_compress_raw(raw_data, level = as.integer(level))
+    zstdlite::zstd_compress(raw_data, level = as.integer(level))
   } else if (comp_id == "blosc") {
     if (!requireNamespace("blosc", quietly = TRUE)) {
       stop("blosc package required for blosc compression", call. = FALSE)
@@ -400,7 +539,15 @@ SeuratLayerToAnnData <- function(name) {
   )
 }
 
-#' Read a zarr v2 numeric array from disk
+#' Convert zarr fill_value to R scalar of the right type
+#' @keywords internal
+.raw_fill_to_r <- function(fill_value, dtype_info) {
+  if (dtype_info$r_type == "logical") return(as.logical(fill_value %||% FALSE))
+  if (dtype_info$r_type == "integer") return(as.integer(fill_value %||% 0L))
+  as.double(fill_value %||% 0)
+}
+
+#' Read a zarr numeric array from disk (v2 and v3)
 #'
 #' @param store_path Path to zarr store
 #' @param rel_path Relative path to array within store
@@ -414,44 +561,43 @@ SeuratLayerToAnnData <- function(name) {
 #' @keywords internal
 #'
 .zarr_read_numeric <- function(store_path, rel_path, slice = NULL) {
-  store <- .zarr_make_store(store_path)
-  meta <- store$read_json(file.path(rel_path, ".zarray"))
-
-  dtype_info <- .zarr_parse_dtype(meta$dtype)
-  shape <- if (is.list(meta$shape)) unlist(meta$shape) else meta$shape
-  chunks <- if (is.list(meta$chunks)) unlist(meta$chunks) else meta$chunks
+  store      <- .zarr_make_store(store_path)
+  meta       <- .zarr_read_array_meta(store, rel_path)
+  dtype_info <- meta$dtype_info
+  shape      <- meta$shape
+  chunks     <- meta$chunks
   compressor <- meta$compressor
-  order <- meta$order %||% "C"
+  order      <- meta$order
   n_elements <- prod(shape)
-  ndim <- length(shape)
+  ndim       <- length(shape)
 
-  # Slice path: chunk-selective fetch.
   if (!is.null(slice)) {
     return(.zarr_read_numeric_sliced(store, rel_path, meta, dtype_info,
-                                      shape, chunks, compressor, slice))
+                                     shape, chunks, compressor, slice))
   }
 
-  # Calculate chunk grid
   n_chunks_per_dim <- ceiling(shape / chunks)
-  total_chunks <- prod(n_chunks_per_dim)
+  total_chunks     <- prod(n_chunks_per_dim)
 
-  if (total_chunks == 1) {
-    # Single chunk - most common for AnnData arrays
-    chunk_key <- .zarr_chunk_path_v2(rel_path, rep(0L, ndim))
-    raw_data <- store$read_bytes(chunk_key)
-    raw_data <- .zarr_decompress(raw_data, compressor)
-    values <- .raw_to_r_type(raw_data, dtype_info, prod(chunks))
-    # Trim to actual shape if chunks > shape
-    values <- values[seq_len(n_elements)]
+  if (total_chunks == 1L) {
+    chunk_key <- .zarr_chunk_path(rel_path, rep(0L, ndim),
+                                  meta$chunk_prefix, meta$chunk_sep)
+    if (!store$exists(chunk_key)) {
+      fv <- meta$fill_value %||% 0
+      return(rep(.raw_fill_to_r(fv, dtype_info), n_elements))
+    }
+    raw_data <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
+    values   <- .raw_to_r_type(raw_data, dtype_info, prod(chunks))
+    values   <- values[seq_len(n_elements)]
   } else {
-    # Multi-chunk: assemble from chunk grid
     values <- .zarr_read_chunked(store, rel_path, meta, dtype_info, shape,
-                                  chunks, n_chunks_per_dim, compressor)
+                                 chunks, n_chunks_per_dim, compressor)
   }
 
-  if (ndim == 1) return(values)
-  if (ndim == 2) {
-    return(matrix(values, nrow = shape[1], ncol = shape[2], byrow = (order == "C")))
+  if (ndim == 1L) return(values)
+  if (ndim == 2L) {
+    return(matrix(values, nrow = shape[1], ncol = shape[2],
+                  byrow = (order == "C")))
   }
   values
 }
@@ -484,7 +630,7 @@ SeuratLayerToAnnData <- function(name) {
     out <- numeric(length(idx))
     chunk_ids <- unique((idx - 1L) %/% chunk_size)
     for (cid in chunk_ids) {
-      chunk_key <- .zarr_chunk_path_v2(rel_path, cid)
+      chunk_key <- .zarr_chunk_path(rel_path, cid, meta$chunk_prefix, meta$chunk_sep)
       if (!store$exists(chunk_key)) next
       raw <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
       chunk_vals <- .raw_to_r_type(raw, dtype_info, chunk_size)
@@ -510,7 +656,7 @@ SeuratLayerToAnnData <- function(name) {
       r_within <- row_idx[rows_in_chunk] - r_lo + 1L
       out_r_pos <- which(rows_in_chunk)
       for (cci in col_chunk_ids) {
-        chunk_key <- .zarr_chunk_path_v2(rel_path, c(rci, cci))
+        chunk_key <- .zarr_chunk_path(rel_path, c(rci, cci), meta$chunk_prefix, meta$chunk_sep)
         if (!store$exists(chunk_key)) next
         raw <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
         chunk_size <- cr * cc
@@ -529,21 +675,18 @@ SeuratLayerToAnnData <- function(name) {
   stop("Sliced read for >2D arrays not supported", call. = FALSE)
 }
 
-#' Build chunk file path for zarr v2
+#' Build chunk file path (zarr v2 and v3)
 #'
-#' @param array_dir Array directory path
+#' @param array_dir Array directory path (empty string for store root)
 #' @param chunk_coords Integer vector of chunk coordinates (0-based)
-#'
-#' @return File path to chunk
+#' @param chunk_prefix Prefix prepended before coordinates ("" for v2, "c" for v3)
+#' @param chunk_sep Separator between dimension coordinates ("." for v2, "/" for v3)
 #'
 #' @keywords internal
-#'
-.zarr_chunk_path_v2 <- function(array_dir, chunk_coords) {
-  key <- if (length(chunk_coords) == 1) {
-    as.character(chunk_coords)
-  } else {
-    paste(chunk_coords, collapse = ".")
-  }
+.zarr_chunk_path <- function(array_dir, chunk_coords,
+                              chunk_prefix = "", chunk_sep = ".") {
+  key_coords <- paste(chunk_coords, collapse = chunk_sep)
+  key <- if (nzchar(chunk_prefix)) file.path(chunk_prefix, key_coords) else key_coords
   if (nzchar(array_dir)) file.path(array_dir, key) else key
 }
 
@@ -560,7 +703,7 @@ SeuratLayerToAnnData <- function(name) {
   if (ndim == 1) {
     values <- numeric(n_elements)
     for (ci in seq_len(n_chunks_per_dim) - 1L) {
-      chunk_key <- .zarr_chunk_path_v2(array_rel, ci)
+      chunk_key <- .zarr_chunk_path(array_rel, ci, meta$chunk_prefix, meta$chunk_sep)
       if (!store$exists(chunk_key)) next
       raw_data <- store$read_bytes(chunk_key)
       raw_data <- .zarr_decompress(raw_data, compressor)
@@ -579,7 +722,7 @@ SeuratLayerToAnnData <- function(name) {
     values <- numeric(n_elements)
     for (ci in seq_len(n_chunks_per_dim[1]) - 1L) {
       for (cj in seq_len(n_chunks_per_dim[2]) - 1L) {
-        chunk_key <- .zarr_chunk_path_v2(array_rel, c(ci, cj))
+        chunk_key <- .zarr_chunk_path(array_rel, c(ci, cj), meta$chunk_prefix, meta$chunk_sep)
         if (!store$exists(chunk_key)) next
         raw_data <- store$read_bytes(chunk_key)
         raw_data <- .zarr_decompress(raw_data, compressor)
@@ -655,10 +798,10 @@ SeuratLayerToAnnData <- function(name) {
   store <- .zarr_make_store(store_path)
 
   # Read array metadata
-  meta <- store$read_json(file.path(rel_path, ".zarray"))
-  shape <- if (is.list(meta$shape)) unlist(meta$shape) else meta$shape
-  total_n <- prod(shape)
-  chunks <- if (is.list(meta$chunks)) unlist(meta$chunks) else meta$chunks
+  meta       <- .zarr_read_array_meta(store, rel_path)
+  shape      <- meta$shape
+  total_n    <- prod(shape)
+  chunks     <- meta$chunks
   compressor <- meta$compressor
   chunk_size <- chunks[1]
 
@@ -672,7 +815,7 @@ SeuratLayerToAnnData <- function(name) {
     out <- character(length(slice_idx))
     chunk_ids <- unique((slice_idx - 1L) %/% chunk_size)
     for (cid in chunk_ids) {
-      chunk_key <- file.path(rel_path, as.character(cid))
+      chunk_key <- .zarr_chunk_path(rel_path, cid, meta$chunk_prefix, meta$chunk_sep)
       lo <- cid * chunk_size + 1L
       hi <- min(lo + chunk_size - 1L, total_n)
       n_in_chunk <- hi - lo + 1L
@@ -699,7 +842,7 @@ SeuratLayerToAnnData <- function(name) {
   all_strings <- character(0)
 
   for (chunk_idx in seq_len(n_chunks) - 1L) {
-    chunk_key <- file.path(rel_path, as.character(chunk_idx))
+    chunk_key <- .zarr_chunk_path(rel_path, chunk_idx, meta$chunk_prefix, meta$chunk_sep)
     if (!store$exists(chunk_key)) {
       # Fill with empty strings for missing chunks
       all_strings <- c(all_strings,

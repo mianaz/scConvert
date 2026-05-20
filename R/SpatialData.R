@@ -109,7 +109,7 @@ readSpatialData <- function(path, table = "table", images = TRUE,
   # ---------------------------------------------------------------------------
   # 2. Parse spatialdata_attrs from the table
   # ---------------------------------------------------------------------------
-  table_attrs <- .zarr_read_json(file.path(table_path, ".zattrs"))
+  table_attrs <- .zarr_read_attrs(table_path)
   sd_attrs <- table_attrs$spatialdata_attrs
   region <- NULL
   region_key <- "region"
@@ -517,7 +517,7 @@ writeSpatialData <- function(object, path, table = "table",
 .read_spatialdata_shapes <- function(path, verbose = TRUE) {
   if (!dir.exists(path)) return(NULL)
 
-  attrs <- .zarr_read_json(file.path(path, ".zattrs"))
+  attrs <- .zarr_read_attrs(path)
   encoding <- attrs[["encoding-type"]] %||% ""
 
   if (encoding != "dataframe" && encoding != "") {
@@ -576,7 +576,7 @@ writeSpatialData <- function(object, path, table = "table",
 .read_spatialdata_points <- function(path, verbose = TRUE) {
   if (!dir.exists(path)) return(NULL)
 
-  attrs <- .zarr_read_json(file.path(path, ".zattrs"))
+  attrs <- .zarr_read_attrs(path)
   column_order <- attrs[["column-order"]]
 
   # Read index
@@ -643,7 +643,7 @@ writeSpatialData <- function(object, path, table = "table",
 .read_ome_ngff_image <- function(path, verbose = TRUE) {
   if (!dir.exists(path)) return(NULL)
 
-  attrs <- .zarr_read_json(file.path(path, ".zattrs"))
+  attrs <- .zarr_read_attrs(path)
 
   # Parse multiscales metadata
   multiscales <- attrs$multiscales
@@ -1228,7 +1228,7 @@ writeSpatialData <- function(object, path, table = "table",
   index_col <- attrs[["_index"]] %||% "_index"
 
   index_path <- file.path(store_path, index_col)
-  if (dir.exists(index_path) || file.exists(file.path(index_path, ".zarray"))) {
+  if (.zarr_node_type(store_path, index_col) != "missing") {
     return(as.character(.zarr_read_strings(store_path, index_col)))
   }
 

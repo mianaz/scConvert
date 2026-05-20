@@ -662,8 +662,8 @@ ZarrToH5AD <- function(source, dest, overwrite = FALSE, gzip = 4L,
         tryCatch({
           node <- .zarr_node_type(zarr_path, file.path("uns", un))
           if (node == "array") {
-            meta <- .zarr_read_json(file.path(zarr_path, "uns", un, ".zarray"))
-            if (!is.null(meta$dtype) && meta$dtype == "|O") {
+            meta <- .zarr_read_array_meta(zarr_path, file.path("uns", un))
+            if (meta$is_string) {
               vals <- .zarr_read_strings(zarr_path, file.path("uns", un))
               uns_grp$create_dataset(un, robj = vals,
                                      dtype = CachedUtf8Type(),
@@ -1307,8 +1307,8 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
           codes <- .zarr_read_numeric(zarr_path, file.path(col_path, "codes"))
           # Try reading categories as strings first
           cats_path <- file.path(col_path, "categories")
-          cats_meta <- .zarr_read_json(file.path(zarr_path, cats_path, ".zarray"))
-          cats <- if (!is.null(cats_meta$dtype) && cats_meta$dtype == "|O") {
+          cats_meta <- .zarr_read_array_meta(zarr_path, cats_path)
+          cats <- if (cats_meta$is_string) {
             .zarr_read_strings(zarr_path, cats_path)
           } else {
             tryCatch(.zarr_read_strings(zarr_path, cats_path),
@@ -1328,8 +1328,8 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
           col_written <- c(col_written, col)
         }
       } else if (node_type == "array") {
-        meta <- .zarr_read_json(file.path(zarr_path, col_path, ".zarray"))
-        if (!is.null(meta$dtype) && meta$dtype == "|O") {
+        meta <- .zarr_read_array_meta(zarr_path, col_path)
+        if (meta$is_string) {
           vals <- .zarr_read_strings(zarr_path, col_path)
           md_grp$create_dataset(col, robj = vals, dtype = CachedUtf8Type(),
                                 chunk_dims = length(vals), gzip_level = gzip)
@@ -1506,8 +1506,8 @@ ZarrToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
       tryCatch({
         node <- .zarr_node_type(zarr_path, file.path("uns", un))
         if (node == "array") {
-          meta <- .zarr_read_json(file.path(zarr_path, "uns", un, ".zarray"))
-          if (!is.null(meta$dtype) && meta$dtype == "|O") {
+          meta <- .zarr_read_array_meta(zarr_path, file.path("uns", un))
+          if (meta$is_string) {
             vals <- .zarr_read_strings(zarr_path, file.path("uns", un))
             misc_grp$create_dataset(un, robj = vals, dtype = CachedUtf8Type(),
                                     chunk_dims = length(vals), gzip_level = gzip)
