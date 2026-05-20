@@ -1,0 +1,174 @@
+---
+title: "Seurat <-> AnnData (h5ad): Real-Data Workflow with Python Validation"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Overview
+
+The h5ad format is the standard on-disk representation for
+[scanpy](https://scanpy.readthedocs.io),
+[scvi-tools](https://scvi-tools.org), and
+[CELLxGENE](https://cellxgene.cziscience.com).
+scConvert lets you move data between h5ad and Seurat objects without any
+Python dependency: all I/O goes through
+[hdf5r](https://cran.r-project.org/package=hdf5r).
+
+This article walks through the full round-trip on the PBMC 3k dataset
+(2,700 cells, 32,738 genes) and confirms the written h5ad is readable
+and analysable in Python/scanpy.
+
+---
+
+## 1  Load h5ad into Seurat
+
+`readH5AD()` reads the AnnData file and returns a `Seurat` object.
+It maps `X` to the `data` layer (normalized counts when present) and
+`raw/X` to the `counts` layer.
+
+```{r read-h5ad}
+h5ad_path <- "../pbmc3k.h5ad"
+
+t0 <- proc.time()
+pbmc <- readH5AD(h5ad_path, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+cat(sprintf("readH5AD: %.2fs | %d cells x %d genes\n",
+            elapsed, ncol(pbmc), nrow(pbmc)))
+```
+
+```{r inspect-object}
+pbmc
+head(pbmc[[]], 4)
+```
+
+---
+
+## 2  Standard Seurat analysis pipeline
+
+We run the canonical single-cell workflow on the loaded object.
+The h5ad may already contain embeddings from the source; re-running
+the pipeline here ensures the Seurat object is fully self-consistent
+and demonstrates that the imported data is analytically valid.
+
+```{r seurat-pipeline}
+set.seed(42L)
+pbmc <- NormalizeData(pbmc, verbose = FALSE)
+pbmc <- FindVariableFeatures(pbmc, nfeatures = 2000L, verbose = FALSE)
+pbmc <- ScaleData(pbmc, verbose = FALSE)
+pbmc <- RunPCA(pbmc, npcs = 30L, verbose = FALSE)
+pbmc <- RunUMAP(pbmc, dims = 1:20, verbose = FALSE)
+pbmc <- FindNeighbors(pbmc, dims = 1:20, verbose = FALSE)
+pbmc <- FindClusters(pbmc, resolution = 0.5, verbose = FALSE)
+```
+
+```{r dimplot, fig.cap="PBMC 3k UMAP coloured by Seurat clusters after h5ad import."}
+DimPlot(pbmc, reduction = "umap", label = TRUE, label.size = 4) +
+  ggtitle("PBMC 3k: Seurat clusters (from h5ad import)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+---
+
+## 3  Write Seurat back to h5ad
+
+`writeH5AD()` serialises the Seurat object to a spec-compliant AnnData
+file. Reductions are stored in `obsm`, graphs in `obsp`, and metadata in
+`obs`.
+
+```{r write-h5ad}
+tmp_h5ad <- file.path(tempdir(), "pbmc3k_seurat.h5ad")
+
+t0 <- proc.time()
+writeH5AD(pbmc, filename = tmp_h5ad, overwrite = TRUE, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("writeH5AD: %.2fs\n", elapsed))
+cat(sprintf("Output: %.1f MB\n", file.size(tmp_h5ad) / 1e6))
+```
+
+---
+
+## 4  Layer mapping reference
+
+| Seurat slot | h5ad path | Notes |
+|---|---|---|
+| `counts` layer | `/raw/X` | raw integer counts |
+| `data` layer | `/X` | normalised expression |
+| `scale.data` layer | `/layers/scale.data` | scaled matrix if present |
+| `meta.data` | `/obs` | cell-level annotations |
+| `var` rownames + metadata | `/var` | feature annotations |
+| `reductions` (e.g. PCA, UMAP) | `/obsm/X_pca`, `/obsm/X_umap` | cell embeddings |
+| `graphs` (SNN, NN) | `/obsp/` | sparse adjacency matrices |
+| `misc` | `/uns` | unstructured metadata |
+
+---
+
+## 5  Python validation
+
+We read the written h5ad back in Python/scanpy to confirm the file is
+correctly formed. This requires the `scverse` conda environment.
+
+```{r python-setup}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-validate, eval=TRUE}
+import anndata
+import scanpy as sc
+
+adata = anndata.read_h5ad(r.tmp_h5ad)
+print(adata)
+```
+
+Run scanpy's standard pipeline on the imported object:
+
+```{python py-pipeline, eval=TRUE, fig.cap="PBMC 3k UMAP from scanpy after round-trip through scConvert."}
+sc.pp.normalize_total(adata, target_sum=1e4)
+sc.pp.log1p(adata)
+sc.pp.pca(adata, n_comps=30, random_state=42)
+sc.pp.neighbors(adata, n_pcs=20, random_state=42)
+sc.tl.leiden(adata, resolution=0.5, random_state=42)
+sc.tl.umap(adata, random_state=42)
+sc.pl.umap(adata, color="leiden", show=True)
+```
+
+```{python py-summary, eval=TRUE}
+n_clusters = len(adata.obs["leiden"].unique())
+print(
+    f"Python validation: {adata.n_obs} cells x {adata.n_vars} genes, "
+    f"{n_clusters} clusters"
+)
+```
+
+---
+
+## 6  Cleanup
+
+```{r cleanup}
+unlink(tmp_h5ad)
+```

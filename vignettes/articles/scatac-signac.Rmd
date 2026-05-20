@@ -1,0 +1,179 @@
+---
+title: "scATAC-seq: Converting Peak-by-Cell Matrices to h5ad"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Introduction
+
+Single-cell ATAC-seq measures chromatin accessibility at single-cell
+resolution. The core data structure -- a **peak-by-cell count matrix** -- is
+structurally identical to a gene-by-cell RNA matrix. scConvert converts this
+matrix alongside cell metadata, embeddings, and cluster labels, enabling
+interoperability between R (Seurat/Signac) and Python (episcanpy, snapATAC2).
+
+This article demonstrates the conversion mechanics using a CRC (colorectal
+cancer) sample as a proxy. The matrix structure and I/O paths are the same
+whether rows represent genes or ATAC peaks.
+
+---
+
+## 1  Load data
+
+```{r load-crc}
+t0   <- proc.time()
+crc  <- readH5AD("../crc_sample.h5ad", verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+cat(sprintf("Loaded: %d cells x %d features in %.2fs\n",
+            ncol(crc), nrow(crc), elapsed))
+```
+
+---
+
+## 2  Brief analysis pipeline
+
+We run a standard Seurat workflow to produce clusters and a UMAP embedding
+for visualization.
+
+```{r pipeline}
+set.seed(42L)
+crc <- NormalizeData(crc, verbose = FALSE)
+crc <- FindVariableFeatures(crc, nfeatures = 2000L, verbose = FALSE)
+crc <- ScaleData(crc, verbose = FALSE)
+crc <- RunPCA(crc, npcs = 30L, verbose = FALSE)
+crc <- FindNeighbors(crc, dims = 1:20, verbose = FALSE)
+crc <- FindClusters(crc, resolution = 0.5, verbose = FALSE)
+crc <- RunUMAP(crc, dims = 1:20, verbose = FALSE)
+```
+
+```{r dimplot, fig.cap="CRC sample UMAP coloured by Seurat clusters."}
+DimPlot(crc, reduction = "umap", label = TRUE, label.size = 4, pt.size = 0.5) +
+  ggtitle("CRC sample: Seurat clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+---
+
+## 3  Export to h5ad
+
+`writeH5AD()` serialises the Seurat object to a spec-compliant AnnData file.
+Embeddings are stored in `obsm`, sparse matrices in `X`, and metadata in `obs`.
+
+```{r write-h5ad}
+h5ad_out <- file.path(tempdir(), "crc_atac_demo.h5ad")
+
+t0      <- proc.time()
+writeH5AD(crc, h5ad_out, overwrite = TRUE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Wrote h5ad: %.2fs | %.1f MB\n",
+            elapsed, file.size(h5ad_out) / 1e6))
+```
+
+---
+
+## 4  Python validation
+
+```{r python-setup}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-validate, eval=TRUE}
+import anndata
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+adata = anndata.read_h5ad(r.h5ad_out)
+print(f"Validated: {adata.n_obs} cells x {adata.n_vars} features")
+print(f"Obs columns: {list(adata.obs.columns[:6])}")
+print(f"Embeddings: {list(adata.obsm.keys())}")
+```
+
+---
+
+## 5  What scConvert preserves vs. what needs separate handling
+
+For real scATAC-seq data, scConvert preserves the core data matrix and
+annotations. Signac-specific components that live outside the standard
+AnnData/h5ad schema require separate handling.
+
+### Preserved by scConvert
+
+| Component | Seurat / Signac | h5ad path |
+|-----------|----------------|-----------|
+| Peak count matrix | `counts` layer | `/X` (or `/raw/X`) |
+| Cell metadata | `meta.data` | `/obs` |
+| Peak metadata | `meta.features` | `/var` |
+| LSI / PCA embeddings | `reductions` | `/obsm/X_lsi`, `/obsm/X_pca` |
+| UMAP coordinates | `reductions$umap` | `/obsm/X_umap` |
+| Cluster labels | `meta.data$seurat_clusters` | `/obs/seurat_clusters` |
+
+### Needs separate handling
+
+| Component | Why | Workaround |
+|-----------|-----|------------|
+| Fragment files | Large tabix files, not part of h5ad | Copy `fragments.tsv.gz` + `.tbi` separately |
+| Gene annotations | GRanges object (R-specific) | Reload from EnsDb after import |
+| Motif matrices | Signac-specific slot | Recompute with `AddMotifs()` |
+| ChromatinAssay class | R S4 class, not encodable in h5ad | Upgrade with `CreateChromatinAssay()` |
+
+---
+
+## 6  Upgrading to ChromatinAssay after import
+
+After loading an h5ad file that contains peak data, you can upgrade the
+standard Seurat assay to a Signac `ChromatinAssay` for peak-aware analyses
+such as motif enrichment and TF-IDF normalization.
+
+```{r signac-upgrade, eval=FALSE}
+suppressPackageStartupMessages(library(Signac))
+
+atac <- readH5AD("peaks.h5ad")
+
+peak_counts <- GetAssayData(atac, layer = "counts")
+atac[["peaks"]] <- CreateChromatinAssay(
+  counts      = peak_counts,
+  sep         = c("-", "-"),
+  min.cells   = 0,
+  min.features = 0
+)
+
+# Optionally re-attach genome annotations:
+# library(EnsDb.Hsapiens.v86)
+# Annotation(atac) <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+# Fragments(atac) <- CreateFragmentObject("fragments.tsv.gz")
+```
+
+---
+
+## 7  Cleanup
+
+```{r cleanup}
+unlink(h5ad_out)
+```

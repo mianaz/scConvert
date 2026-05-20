@@ -1,0 +1,192 @@
+---
+title: "Spatial Transcriptomics: Visium Data with Seurat and squidpy"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+10x Genomics Visium captures spatially resolved gene expression by measuring
+transcriptomes at defined spots arrayed across a tissue section. Each spot
+retains its physical coordinates and is co-registered with a histology image,
+enabling joint spatial-statistical analysis.
+
+scConvert preserves every spatial component during conversion: spot coordinates,
+high-resolution and low-resolution tissue images, and scale factors. The same
+dataset can therefore be analyzed in Seurat (R) and squidpy (Python) without
+any data loss or manual reformatting.
+
+## Load real Visium data from h5ad
+
+The `stxBrain.h5ad` file contains the 10x Genomics mouse brain anterior section
+distributed with the Seurat spatial vignette (2,696 spots, 31,053 genes, ~70 MB).
+
+```{r load-data}
+h5ad_path <- "../stxBrain.h5ad"
+
+t0      <- proc.time()
+brain   <- readH5AD(h5ad_path, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Loaded: %d spots x %d genes in %.2fs\n",
+            ncol(brain), nrow(brain), elapsed))
+cat(sprintf("Images: %s\n",
+            paste(names(brain@images), collapse = ", ")))
+cat(sprintf("Reductions: %s\n",
+            paste(names(brain@reductions), collapse = ", ")))
+```
+
+## Spatial expression plots
+
+`Hpca` (hippocalcin) is a marker of hippocampal neurons; `Ttr` (transthyretin)
+marks the choroid plexus. Plotting both on the tissue section confirms that
+scConvert preserves coordinate registration with the histology image.
+
+```{r spatial-feature-plot, fig.height=6}
+SpatialFeaturePlot(brain, features = c("Hpca", "Ttr"), ncol = 2)
+```
+
+## Seurat analysis pipeline
+
+A standard Seurat workflow — normalization, variable feature selection, PCA,
+graph construction, clustering, and UMAP — is applied to the spatial data.
+The spatial context does not require any modification of the pipeline.
+
+```{r seurat-pipeline}
+brain <- NormalizeData(brain, verbose = FALSE)
+brain <- FindVariableFeatures(brain, verbose = FALSE)
+brain <- ScaleData(brain, verbose = FALSE)
+brain <- RunPCA(brain, verbose = FALSE)
+brain <- FindNeighbors(brain, verbose = FALSE)
+brain <- FindClusters(brain, verbose = FALSE)
+brain <- RunUMAP(brain, dims = 1:30, verbose = FALSE)
+
+cat(sprintf("Clusters: %d\n",
+            length(unique(brain$seurat_clusters))))
+```
+
+### Spatial cluster map
+
+Each spot is colored by its Leiden cluster identity, overlaid on the histology
+image. Cluster boundaries align with anatomical structures visible in the tissue.
+
+```{r spatial-dim-plot, fig.height=6}
+SpatialDimPlot(brain, label = TRUE, label.size = 3)
+```
+
+### UMAP embedding
+
+The UMAP projection separates clusters that map to distinct spatial regions,
+consistent with region-specific transcriptional programs.
+
+```{r umap-plot}
+DimPlot(brain, reduction = "umap", label = TRUE, pt.size = 0.5) +
+  labs(title = "UMAP: mouse brain anterior section") +
+  theme(plot.title = element_text(size = 12))
+```
+
+## Export to h5ad for Python
+
+`writeH5AD()` serializes the Seurat object including spatial coordinates, the
+tissue image, scale factors, cluster labels, and dimensionality reduction
+embeddings.
+
+```{r write-h5ad}
+out_h5ad <- file.path(tempdir(), "stxBrain_seurat.h5ad")
+
+t0      <- proc.time()
+writeH5AD(brain, out_h5ad, overwrite = TRUE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Wrote h5ad: %.2fs | %.1f MB\n",
+            elapsed, file.size(out_h5ad) / 1e6))
+```
+
+## Python validation with squidpy
+
+The exported h5ad is read by anndata and visualized with squidpy to confirm
+that spatial coordinates and cluster labels survived the round-trip.
+
+```{r python-setup, include=FALSE}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-validate, eval=TRUE}
+import anndata
+import squidpy as sq
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+adata = anndata.read_h5ad(r.out_h5ad)
+print(f"Loaded: {adata.n_obs} spots x {adata.n_vars} genes")
+print(f"Has spatial: {'spatial' in adata.obsm}")
+print(f"Clusters: {adata.obs['seurat_clusters'].nunique()}")
+
+sq.pl.spatial_scatter(adata, color="seurat_clusters", figsize=(6, 5))
+plt.tight_layout()
+plt.show()
+```
+
+## What is preserved
+
+Every spatial component required for downstream Python analysis is written
+verbatim by scConvert.
+
+| Component | h5ad location | Preserved by scConvert |
+|---|---|:---:|
+| Expression matrix | X / raw/X | Yes |
+| Spot coordinates | obsm/spatial | Yes |
+| Tissue image | uns/spatial/*/images | Yes |
+| Scale factors | uns/spatial/*/scalefactors | Yes |
+| Cell metadata | obs | Yes |
+| Cluster labels | obs/seurat_clusters | Yes |
+| PCA embedding | obsm/X_pca | Yes |
+| UMAP embedding | obsm/X_umap | Yes |
+
+Scale factors are written as HDF5 scalars (`shape=()`), matching the
+convention expected by squidpy and scanpy for spot-size calculations.
+
+## Other spatial technologies
+
+scConvert handles a range of spatial platforms beyond Visium:
+
+- **MERFISH / CosMx / Xenium**: sub-cellular resolution platforms with polygon
+  or transcript-level coordinates stored as obs columns
+- **Slide-seq v2**: bead-based spatial transcriptomics
+- **Stereo-seq GEF**: BGI Genomics DNB-based spatial format, read via
+  `readGEF()` and converted to h5ad
+- **SpatialData Zarr**: the scverse cloud-native spatial container; see
+  [Convert SpatialData](convert-spatialdata.html) for a dedicated walkthrough
+
+All platforms share the same read/write API: `readH5AD()`, `writeH5AD()`, and
+the `scConvert()` dispatcher.
+
+## Cleanup
+
+```{r cleanup, include=FALSE}
+unlink(out_h5ad)
+```

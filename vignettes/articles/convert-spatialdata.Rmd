@@ -1,0 +1,182 @@
+---
+title: "SpatialData Zarr: The scverse Spatial Standard"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Overview
+
+[SpatialData](https://spatialdata.scverse.org) is the scverse standard for spatial
+omics. A `.spatialdata.zarr` store is a Zarr directory that encodes expression tables,
+spatial coordinates, shapes (polygons, circles), tissue images, and coordinate systems
+in a unified hierarchy. All major spatial technologies now have SpatialData
+representations via the
+[spatialdata-io](https://spatialdata-io.scverse.org) package.
+
+scConvert provides `readSpatialData()` to load the expression table from a SpatialData
+store into a Seurat object, and `SpatialDataToH5AD()` / `H5ADToSpatialData()` for
+format conversion.
+
+This article uses the `blobs` example store bundled with scConvert, a synthetic
+26-cell x 3-channel dataset that exercises the full SpatialData Zarr schema.
+
+---
+
+## 1  Read a SpatialData store
+
+`readSpatialData()` reads the `tables/table` AnnData table from the store and returns a
+Seurat object. Images and coordinate systems are attached when present.
+
+```{r read-spatialdata}
+sd_path <- "../blobs.spatialdata.zarr"
+
+t0 <- proc.time()
+blobs <- readSpatialData(sd_path, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Loaded: %d cells x %d features in %.2fs\n",
+            ncol(blobs), nrow(blobs), elapsed))
+```
+
+```{r inspect-spatialdata}
+blobs
+head(blobs[[]], 6)
+```
+
+The three features (`channel_0_sum`, `channel_1_sum`, `channel_2_sum`) correspond to
+summarised intensity channels from the synthetic image blobs. This structure is
+representative of imaging-based spatial proteomics platforms (CODEX, IMC, CyCIF) where
+channels map to protein markers rather than gene transcripts.
+
+---
+
+## 2  Export to h5ad
+
+`SpatialDataToH5AD()` extracts the expression table and spatial coordinates and writes
+a spec-compliant h5ad. The resulting file can be loaded directly into scanpy or
+squidpy for downstream analysis.
+
+```{r spatialdata-to-h5ad}
+h5ad_out <- file.path(tempdir(), "blobs.h5ad")
+
+t0 <- proc.time()
+SpatialDataToH5AD(sd_path, h5ad_out, overwrite = TRUE, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("SpatialData -> h5ad: %.2fs | %.1f MB\n",
+            elapsed, file.size(h5ad_out) / 1e6))
+```
+
+---
+
+## 3  Python validation with spatialdata
+
+```{r python-setup}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-spatialdata, eval=TRUE}
+import spatialdata
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+sdata = spatialdata.read_zarr(r.sd_path)
+print(sdata)
+print(f"Tables: {list(sdata.tables.keys())}")
+print(f"Images: {list(sdata.images.keys())}")
+print(f"Shapes: {list(sdata.shapes.keys())}")
+print(f"Points: {list(sdata.points.keys())}")
+```
+
+```{python py-h5ad-validate, eval=TRUE}
+import anndata
+adata = anndata.read_h5ad(r.h5ad_out)
+print(adata)
+print(f"obs columns: {list(adata.obs.columns)}")
+```
+
+---
+
+## 4  Direct converter reference
+
+All four SpatialData <-> Seurat format converters are available as exported functions.
+The `scConvert()` dispatcher also handles `.spatialdata.zarr` paths automatically.
+
+```{r direct-converters, eval=FALSE}
+SpatialDataToH5AD(
+  source    = "sample.spatialdata.zarr",
+  dest      = "sample.h5ad",
+  overwrite = TRUE
+)
+
+H5ADToSpatialData(
+  source    = "sample.h5ad",
+  dest      = "sample.spatialdata.zarr",
+  overwrite = TRUE
+)
+
+SpatialDataToH5Seurat(
+  source    = "sample.spatialdata.zarr",
+  dest      = "sample.h5seurat",
+  overwrite = TRUE
+)
+
+H5SeuratToSpatialData(
+  source    = "sample.h5seurat",
+  dest      = "sample.spatialdata.zarr",
+  overwrite = TRUE
+)
+
+scConvert("sample.spatialdata.zarr", dest = "sample.h5ad")
+```
+
+---
+
+## 5  Technology coverage
+
+The following spatial technologies produce SpatialData stores via `spatialdata-io`.
+scConvert interoperates with all of them through the paths above.
+
+| Technology | Vendor | Modality | spatialdata-io reader |
+|------------|--------|----------|-----------------------|
+| Visium / Visium HD | 10x Genomics | transcriptomics | `visium()` / `visium_hd()` |
+| Xenium | 10x Genomics | transcriptomics (FISH) | `xenium()` |
+| CosMx | NanoString | transcriptomics (FISH) | `cosmx()` |
+| MERFISH | Vizgen | transcriptomics (FISH) | `merfish()` |
+| Slide-seq | Broad Institute | transcriptomics | `slideseq()` |
+| CODEX / PhenoCycler | Akoya Biosciences | proteomics | `codex()` |
+| IMC | Fluidigm / Standard BioTools | proteomics | `imc()` |
+
+---
+
+## 6  Cleanup
+
+```{r cleanup}
+unlink(h5ad_out)
+```

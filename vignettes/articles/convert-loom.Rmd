@@ -1,0 +1,187 @@
+---
+title: "Loom Format: HDF5 Interop with loompy and scVelo"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Overview
+
+Loom is an HDF5-based format developed by the Linnarsson lab and used natively by
+[loompy](https://loompy.org), [RNA velocity tools](https://scvelo.readthedocs.io)
+(scVelo, velocyto), and several single-cell atlases. It stores the expression matrix
+at `/matrix`, cell metadata in `/col_attrs`, gene metadata in `/row_attrs`, and
+additional layers (spliced/unspliced counts, normalized data) in `/layers`.
+
+scConvert provides `readLoom()` and `writeLoom()` for full Seurat <-> Loom conversion
+without a Python dependency.
+
+This article demonstrates the conversion on PBMC 3k (2,638 cells, 13,714 genes) and
+validates the written file with loompy and scanpy.
+
+---
+
+## 1  Load h5ad and write Loom
+
+We first load the PBMC 3k h5ad into Seurat, then export to Loom.
+
+```{r read-h5ad}
+input_h5ad <- "../pbmc3k.h5ad"
+pbmc_seurat <- readH5AD(input_h5ad, verbose = FALSE)
+cat(sprintf("Loaded: %d cells x %d genes\n", ncol(pbmc_seurat), nrow(pbmc_seurat)))
+```
+
+```{r write-loom}
+loom_path <- file.path(tempdir(), "pbmc3k.loom")
+
+t0 <- proc.time()
+writeLoom(pbmc_seurat, filename = loom_path, overwrite = TRUE, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Wrote Loom: %.2fs | %.1f MB\n", elapsed, file.size(loom_path) / 1e6))
+```
+
+---
+
+## 2  Read Loom back into Seurat
+
+```{r read-loom}
+pbmc_loom <- readLoom(loom_path, verbose = FALSE)
+cat(sprintf("Loaded: %d cells x %d genes\n", ncol(pbmc_loom), nrow(pbmc_loom)))
+```
+
+```{r inspect-loom}
+pbmc_loom
+head(pbmc_loom[[]], 4)
+```
+
+```{r dimplot-loom, fig.cap="PBMC 3k UMAP coloured by cell-type annotation after Loom round-trip."}
+set.seed(42L)
+pbmc_loom <- NormalizeData(pbmc_loom, verbose = FALSE)
+pbmc_loom <- FindVariableFeatures(pbmc_loom, nfeatures = 2000L, verbose = FALSE)
+pbmc_loom <- ScaleData(pbmc_loom, verbose = FALSE)
+pbmc_loom <- RunPCA(pbmc_loom, npcs = 30L, verbose = FALSE)
+pbmc_loom <- RunUMAP(pbmc_loom, dims = 1:20, verbose = FALSE)
+
+DimPlot(
+  pbmc_loom,
+  reduction  = "umap",
+  group.by   = "seurat_annotations",
+  label      = TRUE,
+  label.size = 3.5,
+  repel      = TRUE
+) +
+  ggtitle("PBMC 3k: cell-type annotations (from Loom)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+---
+
+## 3  What is preserved
+
+| Component | Preserved | Loom path |
+|-----------|:---------:|-----------|
+| Expression matrix | Yes | `/matrix` |
+| Raw counts | Yes | `/layers/counts` |
+| Cell metadata | Yes | `/col_attrs` |
+| Gene metadata | Yes | `/row_attrs` |
+| PCA / UMAP embeddings | Yes | `/col_attrs/PC_1..n`, `UMAP_1..n` |
+| Seurat cluster labels | Yes | `/col_attrs/seurat_clusters` |
+| Neighbor graphs | No | Recompute with `FindNeighbors()` |
+| `misc` / `uns` | No | Not part of the Loom spec |
+
+---
+
+## 4  Python validation with loompy
+
+```{r python-setup}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-loompy, eval=TRUE}
+import loompy
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+with loompy.connect(r.loom_path, mode="r") as ds:
+    print(f"Shape: {ds.shape[0]} genes x {ds.shape[1]} cells")
+    print(f"Column attributes (cell metadata): {list(ds.ca.keys())[:8]}")
+    print(f"Row attributes (gene metadata): {list(ds.ra.keys())[:5]}")
+    print(f"Layers: {list(ds.layers.keys())}")
+```
+
+---
+
+## 5  Read Loom with scanpy
+
+scanpy can load a Loom file directly and treat it as an AnnData object.
+
+```{python py-scanpy-loom, eval=TRUE}
+import scanpy as sc
+adata = sc.read_loom(r.loom_path, sparse=True, cleanup=False)
+print(adata)
+print(f"obs columns: {list(adata.obs.columns)[:6]}")
+```
+
+---
+
+## 6  scVelo use case
+
+Loom is the primary input format for RNA velocity analysis with
+[scVelo](https://scvelo.readthedocs.io) and
+[velocyto](https://velocyto.org). scVelo expects two layers: `spliced` and
+`unspliced`, which are produced by velocyto or STARsolo during alignment.
+
+A typical workflow:
+
+1. Run STARsolo or velocyto on the BAM files to produce a `.loom` with
+   spliced/unspliced counts.
+2. Load that loom into R with `readLoom()` for QC and metadata annotation in Seurat.
+3. Export the annotated object back with `writeLoom()`, which preserves
+   the cluster labels and embeddings in `/col_attrs`.
+4. Pass the annotated loom to scVelo in Python.
+
+scConvert writes expression counts to `/layers/counts`. Users need to merge the
+spliced/unspliced layers from the velocyto output separately before running scVelo.
+
+```{python py-scvelo-note, eval=TRUE}
+import loompy
+with loompy.connect(r.loom_path, mode="r") as ds:
+    layers = list(ds.layers.keys())
+    print(f"Layers in scConvert output: {layers}")
+    print("scVelo additionally requires: ['spliced', 'unspliced']")
+    print("Merge these from the velocyto loom before calling scvelo.pp.filter_and_normalize()")
+```
+
+---
+
+## 7  Cleanup
+
+```{r cleanup}
+unlink(loom_path)
+```

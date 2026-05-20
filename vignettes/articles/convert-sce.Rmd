@@ -1,0 +1,211 @@
+---
+title: "Seurat <-> SingleCellExperiment: Bioconductor Interoperability"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+has_sce <- requireNamespace("SingleCellExperiment", quietly = TRUE) &&
+  requireNamespace("SummarizedExperiment", quietly = TRUE)
+```
+
+## Introduction
+
+Many Bioconductor workflows -- scran normalization, scater QC,
+slingshot trajectory inference, MAST differential expression -- operate on the
+[SingleCellExperiment](https://bioconductor.org/packages/SingleCellExperiment/)
+(SCE) container. Seurat provides built-in converters (`as.SingleCellExperiment()`
+and `as.Seurat()`) that move data between ecosystems. scConvert extends this by
+letting you route SCE objects directly to h5ad, h5Seurat, Loom, or Zarr via
+its hub architecture -- no manual intermediate step required.
+
+This article walks through the full workflow on the PBMC 3k dataset.
+
+---
+
+## 1  Load real PBMC3k data
+
+```{r load-pbmc}
+t0      <- proc.time()
+pbmc    <- readH5AD("../pbmc3k.h5ad", verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+cat(sprintf("Loaded: %d cells x %d genes in %.2fs\n",
+            ncol(pbmc), nrow(pbmc), elapsed))
+```
+
+---
+
+## 2  Seurat analysis pipeline
+
+We run the standard pipeline so the object carries PCA, UMAP, and cluster
+labels for downstream inspection. Steps are skipped if reductions already
+exist in the imported file.
+
+```{r seurat-pipeline}
+set.seed(42L)
+pbmc <- NormalizeData(pbmc, verbose = FALSE)
+pbmc <- FindVariableFeatures(pbmc, nfeatures = 2000L, verbose = FALSE)
+pbmc <- ScaleData(pbmc, verbose = FALSE)
+pbmc <- RunPCA(pbmc, npcs = 30L, verbose = FALSE)
+pbmc <- RunUMAP(pbmc, dims = 1:20, verbose = FALSE)
+pbmc <- FindNeighbors(pbmc, dims = 1:20, verbose = FALSE)
+pbmc <- FindClusters(pbmc, resolution = 0.5, verbose = FALSE)
+```
+
+```{r dimplot, fig.cap="PBMC 3k UMAP coloured by Seurat clusters."}
+DimPlot(pbmc, reduction = "umap", label = TRUE, label.size = 4) +
+  ggtitle("PBMC 3k: Seurat clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+---
+
+## 3  Seurat to SingleCellExperiment
+
+`as.SingleCellExperiment()` transfers counts, normalized data, dimensional
+reductions, and cell metadata into the SCE container.
+
+```{r seurat-to-sce, eval=has_sce}
+suppressPackageStartupMessages(library(SingleCellExperiment))
+
+sce <- as.SingleCellExperiment(pbmc)
+cat(sprintf("SCE assays: %s\n",
+            paste(assayNames(sce), collapse = ", ")))
+cat(sprintf("Reduced dims: %s\n",
+            paste(reducedDimNames(sce), collapse = ", ")))
+cat(sprintf("colData columns: %d\n", ncol(colData(sce))))
+```
+
+---
+
+## 4  Bioconductor QC workflow on SCE
+
+A typical Bioconductor entry point is computing per-cell QC metrics. Below we
+use base R to calculate log-library-size and detected-feature counts -- the
+same quantities that `scater::perCellQCMetrics()` would produce. The new
+columns become available to any SCE-aware tool.
+
+```{r sce-qc, eval=has_sce}
+counts_mat <- assay(sce, "counts")
+colData(sce)$log_library_size  <- log1p(Matrix::colSums(counts_mat))
+colData(sce)$detected_features <- Matrix::colSums(counts_mat > 0)
+cat(sprintf("Added QC columns: log_library_size, detected_features\n"))
+cat(sprintf("Median library size (log1p): %.2f\n",
+            median(colData(sce)$log_library_size)))
+cat(sprintf("Median detected features: %.0f\n",
+            median(colData(sce)$detected_features)))
+```
+
+```{r qc-violin, eval=has_sce, fig.width=10, fig.height=5, fig.cap="Per-cell QC metrics across Seurat clusters."}
+qc_df <- data.frame(
+  cluster         = as.character(pbmc$seurat_clusters),
+  log_library     = colData(sce)$log_library_size,
+  detected        = colData(sce)$detected_features
+)
+
+p1 <- ggplot(qc_df, aes(x = cluster, y = log_library, fill = cluster)) +
+  geom_violin(scale = "width", trim = TRUE) +
+  geom_boxplot(width = 0.1, outlier.size = 0.5, fill = "white") +
+  labs(x = "Cluster", y = "log(1 + library size)") +
+  theme_classic() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = 9))
+
+p2 <- ggplot(qc_df, aes(x = cluster, y = detected, fill = cluster)) +
+  geom_violin(scale = "width", trim = TRUE) +
+  geom_boxplot(width = 0.1, outlier.size = 0.5, fill = "white") +
+  labs(x = "Cluster", y = "Detected features") +
+  theme_classic() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = 9))
+
+suppressPackageStartupMessages(library(patchwork))
+p1 + p2
+```
+
+---
+
+## 5  SCE back to Seurat
+
+`as.Seurat()` reconstructs the Seurat object from SCE. The `counts` and
+`data` arguments map SCE assay names to the appropriate Seurat layers. Any
+columns added to `colData` during the Bioconductor workflow travel with the
+object.
+
+```{r sce-to-seurat, eval=has_sce}
+seurat_rt <- as.Seurat(sce, counts = "counts", data = "logcounts")
+cat(sprintf("Converted back: %d cells\n", ncol(seurat_rt)))
+cat(sprintf("Metadata columns: %s\n",
+            paste(head(colnames(seurat_rt[[]]), 6L), collapse = ", ")))
+```
+
+---
+
+## 6  SCE to h5ad via scConvert
+
+To share an SCE dataset with Python collaborators, pass it directly to
+`scConvert()`. The SCE is converted to a Seurat object internally, then
+written to the target format -- no manual intermediate step is needed.
+
+```{r sce-to-h5ad, eval=has_sce}
+h5ad_path <- file.path(tempdir(), "pbmc3k_sce.h5ad")
+
+t0      <- proc.time()
+scConvert(sce, dest = h5ad_path, overwrite = TRUE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("h5ad size: %.1f MB (%.2fs)\n",
+            file.size(h5ad_path) / 1e6, elapsed))
+```
+
+---
+
+## 7  What is preserved
+
+### Seurat -> SCE -> Seurat round-trip
+
+| Component | Preserved |
+|-----------|-----------|
+| Count matrix | Yes |
+| Normalized data | Yes |
+| Cell metadata | Yes |
+| Gene metadata | Yes |
+| PCA / UMAP | Yes (as reducedDims) |
+| Neighbor graphs | Partial |
+
+### Common Bioconductor workflows enabled by scConvert
+
+| Workflow | Package | After scConvert |
+|----------|---------|-----------------|
+| QC filtering | scater | `perCellQCMetrics()` on SCE |
+| Normalization | scran | `computeSumFactors()` on SCE |
+| Trajectory | slingshot | `slingshot(sce, ...)` |
+| Differential expression | MAST | `zlm(~ condition, sce)` |
+
+---
+
+## 8  Cleanup
+
+```{r cleanup, eval=has_sce}
+unlink(h5ad_path)
+```

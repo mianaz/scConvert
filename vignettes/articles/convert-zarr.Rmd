@@ -1,0 +1,191 @@
+---
+title: "Zarr Format: Cloud-Native Storage with Python zarr Validation"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Overview
+
+Zarr is a directory-based format for chunked compressed arrays. Unlike HDF5, every chunk
+is stored as an independent file, making Zarr cloud-native: individual chunks can be read
+directly from S3, GCS, or Azure Blob Storage without downloading the full dataset.
+Zarr is the storage format used by
+[CELLxGENE](https://cellxgene.cziscience.com),
+[Human Cell Atlas](https://www.humancellatlas.org), and
+[scverse](https://scverse.org) streaming pipelines.
+
+scConvert reads and writes Zarr v2 stores following the AnnData on-disk specification.
+Three conversion paths are available:
+
+- `scConvert()` dispatcher (hub path through Seurat)
+- `readZarr()` / `writeZarr()` (load/save from R)
+- `H5ADToZarr()` / `ZarrToH5AD()` (streaming, no Seurat intermediate)
+
+This article demonstrates all three paths on the PBMC 3k dataset (2,638 cells,
+13,714 genes) and validates the output with Python zarr and anndata.
+
+---
+
+## 1  h5ad to Zarr
+
+`scConvert()` detects output format from the file extension and routes through the Seurat
+hub. This path preserves all obs, var, obsm, obsp, and uns fields.
+
+```{r h5ad-to-zarr}
+input_h5ad <- "../pbmc3k.h5ad"
+zarr_path  <- file.path(tempdir(), "pbmc3k.zarr")
+
+t0 <- proc.time()
+scConvert(input_h5ad, dest = zarr_path, overwrite = TRUE, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+n_files <- length(list.files(zarr_path, recursive = TRUE))
+cat(sprintf("Converted to Zarr: %.2fs | %d chunk files\n", elapsed, n_files))
+```
+
+Each chunk file in the Zarr store corresponds to a tile of a compressed array. The
+number of files reflects the chunking strategy applied to X, obsm embeddings, and
+metadata arrays.
+
+---
+
+## 2  Read Zarr into Seurat
+
+`readZarr()` reconstructs a Seurat object from the store, mapping AnnData conventions
+back to Seurat slots (X->data layer, raw/X->counts layer, obsm->reductions, obsp->graphs).
+
+```{r read-zarr}
+pbmc <- readZarr(zarr_path, verbose = FALSE)
+cat(sprintf("Loaded: %d cells x %d genes\n", ncol(pbmc), nrow(pbmc)))
+cat(sprintf("Reductions: %s\n", paste(names(pbmc@reductions), collapse = ", ")))
+```
+
+```{r inspect-zarr}
+pbmc
+head(pbmc[[]], 4)
+```
+
+```{r dimplot-zarr, fig.cap="PBMC 3k UMAP coloured by cell-type annotation after Zarr round-trip."}
+DimPlot(
+  pbmc,
+  reduction = "umap",
+  group.by  = "seurat_annotations",
+  label     = TRUE,
+  label.size = 3.5,
+  repel     = TRUE
+) +
+  ggtitle("PBMC 3k: cell-type annotations (from Zarr)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+---
+
+## 3  Python validation
+
+We confirm the Zarr store is readable with Python zarr and anndata.
+
+```{r python-setup}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-zarr-inspect, eval=TRUE}
+import zarr
+import anndata
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+store = zarr.open(r.zarr_path, mode="r")
+print("Top-level Zarr groups:", list(store.keys()))
+```
+
+```{python py-anndata-read, eval=TRUE}
+adata = anndata.read_zarr(r.zarr_path)
+print(adata)
+print(f"Validated: {adata.n_obs} cells x {adata.n_vars} genes")
+print(f"Obs columns: {list(adata.obs.columns)[:5]}")
+print(f"Obsm keys: {list(adata.obsm.keys())}")
+```
+
+anndata reads the store natively, confirming the encoding attributes, chunk
+shapes, and dtype conventions are all compliant with the AnnData Zarr specification.
+
+---
+
+## 4  Streaming converters (no Seurat intermediate)
+
+`H5ADToZarr()` streams fields from HDF5 directly into Zarr chunks without constructing
+a Seurat object. This is the lowest-memory conversion path and is appropriate when
+you need to reformat large datasets that do not fit in R memory.
+
+```{r h5ad-to-zarr-stream}
+zarr2_path <- file.path(tempdir(), "pbmc3k_stream.zarr")
+
+t0 <- proc.time()
+H5ADToZarr(input_h5ad, zarr2_path, overwrite = TRUE, verbose = FALSE)
+elapsed2 <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("H5ADToZarr (streaming): %.2fs\n", elapsed2))
+```
+
+The symmetric streaming converter `ZarrToH5AD()` writes a valid h5ad from any Zarr
+store, including stores downloaded from cloud sources.
+
+---
+
+## 5  Zarr to h5ad round-trip
+
+```{r zarr-to-h5ad}
+rt_h5ad <- file.path(tempdir(), "pbmc3k_from_zarr.h5ad")
+ZarrToH5AD(zarr_path, rt_h5ad, overwrite = TRUE, verbose = FALSE)
+
+rt <- readH5AD(rt_h5ad, verbose = FALSE)
+cat(sprintf("Round-trip: %d cells x %d genes\n", ncol(rt), nrow(rt)))
+```
+
+---
+
+## 6  Conversion path reference
+
+| Path | Function | Seurat object built | Best for |
+|------|----------|:-------------------:|---------|
+| h5ad -> Zarr (hub) | `scConvert()` | Yes | Full metadata round-trip |
+| h5ad -> Zarr (stream) | `H5ADToZarr()` | No | Large files, low memory |
+| Zarr -> h5ad (stream) | `ZarrToH5AD()` | No | Cloud-to-HDF5 reformat |
+| h5seurat -> Zarr | `H5SeuratToZarr()` | No | Seurat-native streaming |
+| Zarr -> h5seurat | `ZarrToH5Seurat()` | No | Seurat-native streaming |
+
+---
+
+## 7  Cleanup
+
+```{r cleanup}
+unlink(zarr_path,  recursive = TRUE)
+unlink(zarr2_path, recursive = TRUE)
+unlink(rt_h5ad)
+```

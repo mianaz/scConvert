@@ -1,0 +1,221 @@
+---
+title: "CITE-seq Workflow: RNA + Protein with Real CBMC Data"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Introduction
+
+CITE-seq (Cellular Indexing of Transcriptomes and Epitopes by Sequencing)
+simultaneously profiles RNA and surface protein (antibody-derived tags, ADT)
+from the same cells, enabling a more complete picture of cell identity than
+RNA alone. Surface protein levels complement transcriptomics by capturing
+post-transcriptional regulation and providing sharper separation for
+immunophenotyping.
+
+This article shows the full CITE-seq workflow using the CBMC dataset -- cord
+blood mononuclear cells profiled with 13 antibodies -- and demonstrates how
+scConvert exports the multi-modal result to h5mu for downstream use in Python's
+[muon](https://muon.readthedocs.io) ecosystem.
+
+---
+
+## 1  Load CBMC data
+
+`readH5Seurat()` reads the CBMC h5Seurat file and reconstructs both the RNA
+and ADT assays. The ADT assay name varies between datasets; the code below
+detects it automatically.
+
+```{r load-cbmc}
+cbmc <- readH5Seurat("../cbmc_rna.h5seurat")
+cat(sprintf("Cells: %d\n", ncol(cbmc)))
+cat(sprintf("Assays: %s\n", paste(names(cbmc@assays), collapse = ", ")))
+cat(sprintf("RNA features: %d\n", nrow(cbmc[["RNA"]])))
+
+adt_name <- names(cbmc@assays)[names(cbmc@assays) != "RNA"][1]
+if (!is.na(adt_name)) {
+  cat(sprintf("ADT assay '%s': %d features\n", adt_name, nrow(cbmc[[adt_name]])))
+}
+```
+
+---
+
+## 2  RNA analysis pipeline
+
+We run the standard Seurat single-cell workflow on the RNA assay to obtain
+clusters and a UMAP layout before integrating protein data.
+
+```{r rna-pipeline}
+DefaultAssay(cbmc) <- "RNA"
+set.seed(42L)
+cbmc <- NormalizeData(cbmc, verbose = FALSE)
+cbmc <- FindVariableFeatures(cbmc, nfeatures = 2000L, verbose = FALSE)
+cbmc <- ScaleData(cbmc, verbose = FALSE)
+cbmc <- RunPCA(cbmc, npcs = 30L, verbose = FALSE)
+cbmc <- FindNeighbors(cbmc, dims = 1:20, verbose = FALSE)
+cbmc <- FindClusters(cbmc, resolution = 0.5, verbose = FALSE)
+cbmc <- RunUMAP(cbmc, dims = 1:20, verbose = FALSE)
+```
+
+```{r rna-dimplot, fig.cap="CBMC UMAP coloured by RNA-based Seurat clusters."}
+DimPlot(cbmc, reduction = "umap", group.by = "seurat_clusters",
+        label = TRUE, label.size = 4, pt.size = 0.5) +
+  ggtitle("CBMC: RNA clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+---
+
+## 3  Protein (ADT) analysis
+
+CLR (centered log-ratio) normalization is the standard approach for ADT data.
+It accounts for compositional effects and differences in antibody capture
+efficiency.
+
+```{r adt-normalize}
+DefaultAssay(cbmc) <- adt_name
+cbmc <- NormalizeData(cbmc, normalization.method = "CLR", margin = 2,
+                      verbose = FALSE)
+```
+
+```{r adt-featureplot, fig.width=10, fig.height=8, fig.cap="ADT protein levels on the RNA UMAP."}
+adt_features <- rownames(cbmc[[adt_name]])
+plot_features <- head(adt_features, 4L)
+
+FeaturePlot(cbmc, features = plot_features, ncol = 2,
+            reduction = "umap", pt.size = 0.3,
+            order = TRUE)
+```
+
+```{r adt-vlnplot, fig.cap="ADT expression of the first marker across RNA clusters."}
+DefaultAssay(cbmc) <- "RNA"
+first_adt <- plot_features[1]
+DefaultAssay(cbmc) <- adt_name
+
+VlnPlot(cbmc, features = first_adt, group.by = "seurat_clusters",
+        pt.size = 0) +
+  ggtitle(sprintf("%s protein across RNA clusters", first_adt)) +
+  NoLegend()
+```
+
+---
+
+## 4  WNN multi-modal integration
+
+Weighted Nearest Neighbor (WNN) integrates RNA and ADT by learning per-cell
+modality weights. Cells where protein provides additional discriminatory power
+receive higher ADT weight; cells where RNA is more informative are
+RNA-dominant. The resulting WNN UMAP captures cell state more accurately than
+either modality alone.
+
+```{r wnn-integration}
+DefaultAssay(cbmc) <- "RNA"
+set.seed(42L)
+cbmc <- RunPCA(cbmc, verbose = FALSE)
+
+DefaultAssay(cbmc) <- adt_name
+n_adt <- nrow(cbmc[[adt_name]])
+adt_dims <- min(18L, n_adt - 1L)
+cbmc <- RunPCA(cbmc, reduction.name = "apca", verbose = FALSE)
+
+cbmc <- FindMultiModalNeighbors(
+  cbmc,
+  reduction.list = list("pca", "apca"),
+  dims.list      = list(1:30, seq_len(adt_dims)),
+  verbose        = FALSE
+)
+
+cbmc <- RunUMAP(
+  cbmc,
+  nn.name       = "weighted.nn",
+  reduction.name = "wnn.umap",
+  reduction.key  = "wnnUMAP_",
+  verbose        = FALSE
+)
+```
+
+```{r wnn-dimplot, fig.cap="WNN UMAP integrating RNA and ADT modalities."}
+DimPlot(cbmc, reduction = "wnn.umap", label = TRUE,
+        label.size = 4, pt.size = 0.5) +
+  ggtitle("CBMC: WNN UMAP (RNA + ADT)") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+> **Note:** WNN UMAP integrates both modalities for a more accurate
+> representation of cell state. Clusters that are indistinguishable by RNA
+> alone may separate when surface protein levels are incorporated.
+
+---
+
+## 5  Export to h5mu
+
+`writeH5MU()` writes the full multi-modal Seurat object to the MuData (.h5mu)
+format, preserving both RNA and ADT assays in a single file. This is the
+recommended format for sharing CITE-seq data with Python collaborators.
+
+```{r write-h5mu}
+DefaultAssay(cbmc) <- "RNA"
+h5mu_path <- file.path(tempdir(), "cbmc_wnn.h5mu")
+
+t0      <- proc.time()
+writeH5MU(cbmc, h5mu_path, overwrite = TRUE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Wrote h5mu: %.2fs | %.1f MB\n",
+            elapsed, file.size(h5mu_path) / 1e6))
+```
+
+---
+
+## 6  Python validation
+
+We read the exported h5mu in Python via mudata to confirm both modalities are
+intact and correctly structured.
+
+```{r python-setup}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-validate, eval=TRUE}
+import mudata
+import matplotlib
+matplotlib.use('Agg')
+
+mdata = mudata.read_h5mu(r.h5mu_path)
+print(mdata)
+for name, mod in mdata.mod.items():
+    print(f"  {name}: {mod.n_obs} cells x {mod.n_vars} features")
+```
+
+---
+
+## 7  Cleanup
+
+```{r cleanup}
+unlink(h5mu_path)
+```

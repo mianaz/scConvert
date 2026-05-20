@@ -1,0 +1,222 @@
+---
+title: "CELLxGENE Census: Query 60M Cells and Export to scverse"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 8,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+})
+set.seed(42L)
+```
+
+## Introduction
+
+[CELLxGENE Census](https://chanzuckerberg.github.io/cellxgene-census/)
+provides programmatic access to over 60 million cells from hundreds of
+publicly deposited datasets. The
+[cellxgene.census](https://chanzuckerberg.github.io/cellxgene-census/r/index.html)
+R package exposes this corpus through TileDB-SOMA, enabling cell-type- and
+tissue-specific queries that return a ready-to-use Seurat object -- no manual
+download of individual datasets required.
+
+This article queries CD4+ T cells from peripheral blood, runs a standard
+Seurat analysis, and exports the result to h5ad for use in Python's scverse
+ecosystem via scConvert.
+
+---
+
+## 1  Prerequisites
+
+The Census packages are not on CRAN; install them from their respective
+R-universes.
+
+```{r install-prereqs, eval=FALSE}
+install.packages(
+  "tiledb",
+  repos = c("https://tiledb-inc.r-universe.dev",
+            "https://cloud.r-project.org")
+)
+install.packages(
+  "tiledbsoma",
+  repos = c("https://tiledb-inc.r-universe.dev",
+            "https://cloud.r-project.org")
+)
+install.packages(
+  "cellxgene.census",
+  repos = c("https://chanzuckerberg.r-universe.dev",
+            "https://cloud.r-project.org")
+)
+```
+
+---
+
+## 2  Open Census and query CD4 T cells
+
+`open_soma()` opens a connection to the stable Census release without
+downloading data locally. `get_seurat()` executes a server-side filter and
+streams only the matching cells and their expression values.
+
+```{r census-query}
+suppressPackageStartupMessages(library(cellxgene.census))
+
+t0 <- proc.time()
+
+census <- open_soma(census_version = "stable")
+
+cd4_raw <- get_seurat(
+  census,
+  organism = "Homo sapiens",
+  obs_value_filter = paste(
+    "cell_type == 'CD4-positive, alpha-beta T cell'",
+    "& tissue_general == 'blood'",
+    "& is_primary_data == True"
+  ),
+  obs_column_names = c("cell_type", "donor_id", "dataset_id",
+                       "sex", "disease", "tissue_general"),
+  var_column_names = c("feature_id", "feature_name")
+)
+
+census$close()
+
+counts    <- GetAssayData(cd4_raw, assay = "RNA", layer = "counts")
+rownames(counts) <- make.unique(cd4_raw[["RNA"]][[]]$feature_name)
+cd4       <- CreateSeuratObject(counts = counts, meta.data = cd4_raw[[]])
+rm(cd4_raw, counts)
+
+query_time <- (proc.time() - t0)[["elapsed"]]
+cat(sprintf("Queried %d cells from Census in %.1fs\n", ncol(cd4), query_time))
+```
+
+---
+
+## 3  Seurat analysis pipeline
+
+```{r seurat-pipeline}
+set.seed(42L)
+cd4 <- NormalizeData(cd4, verbose = FALSE)
+cd4 <- FindVariableFeatures(cd4, nfeatures = 2000L, verbose = FALSE)
+cd4 <- ScaleData(cd4, verbose = FALSE)
+cd4 <- RunPCA(cd4, npcs = 30L, verbose = FALSE)
+cd4 <- RunUMAP(cd4, dims = 1:20, verbose = FALSE)
+cd4 <- FindNeighbors(cd4, dims = 1:20, verbose = FALSE)
+cd4 <- FindClusters(cd4, resolution = 0.5, verbose = FALSE)
+```
+
+---
+
+## 4  Visualizations
+
+```{r dimplot, fig.cap="UMAP of CD4+ T cells from CELLxGENE Census, coloured by cluster."}
+DimPlot(cd4, label = TRUE, label.size = 4, pt.size = 0.3) +
+  ggtitle("CD4+ T cells from CELLxGENE Census") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r featureplot, fig.width=10, fig.height=8, fig.cap="Canonical CD4 T cell marker genes."}
+markers <- intersect(c("CD4", "IL7R", "CCR7", "FOXP3"), rownames(cd4))
+if (length(markers) >= 1L) {
+  FeaturePlot(cd4, features = markers, ncol = 2, pt.size = 0.3, order = TRUE)
+}
+```
+
+```{r disease-barplot, fig.cap="Disease composition of the CD4 T cell query result."}
+disease_counts <- as.data.frame(table(cd4$disease))
+colnames(disease_counts) <- c("disease", "n_cells")
+disease_counts <- disease_counts[order(-disease_counts$n_cells), ]
+disease_counts$disease <- factor(disease_counts$disease,
+                                  levels = disease_counts$disease)
+
+ggplot(disease_counts, aes(x = disease, y = n_cells, fill = disease)) +
+  geom_col(show.legend = FALSE) +
+  labs(x = "Disease annotation", y = "Number of cells",
+       title = "CD4 T cells by disease condition") +
+  theme_classic() +
+  theme(axis.text.x  = element_text(angle = 45, hjust = 1, size = 9),
+        plot.title   = element_text(hjust = 0.5))
+```
+
+---
+
+## 5  Export to h5ad
+
+`writeH5AD()` writes the Census-derived Seurat object to a spec-compliant
+AnnData file. All cluster labels, embeddings, and metadata columns are
+preserved.
+
+```{r write-h5ad}
+h5ad_path <- file.path(tempdir(), "census_cd4.h5ad")
+
+t0          <- proc.time()
+writeH5AD(cd4, h5ad_path)
+export_time <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Exported to h5ad: %.2fs | %.1f MB\n",
+            export_time, file.size(h5ad_path) / 1e6))
+```
+
+---
+
+## 6  Python validation with scanpy
+
+```{r python-setup}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
+use_condaenv("scverse")
+```
+
+```{python py-validate, eval=TRUE}
+import anndata
+import scanpy as sc
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+adata = anndata.read_h5ad(r.h5ad_path)
+print(f"Python reads Census export: {adata.n_obs} cells x {adata.n_vars} genes")
+print(f"Cluster labels preserved: {'seurat_clusters' in adata.obs.columns}")
+print(f"Disease annotations: {adata.obs['disease'].nunique()} unique values")
+
+sc.pl.umap(adata, color="seurat_clusters", show=False)
+plt.title("CD4 T cells from CELLxGENE Census (Python/scanpy)")
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## 7  Key takeaways
+
+- **No bulk download required.** `get_seurat()` streams only the cells matching
+  the query filter from the Census server; the full 60M-cell corpus never
+  touches local disk.
+- **Metadata preserved end-to-end.** Donor IDs, sex, disease annotations,
+  tissue labels, and Seurat cluster assignments all survive the
+  Census -> Seurat -> h5ad -> Python round-trip.
+- **One-call export.** `writeH5AD(cd4, path)` produces a scanpy-readable h5ad
+  with no additional Python environment or manual reformatting needed.
+
+---
+
+## 8  Cleanup
+
+```{r cleanup}
+unlink(h5ad_path)
+```

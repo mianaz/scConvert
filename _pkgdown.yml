@@ -198,31 +198,33 @@ articles:
     navbar: "Getting Started"
     contents:
       - getting-started
-      - convert-anndata
-      - h5Seurat-load
-      - cli-usage
-      - conversion-modes
+      - articles/convert-anndata
+
+  - title: "CLI & Performance"
+    navbar: "CLI & Performance"
+    contents:
+      - articles/cli-usage
+      - articles/atlas-scale-cli
 
   - title: "Format Guides"
     navbar: "Format Guides"
     contents:
-      - convert-sce
-      - convert-loom
-      - convert-zarr
-      - convert-soma
-      - multimodal-h5mu
-      - h5Seurat-spec
-      - data-mapping-reference
+      - articles/convert-zarr
+      - articles/convert-loom
+      - articles/convert-sce
+      - articles/multimodal-h5mu
+      - articles/convert-spatialdata
 
-  - title: "Applications"
-    navbar: "Applications"
+  - title: "Analysis Workflows"
+    navbar: "Analysis Workflows"
     contents:
-      - multimodal-citeseq
-      - scatac-signac
-      - spatial-visium
-      - spatial-technologies
-      - convert-spatialdata
-      - immune-repertoire
-      - atlas-bpcells
-      - articles/soma-census-real
+      - articles/multimodal-citeseq
+      - articles/scatac-signac
+      - articles/spatial-visium
+      - articles/soma-census
+
+  - title: "Benchmarks & Ecosystem"
+    navbar: "Benchmarks & Ecosystem"
+    contents:
+      - articles/compare-tools
 
