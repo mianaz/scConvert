@@ -1461,6 +1461,7 @@ SEXP C_read_h5ad(SEXP path_sexp, SEXP components_sexp) {
 static hid_t vlen_str_type(void) {
     hid_t t = H5Tcopy(H5T_C_S1);
     H5Tset_size(t, H5T_VARIABLE);
+    H5Tset_cset(t, H5T_CSET_UTF8);
     return t;
 }
 
