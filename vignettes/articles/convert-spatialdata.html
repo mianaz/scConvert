@@ -2869,24 +2869,65 @@ coordinates, shapes (polygons, circles), tissue images, and coordinate
 systems in a unified hierarchy. All major spatial technologies now have
 SpatialData representations via the <a href="https://spatialdata-io.scverse.org">spatialdata-io</a>
 package.</p>
-<p>This article demonstrates the Python–R interop workflow: Python reads
-the native SpatialData Zarr store, exports an h5ad, and scConvert loads
-it into Seurat for downstream analysis.</p>
+<p>scConvert reads and writes SpatialData Zarr stores natively in R,
+with no Python dependency, supporting both zarr v2 and v3 formats.</p>
 <hr />
 </div>
-<div id="python-native-spatialdata-reading" class="section level2">
-<h2>1 Python: native SpatialData reading</h2>
-<p>The Python spatialdata library reads the store directly, preserving
-the full multi-element hierarchy (tables, images, shapes, points).</p>
-<pre class="r"><code>sd_path   &lt;- normalizePath(&quot;../blobs.spatialdata.zarr&quot;)
-h5ad_path &lt;- file.path(tempdir(), &quot;blobs.h5ad&quot;)</code></pre>
+<div id="read-a-spatialdata-store" class="section level2">
+<h2>1 Read a SpatialData store</h2>
+<p><code>readSpatialData()</code> reads the <code>tables/table</code>
+AnnData from the store and returns a Seurat object. Spatial coordinates,
+images, and coordinate-system metadata are attached when present.</p>
+<pre class="r"><code>sd_path &lt;- normalizePath(&quot;../blobs.spatialdata.zarr&quot;)
+
+t0 &lt;- proc.time()
+blobs &lt;- readSpatialData(sd_path, verbose = FALSE)
+elapsed &lt;- (proc.time() - t0)[[&quot;elapsed&quot;]]
+
+cat(sprintf(&quot;Loaded: %d cells x %d features in %.2fs\n&quot;,
+            ncol(blobs), nrow(blobs), elapsed))
+#&gt; Loaded: 26 cells x 3 features in 0.05s
+cat(sprintf(&quot;Metadata columns: %s\n&quot;,
+            paste(names(blobs[[]]), collapse = &quot;, &quot;)))
+#&gt; Metadata columns: orig.ident, nCount_RNA, nFeature_RNA, instance_id, region</code></pre>
+<pre class="r"><code>head(blobs[[]], 6)</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["orig.ident"],"name":[1],"type":["fct"],"align":["left"]},{"label":["nCount_RNA"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["nFeature_RNA"],"name":[3],"type":["int"],"align":["right"]},{"label":["instance_id"],"name":[4],"type":["int"],"align":["right"]},{"label":["region"],"name":[5],"type":["fct"],"align":["left"]}],"data":[{"1":"Zarr","2":"6022.353","3":"3","4":"1","5":"blobs_labels","_rn_":"1"},{"1":"Zarr","2":"5083.116","3":"3","4":"2","5":"blobs_labels","_rn_":"2"},{"1":"Zarr","2":"3360.759","3":"3","4":"3","5":"blobs_labels","_rn_":"3"},{"1":"Zarr","2":"1651.349","3":"3","4":"4","5":"blobs_labels","_rn_":"4"},{"1":"Zarr","2":"1325.252","3":"3","4":"5","5":"blobs_labels","_rn_":"5"},{"1":"Zarr","2":"1331.929","3":"3","4":"6","5":"blobs_labels","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p>The three features (<code>channel-0-sum</code>,
+<code>channel-1-sum</code>, <code>channel-2-sum</code>) correspond to
+summarised intensity channels from synthetic image blobs. This structure
+is representative of imaging-based spatial proteomics platforms (CODEX,
+IMC, CyCIF) where channels map to protein markers rather than gene
+transcripts.</p>
+<hr />
+</div>
+<div id="export-to-h5ad" class="section level2">
+<h2>2 Export to h5ad</h2>
+<p><code>SpatialDataToH5AD()</code> extracts the expression table and
+spatial coordinates and writes a spec-compliant h5ad suitable for direct
+import into scanpy or squidpy.</p>
+<pre class="r"><code>h5ad_out &lt;- file.path(tempdir(), &quot;blobs.h5ad&quot;)
+
+t0 &lt;- proc.time()
+SpatialDataToH5AD(sd_path, h5ad_out, overwrite = TRUE, verbose = FALSE)
+elapsed &lt;- (proc.time() - t0)[[&quot;elapsed&quot;]]
+
+cat(sprintf(&quot;SpatialData -&gt; h5ad: %.2fs | %.1f KB\n&quot;,
+            elapsed, file.size(h5ad_out) / 1e3))
+#&gt; SpatialData -&gt; h5ad: 1.21s | 51.8 KB</code></pre>
+<hr />
+</div>
+<div id="python-validation-with-spatialdata" class="section level2">
+<h2>3 Python validation with spatialdata</h2>
 <pre class="python"><code>import spatialdata
 import matplotlib
 matplotlib.use(&#39;Agg&#39;)
-import matplotlib.pyplot as plt
 
 sdata = spatialdata.read_zarr(r.sd_path)
-#&gt; no parent found for &lt;ome_zarr.reader.Label object at 0x12d4024b0&gt;: None
+#&gt; no parent found for &lt;ome_zarr.reader.Label object at 0x12e9c2120&gt;: None
 print(sdata)
 #&gt; SpatialData object, with associated Zarr store: /Users/miana/Desktop/scConvert/vignettes/blobs.spatialdata.zarr
 #&gt; ├── Images
@@ -2915,67 +2956,21 @@ print(f&quot;Shapes : {list(sdata.shapes.keys())}&quot;)
 #&gt; Shapes : [&#39;blobs_circles&#39;, &#39;blobs_multipolygons&#39;, &#39;blobs_polygons&#39;]
 print(f&quot;Points : {list(sdata.points.keys())}&quot;)
 #&gt; Points : [&#39;blobs_points&#39;]</code></pre>
-<hr />
-</div>
-<div id="python-export-table-to-h5ad" class="section level2">
-<h2>2 Python: export table to h5ad</h2>
-<p>The <code>table</code> element of a SpatialData store is a standard
-AnnData object. Exporting it to h5ad makes it immediately readable by
-scConvert.</p>
-<pre class="python"><code>import os
-
-adata = sdata.tables[&quot;table&quot;]
-print(f&quot;Table: {adata.n_obs} cells x {adata.n_vars} features&quot;)
-#&gt; Table: 26 cells x 3 features
+<pre class="python"><code>import anndata
+adata = anndata.read_h5ad(r.h5ad_out)
+print(adata)
+#&gt; AnnData object with n_obs × n_vars = 26 × 3
+#&gt;     obs: &#39;orig.ident&#39;, &#39;nCount_RNA&#39;, &#39;nFeature_RNA&#39;, &#39;instance_id&#39;, &#39;region&#39;
+#&gt;     uns: &#39;__spatialdata_labels__&#39;, &#39;__spatialdata_version__&#39;, &#39;spatialdata_attrs_present&#39;
 print(f&quot;obs columns: {list(adata.obs.columns)}&quot;)
-#&gt; obs columns: [&#39;instance_id&#39;, &#39;region&#39;]
-
-adata.write_h5ad(r.h5ad_path, compression=&quot;gzip&quot;)
-print(f&quot;Written: {os.path.getsize(r.h5ad_path) / 1e3:.1f} KB -&gt; {r.h5ad_path}&quot;)
-#&gt; Written: 40.7 KB -&gt; /var/folders/9l/bl67cpdj3rzgkx2pfk0flmhc0000gn/T//RtmpMBDL0e/blobs.h5ad</code></pre>
+#&gt; obs columns: [&#39;orig.ident&#39;, &#39;nCount_RNA&#39;, &#39;nFeature_RNA&#39;, &#39;instance_id&#39;, &#39;region&#39;]</code></pre>
 <hr />
 </div>
-<div id="r-load-h5ad-with-scconvert" class="section level2">
-<h2>3 R: load h5ad with scConvert</h2>
-<p><code>readH5AD()</code> loads the exported h5ad into a standard
-Seurat object. All cell metadata and spatial coordinates are
-preserved.</p>
-<pre class="r"><code>t0 &lt;- proc.time()
-blobs &lt;- readH5AD(h5ad_path, verbose = FALSE)
-elapsed &lt;- (proc.time() - t0)[[&quot;elapsed&quot;]]
-
-cat(sprintf(&quot;Loaded: %d cells x %d features in %.2fs\n&quot;,
-            ncol(blobs), nrow(blobs), elapsed))
-#&gt; Loaded: 26 cells x 3 features in 0.20s
-cat(sprintf(&quot;Metadata: %s\n&quot;, paste(names(blobs[[]]), collapse = &quot;, &quot;)))
-#&gt; Metadata: orig.ident, nCount_RNA, nFeature_RNA, instance_id, region</code></pre>
-<pre class="r"><code>head(blobs[[]], 6)</code></pre>
-<div data-pagedtable="false">
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["orig.ident"],"name":[1],"type":["fct"],"align":["left"]},{"label":["nCount_RNA"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["nFeature_RNA"],"name":[3],"type":["int"],"align":["right"]},{"label":["instance_id"],"name":[4],"type":["int"],"align":["right"]},{"label":["region"],"name":[5],"type":["fct"],"align":["left"]}],"data":[{"1":"H5AD","2":"6022.353","3":"3","4":"1","5":"blobs_labels","_rn_":"1"},{"1":"H5AD","2":"5083.116","3":"3","4":"2","5":"blobs_labels","_rn_":"2"},{"1":"H5AD","2":"3360.759","3":"3","4":"3","5":"blobs_labels","_rn_":"3"},{"1":"H5AD","2":"1651.349","3":"3","4":"4","5":"blobs_labels","_rn_":"4"},{"1":"H5AD","2":"1325.252","3":"3","4":"5","5":"blobs_labels","_rn_":"5"},{"1":"H5AD","2":"1331.929","3":"3","4":"6","5":"blobs_labels","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-</div>
-<hr />
-</div>
-<div id="spatial-coordinates-in-seurat" class="section level2">
-<h2>4 Spatial coordinates in Seurat</h2>
-<p>Spatial coordinates written by Python are stored in
-<code>obsm[&#39;spatial&#39;]</code> in the h5ad and mapped to a Seurat
-<code>FOV</code> image when loading with <code>readH5AD()</code>. This
-allows <code>SpatialFeaturePlot()</code> and related Seurat spatial
-functions to work without further setup.</p>
-<pre class="r"><code>cat(sprintf(&quot;Reductions: %s\n&quot;,
-            paste(names(blobs@reductions), collapse = &quot;, &quot;)))
-#&gt; Reductions:
-cat(sprintf(&quot;Images   : %s\n&quot;,
-            paste(names(blobs@images), collapse = &quot;, &quot;)))
-#&gt; Images   :</code></pre>
-<hr />
-</div>
-<div id="scconvert-api-reference" class="section level2">
-<h2>5 scConvert API reference</h2>
-<p>For zarr v2 SpatialData stores, scConvert provides direct R-to-R
-conversion functions without requiring Python.</p>
+<div id="format-converters-reference" class="section level2">
+<h2>4 Format converters reference</h2>
+<p>All four SpatialData format converters are exported. The
+<code>scConvert()</code> dispatcher also handles
+<code>.spatialdata.zarr</code> paths automatically.</p>
 <pre class="r"><code>SpatialDataToH5AD(
   source    = &quot;sample.spatialdata.zarr&quot;,
   dest      = &quot;sample.h5ad&quot;,
@@ -2998,10 +2993,10 @@ scConvert(&quot;sample.spatialdata.zarr&quot;, dest = &quot;sample.h5ad&quot;)</
 <hr />
 </div>
 <div id="technology-coverage" class="section level2">
-<h2>6 Technology coverage</h2>
+<h2>5 Technology coverage</h2>
 <p>The following spatial technologies produce SpatialData stores via
-<code>spatialdata-io</code>. scConvert interoperates with all of them
-through the h5ad bridge above.</p>
+<code>spatialdata-io</code>. scConvert interoperates with all of
+them.</p>
 <table>
 <colgroup>
 <col width="22%" />
@@ -3065,8 +3060,8 @@ through the h5ad bridge above.</p>
 <hr />
 </div>
 <div id="cleanup" class="section level2">
-<h2>7 Cleanup</h2>
-<pre class="r"><code>unlink(h5ad_path)</code></pre>
+<h2>6 Cleanup</h2>
+<pre class="r"><code>unlink(h5ad_out)</code></pre>
 </div>
 
 

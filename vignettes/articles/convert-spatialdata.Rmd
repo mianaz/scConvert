@@ -33,19 +33,62 @@ set.seed(42L)
 omics. A `.spatialdata.zarr` store is a Zarr directory that encodes expression tables,
 spatial coordinates, shapes (polygons, circles), tissue images, and coordinate systems
 in a unified hierarchy. All major spatial technologies now have SpatialData
-representations via the
-[spatialdata-io](https://spatialdata-io.scverse.org) package.
+representations via the [spatialdata-io](https://spatialdata-io.scverse.org) package.
 
-This article demonstrates the Python–R interop workflow: Python reads the native
-SpatialData Zarr store, exports an h5ad, and scConvert loads it into Seurat for
-downstream analysis.
+scConvert reads and writes SpatialData Zarr stores natively in R, with no Python
+dependency, supporting both zarr v2 and v3 formats.
 
 ---
 
-## 1  Python: native SpatialData reading
+## 1  Read a SpatialData store
 
-The Python spatialdata library reads the store directly, preserving the full
-multi-element hierarchy (tables, images, shapes, points).
+`readSpatialData()` reads the `tables/table` AnnData from the store and returns a
+Seurat object. Spatial coordinates, images, and coordinate-system metadata are
+attached when present.
+
+```{r read-spatialdata}
+sd_path <- normalizePath("../blobs.spatialdata.zarr")
+
+t0 <- proc.time()
+blobs <- readSpatialData(sd_path, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Loaded: %d cells x %d features in %.2fs\n",
+            ncol(blobs), nrow(blobs), elapsed))
+cat(sprintf("Metadata columns: %s\n",
+            paste(names(blobs[[]]), collapse = ", ")))
+```
+
+```{r inspect-spatialdata}
+head(blobs[[]], 6)
+```
+
+The three features (`channel-0-sum`, `channel-1-sum`, `channel-2-sum`) correspond to
+summarised intensity channels from synthetic image blobs. This structure is
+representative of imaging-based spatial proteomics platforms (CODEX, IMC, CyCIF) where
+channels map to protein markers rather than gene transcripts.
+
+---
+
+## 2  Export to h5ad
+
+`SpatialDataToH5AD()` extracts the expression table and spatial coordinates and writes
+a spec-compliant h5ad suitable for direct import into scanpy or squidpy.
+
+```{r spatialdata-to-h5ad}
+h5ad_out <- file.path(tempdir(), "blobs.h5ad")
+
+t0 <- proc.time()
+SpatialDataToH5AD(sd_path, h5ad_out, overwrite = TRUE, verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("SpatialData -> h5ad: %.2fs | %.1f KB\n",
+            elapsed, file.size(h5ad_out) / 1e3))
+```
+
+---
+
+## 3  Python validation with spatialdata
 
 ```{r python-setup, include=FALSE}
 library(reticulate)
@@ -53,16 +96,10 @@ Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1")
 use_condaenv("scverse")
 ```
 
-```{r setup-paths}
-sd_path   <- normalizePath("../blobs.spatialdata.zarr")
-h5ad_path <- file.path(tempdir(), "blobs.h5ad")
-```
-
 ```{python py-spatialdata, eval=TRUE}
 import spatialdata
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 sdata = spatialdata.read_zarr(r.sd_path)
 print(sdata)
@@ -72,67 +109,19 @@ print(f"Shapes : {list(sdata.shapes.keys())}")
 print(f"Points : {list(sdata.points.keys())}")
 ```
 
----
-
-## 2  Python: export table to h5ad
-
-The `table` element of a SpatialData store is a standard AnnData object.
-Exporting it to h5ad makes it immediately readable by scConvert.
-
-```{python py-export-h5ad, eval=TRUE}
-import os
-
-adata = sdata.tables["table"]
-print(f"Table: {adata.n_obs} cells x {adata.n_vars} features")
+```{python py-h5ad-validate, eval=TRUE}
+import anndata
+adata = anndata.read_h5ad(r.h5ad_out)
+print(adata)
 print(f"obs columns: {list(adata.obs.columns)}")
-
-adata.write_h5ad(r.h5ad_path, compression="gzip")
-print(f"Written: {os.path.getsize(r.h5ad_path) / 1e3:.1f} KB -> {r.h5ad_path}")
 ```
 
 ---
 
-## 3  R: load h5ad with scConvert
+## 4  Format converters reference
 
-`readH5AD()` loads the exported h5ad into a standard Seurat object. All cell
-metadata and spatial coordinates are preserved.
-
-```{r read-h5ad}
-t0 <- proc.time()
-blobs <- readH5AD(h5ad_path, verbose = FALSE)
-elapsed <- (proc.time() - t0)[["elapsed"]]
-
-cat(sprintf("Loaded: %d cells x %d features in %.2fs\n",
-            ncol(blobs), nrow(blobs), elapsed))
-cat(sprintf("Metadata: %s\n", paste(names(blobs[[]]), collapse = ", ")))
-```
-
-```{r inspect-blobs}
-head(blobs[[]], 6)
-```
-
----
-
-## 4  Spatial coordinates in Seurat
-
-Spatial coordinates written by Python are stored in `obsm['spatial']` in the h5ad
-and mapped to a Seurat `FOV` image when loading with `readH5AD()`. This allows
-`SpatialFeaturePlot()` and related Seurat spatial functions to work without further
-setup.
-
-```{r check-coords}
-cat(sprintf("Reductions: %s\n",
-            paste(names(blobs@reductions), collapse = ", ")))
-cat(sprintf("Images   : %s\n",
-            paste(names(blobs@images), collapse = ", ")))
-```
-
----
-
-## 5  scConvert API reference
-
-For zarr v2 SpatialData stores, scConvert provides direct R-to-R conversion
-functions without requiring Python.
+All four SpatialData format converters are exported. The `scConvert()` dispatcher
+also handles `.spatialdata.zarr` paths automatically.
 
 ```{r direct-converters, eval=FALSE}
 SpatialDataToH5AD(
@@ -158,10 +147,10 @@ scConvert("sample.spatialdata.zarr", dest = "sample.h5ad")
 
 ---
 
-## 6  Technology coverage
+## 5  Technology coverage
 
 The following spatial technologies produce SpatialData stores via `spatialdata-io`.
-scConvert interoperates with all of them through the h5ad bridge above.
+scConvert interoperates with all of them.
 
 | Technology | Vendor | Modality | spatialdata-io reader |
 |------------|--------|----------|-----------------------|
@@ -175,8 +164,8 @@ scConvert interoperates with all of them through the h5ad bridge above.
 
 ---
 
-## 7  Cleanup
+## 6  Cleanup
 
 ```{r cleanup}
-unlink(h5ad_path)
+unlink(h5ad_out)
 ```
