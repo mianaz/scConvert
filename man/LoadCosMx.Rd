@@ -27,10 +27,18 @@ a Seurat object ready for conversion to h5ad / h5Seurat / Zarr via
 \code{\link{scConvert}}.
 }
 \details{
-The bundle directory must contain the canonical NanoString CosMx CSV
-files (\code{*exprMat_file*.csv}, \code{*metadata_file*.csv},
+The bundle directory must contain the canonical NanoString CosMx CSV files
+(\code{*exprMat_file*.csv}, \code{*metadata_file*.csv},
 \code{*fov_positions_file*.csv}) and optionally \code{*tx_file*.csv} and
 polygon files. These are the files produced by NanoString's AtoMx export.
+
+The \code{*metadata_file*.csv} is read and attached to the Seurat object
+after construction. This populates cell morphology columns (\code{Area},
+\code{AspectRatio}, \code{Width}, \code{Height},
+\code{CenterX_global_px}, \code{CenterY_global_px}) and co-registered
+immunofluorescence intensity columns (\code{Mean.PanCK}, \code{Mean.CD45},
+\code{Mean.CD3}, \code{Mean.MembraneStain}, etc.) that are not returned by
+\code{Seurat::ReadNanostring()} alone.
 }
 \examples{
 \dontrun{

@@ -42,10 +42,18 @@ NULL
 #' a Seurat object ready for conversion to h5ad / h5Seurat / Zarr via
 #' \code{\link{scConvert}}.
 #'
-#' The bundle directory must contain the canonical NanoString CosMx CSV
-#' files (\code{*exprMat_file*.csv}, \code{*metadata_file*.csv},
+#' The bundle directory must contain the canonical NanoString CosMx CSV files
+#' (\code{*exprMat_file*.csv}, \code{*metadata_file*.csv},
 #' \code{*fov_positions_file*.csv}) and optionally \code{*tx_file*.csv} and
 #' polygon files. These are the files produced by NanoString's AtoMx export.
+#'
+#' The \code{*metadata_file*.csv} is read and attached to the Seurat object
+#' after construction. This populates cell morphology columns (\code{Area},
+#' \code{AspectRatio}, \code{Width}, \code{Height},
+#' \code{CenterX_global_px}, \code{CenterY_global_px}) and co-registered
+#' immunofluorescence intensity columns (\code{Mean.PanCK}, \code{Mean.CD45},
+#' \code{Mean.CD3}, \code{Mean.MembraneStain}, etc.) that are not returned by
+#' \code{Seurat::ReadNanostring()} alone.
 #'
 #' @param data.dir Path to the CosMx bundle directory
 #' @param fov FOV (field-of-view) name attached to the resulting Seurat object
@@ -107,6 +115,35 @@ LoadCosMx <- function(data.dir, fov = "cosmx", assay = "Nanostring",
   cells <- intersect(SeuratObject::Cells(seurat_obj), cells)
   coords <- subset(x = coords, cells = cells)
   seurat_obj[[fov]] <- coords
+
+  # Attach per-cell metadata from metadata_file.csv (Area, AspectRatio,
+  # CenterX/Y_global_px, Width, Height, immunofluorescence Mean.*/Max.*
+  # columns). ReadNanostring only returns the count matrix and centroids;
+  # the metadata file is the only source of these columns.
+  meta_files <- list.files(data.dir, pattern = "metadata_file",
+                           full.names = TRUE, ignore.case = TRUE)
+  meta_files <- meta_files[grepl("\\.csv(\\.gz)?$", meta_files,
+                                 ignore.case = TRUE)]
+  if (length(meta_files) > 0L) {
+    meta_df <- tryCatch(
+      read.csv(meta_files[[1L]], check.names = FALSE, stringsAsFactors = FALSE),
+      error = function(e) NULL
+    )
+    if (!is.null(meta_df) &&
+        all(c("cell_ID", "fov") %in% colnames(meta_df))) {
+      rownames(meta_df) <- paste0(meta_df[["cell_ID"]], "_",
+                                  meta_df[["fov"]])
+      keep <- intersect(rownames(meta_df), SeuratObject::Cells(seurat_obj))
+      meta_df <- meta_df[keep, , drop = FALSE]
+      if (nrow(meta_df) > 0L) {
+        seurat_obj <- SeuratObject::AddMetaData(seurat_obj, meta_df)
+        if (verbose) {
+          message(sprintf("  Attached %d metadata columns from metadata_file",
+                          ncol(meta_df)))
+        }
+      }
+    }
+  }
 
   seurat_obj@misc$spatial_technology <- "CosMx"
   seurat_obj@misc$cosmx <- list(

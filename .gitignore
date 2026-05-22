@@ -84,3 +84,4 @@ src/*.so
 inst/bin/scconvert
 inst/bin/scconvert.exe
 inst/bin/*.dll
+vignettes/cosmx_lung9

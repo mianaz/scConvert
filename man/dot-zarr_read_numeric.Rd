@@ -2,7 +2,7 @@
 % Please edit documentation in R/AnnDataEncoding.R
 \name{.zarr_read_numeric}
 \alias{.zarr_read_numeric}
-\title{Read a zarr v2 numeric array from disk}
+\title{Read a zarr numeric array from disk (v2 and v3)}
 \usage{
 .zarr_read_numeric(store_path, rel_path, slice = NULL)
 }
@@ -20,6 +20,6 @@ chunks that intersect the requested indices are fetched.}
 Numeric vector or matrix
 }
 \description{
-Read a zarr v2 numeric array from disk
+Read a zarr numeric array from disk (v2 and v3)
 }
 \keyword{internal}

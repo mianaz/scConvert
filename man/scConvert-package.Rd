@@ -59,4 +59,9 @@ Useful links:
 \author{
 \strong{Maintainer}: Ziyu Zeng \email{zzeng4@nd.edu} (\href{https://orcid.org/0009-0005-4055-8492}{ORCID}) [copyright holder]
 
+Authors:
+\itemize{
+  \item Ziyu Zeng \email{zzeng4@nd.edu} (\href{https://orcid.org/0009-0005-4055-8492}{ORCID}) [copyright holder]
+}
+
 }

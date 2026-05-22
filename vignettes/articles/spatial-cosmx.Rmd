@@ -1,0 +1,307 @@
+---
+title: "Spatial Transcriptomics: NanoString CosMx SMI"
+output:
+  rmarkdown::html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 9,
+  fig.height = 5,
+  message    = FALSE,
+  warning    = FALSE,
+  out.width  = "100%"
+)
+suppressPackageStartupMessages({
+  library(scConvert)
+  library(Seurat)
+  library(ggplot2)
+  library(patchwork)
+})
+set.seed(42L)
+```
+
+NanoString CosMx SMI (Spatial Molecular Imager) is a sub-cellular resolution
+imaging-based spatial transcriptomics platform. It combines in-situ hybridization
+with cyclic fluorescence imaging to capture RNA and protein targets at single-cell
+and sub-cellular resolution, with panels of up to 6,000+ genes across the full
+tissue section.
+
+CosMx data arrives as a flat-file bundle: an expression matrix, per-cell metadata
+(cell morphology and co-registered immunofluorescence intensity), per-FOV position
+coordinates, and optionally transcript-level positions and segmentation polygons.
+Each FOV (field of view) is an independently imaged tile that is later assembled
+into a whole-slide mosaic via the global pixel coordinates.
+
+scConvert loads the full bundle in a single call — counts, centroids, and the
+immunofluorescence metadata — and exports a squidpy-compatible h5ad without
+manual reformatting.
+
+---
+
+## 1  Data
+
+The demo dataset is the NanoString NSCLC Lung9 Rep1 sample from the public
+NanoString data portal. It contains **91,972 cells** across **20 FOVs** profiled
+with a **980-gene** panel, co-registered with membrane stain and four immune /
+epithelial fluorescence channels (PanCK, CD45, CD3, DAPI).
+
+Public data from the same study (Lung5 Rep2, 106K cells) is used in the
+squidpy CosMx tutorial. Both samples share identical bundle layout and metadata
+columns and are interchangeable as inputs to `LoadCosMx()`.
+
+```{r data-download, eval=FALSE}
+# Download and extract the flat-file bundle from NanoString's public S3
+# (example shown for Lung5 Rep2, the squidpy tutorial dataset)
+url <- paste0(
+  "https://nanostring-public-share.s3.us-west-2.amazonaws.com/",
+  "SMI-Compressed/Lung5_Rep2+SMI+Flat+data.tar.gz"
+)
+dest <- file.path(dirname(getwd()), "cosmx_lung5.tar.gz")
+download.file(url, dest, method = "wget", extra = "-c")
+untar(dest, exdir = file.path(dirname(getwd()), "cosmx_lung5"))
+```
+
+```{r data-path}
+data_dir <- normalizePath(
+  "../cosmx_lung9/Lung9_Rep1-Flat_files_and_images",
+  mustWork = FALSE
+)
+```
+
+---
+
+## 2  Load with `LoadCosMx()`
+
+`LoadCosMx()` validates the bundle layout, invokes `Seurat::ReadNanostring()`
+for the count matrix and centroids, and automatically attaches the
+`*metadata_file.csv` to the Seurat object. This is the step that
+`Seurat::LoadNanostring()` itself skips when polygon files are absent.
+
+```{r load-cosmx}
+t0  <- proc.time()
+obj <- LoadCosMx(data_dir, fov = "cosmx", verbose = FALSE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf(
+  "Loaded: %d cells x %d genes in %.1fs\n  FOVs: %d\n  Metadata cols: %d\n",
+  ncol(obj), nrow(obj), elapsed,
+  length(unique(obj$fov)),
+  ncol(obj[[]])
+))
+```
+
+```{r inspect-meta}
+# First few rows of the per-cell metadata
+head(obj[[]], 6)
+```
+
+The `fov` column identifies each cell's field of view (1–30 for this sample).
+Columns with `Mean.*` / `Max.*` prefixes are co-registered immunofluorescence
+intensities measured alongside the transcriptome:
+
+| Column | Marker | Biology |
+|---|---|---|
+| `Mean.MembraneStain` | Membrane stain | Cell boundary reference |
+| `Mean.PanCK` | Pan-cytokeratin | Epithelial / tumor cells |
+| `Mean.CD45` | CD45 (PTPRC) | All immune cells |
+| `Mean.CD3` | CD3 | T lymphocytes |
+| `Mean.DAPI` | DAPI nuclear stain | Nuclear segmentation quality |
+
+---
+
+## 3  QC: transcript counts, gene counts, FOV coverage
+
+```{r qc-plots, fig.height=4}
+meta <- obj[[]]
+
+p1 <- ggplot(meta, aes(x = nCount_Nanostring)) +
+  geom_histogram(bins = 80, fill = "#3182bd", color = NA) +
+  scale_x_log10() +
+  labs(x = "Total transcripts per cell (log10)", y = "Cells") +
+  theme_classic(base_size = 11)
+
+p2 <- ggplot(meta, aes(x = nFeature_Nanostring)) +
+  geom_histogram(bins = 80, fill = "#31a354", color = NA) +
+  labs(x = "Unique genes per cell", y = "Cells") +
+  theme_classic(base_size = 11)
+
+fov_counts <- as.data.frame(table(fov = factor(
+  meta$fov,
+  levels = as.character(sort(unique(as.integer(meta$fov))))
+)))
+p3 <- ggplot(fov_counts, aes(x = fov, y = Freq)) +
+  geom_col(fill = "#756bb1") +
+  labs(x = "FOV", y = "Cells") +
+  theme_classic(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p1 + p2 + p3 + plot_layout(widths = c(1, 1, 2))
+```
+
+```{r qc-stats}
+cat(sprintf(
+  "Median transcripts/cell : %.0f\nMedian genes/cell       : %.0f\nCells per FOV (median)  : %.0f\n",
+  median(meta$nCount_Nanostring),
+  median(meta$nFeature_Nanostring),
+  median(table(meta$fov))
+))
+```
+
+---
+
+## 4  Immunofluorescence channels on the spatial map
+
+Co-registered protein markers are in `obj@meta.data`; plotting them on the
+spatial map reveals tissue architecture without any clustering step.
+
+```{r spatial-if, fig.height=5}
+# Single FOV to keep rendering fast; FOV 1 is shown here
+p_panck <- ImageFeaturePlot(obj, fov = "cosmx", features = "Mean.PanCK",
+                             max.cutoff = "q95") +
+  ggtitle("PanCK (epithelial/tumor)") +
+  theme(plot.title = element_text(size = 11))
+
+p_cd45 <- ImageFeaturePlot(obj, fov = "cosmx", features = "Mean.CD45",
+                            max.cutoff = "q95") +
+  ggtitle("CD45 (immune cells)") +
+  theme(plot.title = element_text(size = 11))
+
+p_panck | p_cd45
+```
+
+---
+
+## 5  Export to h5ad
+
+`scConvert()` serializes the Seurat object to a squidpy-compatible h5ad. The
+output preserves:
+
+- expression matrix in `X`
+- cell centroids in `obsm/spatial` (global pixel coordinates)
+- all per-cell metadata (FOV ID, morphology, IF intensities) in `obs`
+- segmentation boundaries in `uns/spatial/cosmx/segmentation/` (when present)
+- transcript-level positions in `uns/spatial/cosmx/molecules/` (when present)
+
+```{r export-h5ad}
+h5ad_out <- file.path(tempdir(), "cosmx_lung5.h5ad")
+
+t0 <- proc.time()
+scConvert(obj, h5ad_out, overwrite = TRUE)
+elapsed <- (proc.time() - t0)[["elapsed"]]
+
+cat(sprintf("Wrote h5ad: %.1fs  |  %.1f MB\n",
+            elapsed, file.size(h5ad_out) / 1e6))
+```
+
+---
+
+## 6  Python validation with squidpy
+
+```{r python-setup, include=FALSE}
+library(reticulate)
+Sys.setenv(NUMBA_THREADING_LAYER = "tbb", OMP_NUM_THREADS = "1",
+           KMP_DUPLICATE_LIB_OK = "TRUE")
+use_condaenv("scverse")
+```
+
+```{python py-load}
+import anndata
+import scanpy as sc
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+adata = anndata.read_h5ad(r.h5ad_out)
+print(adata)
+print(f"\nobs columns : {list(adata.obs.columns[:10])} ...")
+print(f"obsm keys   : {list(adata.obsm.keys())}")
+print(f"uns/spatial : {list(adata.uns.get('spatial', {}).keys())}")
+```
+
+The spatial coordinates live in `obsm["spatial"]` (global pixel coordinates,
+matching the original `CenterX_global_px` / `CenterY_global_px` columns).
+
+```{python py-spatial-fov, fig.height=5}
+# Color all cells by FOV — each color is one tile of the tissue mosaic
+adata.obsm["spatial"] = adata.obs[["CenterX_global_px",
+                                    "CenterY_global_px"]].values
+
+sc.pl.embedding(
+    adata,
+    basis    = "spatial",
+    color    = "fov",
+    s        = 2,
+    frameon  = False,
+    title    = "CosMx NSCLC: cells colored by FOV (20 tiles)",
+    legend_loc = None
+)
+plt.tight_layout()
+plt.show()
+```
+
+```{python py-panck, fig.height=5}
+# PanCK intensity on the spatial map — highlights epithelial/tumor regions
+sc.pl.embedding(
+    adata,
+    basis     = "spatial",
+    color     = "Mean.PanCK",
+    s         = 2,
+    frameon   = False,
+    color_map = "viridis",
+    vmax      = "p95",
+    title     = "PanCK intensity (epithelial / tumor cells)"
+)
+plt.tight_layout()
+plt.show()
+```
+
+```{python py-cd45, fig.height=5}
+# CD45 intensity — highlights immune infiltration
+sc.pl.embedding(
+    adata,
+    basis     = "spatial",
+    color     = "Mean.CD45",
+    s         = 2,
+    frameon   = False,
+    color_map = "magma",
+    vmax      = "p95",
+    title     = "CD45 intensity (immune cells)"
+)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## 7  What is preserved
+
+| Component | h5ad location | Preserved |
+|---|---|:---:|
+| Expression matrix | X | Yes |
+| Cell centroids (global) | obsm/spatial | Yes |
+| FOV identifier | obs/fov | Yes |
+| Cell morphology (Area, AspectRatio...) | obs | Yes |
+| IF intensities (Mean.PanCK, Mean.CD45...) | obs | Yes |
+| Global pixel coordinates | obs/CenterX\_global\_px, obs/CenterY\_global\_px | Yes |
+| Segmentation polygons | uns/spatial/cosmx/segmentation/ | Yes (when present) |
+| Transcript molecules | uns/spatial/cosmx/molecules/ | Yes (when present) |
+
+Immunofluorescence columns are loaded from the `*metadata_file.csv` during
+`LoadCosMx()` — they are not returned by `Seurat::ReadNanostring()` alone and
+must be explicitly read and attached, which `LoadCosMx()` handles automatically.
+
+---
+
+## 8  Cleanup
+
+```{r cleanup, include=FALSE}
+unlink(h5ad_out)
+```

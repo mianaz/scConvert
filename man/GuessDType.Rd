@@ -18,6 +18,7 @@ GuessDType(x, stype = "utf8", ...)
 \item{...}{
   Arguments passed on to \code{\link[hdf5r:guess_dtype]{hdf5r::guess_dtype}}
   \describe{
+    \item{\code{dtype}}{datatype; used in guessing the number of dataset elements of an r object}
     \item{\code{ds_dim}}{Can explicitly set the dimension of the dataset object. For \code{scalar}, this is one. Otherwise, this can be
 used so that a multi-dimensional object can be represented so that some of its dimension are in the dataset, and some are inside an
 \code{\link[hdf5r]{H5T_ARRAY}}}

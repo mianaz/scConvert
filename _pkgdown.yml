@@ -221,6 +221,7 @@ articles:
       - articles/multimodal-citeseq
       - articles/scatac-signac
       - articles/spatial-visium
+      - articles/spatial-cosmx
       - articles/soma-census
 
   - title: "Benchmarks & Ecosystem"

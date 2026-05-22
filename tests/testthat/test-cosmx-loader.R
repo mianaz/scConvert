@@ -112,3 +112,20 @@ test_that("LoadCosMx errors on a non-CosMx directory with a helpful message", {
     regexp = "does not look like a CosMx bundle"
   )
 })
+
+test_that("LoadCosMx attaches metadata_file columns (IF intensities, morphology)", {
+  bundle <- .build_synthetic_cosmx_bundle()
+  on.exit(unlink(bundle, recursive = TRUE), add = TRUE)
+
+  obj <- LoadCosMx(bundle, fov = "cosmx", verbose = FALSE)
+
+  # All metadata columns from the synthetic bundle must be present
+  expected_cols <- c("fov", "cell_ID", "CenterX_global_px", "CenterY_global_px",
+                     "Area", "Mean.PanCK", "Mean.CD45", "Mean.DAPI",
+                     "Mean.MembraneStain")
+  for (col in expected_cols) {
+    expect_true(col %in% colnames(obj[[]]),
+                info = paste("missing metadata column:", col))
+  }
+  expect_equal(nrow(obj[[]]), ncol(obj))
+})
