@@ -51,18 +51,20 @@ jobs:
 
       - name: Build site
         shell: Rscript {0}
-        # Pre-built articles in vignettes/articles/ require external network
-        # access (CELLxGENE Census S3) and are knitted locally. We build all
-        # other articles here; the next step restores the committed pre-built
-        # HTML into docs/articles/ so the live site always shows real output.
+        # Every article in vignettes/articles/ is knitted locally against real
+        # data (local h5ad/h5seurat files, NanoString S3, CELLxGENE Census S3)
+        # that is not available in CI, so we skip all of them here and let the
+        # next step restore the committed pre-built HTML into docs/articles/.
+        # Only top-level vignettes (e.g. getting-started, which uses shipped
+        # system.file() test data) are knitted in CI.
         run: |
           pkgdown::clean_site(force = TRUE)
           pkgdown::build_home()
           pkgdown::build_reference()
           pkgdown::build_news()
-          pkg        <- pkgdown::as_pkgdown(".")
-          pre_built  <- "articles/soma-census-real"
-          for (nm in setdiff(pkg$vignettes$name, pre_built)) {
+          pkg <- pkgdown::as_pkgdown(".")
+          for (nm in pkg$vignettes$name) {
+            if (startsWith(nm, "articles/")) next
             pkgdown::build_article(nm, pkg = pkg)
           }
 
