@@ -2,27 +2,22 @@ pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  atlas-bpcells: atlas-bpcells.html
-  cli-usage: cli-usage.html
-  conversion-modes: conversion-modes.html
-  convert-anndata: convert-anndata.html
-  convert-loom: convert-loom.html
-  convert-sce: convert-sce.html
-  convert-soma: convert-soma.html
-  convert-spatialdata: convert-spatialdata.html
-  convert-zarr: convert-zarr.html
-  data-mapping-reference: data-mapping-reference.html
+  articles/atlas-scale-cli: atlas-scale-cli.html
+  articles/cli-usage: cli-usage.html
+  articles/compare-tools: compare-tools.html
+  articles/convert-anndata: convert-anndata.html
+  articles/convert-loom: convert-loom.html
+  articles/convert-sce: convert-sce.html
+  articles/convert-spatialdata: convert-spatialdata.html
+  articles/convert-zarr: convert-zarr.html
   getting-started: getting-started.html
-  h5Seurat-load: h5Seurat-load.html
-  h5Seurat-spec: h5Seurat-spec.html
-  immune-repertoire: immune-repertoire.html
-  multimodal-citeseq: multimodal-citeseq.html
-  multimodal-h5mu: multimodal-h5mu.html
-  scatac-signac: scatac-signac.html
-  articles/soma-census-real: soma-census-real.html
-  spatial-technologies: spatial-technologies.html
-  spatial-visium: spatial-visium.html
-last_built: 2026-05-19T22:07Z
+  articles/multimodal-citeseq: multimodal-citeseq.html
+  articles/multimodal-h5mu: multimodal-h5mu.html
+  articles/scatac-signac: scatac-signac.html
+  articles/soma-census: soma-census.html
+  articles/spatial-cosmx: spatial-cosmx.html
+  articles/spatial-visium: spatial-visium.html
+last_built: 2026-06-12T19:27Z
 urls:
   reference: https://mianaz.github.io/scConvert/reference
   article: https://mianaz.github.io/scConvert/articles
