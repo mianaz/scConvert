@@ -636,6 +636,12 @@ int sc_stream_layers(hid_t src, hid_t dst, sc_direction_t dir, int gzip_level) {
         H5Gget_objname_by_idx(src_grp, i, name, sizeof(name));
         int obj_type = H5Gget_objtype_by_idx(src_grp, i);
 
+        /* "counts" and "data" are the primary matrices, handled explicitly as
+         * X / layers-counts. Skip them here so they are neither duplicated into
+         * a stray top-level /layers entry nor collide on round-trip. */
+        if (strcmp(name, "counts") == 0 || strcmp(name, "data") == 0)
+            continue;
+
         if (obj_type == H5G_GROUP) {
             /* Fast path: H5Ocopy for sparse layers (CSR structure preserved) */
             int copy_rc = sc_copy_group_h5ocopy(src_grp, name, dst_grp, name);

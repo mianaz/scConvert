@@ -225,20 +225,21 @@ writeH5AD <- function(
   has_counts <- layer_has("counts")
   has_data   <- layer_has("data")
 
-  # anndata convention: X holds normalized data, raw/X holds counts. When both
-  # layers exist, route counts to the raw group; when only one exists, it
-  # becomes X directly.
+  # anndata convention: X holds normalized data, counts live in
+  # layers['counts']. When both layers exist, counts is passed to the C writer
+  # (which emits /layers/counts); when only one exists, it becomes X directly.
   mat <- if (has_data) GetAssayData(assay_obj, layer = "data")
          else if (has_counts) GetAssayData(assay_obj, layer = "counts")
          else NULL
   if (is.null(mat)) return(FALSE)
 
-  raw_list <- NULL
+  # `counts_list` carries the counts CSR arrays to C_write_h5ad's 8th argument.
+  counts_list <- NULL
   if (has_data && has_counts) {
-    raw_mat <- GetAssayData(assay_obj, layer = "counts")
-    raw_list <- list(i = raw_mat@i, p = raw_mat@p, x = raw_mat@x,
-                     dim = dim(raw_mat))
-    rm(raw_mat)
+    counts_mat <- GetAssayData(assay_obj, layer = "counts")
+    counts_list <- list(i = counts_mat@i, p = counts_mat@p, x = counts_mat@x,
+                        dim = dim(counts_mat))
+    rm(counts_mat)
   }
 
   mat_list <- list(
@@ -282,7 +283,7 @@ writeH5AD <- function(
 
   result <- .Call(C_write_h5ad,
     filename, mat_list, meta, reductions, graphs,
-    assay_name, as.integer(gzip_level), raw_list
+    assay_name, as.integer(gzip_level), counts_list
   )
 
   if (isTRUE(result) && verbose) {
@@ -374,19 +375,30 @@ DirectSeuratToH5AD <- function(
     !is.null(d) && prod(dim(d)) > 0
   }, error = function(e) FALSE)
 
+  # X is the primary expression matrix: normalized data when present,
+  # otherwise raw counts (keeps counts-only objects valid for readH5AD's
+  # required /X skeleton).
   if (has_data) {
     data_mat <- GetAssayData(object, assay = assay, layer = 'data')
     write_csr_group(dfile, "X", data_mat)
     rm(data_mat); gc(verbose = FALSE)
-    if (has_counts) {
-      counts_mat <- GetAssayData(object, assay = assay, layer = 'counts')
-      raw_grp <- dfile$create_group("raw")
-      write_csr_group(raw_grp, "X", counts_mat)
-      rm(counts_mat); gc(verbose = FALSE)
-    }
   } else if (has_counts) {
     counts_mat <- GetAssayData(object, assay = assay, layer = 'counts')
     write_csr_group(dfile, "X", counts_mat)
+    rm(counts_mat); gc(verbose = FALSE)
+  }
+
+  # counts slot -> data.layers["counts"] (modern anndata convention).
+  # Only when a separate data slot exists; counts-only objects already
+  # placed counts in /X above to preserve round-trip with the reader.
+  if (has_data && has_counts) {
+    counts_mat <- GetAssayData(object, assay = assay, layer = 'counts')
+    layers_grp <- dfile$create_group("layers")
+    layers_grp$create_attr(attr_name = 'encoding-type', robj = 'dict',
+                           dtype = CachedGuessDType('dict'), space = ScalarSpace())
+    layers_grp$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
+                           dtype = CachedGuessDType('0.1.0'), space = ScalarSpace())
+    write_csr_group(layers_grp, "counts", counts_mat)
     rm(counts_mat); gc(verbose = FALSE)
   }
 
@@ -419,12 +431,6 @@ DirectSeuratToH5AD <- function(
     meta_features$highly_variable <- rownames(meta_features) %in% var_features
   }
   write_df_group(dfile, "var", meta_features, gene_names)
-
-  # Write raw/var if raw/X exists
-  if (has_data && has_counts) {
-    write_df_group(dfile[["raw"]], "var",
-                   data.frame(row.names = gene_names), gene_names)
-  }
 
   # ========== obsm (dimensional reductions) ==========
   reducs <- Reductions(object)

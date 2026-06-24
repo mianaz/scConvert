@@ -1291,6 +1291,18 @@ H5ADToH5Seurat <- function(
   # would otherwise be decoded per assay-copy pass.
   .categorical_cache <- new.env(parent = emptyenv())
 
+  # Counts source priority: raw/X (legacy h5ad) > layers/counts (modern
+  # anndata). When neither is present, X itself is treated as counts —
+  # matching scanpy's behaviour when only X exists.
+  counts_source <- if (source$exists(name = 'raw') &&
+                       source[['raw']]$exists(name = 'X')) {
+    'raw/X'
+  } else if (source$exists(name = 'layers') &&
+             source[['layers']]$exists(name = 'counts')) {
+    'layers/counts'
+  } else {
+    'X'
+  }
   ds.map <- c(
     scale.data = if (inherits(x = source[['X']], what = 'H5D')) {
       'X'
@@ -1299,11 +1311,7 @@ H5ADToH5Seurat <- function(
     },
     # Always use X for data slot - X contains normalized data when raw/X has counts
     data = 'X',
-    counts = if (source$exists(name = 'raw')) {
-      'raw/X'
-    } else {
-      'X'
-    }
+    counts = counts_source
   )
   # Add assay data
   assay.group <- dfile[['assays']]$create_group(name = assay)
@@ -3254,164 +3262,42 @@ H5SeuratToH5AD <- function(
     )
   }
   
-  # Add raw
+  # Add counts as layers/counts (modern anndata convention). Layers share the
+  # main /var, so no separate var group is written (unlike the legacy /raw).
   if (!is.null(x = raw.data)) {
     if (verbose) {
-      message("Adding ", raw.data, " from ", assay, " as raw")
+      message("Adding ", raw.data, " from ", assay, " as layers/counts")
     }
 
-    # Get shape from source BEFORE copying (most reliable)
-    raw_source_dims <- NULL
-    if (grepl("/", raw.data)) {
-      # Handle nested paths like "layers/counts"
-      parts <- strsplit(raw.data, "/")[[1]]
-      src_obj <- assay.group
-      for (part in parts) {
-        src_obj <- src_obj[[part]]
-      }
-      if (src_obj$attr_exists(attr_name = 'dims')) {
-        raw_source_dims <- h5attr(x = src_obj, which = 'dims')
-      }
-    } else {
-      # Simple path
-      if (assay.group$exists(name = raw.data) &&
-          assay.group[[raw.data]]$attr_exists(attr_name = 'dims')) {
-        raw_source_dims <- h5attr(x = assay.group[[raw.data]], which = 'dims')
-      }
-    }
+    layers.grp <- dfile$create_group(name = 'layers')
+    layers.grp$create_attr(
+      attr_name = 'encoding-type',
+      robj = 'dict',
+      dtype = CachedGuessDType(x = 'dict'),
+      space = ScalarSpace()
+    )
+    layers.grp$create_attr(
+      attr_name = 'encoding-version',
+      robj = '0.1.0',
+      dtype = CachedGuessDType(x = '0.1.0'),
+      space = ScalarSpace()
+    )
 
-    dfile$create_group(name = 'raw')
     CopyH5MatrixData(
       src_group = assay.group,
       src_path = raw.data,
-      dst_loc = dfile[['raw']],
-      dst_name = 'X',
+      dst_loc = layers.grp,
+      dst_name = 'counts',
       verbose = verbose
     )
 
-    # Ensure shape attribute exists for raw/X (required by anndata)
-    if (!dfile[['raw/X']]$attr_exists(attr_name = 'shape')) {
-      # Try to get from copied dims attribute first
-      if (dfile[['raw/X']]$attr_exists(attr_name = 'dims')) {
-        dims <- h5attr(x = dfile[['raw/X']], which = 'dims')
-        dfile[['raw/X']]$create_attr(
-          attr_name = 'shape',
-          robj = rev(x = dims),
-          dtype = GuessDType(x = dims)
-        )
-        dfile[['raw/X']]$attr_delete(attr_name = 'dims')
-      } else if (!is.null(raw_source_dims)) {
-        # Use dims from source
-        dfile[['raw/X']]$create_attr(
-          attr_name = 'shape',
-          robj = rev(x = raw_source_dims),
-          dtype = GuessDType(x = raw_source_dims)
-        )
-      }
-    }
-
-    AddEncoding(dname = 'raw/X')
-    # Get number of features from the ACTUAL raw/X matrix dimensions
-    raw_x_shape <- NULL
-    if (dfile[['raw/X']]$attr_exists(attr_name = 'shape')) {
-      raw_x_shape <- h5attr(x = dfile[['raw/X']], which = 'shape')
-    } else if (dfile[['raw/X']]$attr_exists(attr_name = 'dims')) {
-      raw_x_shape <- rev(h5attr(x = dfile[['raw/X']], which = 'dims'))
-    }
-    if (!is.null(raw_x_shape) && length(raw_x_shape) >= 2) {
-      n_raw_features <- raw_x_shape[2]
-    } else {
-      n_raw_features <- prod(assay.group[['features']]$dims)
-    }
-    # Add meta.features with validation
-    if (assay.group$exists(name = 'meta.features')) {
-      meta.features.src <- assay.group[['meta.features']]
-      if (inherits(x = meta.features.src, what = c('H5D', 'H5Group'))) {
-        TransferDF(
-          src = meta.features.src,
-          dname = 'raw/var',
-          index = seq.default(from = 1, to = n_raw_features)
-        )
-      } else {
-        message("meta.features is not a valid H5D or H5Group in raw, creating empty var")
-        dfile[['raw']]$create_group(name = 'var')
-      }
-    } else {
-      dfile[['raw']]$create_group(name = 'var')
-    }
-    # Add feature names
-    if (Exists(x = dfile[['raw/var']], name = rownames)) {
-      dfile[['raw/var']]$link_delete(name = rownames)
-    }
-    # Get feature names from correct location based on structure
-    if (has_layers && assay.group$exists(name = 'meta.data/_index')) {
-      # V5 structure: feature names are in meta.data/_index
-      features_data_raw <- SafeH5DRead(assay.group[['meta.data/_index']])
-    } else {
-      # Legacy structure: feature names are in features dataset
-      features_data_raw <- SafeH5DRead(assay.group[['features']])
-    }
-    # Subset to match actual raw/X dimensions
-    features_data_raw <- as.character(features_data_raw[seq_len(n_raw_features)])
-    dfile[['raw/var']]$create_dataset(
-      name = rownames,
-      robj = features_data_raw,
-      dtype = GuessDType(x = features_data_raw[1])
-    )
-    # Add encoding attributes to raw/var/_index (required for AnnData to read gene names correctly)
-    dfile[['raw/var']][[rownames]]$create_attr(
-      attr_name = 'encoding-type',
-      robj = 'string-array',
-      dtype = CachedGuessDType(x = 'string-array'),
-      space = ScalarSpace()
-    )
-    dfile[['raw/var']][[rownames]]$create_attr(
-      attr_name = 'encoding-version',
-      robj = '0.2.0',
-      dtype = CachedGuessDType(x = '0.2.0'),
-      space = ScalarSpace()
-    )
-    dfile[['raw/var']]$create_attr(
-      attr_name = rownames,
-      robj = rownames,
-      dtype = GuessDType(x = rownames),
-      space = ScalarSpace()
-    )
-    # Add dataframe encoding attributes to raw/var group (required for AnnData)
-    # Only add column-order if it doesn't already exist (TransferDF may have added it)
-    if (!dfile[['raw/var']]$attr_exists(attr_name = 'column-order')) {
-      # Get list of columns (everything except _index)
-      raw_var_cols <- setdiff(dfile[['raw/var']]$names, rownames)
-      if (length(raw_var_cols) > 0) {
-        dfile[['raw/var']]$create_attr(
-          attr_name = 'column-order',
-          robj = raw_var_cols,
-          dtype = GuessDType(x = raw_var_cols)
-        )
-      } else {
-        # Empty column-order for dataframes with only _index
-        dfile[['raw/var']]$create_attr(
-          attr_name = 'column-order',
-          robj = character(0),
-          dtype = StringType('utf8')
-        )
-      }
-    }
-    # Add encoding-type and encoding-version
-    encoding.info <- c('type' = 'dataframe', 'version' = '0.2.0')
-    names(x = encoding.info) <- paste0('encoding-', names(x = encoding.info))
-    for (i in seq_along(along.with = encoding.info)) {
-      attr.name <- names(x = encoding.info)[i]
-      attr.value <- encoding.info[i]
-      if (dfile[['raw/var']]$attr_exists(attr_name = attr.name)) {
-        dfile[['raw/var']]$attr_delete(attr_name = attr.name)
-      }
-      dfile[['raw/var']]$create_attr(
-        attr_name = attr.name,
-        robj = attr.value,
-        dtype = GuessDType(x = attr.value),
-        space = ScalarSpace()
-      )
+    # AddEncoding sets encoding-type/version and recomputes the anndata shape
+    # (n_obs, n_vars) from indptr plus the copied `dims` attribute. Drop the
+    # leftover h5seurat `dims` attribute afterwards for byte-parity with anndata.
+    AddEncoding(dname = 'layers/counts')
+    counts.grp <- layers.grp[['counts']]
+    if (counts.grp$attr_exists(attr_name = 'dims')) {
+      counts.grp$attr_delete(attr_name = 'dims')
     }
   }
   # Add cell-level metadata with validation

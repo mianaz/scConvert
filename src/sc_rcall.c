@@ -2128,7 +2128,9 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
     write_csr_sparse_group(file, "X", mat_i, mat_p, mat_x,
                            n_cells, n_genes, gzip);
 
-    /* ── /raw/X + /raw/var (optional; present when source had both data+counts) */
+    /* ── /layers/counts (optional; present when source had both data+counts) ──
+     * Modern anndata convention: counts lives at /layers/counts, not /raw/X.
+     * The /raw/ legacy group is no longer written by writeH5AD. */
     if (raw_sexp != R_NilValue && TYPEOF(raw_sexp) == VECSXP &&
         XLENGTH(raw_sexp) >= 4) {
         SEXP raw_i   = VECTOR_ELT(raw_sexp, 0);
@@ -2138,13 +2140,18 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
         int raw_n_genes = INTEGER(raw_dim)[0];
         int raw_n_cells = INTEGER(raw_dim)[1];
 
-        hid_t raw_grp = H5Gcreate2(file, "raw", H5P_DEFAULT,
-                                       H5P_DEFAULT, H5P_DEFAULT);
-        H5Gclose(raw_grp);
-
-        write_csr_sparse_group(file, "raw/X", raw_i, raw_p, raw_x,
+        /* Create /layers as a dict-typed group and keep it open while
+         * write_csr_sparse_group creates the CSR counts child. Passing
+         * the open parent group avoids H5Gcreate2's path-resolution,
+         * which fails with "name already exists" on some HDF5 versions
+         * when a slash-separated path's first component already exists. */
+        hid_t layers_grp = H5Gcreate2(file, "layers", H5P_DEFAULT,
+                                         H5P_DEFAULT, H5P_DEFAULT);
+        set_str_attr_ascii(layers_grp, "encoding-type", "dict");
+        set_str_attr_ascii(layers_grp, "encoding-version", "0.1.0");
+        write_csr_sparse_group(layers_grp, "counts", raw_i, raw_p, raw_x,
                                raw_n_cells, raw_n_genes, gzip);
-        write_empty_var_group(file, "raw/var", gene_names, gzip);
+        H5Gclose(layers_grp);
     }
 
     /* ── /obs (dataframe group) ──────────────────────────────────────────────── */
@@ -2461,10 +2468,14 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
         H5Gclose(obsp_grp);
     }
 
-    /* ── Empty groups: varm, varp, uns, layers, raw ──────────────────────────── */
+    /* ── Empty groups: varm, varp, uns ───────────────────────────────────────── */
+    /* /layers is intentionally NOT in this list — it is created earlier
+     * in this function when the source Seurat object has a counts slot.
+     * Including it here would trigger an HDF5 "name already exists"
+     * error on every write that emits /layers/counts. */
     {
-        const char *empty_groups[] = { "varm", "varp", "uns", "layers" };
-        for (int ei = 0; ei < 4; ei++) {
+        const char *empty_groups[] = { "varm", "varp", "uns" };
+        for (int ei = 0; ei < 3; ei++) {
             hid_t grp = H5Gcreate2(file, empty_groups[ei], H5P_DEFAULT,
                                      H5P_DEFAULT, H5P_DEFAULT);
             if (grp >= 0) {

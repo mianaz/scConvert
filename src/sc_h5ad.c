@@ -42,6 +42,13 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
     /* 1. Transfer X (expression matrix) */
     if (opts->verbose) SC_MSG("  [1/6] Transferring X...\n");
     int has_raw = sc_has_group(src, "raw");
+    /* Modern anndata stores counts at /layers/counts; legacy files use
+     * /raw/X. When counts live in either dedicated slot, X holds normalized
+     * data and must seed the "data" layer. Without a counts slot, X is the
+     * only matrix and seeds both "counts" and "data". */
+    int has_layer_counts = sc_has_group(src, "layers/counts") ||
+                           sc_has_dataset(src, "layers/counts");
+    int x_is_data = has_raw || has_layer_counts;
     if (sc_has_group(src, "X")) {
         /* X is a sparse group (CSR) */
         hid_t assays = sc_create_or_open_group(dst, "assays");
@@ -70,8 +77,9 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
         /* Seurat v5 expects layers under assays/{assay}/layers/ */
         hid_t layers_grp = sc_create_or_open_group(assay_grp, "layers");
 
-        if (has_raw) {
-            /* raw/X exists: X -> data (normalized), raw/X -> counts (handled below) */
+        if (x_is_data) {
+            /* Counts slot present (raw/X or layers/counts): X -> data
+             * (normalized); the counts slot is handled below. */
             hid_t dst_data = sc_create_or_open_group(layers_grp, "data");
             rc = sc_stream_csr_copy(src_x, dst_data, gzip);
             sc_set_int_array_attr(dst_data, "dims", dims, 2);
@@ -123,7 +131,7 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
 
         hid_t layers_grp = sc_create_or_open_group(assay_grp, "layers");
         hid_t src_x = H5Dopen2(src, "X", H5P_DEFAULT);
-        const char *layer_name = has_raw ? "data" : "counts";
+        const char *layer_name = x_is_data ? "data" : "counts";
         rc = sc_copy_dataset_chunked(src_x, layers_grp, layer_name, gzip);
         H5Dclose(src_x);
         H5Gclose(layers_grp);
@@ -169,6 +177,37 @@ int sc_h5ad_to_h5seurat(const sc_opts_t *opts) {
             H5Gclose(assays);
         }
         H5Gclose(raw);
+        if (rc != SC_OK) goto cleanup;
+    }
+
+    /* 2c. Transfer layers/counts (counts) when present and no legacy raw/X.
+     * Modern anndata keeps raw counts at /layers/counts; route it into the
+     * Seurat assay's counts layer (X already became data above). raw/X takes
+     * priority when both exist, matching the R reader. h5ad CSR (cells x genes)
+     * maps zero-copy onto h5seurat CSC (genes x cells) via swapped dims. */
+    if (!has_raw && has_layer_counts) {
+        if (opts->verbose) SC_MSG("  [1c] Transferring layers/counts...\n");
+        hid_t assays = sc_create_or_open_group(dst, "assays");
+        hid_t assay_grp = sc_create_or_open_group(assays, assay);
+        hid_t layers_grp = sc_create_or_open_group(assay_grp, "layers");
+        if (sc_has_group(src, "layers/counts")) {
+            hid_t src_counts = H5Gopen2(src, "layers/counts", H5P_DEFAULT);
+            hid_t dst_counts = sc_create_or_open_group(layers_grp, "counts");
+            rc = sc_stream_csr_copy(src_counts, dst_counts, gzip);
+            sc_csr_info_t info = {0};
+            sc_read_csr_info(src_counts, &info);
+            int64_t dims[2] = {(int64_t)info.n_cols, (int64_t)info.n_rows};
+            sc_set_int_array_attr(dst_counts, "dims", dims, 2);
+            H5Gclose(dst_counts);
+            H5Gclose(src_counts);
+        } else {
+            hid_t src_counts = H5Dopen2(src, "layers/counts", H5P_DEFAULT);
+            rc = sc_copy_dataset_chunked(src_counts, layers_grp, "counts", gzip);
+            H5Dclose(src_counts);
+        }
+        H5Gclose(layers_grp);
+        H5Gclose(assay_grp);
+        H5Gclose(assays);
         if (rc != SC_OK) goto cleanup;
     }
 
@@ -395,72 +434,42 @@ int sc_h5seurat_to_h5ad(const sc_opts_t *opts) {
         }
         if (counts_path[0] != '\0' && counts_is_sparse) {
             if (opts->verbose)
-                SC_MSG("  [1b] Transferring counts → raw/X...\n");
-            hid_t raw = sc_create_or_open_group(dst, "raw");
+                SC_MSG("  [1b] Transferring counts -> layers/counts...\n");
+            /* Modern anndata convention: counts lives at /layers/counts.
+             * Layers share the main /var, so no separate var group is needed. */
+            hid_t layers = sc_create_or_open_group(dst, "layers");
+            sc_set_str_attr(layers, "encoding-type", "dict");
+            sc_set_str_attr(layers, "encoding-version", "0.1.0");
             hid_t src_counts = H5Gopen2(src, counts_path, H5P_DEFAULT);
-            hid_t dst_raw_x = H5Gcreate2(raw, "X", H5P_DEFAULT,
+            hid_t dst_counts = H5Gcreate2(layers, "counts", H5P_DEFAULT,
                                            H5P_DEFAULT, H5P_DEFAULT);
 
-            rc = sc_stream_csr_transpose(src_counts, dst_raw_x, gzip);
+            rc = sc_stream_csr_transpose(src_counts, dst_counts, gzip);
 
-            /* Set h5ad CSR encoding and shape */
+            /* Set h5ad CSR encoding and shape (n_cells, n_genes) */
             sc_csr_info_t cnt_info = {0};
             sc_read_csr_info(src_counts, &cnt_info);
             int64_t cnt_shape[2] = {(int64_t)cnt_info.n_cols,
                                     (int64_t)cnt_info.n_rows};
-            sc_set_str_attr(dst_raw_x, "encoding-type", "csr_matrix");
-            sc_set_str_attr(dst_raw_x, "encoding-version", "0.1.0");
-            sc_set_int_array_attr(dst_raw_x, "shape", cnt_shape, 2);
+            sc_set_str_attr(dst_counts, "encoding-type", "csr_matrix");
+            sc_set_str_attr(dst_counts, "encoding-version", "0.1.0");
+            sc_set_int_array_attr(dst_counts, "shape", cnt_shape, 2);
 
-            H5Gclose(dst_raw_x);
+            H5Gclose(dst_counts);
             H5Gclose(src_counts);
-
-            /* Create raw/var with _index */
-            hid_t raw_var = sc_create_or_open_group(raw, "var");
-            sc_set_str_attr(raw_var, "encoding-type", "dataframe");
-            sc_set_str_attr(raw_var, "encoding-version", "0.2.0");
-            sc_set_str_attr(raw_var, "_index", "_index");
-
-            /* Copy feature names to raw/var/_index */
-            char feat_path[512];
-            snprintf(feat_path, sizeof(feat_path), "assays/%s/features", assay);
-            if (sc_has_dataset(src, feat_path)) {
-                hid_t src_feat = H5Dopen2(src, feat_path, H5P_DEFAULT);
-                sc_copy_dataset_chunked(src_feat, raw_var, "_index",
-                                        SC_GZIP_LEVEL);
-                hid_t rv_idx = H5Dopen2(raw_var, "_index", H5P_DEFAULT);
-                sc_set_str_attr(rv_idx, "encoding-type", "string-array");
-                sc_set_str_attr(rv_idx, "encoding-version", "0.2.0");
-                H5Dclose(rv_idx);
-                H5Dclose(src_feat);
-            }
-
-            /* Add empty column-order attribute (required by anndata) */
-            {
-                const char *empty = NULL;
-                hsize_t zero = 0;
-                hid_t space = H5Screate_simple(1, &zero, NULL);
-                hid_t tid = sc_create_vlen_str_type();
-                hid_t attr = H5Acreate2(raw_var, "column-order", tid, space,
-                                         H5P_DEFAULT, H5P_DEFAULT);
-                H5Awrite(attr, tid, &empty);
-                H5Aclose(attr);
-                H5Tclose(tid);
-                H5Sclose(space);
-            }
-
-            H5Gclose(raw_var);
-            H5Gclose(raw);
+            H5Gclose(layers);
             if (rc != SC_OK) goto cleanup;
         } else if (counts_path[0] != '\0' && !counts_is_sparse) {
-            /* Dense counts — copy as dense dataset to raw/X */
+            /* Dense counts -> /layers/counts dataset */
             if (opts->verbose)
-                SC_MSG("  [1b] Transferring dense counts → raw/X...\n");
-            hid_t raw = sc_create_or_open_group(dst, "raw");
+                SC_MSG("  [1b] Transferring dense counts -> layers/counts...\n");
+            hid_t layers = sc_create_or_open_group(dst, "layers");
+            sc_set_str_attr(layers, "encoding-type", "dict");
+            sc_set_str_attr(layers, "encoding-version", "0.1.0");
             hid_t src_counts = H5Dopen2(src, counts_path, H5P_DEFAULT);
-            rc = sc_copy_dataset_chunked(src_counts, raw, "X", gzip);
+            rc = sc_copy_dataset_chunked(src_counts, layers, "counts", gzip);
             H5Dclose(src_counts);
-            H5Gclose(raw);
+            H5Gclose(layers);
             if (rc != SC_OK) goto cleanup;
         }
     }
