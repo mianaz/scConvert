@@ -1092,7 +1092,7 @@ SafeSetLayerData <- function(object, layer, value) {
       if (ln == "data") {
         group_name <- "X"
       } else if (ln == "counts" && has_data_layer) {
-        group_name <- "raw/X"
+        group_name <- "layers/counts"
       } else if (ln == "counts") {
         group_name <- "X"
       } else {
@@ -1109,38 +1109,6 @@ SafeSetLayerData <- function(object, layer, value) {
         group = group_name,
         gzip_level = gzip
       )
-
-      if (group_name == "raw/X") {
-        h5 <- hdf5r::H5File$new(filename, mode = "r+")
-        if (h5$exists("raw/var")) {
-          h5$link_delete("raw/var")
-        }
-        h5$create_group("raw/var")
-        gene_names <- rownames(bpcells_layers[[ln]])
-        h5[["raw/var"]]$create_dataset(
-          name = "_index",
-          robj = gene_names,
-          dtype = StringType('utf8')
-        )
-        h5[["raw/var"]]$create_attr(
-          attr_name = "encoding-type", robj = "dataframe",
-          dtype = CachedGuessDType("dataframe"), space = ScalarSpace()
-        )
-        h5[["raw/var"]]$create_attr(
-          attr_name = "encoding-version", robj = "0.2.0",
-          dtype = CachedGuessDType("0.2.0"), space = ScalarSpace()
-        )
-        h5[["raw/var"]]$create_attr(
-          attr_name = "_index", robj = "_index",
-          dtype = CachedGuessDType("_index"), space = ScalarSpace()
-        )
-        h5[["raw/var"]]$create_attr(
-          attr_name = "column-order",
-          robj = character(0),
-          dtype = StringType('utf8')
-        )
-        h5$close_all()
-      }
 
       if (verbose) message("  Streamed '", ln, "' -> ", group_name, " via BPCells (no materialization)")
     }

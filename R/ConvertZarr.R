@@ -1008,26 +1008,17 @@ H5SeuratToZarr <- function(source, dest, assay = "RNA", overwrite = FALSE,
                                      compressor, transpose = TRUE)
   }
 
-  .zarr_create_group(file.path(zarr_path, "layers"))
+  # --- layers/counts (modern anndata convention; counts separate from data) ---
+  # Layers share the main /var, so no separate var group is written.
+  .zarr_create_group(file.path(zarr_path, "layers"), attrs = list(
+    `encoding-type` = "dict", `encoding-version` = "0.1.0"
+  ))
   if (!is.null(counts_path) && !identical(counts_path, x_path)) {
-    if (verbose) message("Streaming raw/X (", counts_path, ")...")
-    .zarr_create_group(file.path(zarr_path, "raw"))
+    if (verbose) message("Streaming layers/counts (", counts_path, ")...")
     counts_obj <- h5[[counts_path]]
-    .stream_h5seurat_matrix_to_zarr(counts_obj, file.path(zarr_path, "raw", "X"),
+    .stream_h5seurat_matrix_to_zarr(counts_obj,
+                                     file.path(zarr_path, "layers", "counts"),
                                      compressor, transpose = TRUE)
-    # Write raw/var with just _index
-    .zarr_create_group(file.path(zarr_path, "raw", "var"), attrs = list(
-      `encoding-type` = "dataframe", `encoding-version` = "0.2.0",
-      `_index` = "_index", `column-order` = character(0)
-    ))
-    if (!is.null(feature_names)) {
-      .zarr_write_strings(
-        dir = file.path(zarr_path, "raw", "var", "_index"),
-        strings = feature_names, compressor = compressor,
-        attrs = list(`encoding-type` = "string-array",
-                     `encoding-version` = "0.2.0")
-      )
-    }
   }
 
   # --- obsm (reductions -> obsm/X_{name}) ---
