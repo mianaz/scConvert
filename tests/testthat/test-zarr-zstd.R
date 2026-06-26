@@ -6,11 +6,13 @@ test_that(".zarr_resolve_compressor auto-picks zstd when zstdlite is available",
 })
 
 test_that(".zarr_resolve_compressor returns zlib when zstdlite is absent", {
-  # We cannot reliably uninstall mid-test; mock requireNamespace.
+  # We cannot reliably uninstall mid-test; mock requireNamespace. mockery::stub
+  # reassigns the function by its local name, so bind it first -- stubbing the
+  # `scConvert:::` expression directly leaves the namespace copy unmocked.
   skip_if_not_installed("mockery")
-  mockery::stub(scConvert:::.zarr_resolve_compressor, "requireNamespace",
-                function(...) FALSE)
-  spec <- scConvert:::.zarr_resolve_compressor(NULL)
+  fn <- scConvert:::.zarr_resolve_compressor
+  mockery::stub(fn, "requireNamespace", function(...) FALSE)
+  spec <- fn(NULL)
   expect_equal(spec$id, "zlib")
 })
 
