@@ -1133,12 +1133,16 @@ SafeSetLayerData <- function(object, layer, value) {
         # Append misc and spatial data via R if present.
         misc <- tryCatch(Misc(object), error = function(e) list())
         images <- tryCatch(Images(object), error = function(e) character(0))
-        skip_keys <- c("__varp__", ".__h5ad_path__", ".__h5ad_loaded__")
+        skip_keys <- c("__varp__", ".__h5ad_path__", ".__h5ad_loaded__",
+                       "scConvert_read")
         skip_keys <- c(skip_keys, grep("^__varp__\\.", names(misc), value = TRUE))
         misc_to_write <- misc[!names(misc) %in% skip_keys]
         misc_to_write <- misc_to_write[!vapply(misc_to_write, is.null, logical(1))]
         has_varp <- !is.null(tryCatch(Misc(object)[["__varp__"]], error = function(e) NULL))
-        if (length(misc_to_write) > 0 || length(images) > 0 || has_varp) {
+        if (!(length(misc_to_write) > 0 || length(images) > 0 || has_varp)) {
+          # Nothing to append; stamp provenance by path.
+          .h5ad_stamp_provenance(filename)
+        } else {
           h5 <- hdf5r::H5File$new(filename, mode = "r+")
           on.exit(h5$close_all(), add = TRUE)
           if (!h5$exists("uns")) h5$create_group("uns")
@@ -1177,6 +1181,9 @@ SafeSetLayerData <- function(object, layer, value) {
               }, error = function(e) NULL)
             }
           }
+          # Stamp last so /uns/scConvert reflects the final file (a stale
+          # misc$scConvert echoed back through WriteUnsItem is replaced).
+          .h5ad_stamp_provenance(h5)
         }
         return(invisible(filename))
       }
