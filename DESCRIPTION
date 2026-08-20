@@ -80,6 +80,7 @@ Collate:
     'Transpose.R'
     'V5Compatibility.R'
     'V5LayerSupport.R'
+    'VerifyH5AD.R'
     'WriteH5AD.R'
     'ZarrRemote.R'
     'ZarrStore.R'

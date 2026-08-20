@@ -4,17 +4,24 @@
 \alias{DecodeCategorical}
 \title{Decode AnnData categorical encoding to R factor}
 \usage{
-DecodeCategorical(codes, categories)
+DecodeCategorical(codes, categories, ordered = FALSE)
 }
 \arguments{
 \item{codes}{Integer vector of 0-based category codes (-1 = NA)}
 
 \item{categories}{Character vector of category labels}
+
+\item{ordered}{Logical; produce an ordered factor (AnnData's
+\code{ordered} categorical flag). Default \code{FALSE}.}
 }
 \value{
 A factor vector
 }
 \description{
-Decode AnnData categorical encoding to R factor
+The factor levels follow the stored category order verbatim (pandas
+preserves an explicit category order; re-sorting it alphabetically would
+silently reorder positional palettes and any order-dependent downstream
+logic). When the AnnData categorical carries \code{ordered = TRUE}, pass
+it here to get an ordered factor back.
 }
 \keyword{internal}

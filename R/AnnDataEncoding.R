@@ -8,14 +8,22 @@ NULL
 
 #' Decode AnnData categorical encoding to R factor
 #'
+#' The factor levels follow the stored category order verbatim (pandas
+#' preserves an explicit category order; re-sorting it alphabetically would
+#' silently reorder positional palettes and any order-dependent downstream
+#' logic). When the AnnData categorical carries \code{ordered = TRUE}, pass
+#' it here to get an ordered factor back.
+#'
 #' @param codes Integer vector of 0-based category codes (-1 = NA)
 #' @param categories Character vector of category labels
+#' @param ordered Logical; produce an ordered factor (AnnData's
+#'   \code{ordered} categorical flag). Default \code{FALSE}.
 #'
 #' @return A factor vector
 #'
 #' @keywords internal
 #'
-DecodeCategorical <- function(codes, categories) {
+DecodeCategorical <- function(codes, categories, ordered = FALSE) {
   codes[codes == -1L] <- NA_integer_
   valid <- !is.na(codes) & codes >= 0L & codes < length(categories)
   if (!all(valid[!is.na(codes)])) {
@@ -26,7 +34,7 @@ DecodeCategorical <- function(codes, categories) {
     ))
     codes[!is.na(codes) & !valid] <- NA_integer_
   }
-  factor(categories[codes + 1L], levels = categories)
+  factor(categories[codes + 1L], levels = categories, ordered = isTRUE(ordered))
 }
 
 #' Encode R factor as AnnData categorical
