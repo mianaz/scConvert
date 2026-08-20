@@ -515,8 +515,10 @@ DirectSeuratToH5AD <- function(
     if (verbose) message("  Writing uns...")
     uns_grp <- dfile$create_group("uns")
 
-    # Internal keys managed separately (varp, lazy-load bookkeeping)
-    skip_keys <- c("__varp__", ".__h5ad_path__", ".__h5ad_loaded__")
+    # Internal keys managed separately (varp, lazy-load bookkeeping, and the
+    # reader-side provenance record, which describes a past read, not this file)
+    skip_keys <- c("__varp__", ".__h5ad_path__", ".__h5ad_loaded__",
+                   "scConvert_read")
     skip_keys <- c(skip_keys, grep("^__varp__\\.", names(misc), value = TRUE))
 
     gzip <- GetCompressionLevel()
@@ -559,6 +561,13 @@ DirectSeuratToH5AD <- function(
                     dtype = CachedGuessDType('anndata'), space = ScalarSpace())
   dfile$create_attr(attr_name = 'encoding-version', robj = '0.1.0',
                     dtype = CachedGuessDType('0.1.0'), space = ScalarSpace())
+
+  # ========== Provenance stamp ==========
+  # /uns/scConvert/{version, counts_location}: records -- by inspecting the
+  # file just written, not the writer's intent -- where the raw counts
+  # landed, so readers resolve the counts layer by version-aware fact
+  # instead of layout heuristics.
+  .h5ad_stamp_provenance(dfile)
 
   dfile$flush()
   dfile$close_all()

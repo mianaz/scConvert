@@ -4023,6 +4023,11 @@ H5SeuratToH5AD <- function(
     }
   }
 
+  # Provenance stamp: /uns/scConvert/{version, counts_location}, derived by
+  # inspecting the file just written, so readers resolve the counts layer
+  # from a version-aware fact instead of layout heuristics.
+  .h5ad_stamp_provenance(dfile)
+
   dfile$flush()
   return(dfile)
 }
