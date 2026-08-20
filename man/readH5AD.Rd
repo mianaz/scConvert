@@ -10,7 +10,8 @@ readH5AD(
   use.bpcells = NULL,
   components = NULL,
   use.c = TRUE,
-  verbose = TRUE
+  verbose = TRUE,
+  reductions = NULL
 )
 }
 \arguments{
@@ -33,6 +34,16 @@ loading via \code{\link{scLoadMeta}}.}
 FALSE to force the pure-R hdf5r path.}
 
 \item{verbose}{Show progress messages}
+
+\item{reductions}{Which \code{obsm} entries to load as dimensional
+reductions. \code{NULL} (default) loads all of them under cleaned names
+(leading \code{X_} stripped). Pass a character vector of obsm keys to
+load a subset, optionally named to control the Seurat reduction names:
+\code{reductions = c(scvi = "X_scVI", umap = "X_umap")} loads only those
+two keys as reductions \code{scvi} and \code{umap}. Name collisions
+(e.g. \code{X_pca} and \code{pca} both present) are resolved by keeping
+the raw obsm key for later claimants, with a warning, instead of the
+previous silent overwrite.}
 }
 \value{
 A \code{Seurat} object. If \code{use.bpcells} is set, the count matrix
@@ -44,3 +55,17 @@ Supports optional BPCells on-disk matrix loading for large datasets that exceed
 available memory. When compiled C routines are available, uses a fast native
 reader (typically 2-3x faster than the pure-R path).
 }
+\section{Post-read verification}{
+
+Before returning, the loaded object is verified against the file: dims
+must match the file's obs/var counts (orientation check), cell names must
+equal the obs index in order, feature names must equal the var index
+modulo Seurat's documented underscore-to-dash replacement, and no
+duplicate barcodes/features may survive. Violations raise
+\code{scConvert_data_error}. Duplicate names in the file are made unique
+with a \code{scConvert_names_warning}; a counts layer left holding
+non-integer values raises a \code{scConvert_counts_warning}. What the
+reader did (which slot became the counts layer, where X went, the
+scConvert version) is recorded in \code{misc$scConvert_read}.
+}
+

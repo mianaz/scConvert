@@ -109,9 +109,30 @@
 #' @param use.c Use compiled C reader when available (default: TRUE). Set to
 #'   FALSE to force the pure-R hdf5r path.
 #' @param verbose Show progress messages
+#' @param reductions Which \code{obsm} entries to load as dimensional
+#'   reductions. \code{NULL} (default) loads all of them under cleaned names
+#'   (leading \code{X_} stripped). Pass a character vector of obsm keys to
+#'   load a subset, optionally named to control the Seurat reduction names:
+#'   \code{reductions = c(scvi = "X_scVI", umap = "X_umap")} loads only those
+#'   two keys as reductions \code{scvi} and \code{umap}. Name collisions
+#'   (e.g. \code{X_pca} and \code{pca} both present) are resolved by keeping
+#'   the raw obsm key for later claimants, with a warning, instead of the
+#'   previous silent overwrite.
 #'
 #' @return A \code{Seurat} object. If \code{use.bpcells} is set, the count matrix
 #'   is stored on disk in BPCells format and the object uses minimal memory.
+#'
+#' @section Post-read verification:
+#' Before returning, the loaded object is verified against the file: dims
+#' must match the file's obs/var counts (orientation check), cell names must
+#' equal the obs index in order, feature names must equal the var index
+#' modulo Seurat's documented underscore-to-dash replacement, and no
+#' duplicate barcodes/features may survive. Violations raise
+#' \code{scConvert_data_error}. Duplicate names in the file are made unique
+#' with a \code{scConvert_names_warning}; a counts layer left holding
+#' non-integer values raises a \code{scConvert_counts_warning}. What the
+#' reader did (which slot became the counts layer, where X went, the
+#' scConvert version) is recorded in \code{misc$scConvert_read}.
 #'
 #' @importFrom hdf5r H5File h5attr h5attr_names
 #' @importFrom Matrix sparseMatrix
@@ -121,7 +142,8 @@
 #' @export
 #'
 readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
-                     components = NULL, use.c = TRUE, verbose = TRUE) {
+                     components = NULL, use.c = TRUE, verbose = TRUE,
+                     reductions = NULL) {
   if (!file.exists(file)) {
     stop("File not found: ", file, call. = FALSE)
   }
@@ -148,7 +170,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
   if (c_available) {
     c_result <- tryCatch(
       .readH5AD_c(file, assay.name = assay.name, components = components,
-                   verbose = verbose),
+                   reductions = reductions, verbose = verbose),
       error = function(e) {
         if (verbose) message("C reader failed (", conditionMessage(e), "), using R reader")
         NULL
@@ -167,150 +189,14 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     message("Loading H5AD file: ", file)
   }
 
-  # Helper function to read H5AD sparse or dense matrix
-  ReadH5ADMatrix <- function(h5_obj, transpose = TRUE) {
-    if (inherits(h5_obj, "H5Group")) {
-      # Sparse matrix (CSR or CSC format in h5ad)
-      if (h5_obj$exists("data") && h5_obj$exists("indices") && h5_obj$exists("indptr")) {
-        # Pre-read structural sanity check: indptr[length(indptr)] is the
-        # number of stored non-zeros, which must equal both length(data) and
-        # length(indices). A truncated /X/data would otherwise read in
-        # quietly and the downstream sparseMatrix call may segfault inside
-        # the C-level constructor. Compare HDF5-reported dataset sizes
-        # before pulling data into memory.
-        data_d   <- h5_obj[["data"]]
-        indices_d <- h5_obj[["indices"]]
-        indptr_d <- h5_obj[["indptr"]]
-        n_data_h5    <- if (!is.null(data_d$dims))    data_d$dims[1]    else NA_integer_
-        n_indices_h5 <- if (!is.null(indices_d$dims)) indices_d$dims[1] else NA_integer_
-        n_indptr_h5  <- if (!is.null(indptr_d$dims))  indptr_d$dims[1]  else NA_integer_
-        if (!is.na(n_data_h5) && !is.na(n_indices_h5) &&
-            n_data_h5 != n_indices_h5) {
-          cond <- structure(
-            class = c("scConvert_data_error", "error", "condition"),
-            list(message = sprintf(
-                   "Malformed h5ad sparse group: data has %d entries but indices has %d",
-                   n_data_h5, n_indices_h5),
-                 call = NULL))
-          stop(cond)
-        }
-        # We can also cross-check against indptr[-1] once indptr is read.
-        data_vals <- h5_obj[["data"]][]
-        indices <- h5_obj[["indices"]][]   # 0-based
-        indptr <- h5_obj[["indptr"]][]
-        if (length(indptr) >= 1L) {
-          declared_nnz <- as.integer(indptr[length(indptr)])
-          if (declared_nnz != length(data_vals) ||
-              declared_nnz != length(indices)) {
-            cond <- structure(
-              class = c("scConvert_data_error", "error", "condition"),
-              list(message = sprintf(
-                     "Malformed h5ad sparse group: indptr declares %d nonzeros but data has %d and indices has %d",
-                     declared_nnz, length(data_vals), length(indices)),
-                   call = NULL))
-            stop(cond)
-          }
-        }
+  # Read h5ad sparse/dense matrices via the shared package-level reader
+  # (.h5ad_read_matrix in R/VerifyH5AD.R), which this closure used to inline.
+  ReadH5ADMatrix <- .h5ad_read_matrix
 
-        # Detect encoding type: CSR vs CSC
-        encoding <- tryCatch(h5attr(h5_obj, "encoding-type"), error = function(e) "csr_matrix")
-        is_csc <- identical(encoding, "csc_matrix")
-
-        # Get dimensions from shape attribute
-        if (h5_obj$attr_exists("shape")) {
-          shape <- h5attr(h5_obj, "shape")
-          n_rows <- shape[1]
-          n_cols <- shape[2]
-        } else if (is_csc) {
-          n_cols <- length(indptr) - 1L
-          n_rows <- if (length(indices) > 0) max(indices) + 1L else 0L
-        } else {
-          n_rows <- length(indptr) - 1L
-          n_cols <- if (length(indices) > 0) max(indices) + 1L else 0L
-        }
-
-        # Helper: sort row indices within each column for valid dgCMatrix
-        # dgCMatrix requires @i to be increasing within each column (defined by @p).
-        # scipy CSR/CSC matrices may have unsorted indices (e.g. scanpy pbmc3k raw/X).
-        .sort_dgc_indices <- function(i, p, x) {
-          needs_sort <- FALSE
-          n_col <- length(p) - 1L
-          for (ci in seq_len(n_col)) {
-            start <- p[ci] + 1L
-            end <- p[ci + 1L]
-            if (end > start && is.unsorted(i[start:end])) {
-              needs_sort <- TRUE
-              break
-            }
-          }
-          if (!needs_sort) return(list(i = i, x = x))
-          # Sort indices within each column
-          for (ci in seq_len(n_col)) {
-            start <- p[ci] + 1L
-            end <- p[ci + 1L]
-            if (end > start) {
-              seg <- start:end
-              ord <- order(i[seg])
-              i[seg] <- i[seg][ord]
-              x[seg] <- x[seg][ord]
-            }
-          }
-          list(i = i, x = x)
-        }
-
-        if (is_csc) {
-          # CSC format: indptr = column pointers, indices = row indices
-          # dgCMatrix is natively CSC, so construct directly
-          sorted <- .sort_dgc_indices(as.integer(indices), as.integer(indptr),
-                                       as.numeric(data_vals))
-          mat <- new("dgCMatrix",
-            i = sorted$i,
-            p = as.integer(indptr),
-            x = sorted$x,
-            Dim = c(as.integer(n_rows), as.integer(n_cols))
-          )
-          if (transpose) {
-            mat <- Matrix::t(mat)
-          }
-        } else if (transpose) {
-          # CSR->CSC reinterpretation: CSR of (n_rows x n_cols) == CSC of (n_cols x n_rows)
-          # h5ad CSR indices become dgCMatrix @i (row indices in transposed view).
-          # scipy CSR may have unsorted column indices within rows, so we must
-          # sort after reinterpretation to produce a valid dgCMatrix.
-          i_int <- as.integer(indices)
-          p_int <- as.integer(indptr)
-          x_num <- as.numeric(data_vals)
-          sorted <- .sort_dgc_indices(i_int, p_int, x_num)
-          mat <- new("dgCMatrix",
-            i = sorted$i,
-            p = p_int,
-            x = sorted$x,
-            Dim = c(as.integer(n_cols), as.integer(n_rows))
-          )
-        } else {
-          # Keep original CSR orientation (e.g. obsp graphs)
-          indices_1based <- indices + 1L
-          row_indices <- rep(seq_len(n_rows), diff(indptr))
-          mat <- sparseMatrix(
-            i = row_indices,
-            j = indices_1based,
-            x = data_vals,
-            dims = c(n_rows, n_cols),
-            index1 = TRUE
-          )
-        }
-        return(mat)
-      }
-    } else if (inherits(h5_obj, "H5D")) {
-      # Dense matrix
-      mat <- h5_obj[,]
-      if (transpose) {
-        mat <- t(mat)
-      }
-      return(mat)
-    }
-    stop("Unknown matrix format", call. = FALSE)
-  }
+  # Resolve where the raw counts live before anything is loaded: the
+  # /uns/scConvert stamp when present (version-aware branch), else
+  # /layers/counts (modern convention), /raw/X (legacy scanpy), or /X.
+  counts_source <- .h5ad_resolve_counts_source(h5ad)
 
   # 1. Read cell names
   if (verbose) message("Reading cell names...")
@@ -400,9 +286,21 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     feature.names <- paste0("Gene", seq_len(n_features))
   }
 
-  # Deduplicate feature names (some datasets have duplicates, e.g. squidpy four_i)
-  if (anyDuplicated(feature.names)) {
+  # Deduplicate names (some datasets have duplicates, e.g. squidpy four_i).
+  # Duplicates are a data-integrity hazard (silent misalignment on any
+  # name-based join), so the rename is loud (scConvert_names_warning) and
+  # recorded in misc$scConvert_read. The original var index survives in the
+  # 'orig_var_index' feature metadata column via .h5ad_preserve_var_identity.
+  var_index_original <- feature.names
+  dedup_features <- anyDuplicated(feature.names) > 0L
+  if (dedup_features) {
+    .h5ad_warn_duplicate_names("feature", sum(duplicated(feature.names)))
     feature.names <- make.unique(feature.names)
+  }
+  dedup_cells <- anyDuplicated(cell.names) > 0L
+  if (dedup_cells) {
+    .h5ad_warn_duplicate_names("cell", sum(duplicated(cell.names)))
+    cell.names <- make.unique(cell.names)
   }
 
   # 3. Read main expression matrix
@@ -418,14 +316,16 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
            "Install with: remotes::install_github('bnprks/BPCells')", call. = FALSE)
     }
 
-    # Prefer raw/X (raw counts) over X (often normalized) -- matches non-BPCells path
-    has_raw <- h5ad$exists("raw") && h5ad[["raw"]]$exists("X")
-    bp_group <- if (has_raw) "raw/X" else "X"
+    # Load the resolved counts source on disk -- matches the non-BPCells
+    # path's convention. Previously only raw/X was considered, so files
+    # following the modern layers['counts'] convention silently served
+    # log-normalized X values as on-disk "counts".
+    bp_group <- counts_source
     if (verbose) {
-      if (has_raw) {
-        message("Loading raw counts (raw/X) via BPCells (on-disk)...")
-      } else {
+      if (identical(bp_group, "X")) {
         message("Loading expression matrix (X) via BPCells (on-disk)...")
+      } else {
+        message("Loading raw counts (", bp_group, ") via BPCells (on-disk)...")
       }
     }
 
@@ -489,90 +389,24 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     min.features = 0
   )
 
-  # 5. Add raw counts if present
-  # In scanpy convention: X = normalized/processed, raw/X = raw counts
-  # When raw/X exists, X should become the "data" layer and raw/X the "counts" layer
-  if (h5ad$exists("raw") && h5ad[["raw"]]$exists("X")) {
-    if (use_bpcells) {
-      # In BPCells mode, skip raw/X to preserve on-disk matrix.
-      # Loading raw/X in-memory would defeat the purpose of on-disk mode.
-      if (verbose) message("Skipping raw counts (BPCells on-disk mode preserves X as counts)")
-    } else {
-      if (verbose) message("Adding raw counts...")
-
-      raw_features <- NULL
-      if (h5ad[["raw"]]$exists("var")) {
-        raw_var <- h5ad[["raw/var"]]
-        if (raw_var$exists("_index")) {
-          raw_features <- as.character(raw_var[["_index"]][])
-        } else if (raw_var$exists("index")) {
-          raw_features <- as.character(raw_var[["index"]][])
-        }
-      }
-
-      if (!is.null(raw_features)) {
-        raw_matrix <- ReadH5ADMatrix(h5ad[["raw/X"]], transpose = TRUE)
-
-        # Handle dimension mismatches (dense matrices may need additional transpose)
-        n_raw_features <- length(raw_features)
-        if (nrow(raw_matrix) == n_cells && ncol(raw_matrix) == n_raw_features &&
-            nrow(raw_matrix) != n_raw_features) {
-          raw_matrix <- t(raw_matrix)
-        }
-
-        # Match dimensions
-        raw_features <- raw_features[seq_len(min(length(raw_features), nrow(raw_matrix)))]
-        rownames(raw_matrix) <- raw_features
-        colnames(raw_matrix) <- cell.names
-
-        # Find common features
-        common_features <- intersect(feature.names, raw_features)
-        if (length(common_features) > 0) {
-          raw_subset <- raw_matrix[common_features, , drop = FALSE]
-          # raw/X -> counts layer (actual raw counts)
-          seurat_obj[[assay.name]] <- SetAssayData(
-            object = seurat_obj[[assay.name]],
-            layer = "counts",
-            new.data = raw_subset
-          )
-          # X (already loaded as counts in step 4) -> data layer (normalized)
-          # expr_matrix contains the X values which are normalized when raw exists
-          x_subset <- expr_matrix[common_features, , drop = FALSE]
-          seurat_obj[[assay.name]] <- SetAssayData(
-            object = seurat_obj[[assay.name]],
-            layer = "data",
-            new.data = x_subset
-          )
-          if (verbose) message("  Set raw/X as counts, X as data (normalized)")
-        }
-      }
-    }
-  }
-
-  # 5b. Ensure the default assay has a "data" layer even in the simple
-  # single-X case. Seurat 5's CreateSeuratObject(counts=) populates only
-  # the counts layer; FeaturePlot / FetchData require "data" and will
-  # fail with "layer 'data' is not found in the object". Populate data
-  # from counts as a copy (the user is expected to call NormalizeData()
-  # later when they actually need normalised values).
-  if (!use_bpcells) {
-    tryCatch({
-      data_layer <- tryCatch(
-        Seurat::GetAssayData(seurat_obj, assay = assay.name, layer = "data"),
-        error = function(e) NULL
-      )
-      if (is.null(data_layer) || length(data_layer) == 0L) {
-        counts_layer <- Seurat::GetAssayData(seurat_obj, assay = assay.name,
-                                              layer = "counts")
-        seurat_obj[[assay.name]] <- SetAssayData(
-          object = seurat_obj[[assay.name]],
-          layer = "data",
-          new.data = counts_layer
-        )
-      }
-    }, error = function(e) {
-      if (verbose) message("  Could not copy counts -> data layer: ", e$message)
-    })
+  # 5. Apply the counts/data convention for the resolved counts source
+  # (.h5ad_apply_counts_convention in R/VerifyH5AD.R):
+  #   raw/X         -> counts <- raw/X (common features), data <- X
+  #   layers/counts -> counts <- layers/counts,           data <- X
+  #   X             -> counts stays X; data <- copy (call NormalizeData()
+  #                    when real normalized values are needed)
+  # In BPCells mode the chosen source is already the on-disk matrix, so the
+  # in-memory relocation is skipped; when that source is not X itself, X was
+  # never loaded at all.
+  if (use_bpcells) {
+    x_mapped_to <- if (identical(counts_source, "X")) "counts" else "not_loaded"
+  } else {
+    counts_conv <- .h5ad_apply_counts_convention(
+      seurat_obj, h5ad, assay.name, expr_matrix, feature.names, cell.names,
+      counts_source, verbose = verbose
+    )
+    seurat_obj <- counts_conv$object
+    x_mapped_to <- counts_conv$x_mapped_to
   }
 
   # 6. Add layers if present
@@ -584,6 +418,14 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
       layer_names <- names(h5ad[["layers"]])
 
       for (layer_name in layer_names) {
+        # layers/counts was already placed in the counts layer by the
+        # counts-convention step (5); re-reading it here would be wasted IO
+        # and, worse, its failure mode used to be a swallowed message that
+        # left log-normalized X sitting in the counts slot.
+        if (identical(layer_name, "counts") &&
+            identical(counts_source, "layers/counts")) {
+          next
+        }
         if (verbose) message("  Adding layer: ", layer_name)
 
         # hdf5r reads a dense h5py (cells x features) dataset as an R matrix
@@ -618,8 +460,11 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
                  layer = layer_name))
           stop(cond)
         }
-        rownames(layer_matrix) <- feature.names
-        colnames(layer_matrix) <- cell.names
+        # Label with the object's final dimnames (Seurat may have replaced
+        # underscores with dashes in feature names; a file-index label would
+        # make SetAssayData fail and silently drop the layer)
+        rownames(layer_matrix) <- rownames(seurat_obj)
+        colnames(layer_matrix) <- colnames(seurat_obj)
 
         # Map layer names to Seurat slots
         seurat_slot <- switch(layer_name,
@@ -701,7 +546,9 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
         })
       }
 
-      # Read modern categoricals (groups with codes/categories)
+      # Read modern categoricals (groups with codes/categories). The stored
+      # category order becomes the factor level order verbatim, and the
+      # AnnData `ordered` flag round-trips into an ordered factor.
       for (col in cat_cols) {
         tryCatch({
           col_obj <- obs_group[[col]]
@@ -709,7 +556,10 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
           if (encoding_type == "categorical" && col_obj$exists("categories") && col_obj$exists("codes")) {
             codes <- col_obj[["codes"]]$read()
             categories <- as.character(col_obj[["categories"]]$read())
-            obs_batch[[col]] <- DecodeCategorical(codes, categories)
+            is_ordered <- tryCatch(isTRUE(as.logical(h5attr(col_obj, "ordered"))[1]),
+                                   error = function(e) FALSE)
+            obs_batch[[col]] <- DecodeCategorical(codes, categories,
+                                                  ordered = is_ordered)
           }
         }, error = function(e) {
           if (verbose) message("Could not add metadata column '", col, "': ", e$message)
@@ -734,11 +584,17 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     obsm_obj <- h5ad[["obsm"]]
 
     if (inherits(obsm_obj, "H5D")) {
-      # Legacy compound dataset: obsm is a structured array with named fields
+      # Legacy compound dataset: obsm is a structured array with named fields.
+      # exclude_spatial = FALSE: the modern spatial pipeline (step 12) only
+      # sees H5Group obsm, so a legacy 'spatial' field must stay a reduction.
       obsm_df <- obsm_obj$read()
+      obsm_plan <- .h5ad_plan_reductions(names(obsm_df),
+                                         reductions = reductions,
+                                         exclude_spatial = FALSE)
       n_cells <- length(cell.names)
-      for (reduc_name in names(obsm_df)) {
-        clean_name <- gsub("^X_", "", reduc_name)
+      for (plan_i in seq_along(obsm_plan)) {
+        reduc_name <- obsm_plan[[plan_i]]
+        clean_name <- names(obsm_plan)[plan_i]
         if (verbose) message("  Adding reduction: ", clean_name)
         tryCatch({
           vals <- obsm_df[[reduc_name]]
@@ -755,11 +611,14 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
         })
       }
     } else {
-      # Modern format: obsm is an H5Group with named datasets
-      for (reduc_name in names(obsm_obj)) {
-        clean_name <- gsub("^X_", "", reduc_name)
-        # Skip 'spatial' -- handled separately in step 12
-        if (clean_name == "spatial") next
+      # Modern format: obsm is an H5Group with named datasets.
+      # 'spatial' is excluded from the plan -- handled separately in step 12.
+      obsm_plan <- .h5ad_plan_reductions(names(obsm_obj),
+                                         reductions = reductions,
+                                         exclude_spatial = TRUE)
+      for (plan_i in seq_along(obsm_plan)) {
+        reduc_name <- obsm_plan[[plan_i]]
+        clean_name <- names(obsm_plan)[plan_i]
         if (verbose) message("  Adding reduction: ", clean_name)
 
         tryCatch({
@@ -825,10 +684,13 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
           }
 
           if (length(meta_values) == nrow(seurat_obj)) {
-            names(meta_values) <- feature.names
+            # Name by the object's final rownames, not the file var index:
+            # Seurat's underscore-to-dash replacement would otherwise leave
+            # the names unmatched and the assignment misaligned.
+            names(meta_values) <- rownames(seurat_obj)
             seurat_obj[[assay.name]][[col]] <- meta_values
             if (col == "highly_variable" && is.logical(meta_values)) {
-              VariableFeatures(seurat_obj) <- feature.names[meta_values]
+              VariableFeatures(seurat_obj) <- rownames(seurat_obj)[meta_values]
             }
           }
         }, error = function(e) {
@@ -857,12 +719,16 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
         col_obj <- var_group[[col]]
 
         if (inherits(col_obj, "H5Group")) {
-          # Modern h5ad categorical format
+          # Modern h5ad categorical format; category order and the `ordered`
+          # flag both round-trip into the factor.
           encoding_type <- tryCatch(h5attr(col_obj, "encoding-type"), error = function(e) "")
           if (encoding_type == "categorical" && col_obj$exists("categories") && col_obj$exists("codes")) {
             codes <- col_obj[["codes"]]$read()
             categories <- as.character(col_obj[["categories"]]$read())
-            meta_values <- DecodeCategorical(codes, categories)
+            is_ordered <- tryCatch(isTRUE(as.logical(h5attr(col_obj, "ordered"))[1]),
+                                   error = function(e) FALSE)
+            meta_values <- DecodeCategorical(codes, categories,
+                                             ordered = is_ordered)
           }
         } else if (inherits(col_obj, "H5D")) {
           # Check legacy categorical format
@@ -887,14 +753,16 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
           }
         }
 
-        # Ensure length matches and name with feature names for Seurat v5 compatibility
+        # Ensure length matches and name with the object's final rownames for
+        # Seurat v5 compatibility (the file var index may differ after
+        # Seurat's underscore-to-dash replacement).
         if (length(meta_values) == nrow(seurat_obj)) {
-          names(meta_values) <- feature.names
+          names(meta_values) <- rownames(seurat_obj)
           seurat_obj[[assay.name]][[col]] <- meta_values
 
           # Set variable features if highly_variable column exists
           if (col == "highly_variable" && is.logical(meta_values)) {
-            VariableFeatures(seurat_obj) <- feature.names[meta_values]
+            VariableFeatures(seurat_obj) <- rownames(seurat_obj)[meta_values]
           }
         }
       }, error = function(e) {
@@ -903,6 +771,12 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     }
     } # end else (non-compound var)
   }
+
+  # 9b. Gene identity: if the final rownames differ from the file's var index
+  # (make.unique dedup or Seurat's underscore mangling), keep the original
+  # identifiers as feature metadata so identity is never silently lost.
+  seurat_obj <- .h5ad_preserve_var_identity(seurat_obj, assay.name,
+                                            var_index_original)
 
   # 10. Add neighbor graphs from obsp. Auxiliary slot: a single corrupt
   # graph should warn and skip rather than abort the whole load, matching
@@ -1017,6 +891,19 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
   # molecules subgroups, reconstruct an FOV object and attach to the Seurat
   # object keyed by library name. Closes the CosMx/Xenium silent-loss gap.
   seurat_obj <- .rebuild_fovs_from_h5ad(h5ad, seurat_obj, verbose = verbose)
+
+  # 13. Post-read verification (read-back discipline): assert shape /
+  # orientation, cell/feature identity and order, and name uniqueness
+  # against the file rather than trusting the load; surface a counts layer
+  # that ended up holding non-integer values; record what the reader did.
+  .h5ad_verify_read(seurat_obj, cell.names, feature.names, file)
+  if (!use_bpcells) {
+    .h5ad_warn_noninteger_counts(seurat_obj, assay.name, counts_source)
+  }
+  seurat_obj <- .h5ad_record_provenance(seurat_obj, file, counts_source,
+                                        x_mapped_to,
+                                        dedup_cells = dedup_cells,
+                                        dedup_features = dedup_features)
 
   # Store source path for deferred loading (Optimization 4)
   if (!setequal(components, all_components)) {
@@ -1137,7 +1024,8 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
   obj
 }
 
-.readH5AD_c <- function(file, assay.name = "RNA", components = NULL, verbose = TRUE) {
+.readH5AD_c <- function(file, assay.name = "RNA", components = NULL,
+                        reductions = NULL, verbose = TRUE) {
   if (verbose) message("Loading H5AD file (C reader): ", file)
 
   # Call C reader for requested components
@@ -1145,7 +1033,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
   if (is.null(result)) {
     if (verbose) message("C reader failed, falling back to R reader")
     return(readH5AD(file, assay.name = assay.name, components = components,
-                    use.c = FALSE, verbose = verbose))
+                    use.c = FALSE, verbose = verbose, reductions = reductions))
   }
 
   # 1. Construct expression matrix from C result
@@ -1168,18 +1056,44 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
     )
   }
 
-  # Set dimnames
+  # Set dimnames; duplicates are made unique loudly (scConvert_names_warning)
+  # and recorded in misc$scConvert_read, mirroring the R path.
   cell.names <- mat_data$colnames
   feature.names <- mat_data$rownames
   if (is.null(cell.names)) cell.names <- paste0("Cell", seq_len(ncol(expr_matrix)))
   if (is.null(feature.names)) feature.names <- paste0("Gene", seq_len(nrow(expr_matrix)))
-  if (anyDuplicated(feature.names)) feature.names <- make.unique(feature.names)
+  var_index_original <- feature.names
+  dedup_features <- anyDuplicated(feature.names) > 0L
+  if (dedup_features) {
+    .h5ad_warn_duplicate_names("feature", sum(duplicated(feature.names)))
+    feature.names <- make.unique(feature.names)
+  }
+  dedup_cells <- anyDuplicated(cell.names) > 0L
+  if (dedup_cells) {
+    .h5ad_warn_duplicate_names("cell", sum(duplicated(cell.names)))
+    cell.names <- make.unique(cell.names)
+  }
   rownames(expr_matrix) <- feature.names
   colnames(expr_matrix) <- cell.names
 
   # 2. Create Seurat object (fast path bypasses validation overhead)
   if (verbose) message("Creating Seurat object...")
   seurat_obj <- .fast_create_seurat(expr_matrix, assay.name = assay.name)
+
+  # 2b. Counts/data convention. The C reader hands back /X only; where the
+  # raw counts actually live (layers/counts, raw/X, or X itself) is resolved
+  # against the file and the matrices are relocated accordingly. Runs
+  # unconditionally -- counts identity is part of the primary-matrix
+  # contract, not an optional component.
+  h5ad <- H5File$new(file, mode = "r")
+  on.exit(tryCatch(h5ad$close_all(), error = function(e) NULL), add = TRUE)
+  counts_source <- .h5ad_resolve_counts_source(h5ad)
+  counts_conv <- .h5ad_apply_counts_convention(
+    seurat_obj, h5ad, assay.name, expr_matrix, feature.names, cell.names,
+    counts_source, verbose = verbose
+  )
+  seurat_obj <- counts_conv$object
+  x_mapped_to <- counts_conv$x_mapped_to
 
   # 3. Add obs metadata
   if ("obs" %in% components && !is.null(result[["obs"]])) {
@@ -1209,10 +1123,10 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
           else if (is.numeric(meta_values)) meta_values <- as.logical(meta_values)
         }
         if (length(meta_values) == nrow(seurat_obj)) {
-          names(meta_values) <- feature.names
+          names(meta_values) <- rownames(seurat_obj)
           seurat_obj[[assay.name]][[col]] <- meta_values
           if (col == "highly_variable" && is.logical(meta_values)) {
-            VariableFeatures(seurat_obj) <- feature.names[meta_values]
+            VariableFeatures(seurat_obj) <- rownames(seurat_obj)[meta_values]
           }
         }
       }, error = function(e) {
@@ -1221,12 +1135,23 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
     }
   }
 
-  # 5. Add obsm reductions
+  # 4b. The compiled reader preserves category order but drops the AnnData
+  # `ordered` flag; restore it from the file's attributes. Also keep the
+  # original var index when feature names were deduplicated or mangled.
+  seurat_obj <- .h5ad_restore_ordered_factors(seurat_obj, h5ad, assay.name)
+  seurat_obj <- .h5ad_preserve_var_identity(seurat_obj, assay.name,
+                                            var_index_original)
+
+  # 5. Add obsm reductions ('spatial' excluded from the plan: the spatial
+  # pipeline in the hdf5r fallback below handles it)
   if ("obsm" %in% components && !is.null(result[["obsm"]])) {
     if (verbose) message("Adding dimensional reductions...")
-    for (reduc_name in names(result[["obsm"]])) {
-      clean_name <- gsub("^X_", "", reduc_name)
-      if (clean_name == "spatial") next
+    obsm_plan <- .h5ad_plan_reductions(names(result[["obsm"]]),
+                                       reductions = reductions,
+                                       exclude_spatial = TRUE)
+    for (plan_i in seq_along(obsm_plan)) {
+      reduc_name <- obsm_plan[[plan_i]]
+      clean_name <- names(obsm_plan)[plan_i]
       tryCatch({
         embeddings <- result[["obsm"]][[reduc_name]]
         if (!is.matrix(embeddings)) embeddings <- as.matrix(embeddings)
@@ -1278,69 +1203,24 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
     }
   }
 
-  # 7. Handle remaining components via hdf5r fallback (varp, layers, uns, spatial, raw)
-  # These are less performance-critical, so use the existing R reader
+  # 7. Handle remaining components via the already-open hdf5r handle.
+  # raw/X and layers/counts were consumed by the counts-convention step
+  # (2b), which replaced the hand-rolled raw/X reconstruction that used to
+  # live here (and, unlike it, validates encoding, sorts indices, and covers
+  # the layers/counts convention).
   needs_hdf5r <- any(c("varp", "layers", "uns") %in% components)
   if (needs_hdf5r) {
-    h5ad <- H5File$new(file, mode = "r")
-    on.exit(tryCatch(h5ad$close_all(), error = function(e) NULL))
-
-    # raw/X handling: set counts and data layers
-    if ("layers" %in% components || "X" %in% components) {
-      if (h5ad$exists("raw") && h5ad[["raw"]]$exists("X")) {
-        if (verbose) message("Adding raw counts...")
-        raw_features <- NULL
-        if (h5ad[["raw"]]$exists("var")) {
-          raw_var <- h5ad[["raw/var"]]
-          if (raw_var$exists("_index")) raw_features <- as.character(raw_var[["_index"]][])
-          else if (raw_var$exists("index")) raw_features <- as.character(raw_var[["index"]][])
-        }
-        if (!is.null(raw_features)) {
-          # Use the same ReadH5ADMatrix helper pattern
-          raw_obj <- h5ad[["raw/X"]]
-          if (inherits(raw_obj, "H5Group") && raw_obj$exists("data")) {
-            data_vals <- raw_obj[["data"]][]
-            indices <- raw_obj[["indices"]][]
-            indptr <- raw_obj[["indptr"]][]
-            encoding <- tryCatch(h5attr(raw_obj, "encoding-type"), error = function(e) "csr_matrix")
-            if (identical(encoding, "csc_matrix")) {
-              raw_matrix <- new("dgCMatrix",
-                i = as.integer(indices), p = as.integer(indptr), x = as.numeric(data_vals),
-                Dim = c(as.integer(length(raw_features)), as.integer(length(cell.names)))
-              )
-            } else {
-              # CSR of (n_cells x n_features) == CSC of (n_features x n_cells)
-              raw_matrix <- new("dgCMatrix",
-                i = as.integer(indices), p = as.integer(indptr), x = as.numeric(data_vals),
-                Dim = c(as.integer(length(raw_features)), as.integer(length(cell.names)))
-              )
-            }
-          } else if (inherits(raw_obj, "H5D")) {
-            raw_matrix <- t(raw_obj[,])
-          }
-          if (exists("raw_matrix")) {
-            common <- intersect(feature.names, raw_features)
-            if (length(common) > 0) {
-              rownames(raw_matrix) <- raw_features
-              colnames(raw_matrix) <- cell.names
-              seurat_obj[[assay.name]] <- SetAssayData(
-                seurat_obj[[assay.name]], layer = "counts", new.data = raw_matrix[common, , drop = FALSE]
-              )
-              seurat_obj[[assay.name]] <- SetAssayData(
-                seurat_obj[[assay.name]], layer = "data", new.data = expr_matrix[common, , drop = FALSE]
-              )
-            }
-          }
-        }
-      }
-    }
-
     # Layers. Mirror the R-reader behaviour: a shape mismatch between a
     # layer and X is structurally malformed; raise scConvert_data_error
     # instead of silently dropping the layer.
     if ("layers" %in% components && h5ad$exists("layers")) {
       if (verbose) message("Adding layers...")
       for (layer_name in names(h5ad[["layers"]])) {
+        # Already placed into the counts layer by the counts-convention step
+        if (identical(layer_name, "counts") &&
+            identical(counts_source, "layers/counts")) {
+          next
+        }
         layer_obj <- h5ad[["layers"]][[layer_name]]
         if (inherits(layer_obj, "H5Group") && layer_obj$exists("data")) {
           ld <- layer_obj[["data"]][]; li <- layer_obj[["indices"]][]; lp <- layer_obj[["indptr"]][]
@@ -1363,8 +1243,8 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
           stop(cond)
         }
         tryCatch({
-          rownames(layer_matrix) <- feature.names
-          colnames(layer_matrix) <- cell.names
+          rownames(layer_matrix) <- rownames(seurat_obj)
+          colnames(layer_matrix) <- colnames(seurat_obj)
           seurat_slot <- switch(layer_name,
             "counts" = "counts", "data" = "data",
             "log_normalized" = "data", "scale.data" = "scale.data",
@@ -1419,15 +1299,26 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
       }
     }
 
-    # Spatial
-    if ("obsm" %in% components && h5ad$exists("obsm") && "spatial" %in% names(h5ad[["obsm"]])) {
-      seurat_obj <- H5ADSpatialToSeurat(h5ad_file = h5ad, seurat_obj = seurat_obj,
-                                         assay_name = assay.name, verbose = verbose)
-    }
-
     # FOV rebuild (mirrors the non-components path above)
     seurat_obj <- .rebuild_fovs_from_h5ad(h5ad, seurat_obj, verbose = verbose)
   }
+
+  # Spatial: gated on obsm alone. The handle is open regardless of
+  # needs_hdf5r now, so a components subset like c("X", "obs", "obsm") no
+  # longer silently drops the spatial image data.
+  if ("obsm" %in% components && h5ad$exists("obsm") &&
+      "spatial" %in% names(h5ad[["obsm"]])) {
+    seurat_obj <- H5ADSpatialToSeurat(h5ad_file = h5ad, seurat_obj = seurat_obj,
+                                       assay_name = assay.name, verbose = verbose)
+  }
+
+  # Post-read verification + provenance (mirrors the R reader)
+  .h5ad_verify_read(seurat_obj, cell.names, feature.names, file)
+  .h5ad_warn_noninteger_counts(seurat_obj, assay.name, counts_source)
+  seurat_obj <- .h5ad_record_provenance(seurat_obj, file, counts_source,
+                                        x_mapped_to,
+                                        dedup_cells = dedup_cells,
+                                        dedup_features = dedup_features)
 
   # Store source path for deferred loading
   all_components <- c("X", "obs", "var", "obsm", "obsp", "varp", "layers", "uns")
