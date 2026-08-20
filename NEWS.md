@@ -1,5 +1,72 @@
 # scConvert 0.3.0 (development)
 
+## Reverse-conversion (h5ad -> Seurat) integrity overhaul
+
+`readH5AD()` now applies the same read-back discipline to the reverse
+direction that the write direction already learned the hard way. New
+helpers live in `R/VerifyH5AD.R`; regression coverage in
+`tests/testthat/test-reverse-conversion.R`.
+
+- **Version/layout-aware counts resolution.** Where the raw counts live is
+  now resolved explicitly, in priority order: the `/uns/scConvert/
+  counts_location` stamp (see below), `/layers/counts` (modern
+  anndata/scanpy convention), `/raw/X` (legacy scanpy), then `/X`. The
+  resolved slot is loaded into the Seurat `counts` layer and X into `data`
+  in every path -- in-memory, `components` subsets, the C-reader fallback,
+  and BPCells on-disk mode (which previously only knew about `raw/X` and
+  silently served log-normalized X as on-disk "counts" for
+  `layers['counts']` files). Relocating counts out of `layers/counts` is
+  now a hard `scConvert_data_error` on failure instead of a swallowed
+  message that left log-normalized values sitting in the counts slot.
+
+- **Counts integrality guard.** If the values that end up in the counts
+  layer are non-integer, `readH5AD()` raises a classed
+  `scConvert_counts_warning` naming the slot they came from, instead of
+  silently handing normalized data to downstream steps that assume raw
+  counts.
+
+- **Writer provenance stamp.** All h5ad writers (`.writeH5AD_c`,
+  `DirectSeuratToH5AD`, `H5SeuratToH5AD`) now stamp
+  `/uns/scConvert/{version, counts_location}` by inspecting the file just
+  written -- not the writer's intent -- so future reads branch on recorded
+  fact rather than layout heuristics.
+
+- **Post-read verification.** Before returning, the loaded object is
+  asserted against the file: dims must match the file's obs/var counts
+  (transpose/orientation check), cell names must equal the obs index in
+  order, feature names must equal the var index modulo Seurat's documented
+  underscore-to-dash replacement, and no duplicate barcodes or genes may
+  survive. Violations raise `scConvert_data_error`. What the reader did
+  (counts source, where X went, scConvert version, dedup flags) is
+  recorded in `misc$scConvert_read`.
+
+- **Duplicate names are loud.** Duplicate cell barcodes or feature names
+  in the file are made unique with a classed `scConvert_names_warning`
+  (previously features were deduplicated silently and duplicate barcodes
+  fell through to Seurat with undefined downstream alignment).
+
+- **Gene identity is never silently lost.** When final feature names
+  differ from the file's var index (deduplication or Seurat's underscore
+  mangling), the original identifiers are preserved in a new
+  `orig_var_index` feature-metadata column. var metadata columns are now
+  keyed by the object's final rownames, fixing silent misalignment (and
+  layer drops) for files with underscores in gene names.
+
+- **Reduction key collisions and remapping.** obsm keys that clean to the
+  same reduction name (e.g. `X_pca` and `pca`) no longer silently
+  overwrite each other; later claimants keep their raw obsm key (made
+  unique if needed) with a `scConvert_reduction_warning`. A new
+  `reductions` argument to `readH5AD()` selects a subset of obsm keys
+  and/or renames them (`reductions = c(scvi = "X_scVI")`), replacing blind
+  full-object import with explicit key remapping.
+
+- **Categorical order and orderedness round-trip.** `DecodeCategorical()`
+  keeps the stored category order as the factor level order (now pinned by
+  tests against non-alphabetical orders) and gains an `ordered` argument;
+  both hdf5r reader paths read the AnnData `ordered` flag, and the
+  C-reader path restores it post-hoc, so ordered pandas categoricals come
+  back as ordered factors.
+
 ## New features
 
 - **`readZarr()` index slicing: `obs_idx` and `var_idx` push down to
