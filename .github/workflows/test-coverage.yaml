@@ -72,16 +72,20 @@ jobs:
           extra-packages: any::covr any::reticulate
           cache-version: 1
 
+      # install_path must live outside the R session tempdir: R deletes its
+      # own Rtmp* directory when the process exits (clean = FALSE does not
+      # prevent that), which used to take testthat.Rout.fail with it.
       - name: Run test coverage
         shell: Rscript {0}
         run: |
           covr::codecov(
             quiet = FALSE,
-            clean = FALSE
+            clean = FALSE,
+            install_path = file.path(Sys.getenv("RUNNER_TEMP"), "covr-install")
           )
 
       # covr runs the test suite via tools::testInstalledPackage, which writes
-      # test output only to testthat.Rout(.fail) inside its temp library --
+      # test output only to testthat.Rout(.fail) inside its install library --
       # the job log otherwise shows nothing but "running the tests failed",
       # making CI failures undiagnosable. Surface the file on failure.
       - name: Show testthat output on failure
@@ -93,7 +97,7 @@ jobs:
             found=1
             echo "=== $f ==="
             tail -n 500 "$f"
-          done < <(find /tmp -name 'testthat.Rout*' 2>/dev/null)
+          done < <(find "$RUNNER_TEMP/covr-install" /tmp -name 'testthat.Rout*' 2>/dev/null)
           if [ "$found" -eq 0 ]; then
-            echo "No testthat.Rout* files found under /tmp"
+            echo "No testthat.Rout* files found"
           fi
