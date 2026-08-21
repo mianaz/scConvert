@@ -79,3 +79,21 @@ jobs:
             quiet = FALSE,
             clean = FALSE
           )
+
+      # covr runs the test suite via tools::testInstalledPackage, which writes
+      # test output only to testthat.Rout(.fail) inside its temp library --
+      # the job log otherwise shows nothing but "running the tests failed",
+      # making CI failures undiagnosable. Surface the file on failure.
+      - name: Show testthat output on failure
+        if: failure()
+        shell: bash
+        run: |
+          found=0
+          while IFS= read -r f; do
+            found=1
+            echo "=== $f ==="
+            tail -n 500 "$f"
+          done < <(find /tmp -name 'testthat.Rout*' 2>/dev/null)
+          if [ "$found" -eq 0 ]; then
+            echo "No testthat.Rout* files found under /tmp"
+          fi
