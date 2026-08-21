@@ -8,6 +8,11 @@ dependencies:
   - squidpy>=1.3
   - mudata>=0.2
   - loompy>=3.0
+  # sc.tl.leiden dependencies: conda-forge scanpy does not depend on these,
+  # so they must be pinned explicitly. They used to arrive transitively and
+  # vanished when the CI env cache expired and conda-forge re-solved.
+  - python-igraph
+  - leidenalg
   - numpy
   - pandas
   - scipy
