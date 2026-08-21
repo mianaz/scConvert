@@ -82,7 +82,8 @@ reader (typically 2-3x faster than the pure-R path).</p>
 <span>  use.bpcells <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  components <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use.c <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  reductions <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -121,11 +122,38 @@ FALSE to force the pure-R hdf5r path.</p></dd>
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Show progress messages</p></dd>
 
+
+<dt id="arg-reductions">reductions<a class="anchor" aria-label="anchor" href="#arg-reductions"></a></dt>
+<dd><p>Which <code>obsm</code> entries to load as dimensional
+reductions. <code>NULL</code> (default) loads all of them under cleaned names
+(leading <code>X_</code> stripped). Pass a character vector of obsm keys to
+load a subset, optionally named to control the Seurat reduction names:
+<code>reductions = c(scvi = "X_scVI", umap = "X_umap")</code> loads only those
+two keys as reductions <code>scvi</code> and <code>umap</code>. Name collisions
+(e.g. <code>X_pca</code> and <code>pca</code> both present) are resolved by keeping
+the raw obsm key for later claimants, with a warning, instead of the
+previous silent overwrite.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>Seurat</code> object. If <code>use.bpcells</code> is set, the count matrix
   is stored on disk in BPCells format and the object uses minimal memory.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="post-read-verification">Post-read verification<a class="anchor" aria-label="anchor" href="#post-read-verification"></a></h2>
+
+
+<p>Before returning, the loaded object is verified against the file: dims
+must match the file's obs/var counts (orientation check), cell names must
+equal the obs index in order, feature names must equal the var index
+modulo Seurat's documented underscore-to-dash replacement, and no
+duplicate barcodes/features may survive. Violations raise
+<code>scConvert_data_error</code>. Duplicate names in the file are made unique
+with a <code>scConvert_names_warning</code>; a counts layer left holding
+non-integer values raises a <code>scConvert_counts_warning</code>. What the
+reader did (which slot became the counts layer, where X went, the
+scConvert version) is recorded in <code>misc$scConvert_read</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -137,7 +165,7 @@ FALSE to force the pure-R hdf5r path.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>
