@@ -85,3 +85,9 @@ inst/bin/scconvert
 inst/bin/scconvert.exe
 inst/bin/*.dll
 vignettes/cosmx_lung9
+
+# gcov coverage artifacts (covr / --coverage builds)
+src/*.gcda
+src/*.gcno
+src/cli_obj/*.gcda
+src/cli_obj/*.gcno
