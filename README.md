@@ -113,6 +113,7 @@ Three conversion tiers provide optimal speed for each format pair:
 | **TileDB-SOMA** | Read/write SOMA for CELLxGENE Census interoperability. |
 | **BPCells** | On-disk matrix loading – 87% memory reduction at atlas scale. |
 | **C CLI** | Standalone binary for streaming on-disk HDF5 conversion. |
+| **Version compatibility** | Reads every anndata layout from 0.7 to 0.13 (nullable strings, `null`, zarr v3 sharding + zstd); `upgradeH5AD()`/`downgradeH5AD()` rewrite h5ad files between layouts and `upgradeSeurat()`/`downgradeSeurat()` convert objects between Seurat v3/v4 and v5 losslessly. |
 
 ## Performance
 

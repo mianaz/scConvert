@@ -205,18 +205,10 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
   if (h5ad$exists("obs")) {
     obs_obj <- h5ad[["obs"]]
     if (inherits(obs_obj, "H5Group")) {
-      # Modern h5ad format: obs is a group with _index dataset or _index attribute
-      if (obs_obj$exists("_index")) {
-        cell.names <- as.character(obs_obj[["_index"]][])
-      } else if (obs_obj$exists("index")) {
-        cell.names <- as.character(obs_obj[["index"]][])
-      } else if (obs_obj$attr_exists("_index")) {
-        # AnnData convention: _index attribute names the index column
-        idx_col <- h5attr(obs_obj, "_index")
-        if (obs_obj$exists(idx_col)) {
-          cell.names <- as.character(obs_obj[[idx_col]][])
-        }
-      }
+      # Modern h5ad format: obs is a group; the `_index` attribute names the
+      # index child, which is a string dataset or (anndata >= 0.13 with
+      # pandas 3) a nullable-string-array group. Handled by .h5ad_read_index.
+      cell.names <- .h5ad_read_index(obs_obj)
     } else if (inherits(obs_obj, "H5D")) {
       # Legacy h5ad format: obs is a compound HDF5 dataset
       obs_compound_df <- obs_obj$read()
@@ -251,16 +243,7 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
   if (h5ad$exists("var")) {
     var_obj <- h5ad[["var"]]
     if (inherits(var_obj, "H5Group")) {
-      if (var_obj$exists("_index")) {
-        feature.names <- as.character(var_obj[["_index"]][])
-      } else if (var_obj$exists("index")) {
-        feature.names <- as.character(var_obj[["index"]][])
-      } else if (var_obj$attr_exists("_index")) {
-        idx_col <- h5attr(var_obj, "_index")
-        if (var_obj$exists(idx_col)) {
-          feature.names <- as.character(var_obj[[idx_col]][])
-        }
-      }
+      feature.names <- .h5ad_read_index(var_obj)
     } else if (inherits(var_obj, "H5D")) {
       # Legacy compound dataset
       var_compound_df <- var_obj$read()
@@ -505,61 +488,23 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
       }
     } else {
       obs_group <- h5ad[["obs"]]
-      # Exclude index column (may be _index, index, or named by _index attribute)
-      obs_exclude <- c("_index", "index", "__categories")
-      if (obs_group$attr_exists("_index")) {
-        obs_exclude <- c(obs_exclude, h5attr(obs_group, "_index"))
-      }
-      obs_cols <- setdiff(names(obs_group), obs_exclude)
-
-      # Cache __categories group reference if it exists (legacy format)
-      has_legacy_cats <- obs_group$exists("__categories")
-      legacy_cats <- if (has_legacy_cats) obs_group[["__categories"]] else NULL
-      legacy_cat_names <- if (has_legacy_cats) names(legacy_cats) else character(0)
-
-      # Pre-classify columns into groups (modern categoricals) vs datasets
-      # using ls() to get all member types in a single HDF5 call
-      obs_ls <- obs_group$ls()
-      obs_types <- setNames(as.character(obs_ls$obj_type), obs_ls$name)
-      cat_cols <- obs_cols[obs_cols %in% names(obs_types) & obs_types[obs_cols] == "H5I_GROUP"]
-      plain_cols <- obs_cols[obs_cols %in% names(obs_types) & obs_types[obs_cols] == "H5I_DATASET"]
+      # Every column encoding anndata has ever written (legacy __categories
+      # codes, categorical groups, nullable-integer/boolean/string groups,
+      # boolean enums, plain datasets) decodes through .h5ad_read_column;
+      # the index column and __categories are never columns.
+      obs_cols <- .h5ad_dataframe_columns(obs_group)
 
       # Batch-read all columns into a local data frame first, then assign once
       # (avoids per-column Seurat validation overhead which is O(n_cols * n_cells))
       obs_batch <- list()
-
-      for (col in plain_cols) {
+      for (col in obs_cols) {
         tryCatch({
-          col_obj <- obs_group[[col]]
-          if (has_legacy_cats && col %in% legacy_cat_names) {
-            codes <- col_obj$read()
-            categories <- as.character(legacy_cats[[col]]$read())
-            obs_batch[[col]] <- DecodeCategorical(codes, categories)
-          } else {
-            meta_values <- col_obj$read()
-            if (!is.null(meta_values)) {
-              obs_batch[[col]] <- meta_values
-            }
-          }
-        }, error = function(e) {
-          if (verbose) message("Could not add metadata column '", col, "': ", e$message)
-        })
-      }
-
-      # Read modern categoricals (groups with codes/categories). The stored
-      # category order becomes the factor level order verbatim, and the
-      # AnnData `ordered` flag round-trips into an ordered factor.
-      for (col in cat_cols) {
-        tryCatch({
-          col_obj <- obs_group[[col]]
-          encoding_type <- tryCatch(h5attr(col_obj, "encoding-type"), error = function(e) "")
-          if (encoding_type == "categorical" && col_obj$exists("categories") && col_obj$exists("codes")) {
-            codes <- col_obj[["codes"]]$read()
-            categories <- as.character(col_obj[["categories"]]$read())
-            is_ordered <- tryCatch(isTRUE(as.logical(h5attr(col_obj, "ordered"))[1]),
-                                   error = function(e) FALSE)
-            obs_batch[[col]] <- DecodeCategorical(codes, categories,
-                                                  ordered = is_ordered)
+          meta_values <- .h5ad_read_column(obs_group, col)
+          if (!is.null(meta_values) && length(meta_values) == ncol(seurat_obj)) {
+            obs_batch[[col]] <- meta_values
+          } else if (!is.null(meta_values) && verbose) {
+            message("Skipping metadata column '", col, "': length ",
+                    length(meta_values), " != ", ncol(seurat_obj), " cells")
           }
         }, error = function(e) {
           if (verbose) message("Could not add metadata column '", col, "': ", e$message)
@@ -699,55 +644,21 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
       }
     } else {
     var_group <- h5ad[["var"]]
-    # Exclude index column (may be _index, index, or named by _index attribute)
-    var_exclude <- c("_index", "index", "__categories")
-    if (var_group$attr_exists("_index")) {
-      var_exclude <- c(var_exclude, h5attr(var_group, "_index"))
-    }
-    var_cols <- setdiff(names(var_group), var_exclude)
-
-    # Cache __categories if present (legacy format)
-    has_var_cats <- var_group$exists("__categories")
-    var_cats <- if (has_var_cats) var_group[["__categories"]] else NULL
-    var_cat_names <- if (has_var_cats) names(var_cats) else character(0)
+    var_cols <- .h5ad_dataframe_columns(var_group)
 
     for (col in var_cols) {
       if (verbose) message("  Adding feature metadata: ", col)
 
       tryCatch({
-        meta_values <- NULL
-        col_obj <- var_group[[col]]
-
-        if (inherits(col_obj, "H5Group")) {
-          # Modern h5ad categorical format; category order and the `ordered`
-          # flag both round-trip into the factor.
-          encoding_type <- tryCatch(h5attr(col_obj, "encoding-type"), error = function(e) "")
-          if (encoding_type == "categorical" && col_obj$exists("categories") && col_obj$exists("codes")) {
-            codes <- col_obj[["codes"]]$read()
-            categories <- as.character(col_obj[["categories"]]$read())
-            is_ordered <- tryCatch(isTRUE(as.logical(h5attr(col_obj, "ordered"))[1]),
-                                   error = function(e) FALSE)
-            meta_values <- DecodeCategorical(codes, categories,
-                                             ordered = is_ordered)
-          }
-        } else if (inherits(col_obj, "H5D")) {
-          # Check legacy categorical format
-          if (has_var_cats && col %in% var_cat_names) {
-            codes <- col_obj$read()
-            categories <- as.character(var_cats[[col]]$read())
-            meta_values <- DecodeCategorical(codes, categories)
-          } else {
-            meta_values <- col_obj$read()
-          }
-        }
+        meta_values <- .h5ad_read_column(var_group, col)
 
         if (is.null(meta_values)) next
 
         # Special handling for highly_variable: convert to logical
         if (col == "highly_variable") {
-          if (is.factor(meta_values)) {
-            # Categorical "True"/"False" strings
-            meta_values <- as.character(meta_values) == "True"
+          if (is.factor(meta_values) || is.character(meta_values)) {
+            # Categorical / string "True"/"False" values
+            meta_values <- toupper(as.character(meta_values)) == "TRUE"
           } else if (is.numeric(meta_values)) {
             meta_values <- as.logical(meta_values)
           }
@@ -847,30 +758,12 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
     if (verbose) message("Adding unstructured data...")
     uns_group <- h5ad[["uns"]]
 
-    .read_uns_group <- function(grp) {
-      result <- list()
-      for (item in names(grp)) {
-        tryCatch({
-          if (inherits(grp[[item]], "H5D")) {
-            result[[item]] <- grp[[item]]$read()
-          } else if (inherits(grp[[item]], "H5Group")) {
-            result[[item]] <- .read_uns_group(grp[[item]])
-          }
-        }, error = function(e) {
-          if (verbose) message("Could not read uns item '", item, "': ", e$message)
-        })
-      }
-      result
-    }
-
+    # Every uns element decodes through .h5ad_read_element: `null` entries
+    # become NULL, nullable groups / categoricals / dataframes decode, and
+    # nested dicts become named lists.
     for (item in names(uns_group)) {
       tryCatch({
-        if (inherits(uns_group[[item]], "H5D")) {
-          seurat_obj@misc[[item]] <- uns_group[[item]]$read()
-        } else if (inherits(uns_group[[item]], "H5Group")) {
-          if (verbose) message("  Reading complex uns item: ", item)
-          seurat_obj@misc[[item]] <- .read_uns_group(uns_group[[item]])
-        }
+        seurat_obj@misc[item] <- list(.h5ad_read_element(uns_group[[item]]))
       }, error = function(e) {
         if (verbose) message("Could not add uns item ", item, ": ", e$message)
       })
@@ -1015,6 +908,11 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
     error = function(e) NULL
   )
   if (is.null(data_layer) || length(data_layer) == 0L) {
+    # Seurat may have replaced underscores in feature names; label the copy
+    # with the object's final dimnames or SetAssayData reports no overlap.
+    if (nrow(counts) == nrow(obj) && ncol(counts) == ncol(obj)) {
+      dimnames(counts) <- list(rownames(obj), colnames(obj))
+    }
     obj[[assay.name]] <- SetAssayData(
       object = obj[[assay.name]],
       layer = "data",
@@ -1027,9 +925,12 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
 .readH5AD_c <- function(file, assay.name = "RNA", components = NULL,
                         reductions = NULL, verbose = TRUE) {
   if (verbose) message("Loading H5AD file (C reader): ", file)
+  if (is.null(components)) {
+    components <- c("X", "obs", "var", "obsm", "obsp", "varp", "layers", "uns")
+  }
 
   # Call C reader for requested components
-  result <- .Call(C_read_h5ad, file, components)
+  result <- .Call(C_read_h5ad, file, as.character(components))
   if (is.null(result)) {
     if (verbose) message("C reader failed, falling back to R reader")
     return(readH5AD(file, assay.name = assay.name, components = components,
@@ -1060,6 +961,20 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
   # and recorded in misc$scConvert_read, mirroring the R path.
   cell.names <- mat_data$colnames
   feature.names <- mat_data$rownames
+  # The compiled reader only understands string *datasets* for the index;
+  # anndata >= 0.13 with pandas 3 writes the index as a nullable-string-array
+  # group. Fall back to the hdf5r decoder before inventing names.
+  if (is.null(cell.names) || is.null(feature.names)) {
+    h5idx <- H5File$new(file, mode = "r")
+    on.exit(tryCatch(h5idx$close_all(), error = function(e) NULL), add = TRUE)
+    if (is.null(cell.names) && h5idx$exists("obs")) {
+      cell.names <- .h5ad_read_index(h5idx[["obs"]])
+    }
+    if (is.null(feature.names) && h5idx$exists("var")) {
+      feature.names <- .h5ad_read_index(h5idx[["var"]])
+    }
+    tryCatch(h5idx$close_all(), error = function(e) NULL)
+  }
   if (is.null(cell.names)) cell.names <- paste0("Cell", seq_len(ncol(expr_matrix)))
   if (is.null(feature.names)) feature.names <- paste0("Gene", seq_len(nrow(expr_matrix)))
   var_index_original <- feature.names
@@ -1101,6 +1016,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
     obs_data <- result[["obs"]]
     # Remove _index (already used as cell names)
     obs_data[["_index"]] <- NULL
+    obs_data <- .h5ad_patch_c_columns(obs_data, h5ad[["obs"]], ncol(seurat_obj))
     if (length(obs_data) > 0) {
       batch_df <- data.frame(row.names = colnames(seurat_obj))
       for (col in names(obs_data)) {
@@ -1115,6 +1031,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
     if (verbose) message("Adding feature metadata...")
     var_data <- result[["var"]]
     var_data[["_index"]] <- NULL
+    var_data <- .h5ad_patch_c_columns(var_data, h5ad[["var"]], nrow(seurat_obj))
     for (col in names(var_data)) {
       tryCatch({
         meta_values <- var_data[[col]]
@@ -1228,7 +1145,9 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
                               x = as.numeric(ld), Dim = c(as.integer(length(feature.names)),
                                                            as.integer(length(cell.names))))
         } else if (inherits(layer_obj, "H5D")) {
-          layer_matrix <- t(layer_obj[,])
+          # hdf5r already returns a dense (cells x features) h5py dataset
+          # shaped (features x cells); no second transpose.
+          layer_matrix <- layer_obj[,]
         } else next
         if (nrow(layer_matrix) != nrow(expr_matrix) ||
             ncol(layer_matrix) != ncol(expr_matrix)) {
@@ -1292,9 +1211,7 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
       }
       for (item in names(h5ad[["uns"]])) {
         tryCatch({
-          if (inherits(h5ad[["uns"]][[item]], "H5D")) seurat_obj@misc[[item]] <- h5ad[["uns"]][[item]]$read()
-          else if (inherits(h5ad[["uns"]][[item]], "H5Group"))
-            seurat_obj@misc[[item]] <- .read_uns_group(h5ad[["uns"]][[item]])
+          seurat_obj@misc[item] <- list(.h5ad_read_element(h5ad[["uns"]][[item]]))
         }, error = function(e) NULL)
       }
     }

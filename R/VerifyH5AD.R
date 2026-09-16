@@ -286,12 +286,7 @@
 
     raw_features <- NULL
     if (h5ad[["raw"]]$exists("var")) {
-      raw_var <- h5ad[["raw/var"]]
-      if (raw_var$exists("_index")) {
-        raw_features <- as.character(raw_var[["_index"]][])
-      } else if (raw_var$exists("index")) {
-        raw_features <- as.character(raw_var[["index"]][])
-      }
+      raw_features <- .h5ad_read_index(h5ad[["raw/var"]])
     }
 
     if (!is.null(raw_features)) {

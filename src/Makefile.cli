@@ -28,7 +28,7 @@ ifeq ($(HDF5_LIBS),)
   endif
 endif
 
-SRCS     = main.c sc_h5ad.c sc_h5mu.c sc_loom.c sc_zarr.c sc_json.c sc_modality.c sc_sparse.c sc_dataframe.c sc_groups.c sc_util.c
+SRCS     = main.c sc_h5ad.c sc_h5mu.c sc_loom.c sc_zarr.c sc_json.c sc_modality.c sc_sparse.c sc_dataframe.c sc_groups.c sc_util.c sc_zstd.c
 # Build objects under cli_obj/ so they never collide with the R-package
 # shared-library objects that Makevars drops next to the .c files. If the
 # two builds share names, `-DBUILDING_R_PACKAGE` bakes REprintf() calls
