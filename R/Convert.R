@@ -190,6 +190,18 @@ scConvert.character <- function(
 
   # HDF5-based formats: check for direct path first, otherwise use hub
   dtype <- FileType(file = dest)
+
+  # h5ad inputs written by anndata >= 0.11 may use encodings the HDF5-level
+  # converters do not understand (nullable-string-array obs/var index and
+  # columns, `null` entries). Materialise a converter-compatible temporary
+  # copy in that case; see .h5ad_normalize_for_convert().
+  if (stype == 'h5ad') {
+    normalized <- .h5ad_normalize_for_convert(source, verbose = verbose)
+    if (isTRUE(normalized$temporary)) {
+      source <- normalized$path
+      on.exit(expr = unlink(normalized$path), add = TRUE)
+    }
+  }
   if (missing(x = assay)) {
     # Try to read default assay from the source file
     hfile_tmp <- tryCatch(
@@ -696,8 +708,12 @@ WriteDFGroup <- function(h5parent, group_name, df, index_values,
       AddAnndataEncoding(grp[[col_name]], encoding_type = 'array')
     }
   }
-  grp$create_attr(attr_name = 'column-order', robj = col_order,
-                  dtype = CachedUtf8Type())
+  # anndata iterates `column-order`; hdf5r needs an explicit (possibly
+  # empty) 1-D space when the data frame has no columns
+  grp$create_attr(attr_name = 'column-order', robj = as.character(col_order),
+                  dtype = CachedUtf8Type(),
+                  space = H5S$new(type = 'simple', dims = length(col_order),
+                                  maxdims = length(col_order)))
   grp$create_attr(attr_name = 'encoding-type', robj = 'dataframe',
                   dtype = CachedGuessDType('dataframe'), space = ScalarSpace())
   grp$create_attr(attr_name = 'encoding-version', robj = '0.2.0',
@@ -1073,7 +1089,7 @@ NormalizeH5ADCategorical <- function(dfgroup) {
       col_obj$create_dataset(
         name = 'values',
         robj = values_1based,
-        dtype = codes_dtype
+        dtype = hdf5r::h5types$H5T_NATIVE_INT32  # NA does not fit anndata's int8 codes dtype
       )
       col_obj$link_delete(name = 'codes')
     }
@@ -1154,17 +1170,18 @@ FlattenNullable <- function(col_group) {
 
   # Check if this is a mask+values structure (not categorical which has categories/codes)
   if (col_group$exists('mask') && col_group$exists('values')) {
-    # Skip if this looks like a categorical (has categories attribute or encoding-type)
-    if (col_group$exists('categories') ||
-        isTRUE(x = AttrExists(x = col_group, name = 'encoding-type'))) {
+    # Categoricals (codes + categories) are handled elsewhere; every
+    # nullable-* encoding (nullable-integer, nullable-boolean and, since
+    # anndata 0.11, nullable-string-array) is a values + mask pair.
+    if (col_group$exists('categories') || col_group$exists('codes')) {
       return(NULL)
     }
-
-    values <- col_group[['values']][]
-    mask <- col_group[['mask']][]
-
-    # In h5ad nullable dtypes, mask=TRUE means the value is MISSING (NA)
-    values[mask] <- NA
+    values <- .h5ad_read_nullable(col_group)
+    if (is.character(values)) {
+      # h5Seurat string datasets cannot hold NA; a factor (NA-capable
+      # levels/values group) keeps the missing values intact.
+      values <- factor(values)
+    }
     return(values)
   }
 

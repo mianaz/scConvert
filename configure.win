@@ -142,6 +142,8 @@ echo_status "Writing src/Makevars.win"
 
 sed -e "s|@HDF5_CFLAGS@|${HDF5_CFLAGS_FOUND}|g" \
     -e "s|@HDF5_LIBS@|${HDF5_LIBS_FOUND}|g" \
+    -e "s|@ZSTD_CFLAGS@|${ZSTD_CFLAGS}|g" \
+    -e "s|@ZSTD_LIBS@|${ZSTD_LIBS}|g" \
     src/Makevars.in > src/Makevars.win
 
 if [ -f src/Makefile ]; then

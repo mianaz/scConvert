@@ -211,6 +211,35 @@ esac
 echo_status "HDF5_CFLAGS = $HDF5_CFLAGS_FOUND"
 echo_status "HDF5_LIBS   = $HDF5_LIBS_FOUND"
 
+# ── Optional: Zstandard (zarr v3 / anndata >= 0.12 default codec) ───────────
+# Detection order: ZSTD_CFLAGS / ZSTD_LIBS env vars, pkg-config libzstd,
+# then common prefixes. Missing libzstd is not an error: zstd-compressed zarr
+# stores then need the optional zstdlite R package.
+
+ZSTD_CFLAGS_FOUND=""
+ZSTD_LIBS_FOUND=""
+if [ -n "$ZSTD_LIBS" ]; then
+    ZSTD_CFLAGS_FOUND="$ZSTD_CFLAGS"
+    ZSTD_LIBS_FOUND="$ZSTD_LIBS"
+elif command -v pkg-config > /dev/null 2>&1 && pkg-config --exists libzstd 2>/dev/null; then
+    ZSTD_CFLAGS_FOUND=$(pkg-config --cflags libzstd 2>/dev/null)
+    ZSTD_LIBS_FOUND=$(pkg-config --libs libzstd 2>/dev/null)
+else
+    for _prefix in /opt/homebrew/opt/zstd /usr/local/opt/zstd /usr/local /usr "$CONDA_PREFIX"; do
+        if [ -n "$_prefix" ] && [ -f "$_prefix/include/zstd.h" ]; then
+            ZSTD_CFLAGS_FOUND="-I${_prefix}/include"
+            ZSTD_LIBS_FOUND="-L${_prefix}/lib -lzstd"
+            break
+        fi
+    done
+fi
+if [ -n "$ZSTD_LIBS_FOUND" ]; then
+    ZSTD_CFLAGS_FOUND="-DHAVE_ZSTD $ZSTD_CFLAGS_FOUND"
+    echo_status "libzstd found: $ZSTD_LIBS_FOUND (zstd zarr codec enabled)"
+else
+    echo_status "libzstd not found: zstd zarr codec will require the zstdlite R package"
+fi
+
 # ── Generate src/Makevars ────────────────────────────────────────────────────
 
 if [ ! -f src/Makevars.in ]; then
@@ -221,6 +250,8 @@ echo_status "Writing src/Makevars"
 
 sed -e "s|@HDF5_CFLAGS@|${HDF5_CFLAGS_FOUND}|g" \
     -e "s|@HDF5_LIBS@|${HDF5_LIBS_FOUND}|g" \
+    -e "s|@ZSTD_CFLAGS@|${ZSTD_CFLAGS_FOUND}|g" \
+    -e "s|@ZSTD_LIBS@|${ZSTD_LIBS_FOUND}|g" \
     src/Makevars.in > src/Makevars
 
 # R CMD INSTALL uses Makefile if present (ignoring Makevars).

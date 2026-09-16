@@ -279,6 +279,7 @@ WriteH5GroupAssay5 <- function(x, name, hgroup, verbose = TRUE) {
     .STANDARD_LAYERS
   }
 
+  all_cells <- tryCatch(colnames(x = x), error = function(e) NULL)
   for (layer in layers) {
     dat <- tryCatch(
       GetAssayData(object = x, layer = layer),
@@ -300,8 +301,10 @@ WriteH5GroupAssay5 <- function(x, name, hgroup, verbose = TRUE) {
         features = feat_names,
         verbose = verbose
       )
+      .WriteLayerDimnames(xgroup, layer, dat, all_cells, feat_names)
     }
   }
+  .WriteDefaultLayer(xgroup, x)
 
   # Write features - get from SeuratObject::Features or rownames
   feat_names <- tryCatch({
@@ -343,6 +346,44 @@ WriteH5GroupAssay5 <- function(x, name, hgroup, verbose = TRUE) {
   )
 
   return(invisible(x = NULL))
+}
+
+
+# Record which cells / features a layer covers when it does not span the
+# whole assay (split layers such as "counts.sample1", feature-subset
+# layers), plus the default layer. Stored under `layer.cells/<layer>`,
+# `layer.features/<layer>` and the `default.layer` attribute so that
+# AssembleAssay() can rebuild the Assay5 exactly; readers that predate these
+# fields simply ignore them.
+.WriteLayerDimnames <- function(xgroup, layer, dat, all_cells, all_features) {
+  lc <- colnames(x = dat); lf <- rownames(x = dat)
+  if (identical(layer, 'scale.data') && !is.null(lf) && !xgroup$exists('scaled.features')) {
+    # same convention as the v3 Assay writer; the index requires it before
+    # scale.data is considered loadable
+    xgroup$create_dataset(name = 'scaled.features', robj = lf, dtype = GuessDType(x = lf))
+  }
+  if (!is.null(lc) && !is.null(all_cells) && !identical(lc, all_cells)) {
+    if (!xgroup$exists('layer.cells')) xgroup$create_group('layer.cells')
+    xgroup[['layer.cells']]$create_dataset(name = layer, robj = lc, dtype = GuessDType(x = lc))
+  }
+  if (!is.null(lf) && !is.null(all_features) && !identical(lf, all_features) &&
+      !identical(layer, 'scale.data')) {
+    if (!xgroup$exists('layer.features')) xgroup$create_group('layer.features')
+    xgroup[['layer.features']]$create_dataset(name = layer, robj = lf, dtype = GuessDType(x = lf))
+  }
+  invisible(NULL)
+}
+
+.WriteDefaultLayer <- function(xgroup, x) {
+  dl <- tryCatch(SeuratObject::DefaultLayer(object = x), error = function(e) NULL)
+  if (length(dl)) {
+    xgroup$create_attr(attr_name = 'default.layer', robj = dl, dtype = GuessDType(x = dl))
+  }
+  lo <- tryCatch(SeuratObject::Layers(object = x), error = function(e) NULL)
+  if (length(lo)) {
+    xgroup$create_attr(attr_name = 'layer.order', robj = lo, dtype = GuessDType(x = lo))
+  }
+  invisible(NULL)
 }
 
 #' @importClassesFrom Seurat Assay

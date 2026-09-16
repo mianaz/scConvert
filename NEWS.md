@@ -1,5 +1,111 @@
 # scConvert 0.3.0 (development)
 
+## Seurat v5.6-beta and SeuratObject 5.4 compatibility
+
+Seurat `v5.6-beta` (branch `v5.6-beta`, version 5.5.1.9999, August 2026)
+changes computation, not object structure: multithreading via
+`setThreads()`/`getThreads()`, a C++ SCTransform residual kernel, a Gram-matrix
+PCA path and a legacy-compatible VST ranking. The package test suites pass
+against it unchanged. Two beta details do matter for round trips:
+
+- `SCTModel` objects built by the beta store a resolved numeric
+  `arguments$min_variance` and an explicit `arguments$sct.clip.range`; both are
+  plain list entries and round-trip through the `SCTModel.list` group the
+  h5Seurat writer already emits.
+- The `Seurat.warn.umap.uwot` option was removed; nothing in this package
+  referenced it.
+
+SeuratObject 5.2 to 5.4 added slots to the spatial classes (`Segmentation`
+`sf.data`/`compact`, `FOV` `coords_x_orientation`, `SpatialImage` `misc`);
+`VisiumV2` objects are created with `coords_x_orientation = "horizontal"`,
+matching `Read10X_Image()`.
+
+## Lossless Seurat v3/v4 <-> v5 conversion (`upgradeSeurat`, `downgradeSeurat`, `seuratGeneration`)
+
+- `downgradeSeurat()` converts every `Assay5` to a v3-style `Assay` (loadable
+  by Seurat v4) and every `VisiumV2` image to `VisiumV1`. Everything the older
+  classes cannot hold is kept in a sidecar list under
+  `misc$.seurat_version_sidecar`: split-layer cell membership
+  (`counts.sample1`, ...), extra layers (any name outside
+  counts/data/scale.data), per-layer feature sets, the default layer, the
+  original version stamp, image boundaries and molecules. Assay subclasses
+  (`SCTAssay`, `ChromatinAssay`) survive an upgrade with their extra slots in
+  the sidecar and are restored on downgrade.
+- `upgradeSeurat()` converts back and consumes the sidecar, so
+  `upgradeSeurat(downgradeSeurat(x))` reproduces `x` layer for layer, in the
+  original order, with the original default layer. Without a sidecar it is
+  SeuratObject's own coercion plus `VisiumV1 -> VisiumV2` (Space Ranger
+  `row`/`col`/`tissue` columns are kept in the image `misc` so a later
+  downgrade restores them).
+- Both accept a file path (`.rds` / `.h5seurat`) plus `dest`.
+
+## Lossless h5ad layout upgrade / downgrade (`upgradeH5AD`, `downgradeH5AD`, `h5adLayout`)
+
+- `h5adLayout()` reports which anndata layout a file uses (`legacy` for
+  anndata 0.7, `compound` for < 0.7, `encoded` for >= 0.8), the oldest anndata
+  release able to read it, and the encodings it contains.
+- `downgradeH5AD()` rewrites an encoded file into the anndata 0.7 layout
+  (`dataframe` 0.1.0 with `__categories` datasets referenced by HDF5 object
+  references, no encoding attributes on arrays/dicts/scalars). Verified
+  readable by anndata 0.7.8, 0.8.0, 0.13.3 and by SeuratDisk-derived
+  converters. Nullable integers with missing values become float64,
+  nullable booleans / strings become categoricals, `null` entries are
+  dropped, and every such re-encoding is recorded in
+  `uns/__h5ad_compat_manifest__`.
+- `upgradeH5AD()` rewrites legacy / compound files into the current layout
+  and, when a manifest is present, restores the original encodings exactly
+  (`nullable-integer`, `nullable-boolean`, `nullable-string-array` with its
+  `na-value`, `null`). Matrices are copied at the HDF5 level in both
+  directions. `strings = "categorical"` produces a file every anndata >= 0.8
+  can read.
+
+## AnnData cross-version compatibility (anndata 0.7 through 0.13)
+
+Fixture files written by anndata 0.7.8, 0.8.0, 0.10.9, 0.11.4, 0.12.19 and
+0.13.3 (with and without pandas 3 string inference) were run through every
+reader. Fixed:
+
+- **anndata 0.13 + pandas 3 files could not be read at all.** pandas 3 makes
+  string columns and the obs/var index `nullable-string-array` groups
+  (`values` + `mask`); every reader assumed a string dataset. All hdf5r
+  readers, the compiled reader (index fallback), the zarr reader and the
+  h5ad -> h5Seurat converters now decode them (new `R/AnnDataCompat.R`).
+- **Nullable columns were dropped.** `nullable-integer` / `nullable-boolean`
+  obs and var columns (anndata >= 0.8) are now read as integer / logical
+  vectors with `NA`, in `readH5AD()` (R and C paths), `readZarr()` and the
+  h5ad -> h5Seurat converter (missing strings become NA-capable factors).
+- **`null` (`None`) entries in uns** become `NULL` instead of aborting the
+  uns walk; `uns` DataFrames decode through the same column machinery.
+- **Legacy (anndata 0.7) ordered categoricals** lost their `ordered` flag;
+  boolean categoricals stored as "True"/"False" now decode to logicals.
+- **Feature names with underscores** broke every conversion path: variable
+  features, raw/X counts, dense layers and the compiled reader's data layer
+  were labelled with the file's names while Seurat had replaced `_` by `-`.
+  All paths now normalise consistently (`h5ad -> h5Seurat -> Seurat` failed
+  outright before).
+- **Dense layers read through the compiled path** were transposed.
+- **Missing categorical values** (`-1` codes) were written into an int8
+  `values` dataset during h5ad -> h5Seurat conversion, overflowed to -128 and
+  made the whole column disappear on load. Values are now int32 and readers
+  treat out-of-range codes as `NA`.
+- `readZarr()` reads **zarr v3 stores** written by zarr-python 3 / anndata
+  >= 0.12: `sharding_indexed` shards (inner chunk grid, byte-range index,
+  crc32c) and the `zstd` codec. Zstandard is decoded through libzstd when it
+  is available at build time (`configure` detects `pkg-config libzstd`,
+  Homebrew and conda; Ubuntu `libzstd-dev`), falling back to the optional
+  zstdlite package. The zarr *writer* also uses libzstd for
+  `compressor = "zstd"`.
+
+## h5Seurat: split and extra V5 layers round-trip
+
+`writeH5Seurat()` now records, per layer, the cells and features it covers
+(`layer.cells/`, `layer.features/`), the layer order (`layer.order`), the
+default layer (`default.layer`) and `scaled.features` for Assay5 objects;
+`readH5Seurat()` rebuilds split layers (`counts.a`, `counts.b`, ...) and
+arbitrary layer names exactly instead of failing with "'slots' must be a
+non-empty character vector". Files written by older versions still load.
+
+
 ## Reverse-conversion (h5ad -> Seurat) integrity overhaul
 
 `readH5AD()` now applies the same read-back discipline to the reverse

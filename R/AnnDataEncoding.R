@@ -194,7 +194,7 @@ SeuratLayerToAnnData <- function(name) {
 .zarr_codecs_as_list <- function(codecs) {
   if (is.null(codecs)) return(list())
   if (is.data.frame(codecs)) {
-    lapply(seq_len(nrow(codecs)), function(i) {
+    return(lapply(seq_len(nrow(codecs)), function(i) {
       cfg_col <- codecs[["configuration"]]
       cfg <- if (is.data.frame(cfg_col)) {
         as.list(cfg_col[i, , drop = FALSE])
@@ -204,12 +204,24 @@ SeuratLayerToAnnData <- function(name) {
         list()
       }
       list(name = codecs[["name"]][[i]], configuration = cfg)
-    })
-  } else if (is.list(codecs)) {
-    codecs
-  } else {
-    list()
+    }))
   }
+  if (is.list(codecs)) {
+    # jsonlite may hand us a list wrapping a data.frame (e.g. the inner
+    # `codecs` of a sharding configuration); flatten to one entry per codec
+    out <- list()
+    for (el in codecs) {
+      if (is.data.frame(el)) {
+        out <- c(out, .zarr_codecs_as_list(el))
+      } else if (is.list(el) && !is.null(el$name) && length(el$name) == 1L) {
+        out <- c(out, list(el))
+      } else if (is.list(el)) {
+        out <- c(out, .zarr_codecs_as_list(el))
+      }
+    }
+    return(out)
+  }
+  list()
 }
 
 #' Parse zarr v3 data_type string into dtype_info struct
@@ -298,12 +310,36 @@ SeuratLayerToAnnData <- function(name) {
     raw      <- store$read_json(file.path(rel_path, "zarr.json"))
     shape    <- unlist(raw$shape)
     chunks   <- unlist(raw$chunk_grid$configuration$chunk_shape)
-    di       <- .zarr_parse_dtype_v3(raw$data_type %||% "float64", raw$codecs)
-    comp     <- .zarr_extract_compressor_v3(raw$codecs)
+    codecs   <- .zarr_codecs_as_list(raw$codecs)
+    # zarr v3 sharding (zarr-python 3 / anndata >= 0.12 default): the chunk
+    # grid describes *shards*; each shard file holds a grid of inner chunks
+    # encoded with the inner codec pipeline plus an index of byte ranges.
+    sharding <- NULL
+    if (length(codecs) && identical(codecs[[1]]$name, "sharding_indexed")) {
+      scfg <- codecs[[1]]$configuration
+      if (is.data.frame(scfg)) scfg <- as.list(scfg[1, , drop = FALSE])
+      inner_codecs <- .zarr_codecs_as_list(scfg$codecs)
+      index_codecs <- .zarr_codecs_as_list(scfg$index_codecs)
+      sharding <- list(
+        chunk_shape    = unlist(scfg$chunk_shape),
+        index_location = scfg$index_location %||% "end",
+        has_crc32c     = any(vapply(index_codecs, function(cc) identical(cc$name, "crc32c"), logical(1)))
+      )
+      codecs <- inner_codecs
+    }
+    di       <- .zarr_parse_dtype_v3(raw$data_type %||% "float64", codecs)
+    comp     <- .zarr_extract_compressor_v3(codecs)
     fv       <- raw$fill_value
     ord      <- "C"
-    pfx      <- "c"
-    sep      <- "/"
+    cke      <- raw$chunk_key_encoding
+    if (is.data.frame(cke)) cke <- as.list(cke[1, , drop = FALSE])
+    if (identical(cke$name %||% "default", "v2")) {
+      pfx <- ""
+      sep <- cke$configuration$separator %||% "."
+    } else {
+      pfx <- "c"
+      sep <- cke$configuration$separator %||% "/"
+    }
   }
 
   list(
@@ -318,8 +354,153 @@ SeuratLayerToAnnData <- function(name) {
     chunk_sep    = sep,
     is_string    = di$r_type == "character",
     is_bool      = di$r_type == "logical",
-    dtype        = if (version == 2L) (raw$dtype %||% "") else NULL
+    dtype        = if (version == 2L) (raw$dtype %||% "") else NULL,
+    sharding     = if (version == 3L) sharding else NULL
   )
+}
+
+#' Fetch and decode one (outer) chunk of a zarr array as raw bytes
+#'
+#' Handles plain chunks and zarr v3 shards. A shard is a single store object
+#' holding a C-ordered grid of inner chunks, each encoded with the inner
+#' codec pipeline, followed (or preceded) by an index of
+#' \code{(offset, nbytes)} uint64 pairs, one per inner chunk, optionally with
+#' a crc32c checksum. Missing inner chunks (offset == 2^64 - 1) are filled
+#' with the array's fill value. The result is the decoded, decompressed byte
+#' buffer of the whole outer chunk in C order, exactly as a non-sharded chunk
+#' would decode to.
+#'
+#' @keywords internal
+.zarr_fetch_chunk <- function(store, chunk_key, meta) {
+  raw_data <- store$read_bytes(chunk_key)
+  if (is.null(meta$sharding)) {
+    return(.zarr_decompress(raw_data, meta$compressor))
+  }
+  if (length(raw_data) == 0L) return(raw_data)
+  parts <- .zarr_split_shard(raw_data, meta)
+  esz <- meta$dtype_info$size
+  outer <- meta$chunks
+  inner <- meta$sharding$chunk_shape
+  grid <- ceiling(outer / inner)
+  fill <- .zarr_fill_bytes(meta)
+  n_inner <- prod(grid)
+  decoded <- vector("list", n_inner)
+  inner_len <- prod(inner)
+  for (k in seq_len(n_inner)) {
+    blk <- parts[[k]]
+    if (is.null(blk)) {
+      decoded[[k]] <- rep(fill, inner_len)
+    } else {
+      blk <- .zarr_decompress(blk, meta$compressor)
+      # zarr pads every chunk to full size; guard against short blocks anyway
+      if (length(blk) < inner_len * esz) blk <- c(blk, rep(fill, inner_len)[seq_len(inner_len * esz - length(blk))])
+      decoded[[k]] <- blk
+    }
+  }
+  if (length(outer) == 1L) {
+    out <- do.call(c, decoded)
+    return(out[seq_len(outer[1] * esz)])
+  }
+  if (length(outer) == 2L) {
+    out <- rep(fill, prod(outer))[seq_len(prod(outer) * esz)]
+    ir <- inner[1]; ic <- inner[2]; oc <- outer[2]
+    k <- 0L
+    for (ci in seq_len(grid[1]) - 1L) {
+      for (cj in seq_len(grid[2]) - 1L) {
+        k <- k + 1L
+        blk <- decoded[[k]]
+        rows <- seq_len(ir) - 1L
+        rows <- rows[ci * ir + rows < outer[1]]
+        cols_n <- min(ic, oc - cj * ic)
+        if (cols_n <= 0L || !length(rows)) next
+        seg <- seq_len(cols_n * esz) - 1L
+        for (r in rows) {
+          dst0 <- ((ci * ir + r) * oc + cj * ic) * esz
+          src0 <- (r * ic) * esz
+          out[dst0 + seg + 1L] <- blk[src0 + seg + 1L]
+        }
+      }
+    }
+    return(out)
+  }
+  stop("Sharded zarr arrays with more than 2 dimensions are not supported",
+       call. = FALSE)
+}
+
+#' Fetch and decode one (outer) chunk of a zarr string array
+#'
+#' @return character vector of length \code{n}
+#' @keywords internal
+.zarr_fetch_chunk_strings <- function(store, chunk_key, meta, n) {
+  raw_data <- store$read_bytes(chunk_key)
+  if (length(raw_data) == 0L) return(character(n))
+  if (is.null(meta$sharding)) {
+    return(.decode_vlen_utf8(.zarr_decompress(raw_data, meta$compressor), n))
+  }
+  parts <- .zarr_split_shard(raw_data, meta)
+  inner_len <- prod(meta$sharding$chunk_shape)
+  out <- character(0)
+  for (blk in parts) {
+    if (is.null(blk)) {
+      out <- c(out, character(inner_len))
+    } else {
+      out <- c(out, .decode_vlen_utf8(.zarr_decompress(blk, meta$compressor), inner_len))
+    }
+  }
+  out[seq_len(n)]
+}
+
+#' Split a zarr v3 shard into its inner chunk byte blocks
+#'
+#' @return list with one raw vector per inner chunk (NULL where missing)
+#' @keywords internal
+.zarr_split_shard <- function(raw_data, meta) {
+  grid <- ceiling(meta$chunks / meta$sharding$chunk_shape)
+  n_inner <- prod(grid)
+  index_len <- n_inner * 16L + if (isTRUE(meta$sharding$has_crc32c)) 4L else 0L
+  total <- length(raw_data)
+  if (total < index_len) stop("Corrupt zarr shard: index shorter than expected", call. = FALSE)
+  idx_raw <- if (identical(meta$sharding$index_location, "start")) {
+    raw_data[seq_len(index_len)]
+  } else {
+    raw_data[(total - index_len + 1L):total]
+  }
+  # (offset, nbytes) little-endian uint64 pairs; read as two uint32 halves
+  words <- readBin(idx_raw[seq_len(n_inner * 16L)], "integer", n = n_inner * 4L,
+                   size = 4L, signed = FALSE, endian = "little")
+  lo <- words[seq(1L, length(words), by = 2L)]
+  hi <- words[seq(2L, length(words), by = 2L)]
+  vals <- lo + hi * 4294967296
+  offsets <- vals[seq(1L, length(vals), by = 2L)]
+  nbytes  <- vals[seq(2L, length(vals), by = 2L)]
+  missing <- (lo[seq(1L, length(lo), by = 2L)] == 4294967295 &
+              hi[seq(1L, length(hi), by = 2L)] == 4294967295)
+  parts <- vector("list", n_inner)
+  for (k in seq_len(n_inner)) {
+    if (missing[k] || nbytes[k] == 0) next
+    from <- offsets[k] + 1
+    to <- offsets[k] + nbytes[k]
+    if (to > total) stop("Corrupt zarr shard: inner chunk exceeds shard size", call. = FALSE)
+    parts[[k]] <- raw_data[from:to]
+  }
+  parts
+}
+
+#' Byte pattern of the fill value for one element of a zarr array
+#'
+#' @keywords internal
+.zarr_fill_bytes <- function(meta) {
+  di <- meta$dtype_info
+  fv <- meta$fill_value %||% 0
+  if (di$r_type == "character") return(as.raw(0))
+  v <- .raw_fill_to_r(fv, di)
+  if (di$r_type == "double") {
+    writeBin(as.double(v), raw(), size = di$size, endian = di$endian)
+  } else if (di$r_type == "logical") {
+    as.raw(as.integer(isTRUE(v)))
+  } else {
+    writeBin(as.integer(v), raw(), size = di$size, endian = di$endian)
+  }
 }
 
 #' Read and parse a JSON file
@@ -402,6 +583,15 @@ SeuratLayerToAnnData <- function(name) {
   store$list_dirs(rel_path)
 }
 
+#' Is the package's built-in libzstd bridge available?
+#'
+#' TRUE when scConvert was compiled against libzstd (see \code{configure}).
+#'
+#' @keywords internal
+.zstd_internal_available <- function() {
+  isTRUE(tryCatch(.Call(C_zstd_available), error = function(e) FALSE))
+}
+
 #' Decompress chunk data
 #'
 #' @param raw_data Raw vector of compressed data
@@ -417,6 +607,9 @@ SeuratLayerToAnnData <- function(name) {
   if (comp_id %in% c("zlib", "gzip")) {
     memDecompress(raw_data, type = "gzip")
   } else if (comp_id == "zstd") {
+    if (.zstd_internal_available()) {
+      return(.Call(C_zstd_decompress, raw_data))
+    }
     if (!requireNamespace("zstdlite", quietly = TRUE)) {
       stop("Reading zstd-compressed zarr data requires a Zstd codec ",
            "package. No suitable provider was found on the search path. ",
@@ -452,6 +645,10 @@ SeuratLayerToAnnData <- function(name) {
   if (comp_id %in% c("zlib", "gzip")) {
     memCompress(raw_data, type = "gzip")
   } else if (comp_id == "zstd") {
+    level <- compressor$level %||% 3L
+    if (.zstd_internal_available()) {
+      return(.Call(C_zstd_compress, raw_data, as.integer(level)))
+    }
     if (!requireNamespace("zstdlite", quietly = TRUE)) {
       stop("Writing zstd-compressed zarr data requires a Zstd codec ",
            "package; none was found on the search path. ",
@@ -496,7 +693,7 @@ SeuratLayerToAnnData <- function(name) {
   if (is.list(x) && !is.null(x$id)) return(x)
   if (identical(x, "none") || identical(x, FALSE)) return(NULL)
   if (is.null(x) || identical(x, "auto")) {
-    if (requireNamespace("zstdlite", quietly = TRUE)) {
+    if (.zstd_internal_available() || requireNamespace("zstdlite", quietly = TRUE)) {
       return(list(id = "zstd", level = as.integer(level %||% 3L)))
     }
     return(list(id = "zlib", level = as.integer(level %||% GetCompressionLevel())))
@@ -594,7 +791,7 @@ SeuratLayerToAnnData <- function(name) {
       fv <- meta$fill_value %||% 0
       return(rep(.raw_fill_to_r(fv, dtype_info), n_elements))
     }
-    raw_data <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
+    raw_data <- .zarr_fetch_chunk(store, chunk_key, meta)
     values   <- .raw_to_r_type(raw_data, dtype_info, prod(chunks))
     values   <- values[seq_len(n_elements)]
   } else {
@@ -640,7 +837,7 @@ SeuratLayerToAnnData <- function(name) {
     for (cid in chunk_ids) {
       chunk_key <- .zarr_chunk_path(rel_path, cid, meta$chunk_prefix, meta$chunk_sep)
       if (!store$exists(chunk_key)) next
-      raw <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
+      raw <- .zarr_fetch_chunk(store, chunk_key, meta)
       chunk_vals <- .raw_to_r_type(raw, dtype_info, chunk_size)
       lo <- cid * chunk_size + 1L
       hi <- lo + chunk_size - 1L
@@ -666,7 +863,7 @@ SeuratLayerToAnnData <- function(name) {
       for (cci in col_chunk_ids) {
         chunk_key <- .zarr_chunk_path(rel_path, c(rci, cci), meta$chunk_prefix, meta$chunk_sep)
         if (!store$exists(chunk_key)) next
-        raw <- .zarr_decompress(store$read_bytes(chunk_key), compressor)
+        raw <- .zarr_fetch_chunk(store, chunk_key, meta)
         chunk_size <- cr * cc
         chunk_vals <- .raw_to_r_type(raw, dtype_info, chunk_size)
         chunk_mat <- matrix(chunk_vals, nrow = cr, ncol = cc,
@@ -713,8 +910,7 @@ SeuratLayerToAnnData <- function(name) {
     for (ci in seq_len(n_chunks_per_dim) - 1L) {
       chunk_key <- .zarr_chunk_path(array_rel, ci, meta$chunk_prefix, meta$chunk_sep)
       if (!store$exists(chunk_key)) next
-      raw_data <- store$read_bytes(chunk_key)
-      raw_data <- .zarr_decompress(raw_data, compressor)
+      raw_data <- .zarr_fetch_chunk(store, chunk_key, meta)
       chunk_vals <- .raw_to_r_type(raw_data, dtype_info, chunks)
       start_idx <- ci * chunks + 1L
       end_idx <- min(start_idx + chunks - 1L, n_elements)
@@ -732,8 +928,7 @@ SeuratLayerToAnnData <- function(name) {
       for (cj in seq_len(n_chunks_per_dim[2]) - 1L) {
         chunk_key <- .zarr_chunk_path(array_rel, c(ci, cj), meta$chunk_prefix, meta$chunk_sep)
         if (!store$exists(chunk_key)) next
-        raw_data <- store$read_bytes(chunk_key)
-        raw_data <- .zarr_decompress(raw_data, compressor)
+        raw_data <- .zarr_fetch_chunk(store, chunk_key, meta)
         chunk_size <- prod(chunks)
         chunk_vals <- .raw_to_r_type(raw_data, dtype_info, chunk_size)
 
@@ -834,13 +1029,7 @@ SeuratLayerToAnnData <- function(name) {
         out[out_pos] <- ""
         next
       }
-      raw_data <- store$read_bytes(chunk_key)
-      if (length(raw_data) == 0L) {
-        out[out_pos] <- ""
-        next
-      }
-      raw_data <- .zarr_decompress(raw_data, compressor)
-      chunk_strings <- .decode_vlen_utf8(raw_data, n_in_chunk)
+      chunk_strings <- .zarr_fetch_chunk_strings(store, chunk_key, meta, n_in_chunk)
       out[out_pos] <- chunk_strings[within]
     }
     return(out)
@@ -857,11 +1046,8 @@ SeuratLayerToAnnData <- function(name) {
                        rep("", min(chunk_size, total_n - length(all_strings))))
       next
     }
-    raw_data <- store$read_bytes(chunk_key)
-    if (length(raw_data) == 0) next
-    raw_data <- .zarr_decompress(raw_data, compressor)
     n_in_chunk <- min(chunk_size, total_n - length(all_strings))
-    strings <- .decode_vlen_utf8(raw_data, n_in_chunk)
+    strings <- .zarr_fetch_chunk_strings(store, chunk_key, meta, n_in_chunk)
     all_strings <- c(all_strings, strings)
   }
 

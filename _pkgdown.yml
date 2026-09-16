@@ -124,6 +124,16 @@ reference:
       - LoadCosMx
       - LoadXenium
 
+  - title: "Version Compatibility"
+    desc: "Lossless conversion between Seurat v3/v4 and v5 objects and between anndata on-disk layouts"
+    contents:
+      - upgradeSeurat
+      - downgradeSeurat
+      - seuratGeneration
+      - upgradeH5AD
+      - downgradeH5AD
+      - h5adLayout
+
   - title: "Format Conversion"
     desc: "General conversion utilities between all supported formats"
     contents:

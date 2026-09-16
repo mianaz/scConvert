@@ -193,8 +193,10 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
         )
         if (nrow(layer_matrix) == nrow(expr_matrix) &&
             ncol(layer_matrix) == ncol(expr_matrix)) {
-          rownames(layer_matrix) <- feature.names
-          colnames(layer_matrix) <- cell.names
+          # Seurat may have replaced underscores in feature names with
+          # dashes; label with the object's final dimnames.
+          rownames(layer_matrix) <- rownames(seurat_obj)
+          colnames(layer_matrix) <- colnames(seurat_obj)
           seurat_slot <- AnnDataLayerToSeurat(layer_name)
           tryCatch({
             seurat_obj[[assay.name]] <- SetAssayData(
@@ -330,11 +332,11 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
         }
 
         if (length(meta_values) == nrow(seurat_obj)) {
-          names(meta_values) <- feature.names
+          names(meta_values) <- rownames(seurat_obj)
           seurat_obj[[assay.name]][[col]] <- meta_values
 
           if (col == "highly_variable" && is.logical(meta_values)) {
-            VariableFeatures(seurat_obj) <- feature.names[meta_values]
+            VariableFeatures(seurat_obj) <- rownames(seurat_obj)[meta_values]
           }
         }
       }, error = function(e) {
@@ -474,17 +476,20 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
   attrs <- .zarr_read_attrs(store_path, group)
   index_col <- attrs[["_index"]] %||% "_index"
 
-  index_path <- file.path(group, index_col)
-  if (.zarr_node_type(store_path, index_path) != "missing") {
-    return(as.character(.zarr_read_strings(store_path, index_path,
-                                            slice_idx = slice_idx)))
-  }
-
-  # Try "index" as fallback
-  index_path <- file.path(group, "index")
-  if (.zarr_node_type(store_path, index_path) != "missing") {
-    return(as.character(.zarr_read_strings(store_path, index_path,
-                                            slice_idx = slice_idx)))
+  for (cand in unique(c(index_col, "_index", "index"))) {
+    index_path <- file.path(group, cand)
+    node <- .zarr_node_type(store_path, index_path)
+    if (node == "array") {
+      return(as.character(.zarr_read_strings(store_path, index_path,
+                                              slice_idx = slice_idx)))
+    }
+    if (node == "group") {
+      # anndata >= 0.13 with pandas 3 writes the index as a
+      # nullable-string-array group (values + mask)
+      vals <- .zarr_read_anndata_column(store_path, index_path,
+                                        slice_idx = slice_idx)
+      if (!is.null(vals)) return(as.character(vals))
+    }
   }
 
   NULL
@@ -696,7 +701,35 @@ readZarr <- function(file, assay.name = "RNA", verbose = TRUE,
       } else {
         categories <- as.character(.zarr_read_numeric(store_path, cats_path))
       }
-      return(DecodeCategorical(as.integer(codes), as.character(categories)))
+      is_ordered <- isTRUE(as.logical(attrs[["ordered"]] %||% FALSE)[1])
+      return(DecodeCategorical(as.integer(codes), as.character(categories),
+                               ordered = is_ordered))
+    }
+
+    # Nullable encodings (nullable-integer / nullable-boolean /
+    # nullable-string-array, anndata >= 0.8 / 0.11): values + mask arrays,
+    # mask == TRUE marks a missing value.
+    if (.zarr_node_type(store_path, file.path(col_path, "values")) == "array" &&
+        .zarr_node_type(store_path, file.path(col_path, "mask")) == "array") {
+      store <- .zarr_make_store(store_path)
+      vmeta <- .zarr_read_array_meta(store, file.path(col_path, "values"))
+      values <- if (vmeta$is_string) {
+        .zarr_read_strings(store_path, file.path(col_path, "values"),
+                           slice_idx = slice_idx)
+      } else {
+        v <- .zarr_read_numeric(store_path, file.path(col_path, "values"),
+                                slice = slice1d)
+        if (vmeta$is_bool) as.logical(v) else v
+      }
+      mask <- as.logical(.zarr_read_numeric(store_path, file.path(col_path, "mask"),
+                                            slice = slice1d))
+      if (identical(encoding_type, "nullable-integer") && is.numeric(values)) {
+        if (all(is.na(values) | abs(values) < .Machine$integer.max)) {
+          values <- as.integer(values)
+        }
+      }
+      if (length(mask) == length(values)) values[mask] <- NA
+      return(values)
     }
 
     return(NULL)

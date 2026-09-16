@@ -91,3 +91,11 @@ src/*.gcda
 src/*.gcno
 src/cli_obj/*.gcda
 src/cli_obj/*.gcno
+
+# Cross-version AnnData fixtures used by tests/testthat/test-anndata-versions.R
+!inst/testdata/anndata/
+!inst/testdata/anndata/**
+
+# Cross-version AnnData fixtures used by tests/testthat/test-anndata-versions.R
+!inst/testdata/anndata/
+!inst/testdata/anndata/**

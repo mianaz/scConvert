@@ -1,0 +1,20 @@
+{
+  "attributes": {
+    "column-order": [
+      "cluster",
+      "grade",
+      "n_counts",
+      "n_genes",
+      "is_doublet",
+      "sample",
+      "batch_id",
+      "qc_pass",
+      "note"
+    ],
+    "_index": "_index",
+    "encoding-type": "dataframe",
+    "encoding-version": "0.2.0"
+  },
+  "zarr_format": 3,
+  "node_type": "group"
+}

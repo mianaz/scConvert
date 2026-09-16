@@ -18,7 +18,7 @@ URL: https://mianaz.github.io/scConvert/, https://github.com/mianaz/scConvert
 BugReports: https://github.com/mianaz/scConvert/issues
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
-SystemRequirements: HDF5 (>= 1.14.0)
+SystemRequirements: HDF5 (>= 1.14.0); libzstd (optional, zarr v3 zstd codec)
 Depends:
   R (>= 4.1.0)
 Imports:
@@ -37,6 +37,7 @@ Imports:
   utils
 Collate:
     'zzz.R'
+    'AnnDataCompat.R'
     'AnnDataEncoding.R'
     'GetObject.R'
     'UtilsH5Access.R'
@@ -53,6 +54,8 @@ Collate:
     'Convert.R'
     'ConvertCLI.R'
     'ConvertZarr.R'
+    'H5ADVersion.R'
+    'H5ADVersionAPI.R'
     'H5DAccess.R'
     'LoadCosMx.R'
     'LoadH5AD.R'
@@ -72,6 +75,8 @@ Collate:
     'SaveH5Seurat.R'
     'SaveLoom.R'
     'SaveZarr.R'
+    'SeuratVersion.R'
+    'SeuratVersionAPI.R'
     'SpatialConversion.R'
     'SpatialData.R'
     'SpatialFOV.R'
@@ -105,6 +110,7 @@ Suggests:
     SingleCellExperiment,
     SummarizedExperiment,
     testthat (>= 3.0.0),
+    withr,
     ggplot2,
     xml2
 Enhances:
@@ -119,4 +125,4 @@ Remotes:
     SeuratData=github::satijalab/seurat-data
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
