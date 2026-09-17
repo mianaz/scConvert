@@ -38,6 +38,10 @@ matching `Read10X_Image()`.
   `row`/`col`/`tissue` columns are kept in the image `misc` so a later
   downgrade restores them).
 - Both accept a file path (`.rds` / `.h5seurat`) plus `dest`.
+- Assays whose feature-level meta data has no columns (a fresh assay without
+  variable features) convert in both directions: SeuratObject's own
+  `Assay5 <-> Assay` coercions fail on such a table under R >= 4.5, so the
+  conversion pads it for the duration of the coercion.
 
 ## Lossless h5ad layout upgrade / downgrade (`upgradeH5AD`, `downgradeH5AD`, `h5adLayout`)
 
@@ -58,6 +62,13 @@ matching `Read10X_Image()`.
   `na-value`, `null`). Matrices are copied at the HDF5 level in both
   directions. `strings = "categorical"` produces a file every anndata >= 0.8
   can read.
+
+- The rewriter and the AnnData readers close every HDF5 handle as soon as it
+  is no longer needed, and legacy `__categories` object references are built
+  from the object address instead of hdf5r's `create_reference()`, whose
+  temporary file handle corrupts hdf5r's reference bookkeeping after enough
+  references (a GC-timing dependent "r_count can never be more than 1 larger
+  than h5_count" error).
 
 ## AnnData cross-version compatibility (anndata 0.7 through 0.13)
 

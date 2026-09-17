@@ -14,6 +14,18 @@ skip_if_not_installed("hdf5r")
 skip_if_not_installed("Seurat")
 suppressPackageStartupMessages({library(Matrix); library(Seurat)})
 
+# The CRAN Windows binary of hdf5r bundles HDF5 1.12.1, whose H5Fclose /
+# hdf5r finalizer interplay crashes the test runner when a file is walked
+# element by element (see test-cli-integration.R for the same guard). The
+# on-disk rewrite tests below do exactly that; they run on every other
+# platform.
+.hv <- as.integer(strsplit(as.character(hdf5r::h5version()), "\\.")[[1]])
+.hdf5_finalizer_broken <- .Platform$OS.type == "windows" && .hv[1] == 1L && .hv[2] == 12L
+skip_rewrite_on_broken_hdf5 <- function() {
+  skip_if(.hdf5_finalizer_broken,
+          "Windows HDF5 1.12.x: hdf5r finalizer H5Fclose crashes test runner")
+}
+
 legacy_file <- system.file("testdata", "anndata", "anndata_0.7.8.h5ad", package = "scConvert")
 modern_file <- system.file("testdata", "anndata", "anndata_0.13.3_pandas3.h5ad", package = "scConvert")
 zarr_dir <- system.file("testdata", "anndata", "anndata_0.13.3_pandas3.zarr", package = "scConvert")
@@ -69,6 +81,7 @@ test_that("readH5AD reads anndata 0.13 + pandas 3 encodings (R and C paths)", {
 
 test_that("h5ad -> h5Seurat -> Seurat handles nullable strings and underscore genes", {
   skip_if(!file.exists(modern_file))
+  skip_rewrite_on_broken_hdf5()
   tmp <- tempfile(fileext = ".h5seurat")
   on.exit(unlink(tmp), add = TRUE)
   scConvert(modern_file, dest = tmp, verbose = FALSE)
@@ -86,6 +99,7 @@ test_that("h5ad -> h5Seurat -> Seurat handles nullable strings and underscore ge
 
 test_that("h5adLayout reports layout and minimum anndata version", {
   skip_if(!file.exists(legacy_file) || !file.exists(modern_file))
+  skip_rewrite_on_broken_hdf5()
   old <- h5adLayout(legacy_file)
   expect_s3_class(old, "h5ad_layout")
   expect_equal(old$layout, "legacy")
@@ -100,6 +114,7 @@ test_that("h5adLayout reports layout and minimum anndata version", {
 
 test_that("downgradeH5AD / upgradeH5AD round-trip the modern layout losslessly", {
   skip_if(!file.exists(modern_file))
+  skip_rewrite_on_broken_hdf5()
   legacy <- tempfile(fileext = ".h5ad")
   restored <- tempfile(fileext = ".h5ad")
   on.exit(unlink(c(legacy, restored)), add = TRUE)
@@ -135,6 +150,7 @@ test_that("downgradeH5AD / upgradeH5AD round-trip the modern layout losslessly",
 
 test_that("upgradeH5AD converts the legacy layout to the encoded layout", {
   skip_if(!file.exists(legacy_file))
+  skip_rewrite_on_broken_hdf5()
   out <- tempfile(fileext = ".h5ad")
   on.exit(unlink(out), add = TRUE)
   upgradeH5AD(legacy_file, out, verbose = FALSE)
