@@ -652,6 +652,29 @@
         </dt>
         <dd>Load a 10x Xenium output bundle into a Seurat object</dd>
       </dl></div><div class="section level2">
+      <h2 id="version-compatibility">Version Compatibility<a class="anchor" aria-label="anchor" href="#version-compatibility"></a></h2>
+
+      <div class="section-desc"><p>Lossless conversion between Seurat v3/v4 and v5 objects and between anndata on-disk layouts</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="seuratVersion.html">upgradeSeurat()</a></code> <code><a href="seuratVersion.html">downgradeSeurat()</a></code> <code><a href="seuratVersion.html">seuratGeneration()</a></code>
+
+        </dt>
+        <dd>Upgrade or downgrade a Seurat object between the v3/v4 and v5 generations</dd>
+
+        <dt>
+
+          <code><a href="h5adVersion.html">upgradeH5AD()</a></code> <code><a href="h5adVersion.html">downgradeH5AD()</a></code> <code><a href="h5adVersion.html">h5adLayout()</a></code>
+
+        </dt>
+        <dd>Inspect, upgrade or downgrade the on-disk layout of an h5ad file</dd>
+      </dl></div><div class="section level2">
       <h2 id="format-conversion">Format Conversion<a class="anchor" aria-label="anchor" href="#format-conversion"></a></h2>
 
       <div class="section-desc"><p>General conversion utilities between all supported formats</p></div>
@@ -2047,6 +2070,27 @@
 
         <dt>
 
+          <code><a href="dot-zarr_fetch_chunk.html">.zarr_fetch_chunk()</a></code>
+
+        </dt>
+        <dd>Fetch and decode one (outer) chunk of a zarr array as raw bytes</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_fetch_chunk_strings.html">.zarr_fetch_chunk_strings()</a></code>
+
+        </dt>
+        <dd>Fetch and decode one (outer) chunk of a zarr string array</dd>
+
+        <dt>
+
+          <code><a href="dot-zarr_fill_bytes.html">.zarr_fill_bytes()</a></code>
+
+        </dt>
+        <dd>Byte pattern of the fill value for one element of a zarr array</dd>
+
+        <dt>
+
           <code><a href="dot-zarr_get_n_obs.html">.zarr_get_n_obs()</a></code>
 
         </dt>
@@ -2208,6 +2252,13 @@
 
         <dt>
 
+          <code><a href="dot-zarr_split_shard.html">.zarr_split_shard()</a></code>
+
+        </dt>
+        <dd>Split a zarr v3 shard into its inner chunk byte blocks</dd>
+
+        <dt>
+
           <code><a href="dot-zarr_store_http.html">.zarr_store_http()</a></code>
 
         </dt>
@@ -2261,6 +2312,13 @@
 
         </dt>
         <dd>Write a zarr v2 vlen-utf8 string array</dd>
+
+        <dt>
+
+          <code><a href="dot-zstd_internal_available.html">.zstd_internal_available()</a></code>
+
+        </dt>
+        <dd>Is the package's built-in libzstd bridge available?</dd>
 
         <dt>
 

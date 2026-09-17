@@ -63,6 +63,55 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="scconvert-030-development">scConvert 0.3.0 (development)<a class="anchor" aria-label="anchor" href="#scconvert-030-development"></a></h2>
 <div class="section level3">
+<h3 id="seurat-v56-beta-and-seuratobject-compatibility-0-3-0">Seurat v5.6-beta and SeuratObject 5.4 compatibility<a class="anchor" aria-label="anchor" href="#seurat-v56-beta-and-seuratobject-compatibility-0-3-0"></a></h3>
+<p>Seurat <code>v5.6-beta</code> (branch <code>v5.6-beta</code>, version 5.5.1.9999, August 2026) changes computation, not object structure: multithreading via <code>setThreads()</code>/<code>getThreads()</code>, a C++ SCTransform residual kernel, a Gram-matrix PCA path and a legacy-compatible VST ranking. The package test suites pass against it unchanged. Two beta details do matter for round trips:</p>
+<ul><li>
+<code>SCTModel</code> objects built by the beta store a resolved numeric <code>arguments$min_variance</code> and an explicit <code>arguments$sct.clip.range</code>; both are plain list entries and round-trip through the <code>SCTModel.list</code> group the h5Seurat writer already emits.</li>
+<li>The <code>Seurat.warn.umap.uwot</code> option was removed; nothing in this package referenced it.</li>
+</ul><p>SeuratObject 5.2 to 5.4 added slots to the spatial classes (<code>Segmentation</code> <code>sf.data</code>/<code>compact</code>, <code>FOV</code> <code>coords_x_orientation</code>, <code>SpatialImage</code> <code>misc</code>); <code>VisiumV2</code> objects are created with <code>coords_x_orientation = "horizontal"</code>, matching <code><a href="https://satijalab.org/seurat/reference/Read10X_Image.html" class="external-link">Read10X_Image()</a></code>.</p>
+</div>
+<div class="section level3">
+<h3 id="lossless-seurat-v3v4---v5-conversion-upgradeseurat-downgradeseurat-seuratgeneration-0-3-0">Lossless Seurat v3/v4 &lt;-&gt; v5 conversion (<code>upgradeSeurat</code>, <code>downgradeSeurat</code>, <code>seuratGeneration</code>)<a class="anchor" aria-label="anchor" href="#lossless-seurat-v3v4---v5-conversion-upgradeseurat-downgradeseurat-seuratgeneration-0-3-0"></a></h3>
+<ul><li>
+<code><a href="../reference/seuratVersion.html">downgradeSeurat()</a></code> converts every <code>Assay5</code> to a v3-style <code>Assay</code> (loadable by Seurat v4) and every <code>VisiumV2</code> image to <code>VisiumV1</code>. Everything the older classes cannot hold is kept in a sidecar list under <code>misc$.seurat_version_sidecar</code>: split-layer cell membership (<code>counts.sample1</code>, …), extra layers (any name outside counts/data/scale.data), per-layer feature sets, the default layer, the original version stamp, image boundaries and molecules. Assay subclasses (<code>SCTAssay</code>, <code>ChromatinAssay</code>) survive an upgrade with their extra slots in the sidecar and are restored on downgrade.</li>
+<li>
+<code><a href="../reference/seuratVersion.html">upgradeSeurat()</a></code> converts back and consumes the sidecar, so <code>upgradeSeurat(downgradeSeurat(x))</code> reproduces <code>x</code> layer for layer, in the original order, with the original default layer. Without a sidecar it is SeuratObject’s own coercion plus <code>VisiumV1 -&gt; VisiumV2</code> (Space Ranger <code>row</code>/<code>col</code>/<code>tissue</code> columns are kept in the image <code>misc</code> so a later downgrade restores them).</li>
+<li>Both accept a file path (<code>.rds</code> / <code>.h5seurat</code>) plus <code>dest</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="lossless-h5ad-layout-upgrade--downgrade-upgradeh5ad-downgradeh5ad-h5adlayout-0-3-0">Lossless h5ad layout upgrade / downgrade (<code>upgradeH5AD</code>, <code>downgradeH5AD</code>, <code>h5adLayout</code>)<a class="anchor" aria-label="anchor" href="#lossless-h5ad-layout-upgrade--downgrade-upgradeh5ad-downgradeh5ad-h5adlayout-0-3-0"></a></h3>
+<ul><li>
+<code><a href="../reference/h5adVersion.html">h5adLayout()</a></code> reports which anndata layout a file uses (<code>legacy</code> for anndata 0.7, <code>compound</code> for &lt; 0.7, <code>encoded</code> for &gt;= 0.8), the oldest anndata release able to read it, and the encodings it contains.</li>
+<li>
+<code><a href="../reference/h5adVersion.html">downgradeH5AD()</a></code> rewrites an encoded file into the anndata 0.7 layout (<code>dataframe</code> 0.1.0 with <code>__categories</code> datasets referenced by HDF5 object references, no encoding attributes on arrays/dicts/scalars). Verified readable by anndata 0.7.8, 0.8.0, 0.13.3 and by SeuratDisk-derived converters. Nullable integers with missing values become float64, nullable booleans / strings become categoricals, <code>null</code> entries are dropped, and every such re-encoding is recorded in <code>uns/__h5ad_compat_manifest__</code>.</li>
+<li>
+<code><a href="../reference/h5adVersion.html">upgradeH5AD()</a></code> rewrites legacy / compound files into the current layout and, when a manifest is present, restores the original encodings exactly (<code>nullable-integer</code>, <code>nullable-boolean</code>, <code>nullable-string-array</code> with its <code>na-value</code>, <code>null</code>). Matrices are copied at the HDF5 level in both directions. <code>strings = "categorical"</code> produces a file every anndata &gt;= 0.8 can read.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="anndata-cross-version-compatibility-anndata-through-0-3-0">AnnData cross-version compatibility (anndata 0.7 through 0.13)<a class="anchor" aria-label="anchor" href="#anndata-cross-version-compatibility-anndata-through-0-3-0"></a></h3>
+<p>Fixture files written by anndata 0.7.8, 0.8.0, 0.10.9, 0.11.4, 0.12.19 and 0.13.3 (with and without pandas 3 string inference) were run through every reader. Fixed:</p>
+<ul><li>
+<strong>anndata 0.13 + pandas 3 files could not be read at all.</strong> pandas 3 makes string columns and the obs/var index <code>nullable-string-array</code> groups (<code>values</code> + <code>mask</code>); every reader assumed a string dataset. All hdf5r readers, the compiled reader (index fallback), the zarr reader and the h5ad -&gt; h5Seurat converters now decode them (new <code>R/AnnDataCompat.R</code>).</li>
+<li>
+<strong>Nullable columns were dropped.</strong> <code>nullable-integer</code> / <code>nullable-boolean</code> obs and var columns (anndata &gt;= 0.8) are now read as integer / logical vectors with <code>NA</code>, in <code><a href="../reference/readH5AD.html">readH5AD()</a></code> (R and C paths), <code><a href="../reference/readZarr.html">readZarr()</a></code> and the h5ad -&gt; h5Seurat converter (missing strings become NA-capable factors).</li>
+<li>
+<strong><code>null</code> (<code>None</code>) entries in uns</strong> become <code>NULL</code> instead of aborting the uns walk; <code>uns</code> DataFrames decode through the same column machinery.</li>
+<li>
+<strong>Legacy (anndata 0.7) ordered categoricals</strong> lost their <code>ordered</code> flag; boolean categoricals stored as “True”/“False” now decode to logicals.</li>
+<li>
+<strong>Feature names with underscores</strong> broke every conversion path: variable features, raw/X counts, dense layers and the compiled reader’s data layer were labelled with the file’s names while Seurat had replaced <code>_</code> by <code>-</code>. All paths now normalise consistently (<code>h5ad -&gt; h5Seurat -&gt; Seurat</code> failed outright before).</li>
+<li>
+<strong>Dense layers read through the compiled path</strong> were transposed.</li>
+<li>
+<strong>Missing categorical values</strong> (<code>-1</code> codes) were written into an int8 <code>values</code> dataset during h5ad -&gt; h5Seurat conversion, overflowed to -128 and made the whole column disappear on load. Values are now int32 and readers treat out-of-range codes as <code>NA</code>.</li>
+<li>
+<code><a href="../reference/readZarr.html">readZarr()</a></code> reads <strong>zarr v3 stores</strong> written by zarr-python 3 / anndata &gt;= 0.12: <code>sharding_indexed</code> shards (inner chunk grid, byte-range index, crc32c) and the <code>zstd</code> codec. Zstandard is decoded through libzstd when it is available at build time (<code>configure</code> detects <code>pkg-config libzstd</code>, Homebrew and conda; Ubuntu <code>libzstd-dev</code>), falling back to the optional zstdlite package. The zarr <em>writer</em> also uses libzstd for <code>compressor = "zstd"</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="h5seurat-split-and-extra-v5-layers-round-trip-0-3-0">h5Seurat: split and extra V5 layers round-trip<a class="anchor" aria-label="anchor" href="#h5seurat-split-and-extra-v5-layers-round-trip-0-3-0"></a></h3>
+<p><code><a href="../reference/writeH5Seurat.html">writeH5Seurat()</a></code> now records, per layer, the cells and features it covers (<code>layer.cells/</code>, <code>layer.features/</code>), the layer order (<code>layer.order</code>), the default layer (<code>default.layer</code>) and <code>scaled.features</code> for Assay5 objects; <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code> rebuilds split layers (<code>counts.a</code>, <code>counts.b</code>, …) and arbitrary layer names exactly instead of failing with “‘slots’ must be a non-empty character vector”. Files written by older versions still load.</p>
+</div>
+<div class="section level3">
 <h3 id="reverse-conversion-h5ad---seurat-integrity-overhaul-0-3-0">Reverse-conversion (h5ad -&gt; Seurat) integrity overhaul<a class="anchor" aria-label="anchor" href="#reverse-conversion-h5ad---seurat-integrity-overhaul-0-3-0"></a></h3>
 <p><code><a href="../reference/readH5AD.html">readH5AD()</a></code> now applies the same read-back discipline to the reverse direction that the write direction already learned the hard way. New helpers live in <code>R/VerifyH5AD.R</code>; regression coverage in <code>tests/testthat/test-reverse-conversion.R</code>.</p>
 <ul><li><p><strong>Version/layout-aware counts resolution.</strong> Where the raw counts live is now resolved explicitly, in priority order: the <code>/uns/scConvert/ counts_location</code> stamp (see below), <code>/layers/counts</code> (modern anndata/scanpy convention), <code>/raw/X</code> (legacy scanpy), then <code>/X</code>. The resolved slot is loaded into the Seurat <code>counts</code> layer and X into <code>data</code> in every path – in-memory, <code>components</code> subsets, the C-reader fallback, and BPCells on-disk mode (which previously only knew about <code>raw/X</code> and silently served log-normalized X as on-disk “counts” for <code>layers['counts']</code> files). Relocating counts out of <code>layers/counts</code> is now a hard <code>scConvert_data_error</code> on failure instead of a swallowed message that left log-normalized values sitting in the counts slot.</p></li>

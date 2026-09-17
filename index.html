@@ -299,6 +299,10 @@
 <td><strong>C CLI</strong></td>
 <td>Standalone binary for streaming on-disk HDF5 conversion.</td>
 </tr>
+<tr>
+<td><strong>Version compatibility</strong></td>
+<td>Reads every anndata layout from 0.7 to 0.13 (nullable strings, <code>null</code>, zarr v3 sharding + zstd); <code><a href="reference/h5adVersion.html">upgradeH5AD()</a></code>/<code><a href="reference/h5adVersion.html">downgradeH5AD()</a></code> rewrite h5ad files between layouts and <code><a href="reference/seuratVersion.html">upgradeSeurat()</a></code>/<code><a href="reference/seuratVersion.html">downgradeSeurat()</a></code> convert objects between Seurat v3/v4 and v5 losslessly.</td>
+</tr>
 </tbody>
 </table>
 </div>
