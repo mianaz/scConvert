@@ -1109,6 +1109,9 @@ SeuratLayerToAnnData <- function(name) {
       }
     }
   }
+  # the payload is UTF-8 by definition; without the mark non-ASCII strings
+  # are misinterpreted in non-UTF-8 locales (C/POSIX, older Windows R)
+  Encoding(strings) <- "UTF-8"
   strings
 }
 

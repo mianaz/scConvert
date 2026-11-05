@@ -1487,6 +1487,28 @@ static hid_t write_1d_dataset(hid_t loc, const char *name, hid_t dtype,
     return dset; /* caller closes */
 }
 
+static hid_t bool_enum_type(void);
+
+static hid_t write_bool_dataset(hid_t loc, const char *name,
+                                 hsize_t n, const int8_t *buf, int gzip)
+{
+    hid_t bt = bool_enum_type();
+    hsize_t chunk = n < (1 << 20) ? n : (1 << 20);
+    if (chunk == 0) chunk = 1;
+    hid_t space = H5Screate_simple(1, &n, NULL);
+    hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
+    H5Pset_chunk(dcpl, 1, &chunk);
+    if (gzip > 0) H5Pset_deflate(dcpl, (unsigned)gzip);
+    hid_t dset = H5Dcreate2(loc, name, bt, space, H5P_DEFAULT, dcpl,
+                             H5P_DEFAULT);
+    if (dset >= 0 && buf && n > 0)
+        H5Dwrite(dset, bt, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+    H5Pclose(dcpl);
+    H5Sclose(space);
+    H5Tclose(bt);
+    return dset; /* caller closes */
+}
+
 /* Write an STRSXP vector as a 1D vlen-string dataset */
 static herr_t write_string_dataset(hid_t loc, const char *name,
                                     SEXP vec, int gzip)
@@ -2011,6 +2033,77 @@ static void set_string_encoding_attrs(hid_t loc, const char *dset_name) {
     }
 }
 
+/* numpy-bool compatible type: int8 enum {FALSE=0, TRUE=1} (what h5py
+ * writes for np.bool_; anndata/pandas read it back as bool). Caller closes. */
+static hid_t bool_enum_type(void) {
+    hid_t t = H5Tenum_create(H5T_NATIVE_INT8);
+    int8_t v = 0;
+    H5Tenum_insert(t, "FALSE", &v);
+    v = 1;
+    H5Tenum_insert(t, "TRUE", &v);
+    return t;
+}
+
+/* Write an R logical/integer column that contains NA as an anndata
+ * nullable-boolean / nullable-integer group (values + mask). */
+static void write_nullable_column(hid_t loc, const char *name, SEXP col,
+                                   int gzip)
+{
+    R_xlen_t len = XLENGTH(col);
+    int is_lgl = (TYPEOF(col) == LGLSXP);
+    int *src = is_lgl ? LOGICAL(col) : INTEGER(col);
+    int8_t *mask = (int8_t *)malloc((size_t)(len > 0 ? len : 1));
+    if (!mask) return;
+    hid_t grp = H5Gcreate2(loc, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    if (grp < 0) { free(mask); return; }
+    for (R_xlen_t k = 0; k < len; k++)
+        mask[k] = (src[k] == NA_INTEGER) ? 1 : 0;  /* NA_LOGICAL == NA_INTEGER */
+
+    hid_t dset = -1;
+    if (is_lgl) {
+        int8_t *vals = (int8_t *)malloc((size_t)(len > 0 ? len : 1));
+        if (vals) {
+            for (R_xlen_t k = 0; k < len; k++)
+                vals[k] = (src[k] == NA_LOGICAL) ? 0 : (int8_t)(src[k] != 0);
+            dset = write_bool_dataset(grp, "values", (hsize_t)len, vals, gzip);
+            free(vals);
+        }
+    } else {
+        int64_t *vals = (int64_t *)malloc((size_t)(len > 0 ? len : 1) * sizeof(int64_t));
+        if (vals) {
+            for (R_xlen_t k = 0; k < len; k++)
+                vals[k] = (src[k] == NA_INTEGER) ? 0 : (int64_t)src[k];
+            dset = write_1d_dataset(grp, "values", H5T_NATIVE_INT64,
+                                    (hsize_t)len, vals, gzip);
+            free(vals);
+        }
+    }
+    if (dset >= 0) {
+        set_str_attr_ascii(dset, "encoding-type", "array");
+        set_str_attr_ascii(dset, "encoding-version", "0.2.0");
+        H5Dclose(dset);
+    }
+    dset = write_bool_dataset(grp, "mask", (hsize_t)len, mask, gzip);
+    if (dset >= 0) {
+        set_str_attr_ascii(dset, "encoding-type", "array");
+        set_str_attr_ascii(dset, "encoding-version", "0.2.0");
+        H5Dclose(dset);
+    }
+    set_str_attr_ascii(grp, "encoding-type",
+                       is_lgl ? "nullable-boolean" : "nullable-integer");
+    set_str_attr_ascii(grp, "encoding-version", "0.1.0");
+    free(mask);
+    H5Gclose(grp);
+}
+
+static int column_has_na(SEXP col) {
+    R_xlen_t len = XLENGTH(col);
+    const int *src = (TYPEOF(col) == LGLSXP) ? LOGICAL(col) : INTEGER(col);
+    for (R_xlen_t k = 0; k < len; k++)
+        if (src[k] == NA_INTEGER) return 1;
+    return 0;
+}
+
 /* Helper: write a boolean attribute (H5T_NATIVE_HBOOL) */
 static void set_bool_attr(hid_t loc, const char *attr_name, int value) {
     hid_t space = H5Screate(H5S_SCALAR);
@@ -2262,9 +2355,13 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
                     /* Categorical attributes */
                     set_str_attr_ascii(cat_grp, "encoding-type", "categorical");
                     set_str_attr_ascii(cat_grp, "encoding-version", "0.2.0");
-                    set_bool_attr(cat_grp, "ordered", 0);
+                    set_bool_attr(cat_grp, "ordered",
+                                  Rf_inherits(col, "ordered") ? 1 : 0);
 
                     H5Gclose(cat_grp);
+                } else if (column_has_na(col)) {
+                    /* NA_integer_ would be written as INT_MIN */
+                    write_nullable_column(obs_grp, cname, col, gzip);
                 } else {
                     /* Plain integer */
                     hid_t dset = write_1d_dataset(obs_grp, cname,
@@ -2280,17 +2377,21 @@ SEXP C_write_h5ad(SEXP path_sexp, SEXP mat_sexp, SEXP meta_sexp,
                 break;
             }
             case LGLSXP: {
-                /* Logical -> boolean (stored as int8) */
+                /* Logical -> numpy bool; with NA -> nullable-boolean
+                 * (previously NA was silently written as FALSE and the
+                 * column came back as integer) */
+                if (column_has_na(col)) {
+                    write_nullable_column(obs_grp, cname, col, gzip);
+                    break;
+                }
                 R_xlen_t len = XLENGTH(col);
-                int8_t *buf = (int8_t *)malloc((size_t)len);
+                int8_t *buf = (int8_t *)malloc((size_t)(len > 0 ? len : 1));
                 if (buf) {
                     int *src = LOGICAL(col);
                     for (R_xlen_t li = 0; li < len; li++)
-                        buf[li] = (src[li] == NA_LOGICAL)
-                            ? (int8_t)0 : (int8_t)src[li];
-                    hid_t dset = write_1d_dataset(obs_grp, cname,
-                                                   H5T_NATIVE_INT8,
-                                                   (hsize_t)len, buf, gzip);
+                        buf[li] = (int8_t)(src[li] != 0);
+                    hid_t dset = write_bool_dataset(obs_grp, cname,
+                                                     (hsize_t)len, buf, gzip);
                     if (dset >= 0) {
                         set_str_attr_ascii(dset, "encoding-type", "array");
                         set_str_attr_ascii(dset, "encoding-version", "0.2.0");

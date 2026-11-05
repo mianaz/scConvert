@@ -691,17 +691,27 @@ WriteDFGroup <- function(h5parent, group_name, df, index_values,
                           dtype = CachedGuessDType('categorical'), space = ScalarSpace())
       cat_grp$create_attr(attr_name = 'encoding-version', robj = '0.2.0',
                           dtype = CachedGuessDType('0.2.0'), space = ScalarSpace())
-      cat_grp$create_attr(attr_name = 'ordered', robj = is.ordered(col_data),
-                          dtype = GuessDType(TRUE), space = ScalarSpace())
+      # numpy-bool enum, so anndata/pandas see a real bool flag
+      .h5w_attr(cat_grp, 'ordered', is.ordered(col_data))
+    } else if (is.character(col_data) && anyNA(col_data)) {
+      # string-array cannot hold missing values (NA would become the
+      # literal "NA"); a categorical with -1 codes is readable by every
+      # anndata version and decodes back to NA
+      .h5ad_write_categorical_encoded(grp, col_name, factor(col_data))
     } else if (is.character(col_data)) {
       grp$create_dataset(col_name, robj = col_data,
                          dtype = CachedUtf8Type(),
                          chunk_dims = length(col_data), gzip_level = gzip)
       AddAnndataEncoding(grp[[col_name]], encoding_type = 'string-array')
+    } else if (is.logical(col_data) && anyNA(col_data)) {
+      .h5ad_write_nullable_encoded(grp, col_name, col_data, 'nullable-boolean')
     } else if (is.logical(col_data)) {
-      grp$create_dataset(col_name, robj = BoolToInt(col_data),
-                         chunk_dims = length(col_data), gzip_level = gzip)
-      AddAnndataEncoding(grp[[col_name]], encoding_type = 'array')
+      # numpy-bool enum (was int with NA -> 2, read back as integers)
+      d <- .h5w_dataset(grp, col_name, col_data)
+      .h5w_encoding(d, 'array', '0.2.0')
+    } else if (is.integer(col_data) && anyNA(col_data)) {
+      # NA_integer_ would otherwise be written as INT_MIN
+      .h5ad_write_nullable_encoded(grp, col_name, col_data, 'nullable-integer')
     } else {
       grp$create_dataset(col_name, robj = col_data,
                          chunk_dims = length(col_data), gzip_level = gzip)

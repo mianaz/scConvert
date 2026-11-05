@@ -744,6 +744,12 @@ setMethod(
       hgroup = xgroup,
       verbose = verbose
     )
+    # read back by as.data.frame.H5Group / H5D to restore ordered factors
+    if (is.ordered(x = x)) {
+      xgroup$create_attr(attr_name = 'ordered', robj = 1L,
+                         dtype = GuessDType(x = 1L), space = ScalarSpace())
+    }
+    return(invisible(x = NULL))
   }
 )
 

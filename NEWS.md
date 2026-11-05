@@ -1,5 +1,37 @@
 # scConvert 0.3.0 (development)
 
+## License
+
+scConvert is now released under the MIT license (previously GPL-3).
+
+## Bug fixes
+
+- Metadata columns with missing values now round-trip through h5ad, h5mu and
+  zarr: logical `NA` is written as `nullable-boolean` (was `FALSE`), integer
+  `NA` as `nullable-integer` (was `INT_MIN`/0), and character `NA` as a
+  categorical with code -1 (was the literal string `"NA"` / `""`). Logical
+  columns are written as numpy-bool enums instead of int8.
+- Ordered factors keep `ordered = TRUE` in h5ad (C writer), zarr and
+  h5Seurat; h5mu now reads the flag back.
+- `readH5MU()` decodes obs/var columns through the shared AnnData decoder, so
+  nullable columns are no longer dropped.
+- h5Seurat logical columns are decoded back to logical (the NA sentinel 2 was
+  read as `TRUE`/2).
+- zarr categorical codes are sized to the number of levels; factors with more
+  than 127 levels were silently corrupted by int8 codes.
+- Library ids for multi-library spatial h5Seurat files are decoded with
+  1-based factor codes (they were shifted by one level).
+- Assay5 `counts`/`data` layers that cover a subset of features or cells are
+  restored by name from `layer.features`/`layer.cells` instead of being
+  dropped or padded positionally.
+- 2D HDF5 datasets with a length-1 axis are no longer collapsed to vectors
+  (single-cell loom files failed to load).
+- zarr vlen-utf8 strings are marked as UTF-8 (non-ASCII text was garbled in
+  non-UTF-8 locales).
+- C converters cap HDF5 chunk sizes for 2D datasets (full-size chunks broke
+  on dense matrices over 4 GiB and on empty axes) and report HDF5 write
+  failures instead of returning success.
+
 ## Seurat v5.6-beta and SeuratObject 5.4 compatibility
 
 Seurat `v5.6-beta` (branch `v5.6-beta`, version 5.5.1.9999, August 2026)

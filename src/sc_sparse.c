@@ -447,6 +447,25 @@ int sc_stream_csr_transpose(hid_t src_grp, hid_t dst_grp, int gzip_level) {
     return rc;
 }
 
+/* ── Bounded 2D chunk shape ─────────────────────────────────────────────────── */
+
+/*
+ * HDF5 rejects chunks of zero extent and chunks larger than 4 GiB, so using
+ * the full dataset shape as the chunk shape breaks on empty and on large
+ * dense matrices. Keep the full width of the second (fast) axis where it
+ * fits and shrink the first axis until the chunk is at most ~SC_CHUNK_SIZE
+ * elements. Returns 0 when the dataset has an empty axis (no chunking).
+ */
+static int sc_chunk_shape_2d(const hsize_t dims[2], hsize_t chunks[2]) {
+    if (dims[0] == 0 || dims[1] == 0) return 0;
+    const hsize_t target = (hsize_t)SC_CHUNK_SIZE;
+    chunks[1] = dims[1] < target ? dims[1] : target;
+    hsize_t rows = target / chunks[1];
+    if (rows < 1) rows = 1;
+    chunks[0] = dims[0] < rows ? dims[0] : rows;
+    return 1;
+}
+
 /* ── Copy a 2D dataset with transpose ([M,N] → [N,M]) ──────────────────────── */
 
 int sc_copy_2d_transposed(hid_t src_dset, hid_t dst_grp,
@@ -483,7 +502,11 @@ int sc_copy_2d_transposed(hid_t src_dset, hid_t dst_grp,
         H5Tclose(mem_type); H5Tclose(src_type); H5Sclose(src_space);
         return SC_ERR;
     }
-    H5Dread(src_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_buf);
+    if (H5Dread(src_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, src_buf) < 0) {
+        free(src_buf);
+        H5Tclose(mem_type); H5Tclose(src_type); H5Sclose(src_space);
+        return SC_ERR;
+    }
 
     /* Transpose: src[i*N + j] → dst[j*M + i] */
     void *dst_buf = malloc(total * elem_size);
@@ -506,24 +529,33 @@ int sc_copy_2d_transposed(hid_t src_dset, hid_t dst_grp,
     /* Create transposed dataset [N, M] */
     hsize_t dst_dims[2] = {N, M};
     hid_t dst_space = H5Screate_simple(2, dst_dims, NULL);
-    hsize_t chunks[2] = {N, M};
+    hsize_t chunks[2];
     hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_chunk(dcpl, 2, chunks);
-    if (gzip_level > 0) H5Pset_deflate(dcpl, (unsigned)gzip_level);
+    if (sc_chunk_shape_2d(dst_dims, chunks)) {
+        H5Pset_chunk(dcpl, 2, chunks);
+        if (gzip_level > 0) H5Pset_deflate(dcpl, (unsigned)gzip_level);
+    }
 
+    int rc = SC_OK;
     hid_t dst_dset = H5Dcreate2(dst_grp, name, src_type, dst_space,
                                  H5P_DEFAULT, dcpl, H5P_DEFAULT);
-    H5Dwrite(dst_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, dst_buf);
+    if (dst_dset < 0) {
+        rc = SC_ERR;
+    } else {
+        if (total > 0 &&
+            H5Dwrite(dst_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, dst_buf) < 0)
+            rc = SC_ERR;
+        H5Dclose(dst_dset);
+    }
 
     free(src_buf);
     free(dst_buf);
-    H5Dclose(dst_dset);
     H5Pclose(dcpl);
     H5Sclose(dst_space);
     H5Tclose(mem_type);
     H5Tclose(src_type);
     H5Sclose(src_space);
-    return SC_OK;
+    return rc;
 }
 
 /* ── Copy a generic 1D dataset (used by dataframe and group copiers) ────────── */
@@ -644,22 +676,35 @@ int sc_copy_dataset_chunked(hid_t src_dset, hid_t dst_grp,
         return SC_ERR;
     }
 
-    H5Dread(src_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+    if (H5Dread(src_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf) < 0) {
+        free(buf);
+        H5Tclose(mem_type); H5Tclose(src_type); H5Sclose(src_space);
+        return SC_ERR;
+    }
 
-    hsize_t chunks2[2] = {dims2[0], dims2[1]};
+    hsize_t chunks2[2];
     hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
-    H5Pset_chunk(dcpl, 2, chunks2);
-    if (gzip_level > 0) H5Pset_deflate(dcpl, (unsigned)gzip_level);
+    if (sc_chunk_shape_2d(dims2, chunks2)) {
+        H5Pset_chunk(dcpl, 2, chunks2);
+        if (gzip_level > 0) H5Pset_deflate(dcpl, (unsigned)gzip_level);
+    }
 
+    int rc = SC_OK;
     hid_t dst_dset = H5Dcreate2(dst_grp, name, src_type, src_space,
                                  H5P_DEFAULT, dcpl, H5P_DEFAULT);
-    H5Dwrite(dst_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+    if (dst_dset < 0) {
+        rc = SC_ERR;
+    } else {
+        if (total > 0 &&
+            H5Dwrite(dst_dset, mem_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf) < 0)
+            rc = SC_ERR;
+        H5Dclose(dst_dset);
+    }
 
     free(buf);
-    H5Dclose(dst_dset);
     H5Pclose(dcpl);
     H5Tclose(mem_type);
     H5Tclose(src_type);
     H5Sclose(src_space);
-    return SC_OK;
+    return rc;
 }

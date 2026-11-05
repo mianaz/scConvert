@@ -58,7 +58,7 @@ as.data.frame.H5D <- function(x, row.names = NULL, optional = FALSE, ...) {
   df <- if (length(x$dims) >= 2) {
     # For multidimensional datasets, try comma indexing first
     tryCatch(
-      expr = x[,],
+      expr = x[, , drop = FALSE],  # keep length-1 axes (one cell / one component)
       error = function(e) x$read()
     )
   } else {
@@ -90,11 +90,22 @@ as.data.frame.H5D <- function(x, row.names = NULL, optional = FALSE, ...) {
       y = colnames(x = df)
     )
     for (i in bool.cols) {
-      df[[i]] <- as.logical(x = df[[i]])
+      df[[i]] <- IntToBool(x = df[[i]])
     }
   }
 
   return(df)
+}
+
+# Inverse of BoolToInt(): 1 -> TRUE, 0 -> FALSE, anything else (the NA
+# sentinel 2) -> NA. as.logical() would turn the sentinel into TRUE.
+IntToBool <- function(x) {
+  if (is.logical(x = x)) return(x)
+  x <- as.integer(x = x)
+  out <- rep(NA, length(x = x))
+  out[!is.na(x = x) & x == 1L] <- TRUE
+  out[!is.na(x = x) & x == 0L] <- FALSE
+  out
 }
 
 #' @rdname ReadH5
@@ -208,6 +219,14 @@ as.data.frame.H5Group <- function(x, row.names = NULL, optional = FALSE, ...) {
     df <- data.frame(row.names = row.names %||% character(0))
   }
 
+  # Logical columns were written as integers (NA -> 2) and listed in the
+  # `logicals` attribute
+  if (x$attr_exists(attr_name = 'logicals')) {
+    for (i in intersect(as.character(h5attr(x = x, which = 'logicals')), names(df))) {
+      df[[i]] <- IntToBool(x = df[[i]])
+    }
+  }
+
   # Validate columns before subsetting
   if (!is.null(x = colnames) && ncol(df) > 0) {
     valid_cols <- intersect(colnames, names(df))
@@ -283,7 +302,7 @@ as.matrix.H5D <- function(x, transpose = FALSE, ...) {
   obj <- if (length(x$dims) >= 2) {
     # For multidimensional arrays, try comma indexing first
     tryCatch(
-      expr = x[,],
+      expr = x[, , drop = FALSE],  # keep length-1 axes (one cell / one component)
       error = function(e) x$read()
     )
   } else {

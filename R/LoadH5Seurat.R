@@ -62,12 +62,20 @@ ReadLibraryIds <- function(file, library_col) {
   # Handle factor structure
   if (inherits(col_obj, 'H5Group') &&
       col_obj$exists('values') && col_obj$exists('levels')) {
-    values_int <- col_obj[['values']]$read()
-    levels_str <- col_obj[['levels']]$read()
-    return(levels_str[values_int + 1])
+    return(.DecodeH5SeuratFactor(col_obj))
   }
 
   as.character(col_obj$read())
+}
+
+# Decode an h5Seurat factor group (`values` + `levels`). h5Seurat stores
+# 1-based codes (as.integer(factor) on write; the h5ad converters add 1);
+# out-of-range codes are missing values.
+.DecodeH5SeuratFactor <- function(col_obj) {
+  values <- as.integer(col_obj[['values']]$read())
+  levels <- as.character(col_obj[['levels']]$read())
+  values[!is.na(values) & (values < 1L | values > length(levels))] <- NA_integer_
+  levels[values]
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

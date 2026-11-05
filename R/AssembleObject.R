@@ -303,6 +303,34 @@ AssembleAssay <- function(assay, file, slots = NULL, verbose = TRUE) {
     } else {
       features
     }
+    # A counts/data layer covering only a subset of the assay's cells or
+    # features was written with its own dimnames (layer.cells /
+    # layer.features). Place it into the full assay space by name instead of
+    # padding positionally, which would mislabel every row after the first
+    # missing feature.
+    has_layer_dimnames <- !identical(slot_name, 'scale.data') && any(vapply(
+      c('layer.features', 'layer.cells'),
+      function(g) assay.group$exists(g) && assay.group[[g]]$exists(slot_name),
+      logical(1)
+    ))
+    if (has_layer_dimnames) {
+      sub <- .ReadExtraLayer(assay.group, slot_name, features, Cells(x = file),
+                             verbose = verbose)
+      if (!is.null(sub)) {
+        cells <- Cells(x = file)
+        ri <- match(rownames(sub), features)
+        ci <- match(colnames(sub), cells)
+        if (!anyNA(ri) && !anyNA(ci)) {
+          sub <- methods::as(sub, 'CsparseMatrix')
+          trip <- Matrix::summary(sub)
+          return(Matrix::sparseMatrix(
+            i = ri[trip$i], j = ci[trip$j], x = as.numeric(trip$x),
+            dims = c(length(features), length(cells)),
+            dimnames = list(features, cells)
+          ))
+        }
+      }
+    }
     if (exists("ReadV5Layer", envir = asNamespace("scConvert"))) {
       mat <- ReadV5Layer(
         h5_group = assay.group,
@@ -476,6 +504,20 @@ AssembleAssay <- function(assay, file, slots = NULL, verbose = TRUE) {
         message("Adding ", slot, " for ", assay)
       }
       tryCatch({
+        # Subset layers on an Assay5 are restored with their own dimnames
+        # so the layer keeps its original shape.
+        if (inherits(obj, 'Assay5') && slot != 'scale.data' && any(vapply(
+          c('layer.features', 'layer.cells'),
+          function(g) assay.group$exists(g) && assay.group[[g]]$exists(slot),
+          logical(1)
+        ))) {
+          sub <- .ReadExtraLayer(assay.group, slot, features, Cells(x = file),
+                                 verbose = verbose)
+          if (!is.null(sub)) {
+            suppressWarnings(SeuratObject::LayerData(object = obj, layer = slot) <- sub)
+            next
+          }
+        }
         dat <- read_matrix_data(slot)
 
         if (is.null(dat)) {
@@ -931,9 +973,8 @@ AssembleImage <- function(image, file, verbose = TRUE) {
 
                   if (inherits(col_obj, 'H5Group')) {
                     if (col_obj$exists('values') && col_obj$exists('levels')) {
-                      values_int <- col_obj[['values']]$read()
-                      levels_str <- col_obj[['levels']]$read()
-                      lib_ids <- levels_str[values_int + 1]
+                      # h5Seurat factor codes are 1-based
+                      lib_ids <- .DecodeH5SeuratFactor(col_obj)
                     } else {
                       lib_ids <- NULL
                     }
@@ -1021,10 +1062,8 @@ AssembleImage <- function(image, file, verbose = TRUE) {
                   if (inherits(col_obj, 'H5Group')) {
                     # It's a factor with values and levels
                     if (col_obj$exists('values') && col_obj$exists('levels')) {
-                      values_int <- col_obj[['values']]$read()  # 0-indexed integers
-                      levels_str <- col_obj[['levels']]$read()   # level strings
-                      # Convert to 1-indexed for R and map to levels
-                      lib_ids <- levels_str[values_int + 1]
+                      # h5Seurat factor codes are 1-based
+                      lib_ids <- .DecodeH5SeuratFactor(col_obj)
                     } else {
                       lib_ids <- NULL
                     }

@@ -251,6 +251,11 @@ writeH5AD <- function(
   n_cells <- ncol(mat)
 
   meta <- as.list(object@meta.data)
+  # string-array cannot hold missing values (NA would be written as the
+  # literal "NA"); write such columns as categoricals with -1 codes
+  meta <- lapply(meta, function(x) {
+    if (is.character(x) && anyNA(x)) factor(x) else x
+  })
 
   reductions <- list()
   for (rname in names(object@reductions)) {
