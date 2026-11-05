@@ -185,4 +185,4 @@ If you use scConvert in your research, please cite:
 
 ## License
 
-GPL-3
+MIT © Ziyu Zeng. See [LICENSE.md](LICENSE.md).

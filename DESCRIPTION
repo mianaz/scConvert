@@ -16,7 +16,7 @@ Description: Universal converter between single-cell data formats in R. Converts
   substantial extensions for universal format coverage.
 URL: https://mianaz.github.io/scConvert/, https://github.com/mianaz/scConvert
 BugReports: https://github.com/mianaz/scConvert/issues
-License: GPL-3 | file LICENSE
+License: MIT + file LICENSE
 Encoding: UTF-8
 SystemRequirements: HDF5 (>= 1.14.0); libzstd (optional, zarr v3 zstd codec)
 Depends:
