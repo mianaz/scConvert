@@ -1081,7 +1081,7 @@ SEXP C_read_h5ad_obsm(SEXP path_sexp) {
         nprotect++;
         for (hsize_t d = 0; d < n_dims; d++) {
             char colname[SC_MAX_NAME_LEN];
-            snprintf(colname, sizeof(colname), "%s_%d", key, (int)(d + 1));
+            SC_SNPRINTF_CLIP(colname, "%s_%d", key, (int)(d + 1));
             SET_STRING_ELT(cnames, (R_xlen_t)d, mkChar(colname));
         }
         SET_VECTOR_ELT(dimnames, 1, cnames);

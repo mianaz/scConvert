@@ -1019,7 +1019,7 @@ int sc_loom_to_h5seurat(const sc_opts_t *opts) {
                     sc_has_dataset(src_graph, "b")) {
                     /* Prefix graph name with assay */
                     char dst_name[SC_MAX_NAME_LEN];
-                    snprintf(dst_name, sizeof(dst_name), "%s_%s", assay, name);
+                    SC_SNPRINTF_CLIP(dst_name, "%s_%s", assay, name);
 
                     hid_t dst_graph = sc_create_or_open_group(graphs, dst_name);
                     rc = sc_coo_to_csc(src_graph, dst_graph, n_cells, gzip);

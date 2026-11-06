@@ -322,7 +322,7 @@ int sc_stream_obsm(hid_t src, hid_t dst, sc_direction_t dir) {
                 /* Copy cell.embeddings as X_<name> */
                 if (sc_has_dataset(red_grp, "cell.embeddings")) {
                     char dst_name[SC_MAX_NAME_LEN];
-                    snprintf(dst_name, sizeof(dst_name), "X_%s", name);
+                    SC_SNPRINTF_CLIP(dst_name, "X_%s", name);
 
                     hid_t src_emb = H5Dopen2(red_grp, "cell.embeddings",
                                               H5P_DEFAULT);
