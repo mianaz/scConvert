@@ -198,32 +198,33 @@ ReadSparseMatrix <- function(h5_group, verbose = FALSE) {
   })
 }
 
-#' Assemble an object from an h5Seurat file
+#' Rebuild Seurat components from an open h5Seurat file
 #'
-#' @param assay,reduction,graph,image,neighbor,cmd Name of assay, reduction,
-#' graph, image, neighbor, or command to load
-#' @param file A connected h5Seurat file to pull the data from
-#' @param verbose Show progress updates
+#' Internal builders used by \code{\link{readH5Seurat}}: each reads one stored
+#' component and returns the corresponding SeuratObject class.
+#'
+#' @param assay,reduction,graph,image,neighbor,cmd Name of the stored
+#'   component
+#' @param file An open \code{\link{h5Seurat}} connection
+#' @param slots Layers/slots of the assay to read; all stored ones when
+#'   \code{NULL}
+#' @param verbose Report progress
+#'
+#' @return \code{AssembleAssay}: an \code{Assay} or \code{Assay5};
+#'   \code{AssembleDimReduc}: a \code{DimReduc}; \code{AssembleGraph}: a
+#'   \code{Graph}; \code{AssembleImage}: a spatial image object;
+#'   \code{AssembleNeighbor}: a \code{Neighbor}; \code{AssembleSeuratCommand}:
+#'   a \code{SeuratCommand}
+#'
+#' @importFrom SeuratObject CreateAssayObject GetAssayData SetAssayData AddMetaData
+#'   VariableFeatures<-
 #'
 #' @name AssembleObject
 #' @rdname AssembleObject
-#'
+#' @aliases AssembleAssay
 #' @keywords internal
 #'
 NULL
-
-#' @param slots Optional vector of assay slots to load, defaults to all slots
-#' present in assay
-#'
-#' @importFrom Seurat CreateAssayObject GetAssayData SetAssayData AddMetaData
-#' VariableFeatures<-
-#'
-#' @return \code{AssembleAssay}: An \code{Assay} object
-#'
-#' @rdname AssembleObject
-#'
-#' @aliases AssembleAssay
-#'
 
 # Read one non-standard V5 layer and label it with the cells / features it
 # covers (recorded by the writer under layer.cells / layer.features, else
@@ -254,10 +255,11 @@ NULL
 
 AssembleAssay <- function(assay, file, slots = NULL, verbose = TRUE) {
   index <- file$index()
-  if (!assay %in% names(x = index)) {
-    stop("Cannot find assay ", assay, " in this h5Seurat file", call. = FALSE)
+  if (!assay %in% setdiff(names(index), c('global', 'no.assay'))) {
+    stop("No assay named ", assay, " in this h5Seurat file", call. = FALSE)
   }
-  slots.assay <- names(x = Filter(f = isTRUE, x = index[[assay]]$slots))
+  # layers/slots the index marks as readable for this assay
+  slots.assay <- names(which(vapply(index[[assay]]$slots, isTRUE, logical(1))))
   
   # Handle NULL slots (means load all available slots)
   if (is.null(slots)) {
@@ -589,21 +591,11 @@ AssembleAssay <- function(assay, file, slots = NULL, verbose = TRUE) {
                     SeuratObject::Layers(obj))
     if (length(dl)) suppressWarnings(SeuratObject::DefaultLayer(object = obj) <- dl)
   }
-  # Add meta features
+  # Feature-level metadata (v3/v4 assays)
   if (safe_exists(assay.group, 'meta.features')) {
-    if (verbose) {
-      message("Adding feature-level metadata for ", assay)
-    }
-    meta.data <- as.data.frame(
-      x = assay.group[['meta.features']],
-      row.names = features
-    )
-    if (ncol(x = meta.data)) {
-      obj <- AddMetaData(
-        object = obj,
-        metadata = meta.data
-      )
-    }
+    if (verbose) message("Adding feature-level metadata for ", assay)
+    fmeta <- as.data.frame(x = assay.group[['meta.features']], row.names = features)
+    if (ncol(fmeta)) obj <- AddMetaData(object = obj, metadata = fmeta)
   }
   # Add variable feature information
   if (safe_exists(assay.group, 'variable.features')) {
@@ -640,34 +632,23 @@ AssembleAssay <- function(assay, file, slots = NULL, verbose = TRUE) {
       }
     })
   }
-  # Handle S4 class reconstruction - skip for Assay5 objects
+  # Assay subclasses (e.g. SCTAssay): rebuild the object with the extra
+  # slots the writer stored next to the standard ones. Assay5 objects
+  # carry their own class marker and are complete already.
   if (!inherits(obj, "Assay5") && assay.group$attr_exists(attr_name = 's4class')) {
     tryCatch({
-      classdef <- unlist(x = strsplit(
-        x = h5attr(x = assay.group, which = 's4class'),
-        split = ':'
-      ))
-      pkg <- classdef[1]
-      cls <- classdef[2]
-
-      formal <- methods::getClassDef(Class = cls, package = pkg, inherits = FALSE)
-      missing <- setdiff(
-        x = slotNames(x = formal),
-        y = slotNames(x = methods::getClass(Class = 'Assay'))
-      )
-      missing <- intersect(x = missing, y = names(x = assay.group))
-      missing <- sapply(
-        X = missing,
-        FUN = function(x) as.list(x = assay.group[[x]], recursive = TRUE),
-        simplify = FALSE
-      )
-      obj <- c(SeuratObject::S4ToList(object = obj), missing)
-      attr(x = obj, which = 'classDef') <- paste(classdef, collapse = ':')
-      obj <- SeuratObject::ListToS4(x = obj)
+      cls_spec <- h5attr(x = assay.group, which = 's4class')
+      parts <- strsplit(cls_spec, ':', fixed = TRUE)[[1]]
+      target <- methods::getClassDef(Class = parts[2], package = parts[1], inherits = FALSE)
+      extra <- setdiff(slotNames(target), slotNames(methods::getClass(Class = 'Assay')))
+      extra <- intersect(extra, names(assay.group))
+      fields <- c(SeuratObject::S4ToList(object = obj),
+                  stats::setNames(lapply(extra, function(s) as.list(x = assay.group[[s]], recursive = TRUE)),
+                                  extra))
+      attr(fields, 'classDef') <- cls_spec
+      obj <- SeuratObject::ListToS4(x = fields)
     }, error = function(e) {
-      if (verbose) {
-        message("S4 class reconstruction failed: ", conditionMessage(e))
-      }
+      if (verbose) message("S4 class reconstruction failed: ", conditionMessage(e))
     })
   }
   return(obj)

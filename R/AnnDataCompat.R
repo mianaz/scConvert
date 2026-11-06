@@ -65,6 +65,8 @@ NULL
 #'
 #' @keywords internal
 #' @noRd
+NULL
+
 #' Close an hdf5r object handle without failing
 #'
 #' Handles are closed as soon as they are no longer needed: hdf5r's

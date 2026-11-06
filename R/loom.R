@@ -17,21 +17,20 @@ NULL
 #' \code{/row_graphs} and \code{/col_graphs}, and global values under
 #' \code{/attrs}. New files are created with the loom 3.0.0 layout.
 #'
-#' @docType class
 #' @name loom-class
-#' @rdname loom-class
 #' @aliases loom
+#' @rdname loom-class
+#' @docType class
 #' @format An \code{\link[R6]{R6Class}} generator
 #' @seealso \code{\link{scdisk}}, \code{\link{readLoom}}, \code{\link{writeLoom}}
 #'
 #' @export
 #'
 loom <- R6Class(
-  classname = 'loom',
+  'loom',
   inherit = scdisk,
-  cloneable = FALSE,
-  portable = TRUE,
   lock_class = TRUE,
+  cloneable = FALSE,
   public = list(
     #' @description Add a global, per-gene (\code{"row"}) or per-cell
     #'   (\code{"col"}) attribute

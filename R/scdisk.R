@@ -15,21 +15,20 @@ NULL
 #' through a format class such as \code{\link{h5Seurat}} or \code{\link{loom}}
 #' (usually via \code{\link{scConnect}}).
 #'
-#' @docType class
 #' @name scdisk-class
-#' @rdname scdisk-class
 #' @aliases scdisk
+#' @rdname scdisk-class
+#' @docType class
 #' @format An \code{\link[R6]{R6Class}} generator
 #' @seealso \code{\link[hdf5r]{H5File}}
 #'
 #' @export
 #'
 scdisk <- R6Class(
-  classname = 'scdisk',
+  'scdisk',
   inherit = H5File,
-  cloneable = FALSE,
-  portable = TRUE,
   lock_class = TRUE,
+  cloneable = FALSE,
   public = list(
     #' @description Open or create a file and validate it
     #' @param filename Path to the file

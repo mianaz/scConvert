@@ -18,40 +18,24 @@ NULL
 #' an intermediate. No Python dependency required.
 #'
 #' @section Package options:
-#'
-#' scConvert uses the following options to control behavior, users can configure
-#' these with \code{\link[base]{options}}:
-#'
+#' Set with \code{\link[base]{options}}:
 #' \describe{
-#'  \item{\code{scConvert.dtypes.logical_to_int}}{
-#'   When writing \link[base]{logical} vectors, coerce to integer types to
-#'   ensure compatibility across languages (see \code{\link{BoolToInt}} for
-#'   more details)
-#'  }
-#'  \item{\code{scConvert.dtypes.dataframe_as_group}}{
-#'   When writing \link[base]{data.frame}s, always write out as a group
-#'   regardless of factor presence
-#'  }
-#'  \item{\code{scConvert.chunking.MARGIN}}{
-#'   Default direction for chunking datasets; choose from:
-#'   \describe{
-#'    \item{largest}{Chunk along the largest dimension of a dataset}
-#'    \item{smallest}{Chunk along the smallest dimension}
-#'    \item{first}{Chunk along the first dimension}
-#'    \item{last}{Chunk along the last dimension}
-#'   }
-#'  }
-#'  \item{\code{scConvert.dimreducs.allglobal}}{
-#'   Treat all DimReducs as global, regardless of actual global status
-#'  }
-#'  \item{\code{scConvert.compression.level}}{
-#'   Gzip compression level for HDF5 dataset writes (0-9). Level 0 means
-#'   no compression, level 4 (default) is a good balance of speed vs size.
-#'   Only applies to newly created datasets, not to data copied via
-#'   \code{obj_copy_from}.
-#'  }
+#'  \item{\code{scConvert.dtypes.logical_to_int}}{Store logical vectors as
+#'   integers (0/1, NA = 2) so other languages can read them (default
+#'   \code{TRUE})}
+#'  \item{\code{scConvert.dtypes.dataframe_as_group}}{Store every data frame
+#'   as a group of column datasets, also when it has no factor columns
+#'   (default \code{TRUE})}
+#'  \item{\code{scConvert.chunking.MARGIN}}{Axis used when streaming a dataset
+#'   in blocks: \code{"largest"} (default), \code{"smallest"},
+#'   \code{"first"} or \code{"last"}}
+#'  \item{\code{scConvert.dimreducs.allglobal}}{Load every dimensional
+#'   reduction as global (default \code{FALSE})}
+#'  \item{\code{scConvert.compression.level}}{gzip level (0-9) for new HDF5
+#'   datasets; 0 disables compression (default 4)}
+#'  \item{\code{scConvert.use_cli}}{Use the optional \code{scconvert} binary
+#'   for file-to-file conversions (default \code{FALSE})}
 #' }
-#'
 #'
 "_PACKAGE"
 
@@ -72,15 +56,16 @@ default.options <- list(
 # Global constants
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-modes <- list(
-  'new' = c('w', 'w-', 'x'),
-  'existing' = c('r', 'r+')
-)
+# hdf5r open modes that create a file / open an existing one
+modes <- list(new = c('w', 'w-', 'x'), existing = c('r', 'r+'))
 
+# x.y.z, optionally with a .9xxx development suffix
 version.regex <- '^\\d+(\\.\\d+){2}(\\.9\\d{3})?$'
 
+# Registry of scdisk format classes (see RegisterSCDisk)
 scdisk.types <- new.env()
 
+# h5Seurat layout versions: spatial images, and Seurat v5 assays
 spatial.version <- '3.1.5.9900'
 v5.version <- '5.0.0'
 
@@ -130,22 +115,24 @@ ConvertBPCellsMatrix <- function(mat, verbose = FALSE) {
 }
 
 
-# CompoundToGroup moved to ReadH5.R (single implementation with name_map_fn support)
 
-#' Determine a filetype based on its extension
+#' File type of a path or URI
 #'
-#' @param file Name of file
+#' The lower-cased extension of \code{file} (or the whole name when it has
+#' none, so a bare type such as \code{"h5ad"} maps to itself). URI schemes
+#' (\code{soma://...}), \code{.spatialdata.zarr}, Stereo-seq GEF files and
+#' CosMx export directories are recognised specially.
 #'
-#' @return The extension, all lowercase
+#' @param file Path, URI or format name
 #'
-#' @importFrom tools file_ext
-#'
+#' @return A lower-case type string such as \code{"h5ad"}
 #' @keywords internal
+#' @importFrom tools file_ext
 #'
 #' @examples
 #' \donttest{
-#' scConvert:::FileType('pbmc3k.h5Seurat')
-#' scConvert:::FileType('h5ad')
+#' scConvert:::FileType("pbmc3k.h5Seurat")  # "h5seurat"
+#' scConvert:::FileType("h5ad")             # "h5ad"
 #' }
 #'
 FileType <- function(file) {
@@ -616,17 +603,13 @@ CachedGuessDType <- function(x, stype = 'utf8') {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 .onLoad <- function(libname, pkgname) {
-  # Make the classes defined in scConvert compatible with S4 generics/methods
+  # let S4 methods dispatch on the R6 connection classes
   setOldClass(Classes = c('scdisk', 'h5Seurat'))
-  RegisterSCDisk(r6class = h5Seurat)
-  RegisterSCDisk(r6class = loom)
+  for (cls in list(h5Seurat, loom)) RegisterSCDisk(r6class = cls)
 
-  # Set some default options
-  op <- options()
-  toset <- !names(x = default.options) %in% names(x = op)
-  if (any(toset)) {
-    options(default.options[toset])
-  }
+  # package defaults for options the user has not set
+  unset <- setdiff(names(default.options), names(options()))
+  if (length(unset)) options(default.options[unset])
 
   # Pre-populate HDF5 caches for common AnnData encoding strings
   .h5_scalar_space <<- H5S$new(type = "scalar")

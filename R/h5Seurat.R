@@ -2,8 +2,8 @@
 #' @importFrom R6 R6Class
 #' @importFrom hdf5r h5attr
 #' @importFrom utils packageVersion
-#' @importFrom cli symbol col_align
-#' @importFrom crayon red green yellow
+#' @importFrom cli symbol
+#' @importFrom crayon red green yellow col_align
 NULL
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -17,10 +17,10 @@ NULL
 #' its structure and builds an index of what it contains (see
 #' \code{$index()}); creating a file lays out the empty groups.
 #'
-#' @docType class
 #' @name h5Seurat-class
-#' @rdname h5Seurat-class
 #' @aliases h5Seurat
+#' @rdname h5Seurat-class
+#' @docType class
 #' @format An \code{\link[R6]{R6Class}} generator
 #' @seealso \code{\link{scdisk}}, \code{\link{readH5Seurat}},
 #'   \code{\link{writeH5Seurat}}
@@ -28,11 +28,10 @@ NULL
 #' @export
 #'
 h5Seurat <- R6Class(
-  classname = 'h5Seurat',
+  'h5Seurat',
   inherit = scdisk,
-  cloneable = FALSE,
-  portable = TRUE,
   lock_class = TRUE,
+  cloneable = FALSE,
   public = list(
     #' @description Summary of the assays, layers, reductions, graphs,
     #'   images, commands and neighbors stored in the file

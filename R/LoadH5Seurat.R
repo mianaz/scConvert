@@ -1,7 +1,6 @@
-#' @include zzz.R
-#' @include h5Seurat.R
-#' @include GetObject.R
 #' @include AssembleObject.R
+#' @include GetObject.R
+#' @include h5Seurat.R
 #'
 NULL
 

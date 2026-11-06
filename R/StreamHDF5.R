@@ -1,7 +1,7 @@
 #' @include zzz.R
 #' @include Convert.R
 #' @include AnnDataEncoding.R
-#' @importFrom hdf5r H5File h5attr H5S GuessDType
+#' @importFrom hdf5r H5File h5attr H5S
 #' @importFrom Matrix sparseMatrix t
 NULL
 

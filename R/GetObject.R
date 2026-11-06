@@ -3,25 +3,10 @@
 #'
 NULL
 
-#' Figure out which objects to load from an h5Seurat file
-#'
-#' @inheritParams readH5Seurat
-#' @param index An h5Seurat index (\code{\link{h5SI}}) object
-#'
-#' @seealso \code{\link{readH5Seurat}}
-#'
-#' @rdname GetObject
-#' @name GetObject
-#'
-#' @keywords internal
-#'
-NULL
+# Selection of what readH5Seurat() loads, resolved against the file index.
+# GetAssays() turns the `assays` argument into a named list
+# (assay -> layers/slots to load, NULL meaning all of them).
 
-#' @return \code{GetAssays}: A named list where each entry is a vector
-#' describing the slots of an assay to load and the names are the assays to load
-#'
-#' @rdname GetObject
-#'
 # Robust GetAssays implementation
 GetAssays <- function(assays = NULL, index) {
   # index is expected to contain element `assays` which is a named list of assay metadata

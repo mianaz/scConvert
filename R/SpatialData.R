@@ -5,7 +5,8 @@
 #' @include SpatialConversion.R
 #' @importFrom Matrix sparseMatrix t
 #' @importFrom Seurat CreateSeuratObject CreateDimReducObject Images
-#'   GetTissueCoordinates CreateFOV scalefactors DefaultAssay
+#'   GetTissueCoordinates scalefactors DefaultAssay
+#' @importFrom SeuratObject CreateFOV
 #' @importFrom SeuratObject Cells CreateFOV AddMetaData
 NULL
 

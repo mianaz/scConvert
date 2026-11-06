@@ -7,8 +7,9 @@ NULL
 
 #' Read observation metadata from an H5AD file
 #'
-#' Read the cell-level metadata (obs) from an H5AD file and return it as a
-#' data.frame. Handles both categorical (factor) and standard data types.
+#' Read the cell-level metadata (\code{/obs}) of an H5AD file without loading
+#' the rest of the file. Categorical columns become factors; nullable
+#' integer, boolean and string columns keep their missing values.
 #'
 #' @param file Path to an H5AD file
 #'
@@ -19,51 +20,12 @@ NULL
 #' @export
 #'
 readH5AD_obs <- function(file) {
-  suppressWarnings(expr = hfile <- scConnect(filename = file, force = TRUE))
-  on.exit(hfile$close_all())
-  hfile_obs <- hfile[['obs']]
-  obs_groups <- setdiff(names(hfile_obs), c('__categories', '_index'))
-  matrix <- as.data.frame(
-    x = matrix(data = NA,
-               nrow = hfile_obs[['_index']]$dims[1],
-               ncol = length(obs_groups))
-    )
-  colnames(matrix) <- obs_groups
-  rownames(matrix) <- hfile_obs[['_index']][]
-  if ('__categories' %in% names(x = hfile_obs)) {
-    # Legacy h5ad format: __categories group with per-column category lists
-    hfile_cate <- hfile_obs[['__categories']]
-    for (i in seq_along(obs_groups)) {
-      obs.i <- obs_groups[i]
-      obs_value_i <- hfile_obs[[obs.i]][]
-      if (obs.i %in% names(x = hfile_cate)) {
-        categories <- as.character(hfile_cate[[obs.i]][])
-        codes <- obs_value_i
-        codes[codes == -1L] <- NA_integer_
-        obs_value_i <- factor(categories[codes + 1L], levels = categories)
-      }
-      matrix[, i] <- obs_value_i
-    }
-  } else {
-    # Modern h5ad format: categorical groups with categories/codes sub-datasets
-    for (i in seq_along(obs_groups)) {
-      obs.i <- obs_groups[i]
-      col_obj <- hfile_obs[[obs.i]]
-      if (inherits(col_obj, 'H5Group') &&
-          all(c("categories", "codes") %in% names(col_obj))) {
-        categories <- as.character(col_obj[['categories']]$read())
-        codes <- col_obj[['codes']]$read()
-        codes[codes == -1L] <- NA_integer_
-        obs_value_i <- factor(categories[codes + 1L], levels = categories)
-      } else if (inherits(col_obj, 'H5D')) {
-        obs_value_i <- col_obj$read()
-      } else {
-        obs_value_i <- NA
-      }
-      matrix[, i] <- obs_value_i
-    }
-  }
-  return(matrix)
+  h5 <- hdf5r::H5File$new(file, mode = 'r')
+  on.exit(h5$close_all())
+  if (!h5$exists('obs')) stop("No /obs group in ", file, call. = FALSE)
+  # every anndata column encoding (categoricals, nullable integers /
+  # booleans / strings, legacy __categories) via the shared decoder
+  .h5ad_read_dataframe(h5[['obs']])
 }
 
 #' Read observation embeddings from an H5AD file
@@ -81,10 +43,10 @@ readH5AD_obs <- function(file) {
 #' @export
 #'
 readH5AD_obsm <- function(file) {
-  suppressWarnings(hfile <- scConnect(filename = file, force = TRUE))
+  hfile <- hdf5r::H5File$new(file, mode = 'r')
   on.exit(hfile$close_all())
-  hfile_obsm <- hfile[['obsm']]
-  if (length(names(hfile_obsm)) == 0) {
+  hfile_obsm <- if (hfile$exists('obsm')) hfile[['obsm']] else NULL
+  if (is.null(hfile_obsm) || !length(names(hfile_obsm))) {
     message('No obsm found in this object')
     return(list())
   }

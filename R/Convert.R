@@ -257,85 +257,43 @@ scConvert.character <- function(
 #' @method scConvert H5File
 #' @export
 #'
-scConvert.H5File <- function(
-  source,
-  dest = 'h5seurat',
-  assay = 'RNA',
-  overwrite = FALSE,
-  verbose = TRUE,
-  ...
-) {
-  stype <- FileType(file = source$filename)
-  dtype <- FileType(file = dest)
-  if (tolower(x = dest) == dtype) {
-    dest <- paste(file_path_sans_ext(x = source$filename), dtype, sep = '.')
-  }
-
-  # 1. Try registered direct HDF5-level path (memory-efficient)
-  direct_fn <- GetDirectPath(stype = stype, dtype = dtype)
-  if (!is.null(x = direct_fn)) {
-    if (verbose) {
-      message("Using direct ", toupper(x = stype), " -> ", toupper(x = dtype), " conversion")
-    }
-    dfile <- direct_fn(
-      source = source, dest = dest, assay = assay,
-      overwrite = overwrite, verbose = verbose, ...
-    )
-    return(dfile)
-  }
-
-  # 2. Hub conversion: load source -> Seurat -> save dest
-  return(HubConvert(
-    source_file = source$filename,
-    dest_file = dest,
-    stype = stype,
-    dtype = dtype,
-    assay = assay,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  ))
+scConvert.H5File <- function(source, dest = 'h5seurat', assay = 'RNA',
+                             overwrite = FALSE, verbose = TRUE, ...) {
+  .convert_open_file(source, dest = dest, stype = FileType(file = source$filename),
+                     assay = assay, overwrite = overwrite, verbose = verbose, ...)
 }
 
 #' @rdname scConvert
 #' @method scConvert h5Seurat
 #' @export
 #'
-scConvert.h5Seurat <- function(
-  source,
-  dest = 'h5ad',
-  assay = DefaultAssay(object = source),
-  overwrite = FALSE,
-  verbose = TRUE,
-  standardize = FALSE,
-  ...
-) {
+scConvert.h5Seurat <- function(source, dest = 'h5ad', assay = DefaultAssay(object = source),
+                               overwrite = FALSE, verbose = TRUE, standardize = FALSE, ...) {
+  .convert_open_file(source, dest = dest, stype = 'h5seurat', assay = assay,
+                     overwrite = overwrite, verbose = verbose, standardize = standardize, ...)
+}
+
+# Convert an open file connection: use a registered direct (file-to-file)
+# path when there is one, otherwise load into Seurat and save. A bare
+# format name as `dest` writes next to the source with that extension.
+.convert_open_file <- function(source, dest, stype, assay, overwrite, verbose, ...) {
   dtype <- FileType(file = dest)
-  if (tolower(x = dest) == dtype) {
-    dest <- paste(file_path_sans_ext(x = source$filename), dtype, sep = '.')
+  if (identical(tolower(dest), dtype)) {
+    dest <- paste0(file_path_sans_ext(x = source$filename), '.', dtype)
   }
-
-  # Try direct path first (h5seurat -> h5ad is registered)
-  direct_fn <- GetDirectPath(stype = 'h5seurat', dtype = dtype)
-  if (!is.null(x = direct_fn)) {
-    return(direct_fn(
-      source = source, dest = dest, assay = assay,
-      overwrite = overwrite, verbose = verbose,
-      standardize = standardize, ...
-    ))
+  direct <- GetDirectPath(stype = stype, dtype = dtype)
+  if (!is.null(direct)) {
+    if (verbose && stype != 'h5seurat') {
+      message("Using direct ", toupper(stype), " -> ", toupper(dtype), " conversion")
+    }
+    return(direct(source = source, dest = dest, assay = assay, overwrite = overwrite,
+                  verbose = verbose, ...))
   }
-
-  # Hub: load h5seurat -> Seurat -> save dest
-  return(HubConvert(
-    source_file = source$filename,
-    dest_file = dest,
-    stype = 'h5seurat',
-    dtype = dtype,
-    assay = assay,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  ))
+  extra <- list(...)
+  extra$standardize <- NULL  # only the h5ad writers understand it
+  do.call(HubConvert, c(list(source_file = source$filename, dest_file = dest, stype = stype,
+                             dtype = dtype, assay = assay, overwrite = overwrite,
+                             verbose = verbose), extra))
 }
 
 #' @rdname scConvert
