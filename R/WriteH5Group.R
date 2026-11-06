@@ -3,6 +3,9 @@
 #' @importFrom methods setGeneric setMethod slot slotNames is
 #' @importFrom SeuratObject DefaultAssay Embeddings Loadings Key IsGlobal Stdev JS
 #'   Misc VariableFeatures S4ToList
+#' @importClassesFrom SeuratObject Assay Assay5 DimReduc Graph Neighbor SeuratCommand
+#' @importClassesFrom Matrix dgCMatrix
+#' @importMethodsFrom Matrix t
 NULL
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,6 +61,7 @@ NULL
 #' @name WriteH5Group
 #' @rdname WriteH5Group
 #' @keywords internal
+#' @export
 #'
 setGeneric(
   name = 'WriteH5Group',

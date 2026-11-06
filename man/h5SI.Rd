@@ -4,24 +4,24 @@
 \alias{h5SI}
 \alias{DefaultAssay.h5SI}
 \alias{print.h5SI}
-\title{Tools for handling h5Seurat indexes}
+\title{Index of an h5Seurat file}
 \usage{
 \method{DefaultAssay}{h5SI}(object, ...)
 
 \method{print}{h5SI}(x, ...)
 }
 \arguments{
-\item{x, object}{An h5Seurat index (\code{h5SI})}
+\item{object, x}{An \code{h5SI} object}
+
+\item{...}{Ignored}
 }
 \value{
-\code{DefaultAssay}: the assay set as the default assay
-
-\code{print}: Invisibly returns \code{x}
+\code{DefaultAssay}: the default assay of the file;
+  \code{print}: invisibly \code{x}
 }
 \description{
-Tools for handling h5Seurat indexes
-}
-\seealso{
-\code{\link[Seurat]{DefaultAssay}} \code{\link[base]{print}}
+\code{h5Seurat$index()} returns an \code{h5SI} object: one entry per assay
+(stored slots/layers, reductions, graphs, images, commands) plus
+\code{global} and \code{no.assay} entries.
 }
 \keyword{internal}

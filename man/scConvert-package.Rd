@@ -12,38 +12,23 @@ an intermediate. No Python dependency required.
 }
 \section{Package options}{
 
-
-scConvert uses the following options to control behavior, users can configure
-these with \code{\link[base]{options}}:
-
+Set with \code{\link[base]{options}}:
 \describe{
- \item{\code{scConvert.dtypes.logical_to_int}}{
-  When writing \link[base]{logical} vectors, coerce to integer types to
-  ensure compatibility across languages (see \code{\link{BoolToInt}} for
-  more details)
- }
- \item{\code{scConvert.dtypes.dataframe_as_group}}{
-  When writing \link[base]{data.frame}s, always write out as a group
-  regardless of factor presence
- }
- \item{\code{scConvert.chunking.MARGIN}}{
-  Default direction for chunking datasets; choose from:
-  \describe{
-   \item{largest}{Chunk along the largest dimension of a dataset}
-   \item{smallest}{Chunk along the smallest dimension}
-   \item{first}{Chunk along the first dimension}
-   \item{last}{Chunk along the last dimension}
-  }
- }
- \item{\code{scConvert.dimreducs.allglobal}}{
-  Treat all DimReducs as global, regardless of actual global status
- }
- \item{\code{scConvert.compression.level}}{
-  Gzip compression level for HDF5 dataset writes (0-9). Level 0 means
-  no compression, level 4 (default) is a good balance of speed vs size.
-  Only applies to newly created datasets, not to data copied via
-  \code{obj_copy_from}.
- }
+ \item{\code{scConvert.dtypes.logical_to_int}}{Store logical vectors as
+  integers (0/1, NA = 2) so other languages can read them (default
+  \code{TRUE})}
+ \item{\code{scConvert.dtypes.dataframe_as_group}}{Store every data frame
+  as a group of column datasets, also when it has no factor columns
+  (default \code{TRUE})}
+ \item{\code{scConvert.chunking.MARGIN}}{Axis used when streaming a dataset
+  in blocks: \code{"largest"} (default), \code{"smallest"},
+  \code{"first"} or \code{"last"}}
+ \item{\code{scConvert.dimreducs.allglobal}}{Load every dimensional
+  reduction as global (default \code{FALSE})}
+ \item{\code{scConvert.compression.level}}{gzip level (0-9) for new HDF5
+  datasets; 0 disables compression (default 4)}
+ \item{\code{scConvert.use_cli}}{Use the optional \code{scconvert} binary
+  for file-to-file conversions (default \code{FALSE})}
 }
 }
 

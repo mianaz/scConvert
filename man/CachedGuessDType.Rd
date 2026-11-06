@@ -15,7 +15,7 @@ CachedGuessDType(x, stype = "utf8")
 An object of class \code{\link[hdf5r]{H5T}}
 }
 \description{
-Checks an internal cache before calling \code{\link{GuessDType}}.
+Checks an internal cache before calling \code{GuessDType()}.
 This avoids repeated H5T allocation for the same AnnData encoding strings.
 }
 \keyword{internal}

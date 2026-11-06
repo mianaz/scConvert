@@ -1,11 +1,35 @@
 # scConvert 0.3.0 (development)
 
-## License
+## License and independent implementation
 
-scConvert is now released under the MIT license (previously GPL-3).
+scConvert is now released under the MIT license (previously GPL-3). The
+code inherited from SeuratDisk (h5Seurat/loom connection classes, h5Seurat
+reader and writer, loom reader and writer, HDF5 helpers and the
+h5ad <-> h5Seurat converters) has been replaced by a new implementation;
+unused inherited code (`AppendData`, `PadMatrix`, the V4 -> V5 migration
+helpers and others) was removed. The h5Seurat and loom on-disk layouts are
+unchanged: files written by earlier versions read back identically, and
+earlier versions read files written by this one identically. Public
+functions keep their names and arguments.
+
+Without the optional `scconvert` binary, file-to-file h5ad <-> h5Seurat
+conversion now loads the data into a Seurat object and writes it out again
+(`readH5AD()` + `writeH5Seurat()`, `readH5Seurat()` + `writeH5AD()`).
 
 ## Bug fixes
 
+- Asymmetric graphs (the kNN `*_nn` graph) were transposed in several
+  h5ad paths: the compiled h5ad writer, the R h5ad reader, the reader for
+  `csc_matrix` graphs, and the h5mu reader. The demo h5ad files shipped in
+  `inst/` carried transposed `*_nn` graphs and have been corrected.
+- The compiled h5ad writer dropped gene metadata and `highly_variable`, and
+  `writeH5AD(standardize = TRUE)` had no effect.
+- `scConvert()` from h5ad to h5mu failed.
+- Loom graphs failed to load when the last cells had no edges.
+- `as.h5Seurat()` on an open `H5File` reopened it with the opposite
+  read/write mode; `as.loom()` and `writeLoom()` on non-Seurat input
+  always failed.
+- `readH5AD_obs()` now decodes nullable and boolean columns.
 - Metadata columns with missing values now round-trip through h5ad, h5mu and
   zarr: logical `NA` is written as `nullable-boolean` (was `FALSE`), integer
   `NA` as `nullable-integer` (was `INT_MIN`/0), and character `NA` as a

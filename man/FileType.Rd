@@ -2,23 +2,26 @@
 % Please edit documentation in R/zzz.R
 \name{FileType}
 \alias{FileType}
-\title{Determine a filetype based on its extension}
+\title{File type of a path or URI}
 \usage{
 FileType(file)
 }
 \arguments{
-\item{file}{Name of file}
+\item{file}{Path, URI or format name}
 }
 \value{
-The extension, all lowercase
+A lower-case type string such as \code{"h5ad"}
 }
 \description{
-Determine a filetype based on its extension
+The lower-cased extension of \code{file} (or the whole name when it has
+none, so a bare type such as \code{"h5ad"} maps to itself). URI schemes
+(\code{soma://...}), \code{.spatialdata.zarr}, Stereo-seq GEF files and
+CosMx export directories are recognised specially.
 }
 \examples{
 \donttest{
-scConvert:::FileType('pbmc3k.h5Seurat')
-scConvert:::FileType('h5ad')
+scConvert:::FileType("pbmc3k.h5Seurat")  # "h5seurat"
+scConvert:::FileType("h5ad")             # "h5ad"
 }
 
 }

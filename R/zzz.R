@@ -243,7 +243,7 @@ CachedUtf8Type <- function() {
 
 #' Cached version of GuessDType for known string constants
 #'
-#' Checks an internal cache before calling \code{\link{GuessDType}}.
+#' Checks an internal cache before calling \code{GuessDType()}.
 #' This avoids repeated H5T allocation for the same AnnData encoding strings.
 #'
 #' @param x An R object to guess the HDF5 dtype for

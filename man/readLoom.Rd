@@ -6,7 +6,7 @@
 \alias{readLoom.H5File}
 \alias{readLoom.loom}
 \alias{as.Seurat.loom}
-\title{Load a Loom file as a Seurat object}
+\title{Load a loom file as a Seurat object}
 \usage{
 readLoom(
   file,
@@ -39,87 +39,52 @@ readLoom(
 )
 }
 \arguments{
-\item{file, x}{Name of Loom file (character path) or a \code{loom} object connection to load data from}
+\item{file, x}{Path to a loom file, or an open \code{\link{loom}} (or
+\code{H5File}) connection}
 
-\item{assay}{Name of assay to store expression data as. If \code{NULL}, will
-search for an HDF5 attribute named \code{SEURAT_ASSAY} or dataset at
-\code{/attrs/SEURAT_ASSAY} for the assay name. Defaults to \code{"RNA"} if not found.}
+\item{assay}{Assay to store the data in; when \code{NULL}, the assay
+recorded by \code{writeLoom} (\code{/attrs/SEURAT_ASSAY}) or
+\code{"RNA"}}
 
-\item{cells}{Name of dataset in \code{/col_attrs} containing cell/sample names.
-If not found, uses column indices as cell names.}
+\item{cells, features}{Datasets in \code{/col_attrs} and \code{/row_attrs}
+holding cell and gene names; both must exist}
 
-\item{features}{Name of dataset in \code{/row_attrs} containing feature/gene names.
-If not found, uses row indices as feature names.}
+\item{normalized}{Layer in \code{/layers} to load as normalized data, or
+\code{"matrix"} to store the main matrix as data instead of counts}
 
-\item{normalized}{Name of layer in \code{/layers} to load as normalized expression data;
-special value \code{"/matrix"} loads the main matrix as normalized data instead of counts}
+\item{scaled}{Layer in \code{/layers} to load as scaled data}
 
-\item{scaled}{Name of layer in \code{/layers} to load as scaled data}
+\item{filter}{Apply the \code{Valid} attributes: to \code{"cells"}
+(default), \code{"features"}, \code{"all"} or \code{"none"}}
 
-\item{filter}{Logical; if \code{TRUE}, keep only cells and features marked as valid
-using \code{/col_attrs/Valid} and \code{/row_attrs/Valid} attributes}
+\item{verbose}{Show progress messages}
 
-\item{verbose}{Logical; if \code{TRUE} (default), show progress updates}
-
-\item{...}{Arguments passed to other methods}
+\item{...}{Passed on to other methods}
 }
 \value{
-A \code{Seurat} object containing the expression matrix and metadata from the Loom file
+A \code{Seurat} object
 }
 \description{
-Load gene expression data from Loom files (HDF5-based file format for storing
-annotated matrices) into a Seurat object. Loom files are commonly created by
-Python-based analysis tools and offer an alternative to H5AD format for
-storing single-cell data.
+Reads the main matrix, optional normalized/scaled layers, gene and cell
+attributes, cell graphs, and the dimensional reductions and factor levels
+that \code{\link{writeLoom}} stores, into a Seurat object.
 }
 \details{
-The Loom format stores data in a specific HDF5 structure:
-\itemize{
-  \item \code{/matrix}: Main expression matrix (features x cells)
-  \item \code{/row_attrs}: Feature-level metadata (gene names, coordinates, etc.)
-  \item \code{/col_attrs}: Cell/sample-level metadata
-  \item \code{/layers}: Additional expression layers (normalized, scaled, etc.)
+A loom file stores the expression matrix in \code{/matrix} (genes x cells
+in loompy's view), extra matrices in \code{/layers}, gene annotations in
+\code{/row_attrs}, cell annotations in \code{/col_attrs} and cell graphs
+(coordinate triplets) in \code{/col_graphs}. Loom 0.1 and 3.0 files are
+read with the same rules.
 }
-}
-\section{Loom 0.1 Loading}{
-
-Loading data from loom files less than version 3.0.0 is not
-currently supported
-}
-
-\section{Loom 3.0.0 Loading}{
-
-For loom files version 3.0.0 and higher, \code{LoadLoom3.0} provides
-comprehensive loading with support for filtering, dimensional reductions,
-and cell graphs.
-}
-
 \examples{
 \dontrun{
-library(scConvert)
-
-# Load a basic Loom file
-seurat_obj <- readLoom("data.loom")
-
-# Load with specific assay name
-seurat_obj <- readLoom("data.loom", assay = "RNA")
-
-# Load and filter to valid cells/features only
-seurat_obj <- readLoom("data.loom", filter = TRUE)
-
-# Load specific layers
-seurat_obj <- readLoom(
-  "data.loom",
-  normalized = "normalized",
-  scaled = "scaled"
-)
+obj <- readLoom("data.loom")
+obj <- readLoom("data.loom", assay = "RNA", filter = "all")
+obj <- readLoom("data.loom", normalized = "normalized", scaled = "scaled")
 }
 
 }
 \seealso{
-\code{\link{writeLoom}} to save Seurat objects to Loom format
-\code{\link{readH5Seurat}} to load h5Seurat files
-\code{\link{readH5AD}} to load h5ad files
-\href{http://linnarssonlab.org/loompy/}{Loom documentation}
-\href{http://linnarssonlab.org/loompy/conventions/index.html}{Loom file conventions}
+\code{\link{writeLoom}},
+  \href{http://linnarssonlab.org/loompy/format/}{the loom file format}
 }
