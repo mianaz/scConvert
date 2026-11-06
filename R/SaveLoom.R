@@ -89,20 +89,6 @@ as.loom <- function(x, ...) {
   UseMethod(generic = 'as.loom', object = x)
 }
 
-#' Write matrix data to a loom file
-#'
-#' @keywords internal
-#' @noRd
-setGeneric(
-  name = 'WriteMatrix',
-  def = function(x, name, lfile, transpose = TRUE, verbose = TRUE) {
-    if (!inherits(x = lfile, what = 'loom')) {
-      stop("'lfile' must be a loom object", call. = FALSE)
-    }
-    standardGeneric(f = 'WriteMatrix')
-  },
-  signature = c('x')
-)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Methods
@@ -308,7 +294,7 @@ as.loom.Seurat <- function(
   if (is.null(main_matrix) || IsMatrixEmpty(main_matrix)) {
     stop("No data or counts layer found in default assay", call. = FALSE)
   }
-  WriteMatrix(
+  .loom_write_matrix(
     x = main_matrix,
     name = 'matrix',
     lfile = lfile,
@@ -480,68 +466,4 @@ as.loom.Seurat <- function(
   return(lfile)
 }
 
-#' @importFrom Matrix t
-#' @importFrom hdf5r H5S
-#' @importFrom methods slot
-#' @importFrom utils setTxtProgressBar
-#' @keywords internal
-#' @noRd
-setMethod(
-  f = 'WriteMatrix',
-  signature = c('x' = 'dgCMatrix'),
-  definition = function(x, name, lfile, transpose = TRUE, verbose = TRUE) {
-    if (isTRUE(x = transpose)) {
-      x <- Matrix::t(x = x)
-    }
-    lfile$create_dataset(
-      name = name,
-      dtype = GuessDType(x = x[1, 1]),
-      space = H5S$new(dims = dim(x = x))
-    )
-    MARGIN <- GetMargin(dims = lfile[[name]]$dims)
-    chunk.points <- ChunkPoints(
-      dsize = lfile[[name]]$dims[MARGIN],
-      csize = lfile[[name]]$chunk_dims[MARGIN]
-    )
-    dims <- vector(mode = 'list', length = 2L)
-    dims[[-MARGIN]] <- seq_len(length.out = lfile[[name]]$dims[-MARGIN])
-    if (isTRUE(x = verbose)) {
-      pb <- PB()
-    }
-    for (i in seq_len(length.out = nrow(x = chunk.points))) {
-      dims[[MARGIN]] <- seq.default(
-        from = chunk.points[i, 'start'],
-        to = chunk.points[i, 'end']
-      )
-      lfile[[name]]$write(
-        args = dims,
-        value = as.matrix(x = x[dims[[1]], dims[[2]]])
-      )
-      if (isTRUE(x = verbose)) {
-        setTxtProgressBar(pb = pb, value = i / nrow(x = chunk.points))
-      }
-    }
-    if (isTRUE(x = verbose)) {
-      close(con = pb)
-    }
-    return(invisible(x = NULL))
-  }
-)
 
-#' @keywords internal
-#' @noRd
-setMethod(
-  f = 'WriteMatrix',
-  signature = c('x' = 'matrix'),
-  definition = function(x, name, lfile, transpose = TRUE, verbose = TRUE) {
-    if (isTRUE(x = transpose)) {
-      x <- t(x = x)
-    }
-    lfile$create_dataset(
-      name = name,
-      robj = x,
-      dtype = GuessDType(x = x[1, 1])
-    )
-    return(invisible(x = NULL))
-  }
-)

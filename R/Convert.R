@@ -1,6 +1,6 @@
 #' @include zzz.R
 #' @include FormatRegistry.R
-#' @include scConnect.R
+#' @include Bindings.R
 #' @importFrom utils setTxtProgressBar
 #' @importFrom hdf5r H5File h5attr H5S
 #' @importFrom tools file_path_sans_ext

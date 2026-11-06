@@ -38,6 +38,7 @@ Imports:
 Collate:
     'zzz.R'
     'H5Utils.R'
+    'H5Coerce.R'
     'AnnDataCompat.R'
     'AnnDataEncoding.R'
     'GetObject.R'
@@ -45,7 +46,8 @@ Collate:
     'AssembleObject.R'
     'scdisk.R'
     'h5Seurat.R'
-    'Connect.R'
+    'loom.R'
+    'Bindings.R'
     'FormatRegistry.R'
     'Convert.R'
     'ConvertCLI.R'
@@ -57,13 +59,10 @@ Collate:
     'LoadH5AD.R'
     'LoadH5MU.R'
     'LoadH5Seurat.R'
-    'loom.R'
-    'loom_bindings.R'
     'LoadLoom.R'
     'LoadStereoSeq.R'
     'LoadXenium.R'
     'LoadZarr.R'
-    'ReadH5.R'
     'ReadWriteSOMA.R'
     'SaveH5MU.R'
     'UtilsAssayCompat.R'
@@ -83,7 +82,6 @@ Collate:
     'WriteH5AD.R'
     'ZarrRemote.R'
     'ZarrStore.R'
-    'h5Seurat_bindings.R'
 NeedsCompilation: yes
 Suggests:
     arrow,

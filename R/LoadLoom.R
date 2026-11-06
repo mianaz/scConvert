@@ -1,6 +1,6 @@
 #' @include zzz.R
 #' @include loom.R
-#' @include loom_bindings.R
+#' @include Bindings.R
 #'
 NULL
 
