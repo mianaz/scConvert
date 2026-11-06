@@ -123,7 +123,6 @@ ConvertBPCellsMatrix <- function(mat, verbose = FALSE) {
 }
 
 
-
 #' File type of a path or URI
 #'
 #' The lower-cased extension of \code{file} (or the whole name when it has
@@ -279,29 +278,6 @@ CachedGuessDType <- function(x, stype = 'utf8') {
 
 # Helper: create CLI-first direct path with R streaming fallback
 # Defined outside .onLoad to avoid R CMD check NOTE about message() in startup
-.make_cli_direct <- function(r_fallback_fn) {
-  function(source, dest, assay = 'RNA', overwrite = FALSE, verbose = TRUE, ...) {
-    if (isTRUE(getOption("scConvert.use_cli"))) {
-      src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-      cli_ok <- tryCatch(
-        scConvert_cli(input = src_path, output = dest, assay = assay,
-                      overwrite = overwrite, verbose = verbose),
-        error = function(e) FALSE
-      )
-      if (isTRUE(cli_ok)) return(dest)
-      if (verbose) message("CLI unavailable, using R streaming")
-    }
-    # scConvert() forwards options such as `standardize` to every direct
-    # path; pass on only what this converter accepts
-    extra <- list(...)
-    accepted <- names(formals(r_fallback_fn))
-    if (!"..." %in% accepted) extra <- extra[names(extra) %in% accepted]
-    # the streaming converters work on file paths, not open handles
-    if (inherits(source, c('H5File', 'h5Seurat'))) source <- source$filename
-    do.call(r_fallback_fn, c(list(source, dest, assay = assay,
-                                  overwrite = overwrite, verbose = verbose), extra))
-  }
-}
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Format converter functions (defined outside .onLoad to avoid R CMD check NOTE)
@@ -534,64 +510,32 @@ CachedGuessDType <- function(x, stype = 'utf8') {
   invisible(filename)
 }
 
-.h5ad_to_h5seurat_direct <- function(source, dest, assay = 'RNA',
-                                      overwrite = FALSE, verbose = TRUE, ...) {
-  if (isTRUE(getOption("scConvert.use_cli"))) {
-    source_file <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-    cli_ok <- scConvert_cli(input = source_file, output = dest, assay = assay,
-                             overwrite = overwrite, verbose = verbose)
-    if (cli_ok) {
-      # Quick validation: output exists and has expected structure
-      valid <- tryCatch({
-        h5 <- H5File$new(dest, mode = 'r')
-        ok <- h5$exists('assays') && h5$exists('cell.names')
-        h5$close_all()
-        ok
-      }, error = function(e) FALSE)
-      if (valid) return(dest)
-      if (verbose) message("CLI output validation failed, re-converting via R")
-      if (file.exists(dest)) try(file.remove(dest), silent = TRUE)
-    }
-    if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
-  }
-  src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-  if (.use_streaming(list(...)$stream, src_path)) {
-    return(.stream_h5ad_to_h5seurat(src_path, dest, assay = assay, overwrite = overwrite,
-                                    verbose = verbose))
-  }
-  .hub_from_connection(source, dest, stype = "h5ad", dtype = "h5seurat",
-                       assay = assay, overwrite = overwrite, verbose = verbose)
-}
 
-.h5seurat_to_h5ad_direct <- function(source, dest, assay = 'RNA',
-                                      overwrite = FALSE, verbose = TRUE,
-                                      standardize = FALSE, ...) {
-  if (isTRUE(getOption("scConvert.use_cli")) && !standardize) {
-    source_file <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-    cli_ok <- scConvert_cli(input = source_file, output = dest, assay = assay,
-                             overwrite = overwrite, verbose = verbose)
-    if (cli_ok) {
-      # Validate h5ad output has X (required by anndata spec)
-      valid <- tryCatch({
-        h5 <- H5File$new(dest, mode = 'r')
-        ok <- h5$exists('X')
-        h5$close_all()
-        ok
-      }, error = function(e) FALSE)
-      if (valid) return(dest)
-      if (verbose) message("CLI h5ad output missing X, re-converting via R")
-      if (file.exists(dest)) try(file.remove(dest), silent = TRUE)
+# File-to-file conversion between two HDF5 formats. `source` may be a path
+# or an open connection. Arguments a path does not use (e.g. `standardize`
+# for non-h5ad targets) are ignored.
+.make_direct <- function(stype, dtype) {
+  force(stype)
+  force(dtype)
+  function(source, dest, assay = 'RNA', overwrite = FALSE, verbose = TRUE,
+           standardize = FALSE, stream = NULL, ...) {
+    src_path <- if (inherits(source, c('H5File', 'h5Seurat', 'loom'))) source$filename else source
+    if (isTRUE(getOption("scConvert.use_cli")) && !isTRUE(standardize)) {
+      ok <- tryCatch(scConvert_cli(input = src_path, output = dest, assay = assay %||% 'RNA',
+                                   overwrite = overwrite, verbose = verbose),
+                     error = function(e) FALSE)
+      if (isTRUE(ok)) return(invisible(dest))
+      if (verbose) message("CLI conversion failed, using the R conversion")
     }
-    if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
+    if (.use_streaming(stream, src_path)) {
+      return(.stream_convert(src_path, dest, stype, dtype, assay = assay, overwrite = overwrite,
+                             verbose = verbose, standardize = standardize))
+    }
+    extra <- if (dtype == 'h5ad') list(standardize = standardize) else list()
+    do.call(.hub_from_connection, c(list(source, dest, stype = stype, dtype = dtype,
+                                         assay = assay %||% 'RNA', overwrite = overwrite,
+                                         verbose = verbose), extra))
   }
-  src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
-  if (.use_streaming(list(...)$stream, src_path)) {
-    return(.stream_h5seurat_to_h5ad(src_path, dest, assay = assay, overwrite = overwrite,
-                                    verbose = verbose, standardize = standardize))
-  }
-  .hub_from_connection(source, dest, stype = "h5seurat", dtype = "h5ad",
-                       assay = assay, overwrite = overwrite, verbose = verbose,
-                       standardize = standardize)
 }
 
 # Without the CLI, file-to-file conversion goes through an in-memory Seurat
@@ -651,34 +595,12 @@ CachedGuessDType <- function(x, stype = 'utf8') {
   RegisterFormat(ext = 'zarr', loader = .zarr_loader, saver = .zarr_saver)
 
   # Register direct HDF5-level conversion paths (h5ad <-> h5seurat)
-  RegisterDirectPath('h5ad', 'h5seurat', .h5ad_to_h5seurat_direct)
-  RegisterDirectPath('h5seurat', 'h5ad', .h5seurat_to_h5ad_direct)
-
-  # Register streaming HDF5 paths (h5mu <-> h5seurat, loom <-> h5seurat)
-  # CLI binary is tried first when available
-  RegisterDirectPath('h5mu', 'h5seurat', .make_cli_direct(
-    function(source, dest, ...) H5MUToH5Seurat(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('h5seurat', 'h5mu', .make_cli_direct(
-    function(source, dest, ...) H5SeuratToH5MU(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('loom', 'h5seurat', .make_cli_direct(
-    function(source, dest, ...) LoomToH5Seurat(source, dest, stream = TRUE, ...)
-  ))
-  RegisterDirectPath('h5seurat', 'loom', .make_cli_direct(
-    function(source, dest, ...) H5SeuratToLoom(source, dest, stream = TRUE, ...)
-  ))
-
-  # Composite HDF5 paths.
-  # h5mu/h5ad and loom/h5ad pairs go via Seurat in memory (direct writers).
-  # loom<->h5mu pairs still stream via a temp h5seurat at the HDF5 chunk
-  # level; a direct loom<->h5mu streamer would need new C code.
-  RegisterDirectPath('h5mu', 'h5ad', .make_cli_direct(H5MUToH5AD))
-  RegisterDirectPath('h5ad', 'h5mu', .make_cli_direct(H5ADToH5MU))
-  RegisterDirectPath('loom', 'h5ad', .make_cli_direct(LoomToH5AD))
-  RegisterDirectPath('h5ad', 'loom', .make_cli_direct(H5ADToLoom))
-  RegisterDirectPath('loom', 'h5mu', .make_cli_direct(LoomToH5MU))
-  RegisterDirectPath('h5mu', 'loom', .make_cli_direct(H5MUToLoom))
+  # File-to-file paths between the HDF5 formats: the opt-in CLI, streaming
+  # (stream = TRUE / "auto" for large files) or an in-memory conversion
+  hdf5_formats <- c('h5ad', 'h5seurat', 'h5mu', 'loom')
+  for (s in hdf5_formats) for (d in setdiff(hdf5_formats, s)) {
+    RegisterDirectPath(s, d, .make_direct(s, d))
+  }
 
   # Register SOMA format
   RegisterFormat(ext = 'soma', loader = function(source, ...) {

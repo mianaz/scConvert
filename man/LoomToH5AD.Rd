@@ -10,7 +10,8 @@ LoomToH5AD(
   assay = "RNA",
   overwrite = FALSE,
   gzip = 4L,
-  verbose = TRUE
+  verbose = TRUE,
+  stream = NULL
 )
 }
 \arguments{
@@ -25,6 +26,12 @@ LoomToH5AD(
 \item{gzip}{Gzip compression level (0-9)}
 
 \item{verbose}{Show progress messages}
+
+\item{stream}{\code{TRUE} streams the expression matrices between the
+files without loading them (see \code{\link{scConvert}}, section
+\emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+\code{"auto"} streams files larger than
+\code{options(scConvert.stream_threshold)}.}
 }
 \value{
 Invisibly returns \code{dest}

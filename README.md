@@ -113,7 +113,7 @@ Three conversion tiers provide optimal speed for each format pair:
 | **SpatialData** | Read/write scverse SpatialData zarr stores with OME-NGFF images. |
 | **Multimodal** | Native h5mu read/write for CITE-seq, ATAC+RNA, etc. |
 | **TileDB-SOMA** | Read/write SOMA for CELLxGENE Census interoperability. |
-| **Large data** | Streaming h5ad ↔ h5Seurat conversion that never loads the expression matrices (`stream = TRUE`), and parallel batch conversion (`scConvertBatch()`). |
+| **Large data** | Streaming conversion between h5ad, h5Seurat, h5mu and Loom that never loads the expression matrices (`stream = TRUE`), and parallel batch conversion (`scConvertBatch()`). |
 | **BPCells** | On-disk matrix loading – 87% memory reduction at atlas scale. |
 | **C CLI** | Standalone binary for fast HDF5 conversion (opt-in; see below). |
 | **Version compatibility** | Reads every anndata layout from 0.7 to 0.13 (nullable strings, `null`, zarr v3 sharding + zstd); `upgradeH5AD()`/`downgradeH5AD()` rewrite h5ad files between layouts and `upgradeSeurat()`/`downgradeSeurat()` convert objects between Seurat v3/v4 and v5 losslessly. |
@@ -143,9 +143,10 @@ For files that do not fit comfortably in memory, convert without loading the
 object:
 
 ``` r
-# h5ad <-> h5Seurat, expression matrices copied on disk
+# any pair of h5ad, h5Seurat, h5mu and Loom; expression matrices copied on disk
 scConvert("atlas.h5ad", dest = "atlas.h5seurat", stream = TRUE)
 scConvert("atlas.h5seurat", dest = "atlas.h5ad", stream = TRUE)
+scConvert("citeseq.h5mu", dest = "citeseq.h5seurat", stream = TRUE)
 
 # many files at once, one worker process per file
 files <- list.files("samples", pattern = "\\.h5ad$", full.names = TRUE)
@@ -154,9 +155,10 @@ scConvertBatch(files, dest = "h5seurat", workers = 4, stream = TRUE)
 
 Streaming reads only the small parts of the file (metadata, embeddings,
 graphs, images, `uns`) and converts them with the regular reader and writer;
-the matrices in `X`, `layers` and `raw` are copied between the files by HDF5,
-or in 64 MB column blocks (`options(scConvert.stream_chunk_bytes)`) when
-features must be subset or reordered. The output is identical to an
+the expression matrices (h5ad `X`, `layers` and `raw`, h5Seurat layers, h5mu
+modalities, the Loom matrix and layers) are copied between the files by HDF5,
+or in 64 MB blocks (`options(scConvert.stream_chunk_bytes)`) when they must be
+transposed or densified, or features subset or reordered. The output is identical to an
 in-memory conversion. `stream = "auto"` (the default) streams files larger
 than 2 GB (`options(scConvert.stream_threshold)`).
 

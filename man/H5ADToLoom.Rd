@@ -4,7 +4,14 @@
 \alias{H5ADToLoom}
 \title{Convert an h5ad file to loom format}
 \usage{
-H5ADToLoom(source, dest, overwrite = FALSE, gzip = 4L, verbose = TRUE)
+H5ADToLoom(
+  source,
+  dest,
+  overwrite = FALSE,
+  gzip = 4L,
+  verbose = TRUE,
+  stream = NULL
+)
 }
 \arguments{
 \item{source}{Path to input .h5ad file}
@@ -16,6 +23,12 @@ H5ADToLoom(source, dest, overwrite = FALSE, gzip = 4L, verbose = TRUE)
 \item{gzip}{Gzip compression level (0-9)}
 
 \item{verbose}{Show progress messages}
+
+\item{stream}{\code{TRUE} streams the expression matrices between the
+files without loading them (see \code{\link{scConvert}}, section
+\emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+\code{"auto"} streams files larger than
+\code{options(scConvert.stream_threshold)}.}
 }
 \value{
 Invisibly returns \code{dest}

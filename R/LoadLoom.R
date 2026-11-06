@@ -129,7 +129,15 @@ as.Seurat.loom <- function(x, assay = NULL, cells = 'CellID', features = 'Gene',
 
 # Read a genes x cells matrix (the loom /matrix or a layer) as an R matrix
 .loom_read_matrix <- function(x, path, keep_features, keep_cells) {
-  m <- t(as.matrix(x = x[[path]]))
+  obj <- x[[path]]
+  m <- if (inherits(obj, 'H5Group')) {
+    # sparse stand-in (CSC features x cells) used by streaming conversion
+    Matrix::sparseMatrix(i = obj[['indices']][] + 1, p = obj[['indptr']][],
+                         x = as.numeric(obj[['data']][]),
+                         dims = as.integer(h5attr(obj, 'shape')))
+  } else {
+    t(as.matrix(x = obj))
+  }
   if (!is.null(keep_features)) m <- m[keep_features, , drop = FALSE]
   if (!is.null(keep_cells)) m <- m[, keep_cells, drop = FALSE]
   m

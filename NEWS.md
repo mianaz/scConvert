@@ -18,11 +18,13 @@ conversion now loads the data into a Seurat object and writes it out again
 
 ## Large datasets
 
-- `scConvert(..., stream = TRUE)` converts h5ad <-> h5Seurat without loading
-  the expression matrices: metadata, embeddings, graphs, images and `uns`
-  go through the regular reader and writer, and `X` / `layers` / `raw` are
-  copied between the files by HDF5 (or in bounded column blocks when
-  features are subset or reordered). The result is identical to an
+- `scConvert(..., stream = TRUE)` converts between any two of h5ad,
+  h5Seurat, h5mu and loom without loading the expression matrices:
+  metadata, embeddings, graphs, images and `uns` go through the regular
+  reader and writer, and the matrices (`X`, `layers`, `raw/X`, h5Seurat
+  layers and slots, h5mu modalities, the loom `/matrix` and `/layers`) are
+  copied between the files by HDF5, or in bounded blocks when they have to
+  be transposed, densified or have features subset or reordered. The result is identical to an
   in-memory conversion. On 100,000 cells with 100 million non-zeros, peak
   memory drops from 6.5 GB to 1.2 GB and run time from 101 s to 34 s.
   `stream = "auto"` (default) streams files larger than
@@ -30,8 +32,14 @@ conversion now loads the data into a Seurat object and writes it out again
   `options(scConvert.stream_chunk_bytes)` (64 MB).
 - New `scConvertBatch()` converts many files in parallel worker processes
   and reports per-file success, time and errors.
+- `H5MUToH5AD()`, `H5ADToH5MU()`, `LoomToH5AD()`, `H5ADToLoom()` and the
+  other file-to-file converters take the same `stream` argument.
 
 ## Other changes
+
+- `scConvert()` between h5Seurat, h5mu and loom files (h5ad -> loom,
+  h5Seurat -> h5mu / loom, h5mu -> h5Seurat / loom) failed with "unused
+  argument"; these now convert.
 
 - The compiled `scconvert` binary is opt-in (`options(scConvert.use_cli =
   TRUE)`). The previous auto-detection never took effect, and the binary

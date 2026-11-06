@@ -34,7 +34,8 @@ NULL
 #'   \code{nCount_RNA} becomes \code{n_counts}, \code{nFeature_RNA} becomes \code{n_genes}.
 #'   Only applicable for conversions to h5ad format. Default is \code{FALSE}.
 #' @param ... Arguments passed to specific conversion methods. File-to-file
-#'   h5ad <-> h5Seurat conversion also takes \code{stream}: \code{TRUE} copies
+#'   conversion between h5ad, h5Seurat, h5mu and loom files also takes
+#'   \code{stream}: \code{TRUE} copies
 #'   the expression matrices between the files in bounded-memory blocks instead
 #'   of loading the object (see \emph{Large datasets}), \code{FALSE} loads it,
 #'   and \code{"auto"} (the default, \code{options(scConvert.stream)}) streams
@@ -44,9 +45,11 @@ NULL
 #' With \code{stream = TRUE}, only the small parts of the file (cell and
 #' feature metadata, embeddings, graphs, images, unstructured data) are read
 #' into memory and converted by the regular reader and writer; the
-#' expression matrices (X, layers, raw) are copied between the files by HDF5
-#' itself, or in column blocks of \code{options(scConvert.stream_chunk_bytes)}
-#' (64 MB) when features have to be subset or reordered. The result is the same
+#' expression matrices (h5ad X, layers and raw, h5Seurat layers, h5mu
+#' modalities, loom matrix and layers) are copied between the files by HDF5
+#' itself, or in blocks of \code{options(scConvert.stream_chunk_bytes)} (64 MB)
+#' when they have to be transposed or densified, or features subset or
+#' reordered. The result is the same
 #' as an in-memory conversion; peak memory depends on the number of cells,
 #' not on the size of the matrices. Use \code{\link{scConvertBatch}} to convert
 #' many files in parallel.
@@ -183,8 +186,9 @@ scConvert.character <- function(
     ))
   }
 
-  # Loom: open as loom R6 object and dispatch to Convert.loom
-  if (stype == 'loom') {
+  # Loom without a file-to-file path (e.g. to rds or zarr): open as a loom
+  # connection and convert through scConvert.loom
+  if (stype == 'loom' && is.null(GetDirectPath(stype = 'loom', dtype = FileType(file = dest)))) {
     lfile <- scConnect(filename = source, type = 'loom', mode = 'r')
     on.exit(expr = lfile$close_all(), add = TRUE)
     if (missing(x = assay)) {

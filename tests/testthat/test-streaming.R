@@ -143,3 +143,37 @@ test_that("scConvertBatch converts several files and reports failures", {
   x <- .q(readH5Seurat(res$dest[1], verbose = FALSE))
   expect_equal(dim(x), dim(o))
 })
+
+test_that("every HDF5 pair streams to the same result as in memory", {
+  skip_on_cran()
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  withr::local_options(scConvert.stream_chunk_bytes = 4096)
+  o <- .q(SeuratObject::UpdateSeuratObject(SeuratObject::pbmc_small))
+  o[["RNA"]] <- methods::as(o[["RNA"]], "Assay5")
+  rd <- list(h5ad = readH5AD, h5seurat = readH5Seurat, h5mu = readH5MU, loom = readLoom)
+  wr <- list(h5ad = writeH5AD, h5seurat = writeH5Seurat, h5mu = writeH5MU, loom = writeLoom)
+  dir <- withr::local_tempdir()
+  for (s in names(rd)) {
+    src <- file.path(dir, paste0("src.", s))
+    .q(wr[[s]](o, src, overwrite = TRUE, verbose = FALSE))
+    for (d in setdiff(names(rd), s)) {
+      label <- paste(s, "->", d)
+      fallback <- character(0)
+      out <- vapply(c(FALSE, TRUE), function(st) {
+        f <- file.path(dir, paste0("out_", st, ".", d))
+        withCallingHandlers(
+          suppressWarnings(scConvert(src, dest = f, overwrite = TRUE, verbose = TRUE, stream = st)),
+          message = function(m) {
+            if (grepl("Streaming not possible", conditionMessage(m))) fallback <<- conditionMessage(m)
+            invokeRestart("muffleMessage")
+          })
+        f
+      }, character(1))
+      expect_identical(fallback, character(0), info = label)
+      a <- .q(rd[[d]](out[1], verbose = FALSE))
+      b <- .q(rd[[d]](out[2], verbose = FALSE))
+      .expect_same_object(a, b, label)
+    }
+  }
+})

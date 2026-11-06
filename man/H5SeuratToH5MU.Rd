@@ -24,8 +24,11 @@ H5SeuratToH5MU(
 
 \item{verbose}{Show progress messages}
 
-\item{stream}{If TRUE (default), stream fields directly. If FALSE,
-load as Seurat then save as h5mu.}
+\item{stream}{\code{TRUE} streams the expression matrices between the
+files without loading them (see \code{\link{scConvert}}, section
+\emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+\code{"auto"} streams files larger than
+\code{options(scConvert.stream_threshold)}.}
 }
 \value{
 Invisibly returns \code{dest}

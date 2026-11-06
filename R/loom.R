@@ -214,6 +214,13 @@ loom <- R6Class(
   lfile$create_dataset(name = name, dtype = GuessDType(x = x[1, 1]),
                        space = H5S$new(dims = dim(x)))
   ds <- lfile[[name]]
+  if (isTRUE(getOption('scConvert.stream_placeholders')) && length(x@x) <= 2 && all(.is_tag(x@x))) {
+    # streaming-conversion placeholder: only its tag entries are written;
+    # the real matrix is filled in afterwards (unwritten chunks read as 0)
+    tm <- methods::as(x, 'TsparseMatrix')
+    for (k in seq_along(tm@x)) ds[tm@i[k] + 1, tm@j[k] + 1] <- tm@x[k]
+    return(invisible(NULL))
+  }
   axis <- GetMargin(dims = ds$dims)
   blocks <- ChunkPoints(dsize = ds$dims[axis], csize = ds$chunk_dims[axis])
   index <- list(NULL, NULL)
