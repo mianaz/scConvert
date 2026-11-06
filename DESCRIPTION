@@ -106,8 +106,7 @@ Suggests:
     testthat (>= 3.0.0),
     withr,
     ggplot2,
-    xml2,
-    zstdlite
+    xml2
 Enhances:
     tiledbsoma
 Additional_repositories:
