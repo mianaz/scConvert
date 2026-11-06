@@ -222,63 +222,6 @@ as.Seurat.loom <- function(
 # Internal Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Loom-file Loading
-#'
-#' Version-specific loom-file loading functions
-#'
-#' @inheritParams readLoom
-#'
-#' @inherit readLoom return
-#'
-#' @name LoomLoading
-#' @rdname LoomLoading
-#'
-#' @importFrom Seurat CreateAssayObject Key<- CreateSeuratObject SetAssayData as.Graph DefaultAssay<- CreateDimReducObject Loadings Loadings<- Stdev
-#' @importFrom methods slot
-#'
-#' @details
-#' \code{readLoom} will try to automatically fill slots of a \code{Seurat}
-#' object based on data presence or absence in a given loom file. This method
-#' varies by loom specification version. For version-specific details, see
-#' sections below
-#'
-#' @section Loom 0.1 Loading:
-#' Loading data from loom files less than version 3.0.0 is not
-#' currently supported
-#'
-#' @keywords internal
-#'
-LoadLoom0.1 <- function(
-  file,
-  assay = NULL,
-  cells = 'col_atts/CellID',
-  features = 'row_attrs/Gene',
-  normalized = NULL,
-  scaled = NULL,
-  filter = c('cells', 'features', 'all', 'none'),
-  verbose = TRUE
-) {
-  filter <- filter[1]
-  filter <- match.arg(arg = filter)
-  assay <- assay %||% suppressWarnings(expr = DefaultAssay(object = file)) %||% 'RNA'
-  if (isTRUE(x = verbose)) {
-    message("Reading in /matrix")
-  }
-  counts <- t(x = as.matrix(x = file[['matrix']]))
-  dnames <- list(
-    features = file[[features]][],
-    cells = file[[cells]][]
-  )
-  if (anyDuplicated(x = dnames$features)) {
-    warning(
-      "Duplicate feature names found, making unique",
-      call. = FALSE,
-      immediate. = TRUE
-    )
-    dnames$features <- make.unique(names = dnames$features)
-  }
-  dimnames(x = counts) <- dnames
-}
 
 #' @name LoomLoading
 #' @rdname LoomLoading

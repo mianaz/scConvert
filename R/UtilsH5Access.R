@@ -102,39 +102,6 @@ GetFeaturesV5Safe <- function(h5_group, verbose = FALSE) {
   return(NULL)
 }
 
-#' Set V5 feature index in HDF5 group
-#'
-#' Stores feature names in the V5 location (meta.data/_index) if not already
-#' present.
-#'
-#' @param h5_group HDF5 group to store features in
-#' @param features Character vector of feature names
-#' @param verbose Print diagnostic messages
-#'
-#' @return NULL (invisible)
-#' @keywords internal
-#'
-SetFeaturesV5 <- function(h5_group, features, verbose = FALSE) {
-  if (is.null(features) || length(features) == 0) {
-    if (verbose) {
-      message("No features provided, skipping V5 index creation")
-    }
-    return(invisible(NULL))
-  }
-
-  if (!h5_group$exists("meta.data")) {
-    h5_group$create_group("meta.data")
-  }
-
-  if (!h5_group[["meta.data"]]$exists("_index")) {
-    h5_group[["meta.data"]][["_index"]] <- features
-    if (verbose) {
-      message("Stored ", length(features), " feature names in V5 index")
-    }
-  }
-
-  return(invisible(NULL))
-}
 
 #' Resolve a nested HDF5 path to its object
 #'

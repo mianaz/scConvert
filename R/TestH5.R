@@ -96,39 +96,6 @@ setMethod(
   }
 )
 
-#' @rdname TestH5
-#'
-setMethod(
-  f = 'IsList',
-  signature = c('x' = 'H5Group'),
-  definition = function(x) {
-    return(!IsDataFrame(x = x) && !IsFactor(x = x) && !IsMatrix(x = x))
-  }
-)
-
-#' @rdname TestH5
-#'
-setMethod(
-  f = 'IsLogical',
-  signature = c('x' = 'H5D'),
-  definition = function(x) {
-    check <- AttrExists(x = x, name = 's3class')
-    if (isTRUE(x = check)) {
-      check <- x$attr_open('s3class')$read() == 'logical'
-    }
-    if (isTRUE(x = check)) {
-      check <- IsDType(x = x, dtype = 'H5T_INTEGER')
-    }
-    if (isTRUE(x = check)) {
-      # check <- length(x = Dims(x = x)) == 1
-      check <- length(x = x$dims) == 1
-    }
-    if (isTRUE(x = check)) {
-      check <- all(unique(x = x$read()) %in% seq.int(from = 0, to = 2))
-    }
-    return(check)
-  }
-)
 
 #' @rdname TestH5
 #'

@@ -67,28 +67,6 @@ SafeH5DRead <- function(dataset, subset = NULL) {
   }
 }
 
-#' Check if H5D dataset is effectively 1D
-#'
-#' @param dataset An H5D dataset object
-#' @return Logical indicating if dataset is effectively 1D
-#' @keywords internal
-#'
-IsEffectively1D <- function(dataset) {
-  if (!inherits(x = dataset, what = 'H5D')) {
-    return(FALSE)
-  }
-
-  ndims <- length(dataset$dims)
-
-  if (ndims == 1) {
-    return(TRUE)
-  } else if (ndims == 2) {
-    # Check if one dimension is 1
-    return(dataset$dims[1] == 1 || dataset$dims[2] == 1)
-  } else {
-    return(FALSE)
-  }
-}
 
 #' Safely convert H5Group to list, handling 3D+ arrays
 #'

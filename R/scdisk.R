@@ -366,14 +366,6 @@ IsSCDisk <- function(r6class) {
   return(FALSE)
 }
 
-#' @return \code{Timestamp}:A character with the current time in the
-#' specified format
-#'
-#' @rdname Timestamp
-#'
-Timestamp <- function(tz = 'UTC', format = TSFormats(type = 'R')) {
-  return(strftime(x = Sys.time(), format = format, tz = tz))
-}
 
 #' @param type Type of format to get, currently supports the following formats:
 #' \itemize{

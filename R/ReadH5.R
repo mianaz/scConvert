@@ -457,26 +457,6 @@ GetStringType <- function(stype) {
   ))
 }
 
-#' Check for compound type in HDF5 dataset
-#'
-#' @param x An HDF5 dataset
-#'
-#' @return TRUE if the dataset has a compound type
-#'
-#' @keywords internal
-#'
-IsCompound <- function(x) {
-  dtype <- tryCatch(
-    expr = x$get_type(),
-    error = function(...) return(NULL)
-  )
-
-  if (is.null(x = dtype)) {
-    return(FALSE)
-  }
-
-  return(inherits(x = dtype, what = 'H5T_COMPOUND'))
-}
 
 #' Convert compound dataset to group
 #'

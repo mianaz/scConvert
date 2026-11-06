@@ -33,25 +33,6 @@ setGeneric(
   signature = c('x')
 )
 
-#' @rdname TestObject
-#'
-setGeneric(
-  name = 'IsList',
-  def = function(x) {
-    standardGeneric(f = 'IsList')
-  },
-  signature = c('x')
-)
-
-#' @rdname TestObject
-#'
-setGeneric(
-  name = 'IsLogical',
-  def = function(x) {
-    standardGeneric(f = 'IsLogical')
-  },
-  signature = c('x')
-)
 
 #' @rdname TestObject
 #'

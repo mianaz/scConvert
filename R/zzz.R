@@ -783,44 +783,6 @@ UpdateKey <- function(key) {
   }
 }
 
-#' Update slots in an object
-#'
-#' @param object An object to update
-#'
-#' @return \code{object} with the latest slot definitions
-#'
-#' @importFrom methods slotNames slot slot<-
-#'
-#' @keywords internal
-#'
-UpdateSlots <- function(object) {
-  object.list <- sapply(
-    X = slotNames(x = object),
-    FUN = function(x) {
-      return(tryCatch(
-        expr = slot(object = object, name = x),
-        error = function(...) {
-          return(NULL)
-        }
-      ))
-    },
-    simplify = FALSE,
-    USE.NAMES = TRUE
-  )
-  object.list <- Filter(f = Negate(f = is.null), x = object.list)
-  object.list <- c('Class' = class(x = object)[1], object.list)
-  object <- do.call(what = 'new', args = object.list)
-  for (x in setdiff(x = slotNames(x = object), y = names(x = object.list))) {
-    xobj <- slot(object = object, name = x)
-    if (is.vector(x = xobj) && !is.list(x = xobj) && length(x = xobj) == 0) {
-      slot(object = object, name = x) <- vector(
-        mode = class(x = xobj),
-        length = 1L
-      )
-    }
-  }
-  return(object)
-}
 
 #' Write an attribute to an HDF5 file, group, or dataset (legacy version)
 #'
@@ -965,44 +927,6 @@ CachedGuessDType <- function(x, stype = 'utf8') {
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # V5 Safe Helper Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#' Safely set layer data in a V5 Assay
-#'
-#' Handles the case where LayerData<- might not be exported from SeuratObject
-#'
-#' @param object An Assay or Assay5 object
-#' @param layer Layer name
-#' @param value Data to set
-#' @return Modified assay object
-#' @keywords internal
-#'
-SafeSetLayerData <- function(object, layer, value) {
-  # Try using SeuratObject::LayerData<- if available
-  tryCatch({
-    SeuratObject::LayerData(object, layer = layer) <- value
-    return(object)
-  }, error = function(e) {
-    # Fall back to direct slot assignment
-  })
-
-  # Fall back to direct slot assignment
-  tryCatch({
-    if (inherits(object, "Assay5")) {
-      # For Assay5, try to directly modify the layers slot
-      if (is.null(object@layers)) {
-        object@layers <- list()
-      }
-      object@layers[[layer]] <- value
-    } else {
-      # For standard Assay, use standard slots
-      slot(object, layer) <- value
-    }
-    return(object)
-  }, error = function(e) {
-    warning("Could not set layer data: ", e$message)
-    return(object)  # Return unchanged object as last resort
-  })
-}
 
 
 # Helper: create CLI-first direct path with R streaming fallback

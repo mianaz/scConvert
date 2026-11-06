@@ -128,54 +128,6 @@ ValidateMultimodalObject <- function(object, assays, verbose = FALSE) {
 }
 
 
-#' Prepare spatial data for h5mu export
-#'
-#' @param object Seurat object
-#' @param assays Assay names
-#' @param modality.names Modality name mapping
-#' @param verbose Logical
-#' @return Modified Seurat object with spatial metadata prepared
-#' @keywords internal
-#'
-#' @importFrom Seurat Images
-#'
-PrepareSpatialForH5MU <- function(object, assays, modality.names, verbose = FALSE) {
-
-  images <- Images(object)
-
-  if (length(images) == 0) {
-    return(object)
-  }
-
-  # Store spatial data in misc for later processing
-  for (img_name in images) {
-    img_obj <- object[[img_name]]
-
-    # Determine which modality this spatial data belongs to
-    target_assay <- if ("Spatial" %in% assays) {
-      "Spatial"
-    } else {
-      assays[1]
-    }
-
-    target_modality <- modality.names[target_assay]
-
-    if (verbose) {
-      message("  Associating spatial data '", img_name,
-              "' with modality '", target_modality, "'")
-    }
-
-    # Store spatial metadata for later processing
-    object@misc[[paste0("h5mu_spatial_", target_modality)]] <- list(
-      image_name = img_name,
-      image_obj = img_obj
-    )
-  }
-
-  return(object)
-}
-
-
 #' Save a Seurat object to h5mu format
 #'
 #' @param object A Seurat object
