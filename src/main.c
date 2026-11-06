@@ -17,6 +17,13 @@
  *   --help           Print help and exit
  */
 
+/* realpath() is XSI, not base POSIX: glibc hides it under -std=c11
+ * -D_POSIX_C_SOURCE alone, and GCC >= 14 makes the implicit declaration
+ * an error. Must precede every system header. */
+#ifndef _XOPEN_SOURCE
+#  define _XOPEN_SOURCE 700
+#endif
+
 #include "sc_convert.h"
 #include <unistd.h>
 #include <sys/stat.h>
