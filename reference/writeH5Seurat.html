@@ -93,7 +93,7 @@ spatial data. h5Seurat files can be rapidly converted to other formats like h5ad
 <span><span class="co"># S3 method for class 'Seurat'</span></span>
 <span><span class="fu">writeH5Seurat</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="h5Seurat-bindings.html">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">object</span><span class="op">)</span>, <span class="st">".h5Seurat"</span><span class="op">)</span>,</span>
+<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Project.html" class="external-link">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">object</span><span class="op">)</span>, <span class="st">".h5Seurat"</span><span class="op">)</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  gzip <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -109,7 +109,7 @@ spatial data. h5Seurat files can be rapidly converted to other formats like h5ad
 <span><span class="co"># S3 method for class 'Seurat'</span></span>
 <span><span class="fu">as.h5Seurat</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="h5Seurat-bindings.html">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">x</span><span class="op">)</span>, <span class="st">".h5seurat"</span><span class="op">)</span>,</span>
+<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Project.html" class="external-link">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">x</span><span class="op">)</span>, <span class="st">".h5seurat"</span><span class="op">)</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -150,7 +150,7 @@ same name. Default is <code>FALSE</code>.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>writeH5Seurat</code>: Invisibly returns the filename of the saved file</p>
-<p><code>as.h5Seurat</code>: An <code><a href="h5Seurat-class.html">h5Seurat</a></code> object</p>
+<p><code>as.h5Seurat</code>: an open <code><a href="h5Seurat-class.html">h5Seurat</a></code> connection</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

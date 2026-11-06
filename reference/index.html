@@ -81,21 +81,14 @@
           <code><a href="scdisk-class.html">scdisk-class</a></code> <code><a href="scdisk-class.html">scdisk</a></code>
 
         </dt>
-        <dd>A disk-based object for single-cell analysis</dd>
-
-        <dt>
-
-          <code><a href="IsSCDisk.html">IsSCDisk()</a></code>
-
-        </dt>
-        <dd>Does an R6 class inherit from scdisk</dd>
+        <dd>Base class for single-cell file connections</dd>
 
         <dt>
 
           <code><a href="RegisterSCDisk.html">GetSCDisk()</a></code> <code><a href="RegisterSCDisk.html">RegisterSCDisk()</a></code>
 
         </dt>
-        <dd>Get and Register <code><a href="https://mianaz.github.io/scConvert/reference/scdisk-class.html">scdisk</a></code> Subclasses</dd>
+        <dd>Register and look up <code>scdisk</code> format classes</dd>
       </dl></div><div class="section level2">
       <h2 id="h-seurat-format">h5Seurat Format<a class="anchor" aria-label="anchor" href="#h-seurat-format"></a></h2>
 
@@ -125,28 +118,28 @@
           <code><a href="h5Seurat-class.html">h5Seurat-class</a></code> <code><a href="h5Seurat-class.html">h5Seurat</a></code>
 
         </dt>
-        <dd>A class for connections to h5Seurat files</dd>
+        <dd>Connection to an h5Seurat file</dd>
 
         <dt>
 
           <code><a href="h5Seurat-bindings.html">Cells(<i>&lt;h5Seurat&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">DefaultAssay(<i>&lt;h5Seurat&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">`DefaultAssay&lt;-`(<i>&lt;h5Seurat&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">Idents(<i>&lt;h5Seurat&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">IsGlobal(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">Key(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">Project(<i>&lt;h5Seurat&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">`Project&lt;-`(<i>&lt;h5Seurat&gt;</i>)</a></code> <code><a href="h5Seurat-bindings.html">Stdev(<i>&lt;h5Seurat&gt;</i>)</a></code>
 
         </dt>
-        <dd>Seurat bindings for h5Seurat files</dd>
+        <dd>SeuratObject accessors for open h5Seurat files</dd>
 
         <dt>
 
           <code><a href="scConnect.html">scConnect()</a></code>
 
         </dt>
-        <dd>scConnect to a single-cell HDF5 dataset</dd>
+        <dd>Open a connection to an h5Seurat or loom file</dd>
 
         <dt>
 
           <code><a href="h5SI.html">DefaultAssay(<i>&lt;h5SI&gt;</i>)</a></code> <code><a href="h5SI.html">print(<i>&lt;h5SI&gt;</i>)</a></code>
 
         </dt>
-        <dd>Tools for handling h5Seurat indexes</dd>
+        <dd>Index of an h5Seurat file</dd>
       </dl></div><div class="section level2">
       <h2 id="anndata-h-ad-format">AnnData (h5ad) Format<a class="anchor" aria-label="anchor" href="#anndata-h-ad-format"></a></h2>
 
@@ -158,20 +151,6 @@
 
 
       <dl><dt>
-
-          <code><a href="H5ADToH5Seurat.html">H5ADToH5Seurat()</a></code>
-
-        </dt>
-        <dd>Convert AnnData/H5AD files to h5Seurat files</dd>
-
-        <dt>
-
-          <code><a href="H5SeuratToH5AD.html">H5SeuratToH5AD()</a></code>
-
-        </dt>
-        <dd>Convert h5Seurat files to H5AD files</dd>
-
-        <dt>
 
           <code><a href="writeH5AD.html">writeH5AD()</a></code>
 
@@ -320,7 +299,7 @@
           <code><a href="readLoom.html">readLoom()</a></code> <code><a href="readLoom.html">as.Seurat(<i>&lt;loom&gt;</i>)</a></code>
 
         </dt>
-        <dd>Load a Loom file as a Seurat object</dd>
+        <dd>Load a loom file as a Seurat object</dd>
 
         <dt>
 
@@ -334,28 +313,14 @@
           <code><a href="loom-class.html">loom-class</a></code> <code><a href="loom-class.html">loom</a></code>
 
         </dt>
-        <dd>A class for connections to loom files</dd>
+        <dd>Connection to a loom file</dd>
 
         <dt>
 
           <code><a href="loom-bindings.html">DefaultAssay(<i>&lt;loom&gt;</i>)</a></code> <code><a href="loom-bindings.html">dim(<i>&lt;loom&gt;</i>)</a></code>
 
         </dt>
-        <dd>Seurat binding for loom files</dd>
-
-        <dt>
-
-          <code><a href="LoomLoading.html">LoadLoom0.1()</a></code> <code><a href="LoomLoading.html">LoadLoom3.0()</a></code>
-
-        </dt>
-        <dd>Loom-file Loading</dd>
-
-        <dt>
-
-          <code><a href="ValidateLoom.html">LoomValidate0.1()</a></code> <code><a href="ValidateLoom.html">LoomValidate3.0.0()</a></code>
-
-        </dt>
-        <dd>Validate Loom Files</dd>
+        <dd>Accessors for open loom files</dd>
 
         <dt>
 
@@ -696,7 +661,7 @@
           <code><a href="FileType.html">FileType()</a></code>
 
         </dt>
-        <dd>Determine a filetype based on its extension</dd>
+        <dd>File type of a path or URI</dd>
 
         <dt>
 
@@ -704,6 +669,13 @@
 
         </dt>
         <dd>Run the scconvert CLI for file-to-file conversion</dd>
+
+        <dt>
+
+          <code><a href="scConvertBatch.html">scConvertBatch()</a></code>
+
+        </dt>
+        <dd>Convert many files in parallel</dd>
       </dl></div><div class="section level2">
       <h2 id="reading-writing">Reading &amp; Writing<a class="anchor" aria-label="anchor" href="#reading-writing"></a></h2>
 
@@ -716,59 +688,17 @@
 
       <dl><dt>
 
-          <code><a href="ReadH5.html">as.array(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.data.frame(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.data.frame(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.list(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.list(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.matrix(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.matrix(<i>&lt;H5Group&gt;</i>)</a></code>
+          <code><a href="ReadH5.html">as.array(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.data.frame(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.data.frame(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.list(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.list(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.matrix(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.matrix(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.sparse(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.sparse(<i>&lt;H5Group&gt;</i>)</a></code>
 
         </dt>
-        <dd>Read HDF5 Files</dd>
-
-        <dt>
-
-          <code><a href="as.sparse.html">as.sparse(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="as.sparse.html">as.sparse(<i>&lt;H5Group&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Convert an HDF5 dataset to a sparse matrix</dd>
+        <dd>Read HDF5 datasets and groups into R objects</dd>
 
         <dt>
 
           <code><a href="WriteH5Group.html">WriteH5Group()</a></code>
 
         </dt>
-        <dd>Write data to an HDF5 group</dd>
-
-        <dt>
-
-          <code><a href="BasicWrite.html">BasicWrite()</a></code>
-
-        </dt>
-        <dd>Write lists and other data to an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="ImageWrite.html">ImageWrite()</a></code>
-
-        </dt>
-        <dd>Write a SpatialImage object to an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="SparseWrite.html">SparseWrite()</a></code>
-
-        </dt>
-        <dd>Write a sparse matrix to an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="H5Exists.html">AttrExists()</a></code> <code><a href="H5Exists.html">Exists()</a></code>
-
-        </dt>
-        <dd>Check to see if a dataset, group, or attribute exists in an HDF5 file, group, or dataset</dd>
-
-        <dt>
-
-          <code><a href="H5Path.html">H5Path()</a></code>
-
-        </dt>
-        <dd>Create an HDF5 object path</dd>
+        <dd>Write an R object into an h5Seurat file</dd>
       </dl></div><div class="section level2">
       <h2 id="object-operations">Object Operations<a class="anchor" aria-label="anchor" href="#object-operations"></a></h2>
 
@@ -781,233 +711,17 @@
 
       <dl><dt>
 
-          <code><a href="GetObject.html">GetAssays()</a></code> <code><a href="GetObject.html">GetCommands()</a></code> <code><a href="GetObject.html">GetDimReducs()</a></code> <code><a href="GetObject.html">GetGraphs()</a></code> <code><a href="GetObject.html">GetImages()</a></code> <code><a href="GetObject.html">GetNeighbors()</a></code>
+          <code><a href="AssembleObject.html">AssembleImage()</a></code> <code><a href="AssembleObject.html">AssembleDimReduc()</a></code> <code><a href="AssembleObject.html">AssembleGraph()</a></code> <code><a href="AssembleObject.html">AssembleNeighbor()</a></code> <code><a href="AssembleObject.html">AssembleSeuratCommand()</a></code>
 
         </dt>
-        <dd>Figure out which objects to load from an h5Seurat file</dd>
-
-        <dt>
-
-          <code><a href="AssembleObject.html">AssembleAssay()</a></code> <code><a href="AssembleObject.html">AssembleDimReduc()</a></code> <code><a href="AssembleObject.html">AssembleGraph()</a></code> <code><a href="AssembleObject.html">AssembleImage()</a></code> <code><a href="AssembleObject.html">AssembleNeighbor()</a></code> <code><a href="AssembleObject.html">AssembleSeuratCommand()</a></code>
-
-        </dt>
-        <dd>Assemble an object from an h5Seurat file</dd>
+        <dd>Rebuild Seurat components from an open h5Seurat file</dd>
 
         <dt>
 
           <code><a href="scTranspose.html">scTranspose()</a></code>
 
         </dt>
-        <dd>scTranspose a matrix</dd>
-
-        <dt>
-
-          <code><a href="PadMatrix.html">PadMatrix()</a></code>
-
-        </dt>
-        <dd>Pad a matrix</dd>
-      </dl></div><div class="section level2">
-      <h2 id="testing-validation">Testing &amp; Validation<a class="anchor" aria-label="anchor" href="#testing-validation"></a></h2>
-
-      <div class="section-desc"><p>Functions for testing and validating HDF5 files and Seurat objects</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="TestH5.html">IsDataFrame(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsDataFrame(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="TestH5.html">IsFactor(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsFactor(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="TestH5.html">IsList(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="TestH5.html">IsLogical(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsMatrix(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsMatrix(<i>&lt;H5Group&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Test HDF5 datasets and groups to see what kind of data they are</dd>
-
-        <dt>
-
-          <code><a href="TestObject.html">IsDataFrame()</a></code> <code><a href="TestObject.html">IsFactor()</a></code> <code><a href="TestObject.html">IsList()</a></code> <code><a href="TestObject.html">IsLogical()</a></code> <code><a href="TestObject.html">IsMatrix()</a></code>
-
-        </dt>
-        <dd>Test an object's class</dd>
-
-        <dt>
-
-          <code><a href="CheckMatrix.html">CheckMatrix()</a></code>
-
-        </dt>
-        <dd>Check that a dataset is a proper loom matrix</dd>
-
-        <dt>
-
-          <code><a href="IsMatrixEmpty.html">IsMatrixEmpty()</a></code>
-
-        </dt>
-        <dd>Check to see if a matrix is empty</dd>
-      </dl></div><div class="section level2">
-      <h2 id="data-type-utilities">Data Type Utilities<a class="anchor" aria-label="anchor" href="#data-type-utilities"></a></h2>
-
-      <div class="section-desc"><p>Utilities for handling data types and format conversions</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="GuessDType.html">GuessDType()</a></code>
-
-        </dt>
-        <dd>Guess an HDF5 Datatype</dd>
-
-        <dt>
-
-          <code><a href="IsDType.html">IsDType()</a></code>
-
-        </dt>
-        <dd>Check the datatype of an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="StringType.html">StringType()</a></code>
-
-        </dt>
-        <dd>Generate an HDF5 string dtype</dd>
-
-        <dt>
-
-          <code><a href="BoolToInt.html">BoolToInt()</a></code>
-
-        </dt>
-        <dd>Convert a logical to an integer</dd>
-
-        <dt>
-
-          <code><a href="Dims.html">Dims()</a></code>
-
-        </dt>
-        <dd>Get the dimensions of an HDF5 dataset or sparse matrix</dd>
-
-        <dt>
-
-          <code><a href="GetClass.html">GetClass()</a></code>
-
-        </dt>
-        <dd>Get a class string with package information</dd>
-
-        <dt>
-
-          <code><a href="GetMargin.html">GetMargin()</a></code>
-
-        </dt>
-        <dd>Determine the margin to use for a dataset</dd>
-
-        <dt>
-
-          <code><a href="GetParent.html">GetParent()</a></code>
-
-        </dt>
-        <dd>Get the parent of an HDF5 dataset or group</dd>
-
-        <dt>
-
-          <code><a href="SparsePointers.html">IndexToPointer()</a></code> <code><a href="SparsePointers.html">PointerToIndex()</a></code>
-
-        </dt>
-        <dd>Convert sparse matrix pointers to indices and vice versa</dd>
-
-        <dt>
-
-          <code><a href="ClosestVersion.html">ClosestVersion()</a></code>
-
-        </dt>
-        <dd>Find the closest version</dd>
-
-        <dt>
-
-          <code><a href="ChunkPoints.html">ChunkPoints()</a></code>
-
-        </dt>
-        <dd>Generate chunk points</dd>
-
-        <dt>
-
-          <code><a href="MakeSpace.html">MakeSpace()</a></code>
-
-        </dt>
-        <dd>Make a space</dd>
-      </dl></div><div class="section level2">
-      <h2 id="metadata-attributes">Metadata &amp; Attributes<a class="anchor" aria-label="anchor" href="#metadata-attributes"></a></h2>
-
-      <div class="section-desc"><p>Working with HDF5 attributes and metadata</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="PadNames.html">PadNames()</a></code>
-
-        </dt>
-        <dd>Add names for unnamed or partially named objects</dd>
-
-        <dt>
-
-          <code><a href="RandomName.html">RandomName()</a></code>
-
-        </dt>
-        <dd>Generate a random string of characters</dd>
-
-        <dt>
-
-          <code><a href="Timestamp.html">FormatTime()</a></code> <code><a href="Timestamp.html">Timestamp()</a></code> <code><a href="Timestamp.html">TSFormats()</a></code>
-
-        </dt>
-        <dd>Create and work with timestamps</dd>
-
-        <dt>
-
-          <code><a href="UpdateKey.html">UpdateKey()</a></code>
-
-        </dt>
-        <dd>Update a Seurat key</dd>
-
-        <dt>
-
-          <code><a href="UpdateSlots.html">UpdateSlots()</a></code>
-
-        </dt>
-        <dd>Update slots in an object</dd>
-
-        <dt>
-
-          <code><a href="FixFeatures.html">FixFeatures()</a></code>
-
-        </dt>
-        <dd>Fix Feature Names</dd>
-
-        <dt>
-
-          <code><a href="CompoundToGroup.html">CompoundToGroup()</a></code>
-
-        </dt>
-        <dd>Convert compound dataset to group</dd>
-
-        <dt>
-
-          <code><a href="Writeable.html">Writeable()</a></code>
-
-        </dt>
-        <dd>Is an HDF5 file or group writeable</dd>
-
-        <dt>
-
-          <code><a href="WriteMode.html">WriteMode()</a></code>
-
-        </dt>
-        <dd>Get the proper HDF5 connection mode for writing depending on overwrite status</dd>
+        <dd>Transpose a matrix held in memory or in an HDF5 file</dd>
       </dl></div><div class="section level2">
       <h2 id="internal">Internal<a class="anchor" aria-label="anchor" href="#internal"></a></h2>
 
@@ -1062,24 +776,10 @@
 
         <dt>
 
-          <code><a href="AssembleObject.html">AssembleAssay()</a></code> <code><a href="AssembleObject.html">AssembleDimReduc()</a></code> <code><a href="AssembleObject.html">AssembleGraph()</a></code> <code><a href="AssembleObject.html">AssembleImage()</a></code> <code><a href="AssembleObject.html">AssembleNeighbor()</a></code> <code><a href="AssembleObject.html">AssembleSeuratCommand()</a></code>
+          <code><a href="AssembleObject.html">AssembleImage()</a></code> <code><a href="AssembleObject.html">AssembleDimReduc()</a></code> <code><a href="AssembleObject.html">AssembleGraph()</a></code> <code><a href="AssembleObject.html">AssembleNeighbor()</a></code> <code><a href="AssembleObject.html">AssembleSeuratCommand()</a></code>
 
         </dt>
-        <dd>Assemble an object from an h5Seurat file</dd>
-
-        <dt>
-
-          <code><a href="BasicWrite.html">BasicWrite()</a></code>
-
-        </dt>
-        <dd>Write lists and other data to an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="BoolToInt.html">BoolToInt()</a></code>
-
-        </dt>
-        <dd>Convert a logical to an integer</dd>
+        <dd>Rebuild Seurat components from an open h5Seurat file</dd>
 
         <dt>
 
@@ -1094,34 +794,6 @@
 
         </dt>
         <dd>Get cached UTF-8 string dtype</dd>
-
-        <dt>
-
-          <code><a href="CheckMatrix.html">CheckMatrix()</a></code>
-
-        </dt>
-        <dd>Check that a dataset is a proper loom matrix</dd>
-
-        <dt>
-
-          <code><a href="ChunkPoints.html">ChunkPoints()</a></code>
-
-        </dt>
-        <dd>Generate chunk points</dd>
-
-        <dt>
-
-          <code><a href="ClosestVersion.html">ClosestVersion()</a></code>
-
-        </dt>
-        <dd>Find the closest version</dd>
-
-        <dt>
-
-          <code><a href="CompoundToGroup.html">CompoundToGroup()</a></code>
-
-        </dt>
-        <dd>Convert compound dataset to group</dd>
 
         <dt>
 
@@ -1143,13 +815,6 @@
 
         </dt>
         <dd>Convert h5mu spatial data to Seurat format for a specific modality</dd>
-
-        <dt>
-
-          <code><a href="CopyH5MatrixData.html">CopyH5MatrixData()</a></code>
-
-        </dt>
-        <dd>Copy HDF5 matrix data handling nested paths</dd>
 
         <dt>
 
@@ -1185,13 +850,6 @@
 
         </dt>
         <dd>Detect spatial technology from data structure</dd>
-
-        <dt>
-
-          <code><a href="Dims.html">Dims()</a></code>
-
-        </dt>
-        <dd>Get the dimensions of an HDF5 dataset or sparse matrix</dd>
 
         <dt>
 
@@ -1233,14 +891,7 @@
           <code><a href="FileType.html">FileType()</a></code>
 
         </dt>
-        <dd>Determine a filetype based on its extension</dd>
-
-        <dt>
-
-          <code><a href="FixFeatures.html">FixFeatures()</a></code>
-
-        </dt>
-        <dd>Fix Feature Names</dd>
+        <dd>File type of a path or URI</dd>
 
         <dt>
 
@@ -1248,20 +899,6 @@
 
         </dt>
         <dd>Get assay data with V4/V5 compatibility</dd>
-
-        <dt>
-
-          <code><a href="GetAssayLayersCompat.html">GetAssayLayersCompat()</a></code>
-
-        </dt>
-        <dd>Get available layers or slots from assay</dd>
-
-        <dt>
-
-          <code><a href="GetClass.html">GetClass()</a></code>
-
-        </dt>
-        <dd>Get a class string with package information</dd>
 
         <dt>
 
@@ -1293,136 +930,10 @@
 
         <dt>
 
-          <code><a href="GetLayerPath.html">GetLayerPath()</a></code>
-
-        </dt>
-        <dd>Get Layer Path</dd>
-
-        <dt>
-
-          <code><a href="GetMargin.html">GetMargin()</a></code>
-
-        </dt>
-        <dd>Determine the margin to use for a dataset</dd>
-
-        <dt>
-
-          <code><a href="GetObject.html">GetAssays()</a></code> <code><a href="GetObject.html">GetCommands()</a></code> <code><a href="GetObject.html">GetDimReducs()</a></code> <code><a href="GetObject.html">GetGraphs()</a></code> <code><a href="GetObject.html">GetImages()</a></code> <code><a href="GetObject.html">GetNeighbors()</a></code>
-
-        </dt>
-        <dd>Figure out which objects to load from an h5Seurat file</dd>
-
-        <dt>
-
-          <code><a href="GetParent.html">GetParent()</a></code>
-
-        </dt>
-        <dd>Get the parent of an HDF5 dataset or group</dd>
-
-        <dt>
-
           <code><a href="GetScaleFactors.html">GetScaleFactors()</a></code>
 
         </dt>
         <dd>Get scale factors from Visium object</dd>
-
-        <dt>
-
-          <code><a href="GetStringType.html">GetStringType()</a></code>
-
-        </dt>
-        <dd>Check if an HDF5 dataset is a factor</dd>
-
-        <dt>
-
-          <code><a href="GuessDType.html">GuessDType()</a></code>
-
-        </dt>
-        <dd>Guess an HDF5 Datatype</dd>
-
-        <dt>
-
-          <code><a href="H5ADToH5Seurat.html">H5ADToH5Seurat()</a></code>
-
-        </dt>
-        <dd>Convert AnnData/H5AD files to h5Seurat files</dd>
-
-        <dt>
-
-          <code><a href="H5Exists.html">AttrExists()</a></code> <code><a href="H5Exists.html">Exists()</a></code>
-
-        </dt>
-        <dd>Check to see if a dataset, group, or attribute exists in an HDF5 file, group, or dataset</dd>
-
-        <dt>
-
-          <code><a href="H5Path.html">H5Path()</a></code>
-
-        </dt>
-        <dd>Create an HDF5 object path</dd>
-
-        <dt>
-
-          <code><a href="H5SeuratToH5AD.html">H5SeuratToH5AD()</a></code>
-
-        </dt>
-        <dd>Convert h5Seurat files to H5AD files</dd>
-
-        <dt>
-
-          <code><a href="ImageWrite.html">ImageWrite()</a></code>
-
-        </dt>
-        <dd>Write a SpatialImage object to an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="IsAssay5.html">IsAssay5()</a></code>
-
-        </dt>
-        <dd>Check if object is Assay5 (V5 format)</dd>
-
-        <dt>
-
-          <code><a href="IsCompound.html">IsCompound()</a></code>
-
-        </dt>
-        <dd>Check for compound type in HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="IsDType.html">IsDType()</a></code>
-
-        </dt>
-        <dd>Check the datatype of an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="IsEffectively1D.html">IsEffectively1D()</a></code>
-
-        </dt>
-        <dd>Check if H5D dataset is effectively 1D</dd>
-
-        <dt>
-
-          <code><a href="IsMatrixEmpty.html">IsMatrixEmpty()</a></code>
-
-        </dt>
-        <dd>Check to see if a matrix is empty</dd>
-
-        <dt>
-
-          <code><a href="IsSCDisk.html">IsSCDisk()</a></code>
-
-        </dt>
-        <dd>Does an R6 class inherit from scdisk</dd>
-
-        <dt>
-
-          <code><a href="IsV5Structure.html">IsV5Structure()</a></code>
-
-        </dt>
-        <dd>Check if h5Seurat file uses V5 structure</dd>
 
         <dt>
 
@@ -1433,59 +944,10 @@
 
         <dt>
 
-          <code><a href="LoomLoading.html">LoadLoom0.1()</a></code> <code><a href="LoomLoading.html">LoadLoom3.0()</a></code>
+          <code><a href="ReadH5.html">as.array(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.data.frame(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.data.frame(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.list(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.list(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.matrix(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.matrix(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="ReadH5.html">as.sparse(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="ReadH5.html">as.sparse(<i>&lt;H5Group&gt;</i>)</a></code>
 
         </dt>
-        <dd>Loom-file Loading</dd>
-
-        <dt>
-
-          <code><a href="MakeSpace.html">MakeSpace()</a></code>
-
-        </dt>
-        <dd>Make a space</dd>
-
-        <dt>
-
-          <code><a href="MigrateV4ToV5.html">MigrateV4ToV5()</a></code>
-
-        </dt>
-        <dd>Migrate V4 to V5 Structure</dd>
-
-        <dt>
-
-          <code><a href="PB.html">PB()</a></code>
-
-        </dt>
-        <dd>Create a progress bar</dd>
-
-        <dt>
-
-          <code><a href="PadMatrix.html">PadMatrix()</a></code>
-
-        </dt>
-        <dd>Pad a matrix</dd>
-
-        <dt>
-
-          <code><a href="PadNames.html">PadNames()</a></code>
-
-        </dt>
-        <dd>Add names for unnamed or partially named objects</dd>
-
-        <dt>
-
-          <code><a href="PrepareSpatialForH5MU.html">PrepareSpatialForH5MU()</a></code>
-
-        </dt>
-        <dd>Prepare spatial data for h5mu export</dd>
-
-        <dt>
-
-          <code><a href="RandomName.html">RandomName()</a></code>
-
-        </dt>
-        <dd>Generate a random string of characters</dd>
+        <dd>Read HDF5 datasets and groups into R objects</dd>
 
         <dt>
 
@@ -1538,17 +1000,10 @@
 
         <dt>
 
-          <code><a href="RequiresS4Reconstruction.html">RequiresS4Reconstruction()</a></code>
+          <code><a href="RegisterSCDisk.html">GetSCDisk()</a></code> <code><a href="RegisterSCDisk.html">RegisterSCDisk()</a></code>
 
         </dt>
-        <dd>Check if assay requires S4 slot reconstruction</dd>
-
-        <dt>
-
-          <code><a href="ResolveNestedH5Path.html">ResolveNestedH5Path()</a></code>
-
-        </dt>
-        <dd>Resolve a nested HDF5 path to its object</dd>
+        <dd>Register and look up <code>scdisk</code> format classes</dd>
 
         <dt>
 
@@ -1573,13 +1028,6 @@
 
         <dt>
 
-          <code><a href="SafeSetLayerData.html">SafeSetLayerData()</a></code>
-
-        </dt>
-        <dd>Safely set layer data in a V5 Assay</dd>
-
-        <dt>
-
           <code><a href="SanitizeImageKey.html">SanitizeImageKey()</a></code>
 
         </dt>
@@ -1601,80 +1049,10 @@
 
         <dt>
 
-          <code><a href="SetFeaturesV5.html">SetFeaturesV5()</a></code>
-
-        </dt>
-        <dd>Set V5 feature index in HDF5 group</dd>
-
-        <dt>
-
           <code><a href="SeuratLayerToAnnData.html">SeuratLayerToAnnData()</a></code>
 
         </dt>
         <dd>Map Seurat layer name to AnnData layer name</dd>
-
-        <dt>
-
-          <code><a href="SparsePointers.html">IndexToPointer()</a></code> <code><a href="SparsePointers.html">PointerToIndex()</a></code>
-
-        </dt>
-        <dd>Convert sparse matrix pointers to indices and vice versa</dd>
-
-        <dt>
-
-          <code><a href="SparseWrite.html">SparseWrite()</a></code>
-
-        </dt>
-        <dd>Write a sparse matrix to an HDF5 dataset</dd>
-
-        <dt>
-
-          <code><a href="StringType.html">StringType()</a></code>
-
-        </dt>
-        <dd>Generate an HDF5 string dtype</dd>
-
-        <dt>
-
-          <code><a href="TestH5.html">IsDataFrame(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsDataFrame(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="TestH5.html">IsFactor(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsFactor(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="TestH5.html">IsList(<i>&lt;H5Group&gt;</i>)</a></code> <code><a href="TestH5.html">IsLogical(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsMatrix(<i>&lt;H5D&gt;</i>)</a></code> <code><a href="TestH5.html">IsMatrix(<i>&lt;H5Group&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Test HDF5 datasets and groups to see what kind of data they are</dd>
-
-        <dt>
-
-          <code><a href="TestObject.html">IsDataFrame()</a></code> <code><a href="TestObject.html">IsFactor()</a></code> <code><a href="TestObject.html">IsList()</a></code> <code><a href="TestObject.html">IsLogical()</a></code> <code><a href="TestObject.html">IsMatrix()</a></code>
-
-        </dt>
-        <dd>Test an object's class</dd>
-
-        <dt>
-
-          <code><a href="Timestamp.html">FormatTime()</a></code> <code><a href="Timestamp.html">Timestamp()</a></code> <code><a href="Timestamp.html">TSFormats()</a></code>
-
-        </dt>
-        <dd>Create and work with timestamps</dd>
-
-        <dt>
-
-          <code><a href="TransferMetadataV5.html">TransferMetadataV5()</a></code>
-
-        </dt>
-        <dd>Transfer metadata from V5 h5Seurat to h5ad</dd>
-
-        <dt>
-
-          <code><a href="UpdateKey.html">UpdateKey()</a></code>
-
-        </dt>
-        <dd>Update a Seurat key</dd>
-
-        <dt>
-
-          <code><a href="UpdateSlots.html">UpdateSlots()</a></code>
-
-        </dt>
-        <dd>Update slots in an object</dd>
 
         <dt>
 
@@ -1699,13 +1077,6 @@
 
         <dt>
 
-          <code><a href="ValidateLoom.html">LoomValidate0.1()</a></code> <code><a href="ValidateLoom.html">LoomValidate3.0.0()</a></code>
-
-        </dt>
-        <dd>Validate Loom Files</dd>
-
-        <dt>
-
           <code><a href="ValidateMultimodalObject.html">ValidateMultimodalObject()</a></code>
 
         </dt>
@@ -1713,17 +1084,10 @@
 
         <dt>
 
-          <code><a href="WriteH5SpatialV5.html">WriteH5SpatialV5()</a></code>
+          <code><a href="WriteH5Group.html">WriteH5Group()</a></code>
 
         </dt>
-        <dd>Handle spatial data for V5 objects</dd>
-
-        <dt>
-
-          <code><a href="WriteMode.html">WriteMode()</a></code>
-
-        </dt>
-        <dd>Get the proper HDF5 connection mode for writing depending on overwrite status</dd>
+        <dd>Write an R object into an h5Seurat file</dd>
 
         <dt>
 
@@ -1731,20 +1095,6 @@
 
         </dt>
         <dd>Write V5 Layer Data</dd>
-
-        <dt>
-
-          <code><a href="Writeable.html">Writeable()</a></code>
-
-        </dt>
-        <dd>Is an HDF5 file or group writeable</dd>
-
-        <dt>
-
-          <code><a href="as.factor.H5D.html">as.factor.H5D()</a></code>
-
-        </dt>
-        <dd>Convert an HDF5 dataset to a factor</dd>
 
         <dt>
 
@@ -2325,14 +1675,14 @@
           <code><a href="h5SI.html">DefaultAssay(<i>&lt;h5SI&gt;</i>)</a></code> <code><a href="h5SI.html">print(<i>&lt;h5SI&gt;</i>)</a></code>
 
         </dt>
-        <dd>Tools for handling h5Seurat indexes</dd>
+        <dd>Index of an h5Seurat file</dd>
 
         <dt>
 
-          <code><a href="scAppendData.html">scAppendData()</a></code>
+          <code><a href="scTranspose.html">scTranspose()</a></code>
 
         </dt>
-        <dd>Append data from an h5Seurat file to a preexisting <code><a href="https://satijalab.org/seurat/reference/Seurat-package.html" class="external-link">Seurat</a></code> object</dd>
+        <dd>Transpose a matrix held in memory or in an HDF5 file</dd>
 
         <dt>
 

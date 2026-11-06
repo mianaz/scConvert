@@ -63,8 +63,53 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="scconvert-030-development">scConvert 0.3.0 (development)<a class="anchor" aria-label="anchor" href="#scconvert-030-development"></a></h2>
 <div class="section level3">
+<h3 id="license-and-independent-implementation-0-3-0">License and independent implementation<a class="anchor" aria-label="anchor" href="#license-and-independent-implementation-0-3-0"></a></h3>
+<p>scConvert is now released under the MIT license (previously GPL-3). The code inherited from SeuratDisk (h5Seurat/loom connection classes, h5Seurat reader and writer, loom reader and writer, HDF5 helpers and the h5ad &lt;-&gt; h5Seurat converters) has been replaced by a new implementation; unused inherited code (<code>AppendData</code>, <code>PadMatrix</code>, the V4 -&gt; V5 migration helpers and others) was removed. The h5Seurat and loom on-disk layouts are unchanged: files written by earlier versions read back identically, and earlier versions read files written by this one identically. Public functions keep their names and arguments.</p>
+<p>Without the optional <code>scconvert</code> binary, file-to-file h5ad &lt;-&gt; h5Seurat conversion now loads the data into a Seurat object and writes it out again (<code><a href="../reference/readH5AD.html">readH5AD()</a></code> + <code><a href="../reference/writeH5Seurat.html">writeH5Seurat()</a></code>, <code><a href="../reference/readH5Seurat.html">readH5Seurat()</a></code> + <code><a href="../reference/writeH5AD.html">writeH5AD()</a></code>).</p>
+</div>
+<div class="section level3">
+<h3 id="large-datasets-0-3-0">Large datasets<a class="anchor" aria-label="anchor" href="#large-datasets-0-3-0"></a></h3>
+<ul><li>
+<code>scConvert(..., stream = TRUE)</code> converts between any two of h5ad, h5Seurat, h5mu and loom without loading the expression matrices: metadata, embeddings, graphs, images and <code>uns</code> go through the regular reader and writer, and the matrices (<code>X</code>, <code>layers</code>, <code>raw/X</code>, h5Seurat layers and slots, h5mu modalities, the loom <code>/matrix</code> and <code>/layers</code>) are copied between the files by HDF5, or in bounded blocks when they have to be transposed, densified or have features subset or reordered. The result is identical to an in-memory conversion. On 100,000 cells with 100 million non-zeros, peak memory drops from 6.5 GB to 1.2 GB and run time from 101 s to 34 s. <code>stream = "auto"</code> (default) streams files larger than <code>options(scConvert.stream_threshold)</code> (2 GB); the block size is <code>options(scConvert.stream_chunk_bytes)</code> (64 MB).</li>
+<li>New <code><a href="../reference/scConvertBatch.html">scConvertBatch()</a></code> converts many files in parallel worker processes and reports per-file success, time and errors.</li>
+<li>
+<code><a href="../reference/H5MUToH5AD.html">H5MUToH5AD()</a></code>, <code><a href="../reference/H5ADToH5MU.html">H5ADToH5MU()</a></code>, <code><a href="../reference/LoomToH5AD.html">LoomToH5AD()</a></code>, <code><a href="../reference/H5ADToLoom.html">H5ADToLoom()</a></code> and the other file-to-file converters take the same <code>stream</code> argument.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-changes-0-3-0">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-3-0"></a></h3>
+<ul><li><p><code><a href="../reference/scConvert.html">scConvert()</a></code> between h5Seurat, h5mu and loom files (h5ad -&gt; loom, h5Seurat -&gt; h5mu / loom, h5mu -&gt; h5Seurat / loom) failed with “unused argument”; these now convert.</p></li>
+<li><p>The compiled <code>scconvert</code> binary is opt-in (<code>options(scConvert.use_cli = TRUE)</code>). The previous auto-detection never took effect, and the binary drops feature metadata and spatial images, so the package no longer probes for it or prints a startup message about it.</p></li>
+<li><p><code><a href="../reference/writeLoom.html">writeLoom()</a></code> records the assay name (<code>/attrs/SEURAT_ASSAY</code>), so <code><a href="../reference/readLoom.html">readLoom()</a></code> restores assays other than RNA, and writes Seurat v5 objects with split layers (joined first).</p></li>
+<li><p>h5Seurat keeps missing values in character vectors (stored as <code>""</code> with an <code>na.positions</code> attribute; they used to become the string <code>"NA"</code>).</p></li>
+<li><p>When counts come from <code>layers/counts</code> or <code>raw/X</code>, <code><a href="../reference/readH5AD.html">readH5AD()</a></code> computes <code>nCount_*</code> / <code>nFeature_*</code> from those counts instead of from <code>X</code> (unless obs provides them).</p></li>
+<li><p><code>zstdlite</code> is listed in Suggests; <code>stringi</code> is no longer imported.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-3-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-3-0"></a></h3>
+<ul><li>Asymmetric graphs (the kNN <code>*_nn</code> graph) were transposed in several h5ad paths: the compiled h5ad writer, the R h5ad reader, the reader for <code>csc_matrix</code> graphs, and the h5mu reader. The demo h5ad files shipped in <code>inst/</code> carried transposed <code>*_nn</code> graphs and have been corrected.</li>
+<li>The compiled h5ad writer dropped gene metadata and <code>highly_variable</code>, and <code>writeH5AD(standardize = TRUE)</code> had no effect.</li>
+<li>
+<code><a href="../reference/scConvert.html">scConvert()</a></code> from h5ad to h5mu failed.</li>
+<li>Loom graphs failed to load when the last cells had no edges.</li>
+<li>
+<code><a href="../reference/writeH5Seurat.html">as.h5Seurat()</a></code> on an open <code>H5File</code> reopened it with the opposite read/write mode; <code><a href="../reference/writeLoom.html">as.loom()</a></code> and <code><a href="../reference/writeLoom.html">writeLoom()</a></code> on non-Seurat input always failed.</li>
+<li>
+<code><a href="../reference/readH5AD_obs.html">readH5AD_obs()</a></code> now decodes nullable and boolean columns.</li>
+<li>Metadata columns with missing values now round-trip through h5ad, h5mu and zarr: logical <code>NA</code> is written as <code>nullable-boolean</code> (was <code>FALSE</code>), integer <code>NA</code> as <code>nullable-integer</code> (was <code>INT_MIN</code>/0), and character <code>NA</code> as a categorical with code -1 (was the literal string <code>"NA"</code> / <code>""</code>). Logical columns are written as numpy-bool enums instead of int8.</li>
+<li>Ordered factors keep <code>ordered = TRUE</code> in h5ad (C writer), zarr and h5Seurat; h5mu now reads the flag back.</li>
+<li>
+<code><a href="../reference/readH5MU.html">readH5MU()</a></code> decodes obs/var columns through the shared AnnData decoder, so nullable columns are no longer dropped.</li>
+<li>h5Seurat logical columns are decoded back to logical (the NA sentinel 2 was read as <code>TRUE</code>/2).</li>
+<li>zarr categorical codes are sized to the number of levels; factors with more than 127 levels were silently corrupted by int8 codes.</li>
+<li>Library ids for multi-library spatial h5Seurat files are decoded with 1-based factor codes (they were shifted by one level).</li>
+<li>Assay5 <code>counts</code>/<code>data</code> layers that cover a subset of features or cells are restored by name from <code>layer.features</code>/<code>layer.cells</code> instead of being dropped or padded positionally.</li>
+<li>2D HDF5 datasets with a length-1 axis are no longer collapsed to vectors (single-cell loom files failed to load).</li>
+<li>zarr vlen-utf8 strings are marked as UTF-8 (non-ASCII text was garbled in non-UTF-8 locales).</li>
+<li>C converters cap HDF5 chunk sizes for 2D datasets (full-size chunks broke on dense matrices over 4 GiB and on empty axes) and report HDF5 write failures instead of returning success.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="seurat-v56-beta-and-seuratobject-compatibility-0-3-0">Seurat v5.6-beta and SeuratObject 5.4 compatibility<a class="anchor" aria-label="anchor" href="#seurat-v56-beta-and-seuratobject-compatibility-0-3-0"></a></h3>
-<p>Seurat <code>v5.6-beta</code> (branch <code>v5.6-beta</code>, version 5.5.1.9999, August 2026) changes computation, not object structure: multithreading via <code>setThreads()</code>/<code>getThreads()</code>, a C++ SCTransform residual kernel, a Gram-matrix PCA path and a legacy-compatible VST ranking. The package test suites pass against it unchanged. Two beta details do matter for round trips:</p>
+<p>Seurat <code>v5.6-beta</code> (branch <code>v5.6-beta</code>, version 5.5.1.9999, August 2026) changes computation, not object structure: multithreading via <code><a href="https://satijalab.org/seurat/reference/setThreads.html" class="external-link">setThreads()</a></code>/<code><a href="https://satijalab.org/seurat/reference/getThreads.html" class="external-link">getThreads()</a></code>, a C++ SCTransform residual kernel, a Gram-matrix PCA path and a legacy-compatible VST ranking. The package test suites pass against it unchanged. Two beta details do matter for round trips:</p>
 <ul><li>
 <code>SCTModel</code> objects built by the beta store a resolved numeric <code>arguments$min_variance</code> and an explicit <code>arguments$sct.clip.range</code>; both are plain list entries and round-trip through the <code>SCTModel.list</code> group the h5Seurat writer already emits.</li>
 <li>The <code>Seurat.warn.umap.uwot</code> option was removed; nothing in this package referenced it.</li>

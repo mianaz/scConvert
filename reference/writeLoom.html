@@ -86,7 +86,7 @@ with Python-based analysis workflows or archiving analysis results.</p>
 <span><span class="co"># S3 method for class 'Seurat'</span></span>
 <span><span class="fu">writeLoom</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="h5Seurat-bindings.html">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">object</span><span class="op">)</span>, <span class="st">".loom"</span><span class="op">)</span>,</span>
+<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Project.html" class="external-link">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">object</span><span class="op">)</span>, <span class="st">".loom"</span><span class="op">)</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -101,7 +101,7 @@ with Python-based analysis workflows or archiving analysis results.</p>
 <span><span class="co"># S3 method for class 'Seurat'</span></span>
 <span><span class="fu">as.loom</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="h5Seurat-bindings.html">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">x</span><span class="op">)</span>, <span class="st">".loom"</span><span class="op">)</span>,</span>
+<span>  filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/Project.html" class="external-link">Project</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">x</span><span class="op">)</span>, <span class="st">".loom"</span><span class="op">)</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -140,7 +140,7 @@ with Python-based analysis workflows or archiving analysis results.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>writeLoom</code>: Invisibly returns the filename of the saved file</p>
-<p><code>as.loom</code>: A <code><a href="loom-class.html">loom</a></code> object</p>
+<p><code>as.loom</code>: an open <code><a href="loom-class.html">loom</a></code> connection</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -150,7 +150,7 @@ with Python-based analysis workflows or archiving analysis results.</p>
 <li><p><code>/layers</code>: Additional expression layers if present</p></li>
 </ul><p>When saving a Seurat object:</p><ul><li><p>Default assay data becomes the main matrix</p></li>
 <li><p>Cell metadata and feature annotations are preserved</p></li>
-<li><p>Dimensional reductions are stored in col_attrs</p></li>
+<li><p>Dimensional reductions are stored under <code>/reductions</code></p></li>
 <li><p>The SEURAT_ASSAY attribute stores the assay name for roundtrip loading</p></li>
 </ul></div>
     <div class="section level2">

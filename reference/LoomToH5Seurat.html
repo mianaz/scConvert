@@ -110,8 +110,11 @@ conversion. The loom dense matrix is converted to sparse CSC for h5seurat.</p>
 
 
 <dt id="arg-stream">stream<a class="anchor" aria-label="anchor" href="#arg-stream"></a></dt>
-<dd><p>If TRUE (default), stream fields directly. If FALSE,
-load as Seurat then save as h5seurat.</p></dd>
+<dd><p><code>TRUE</code> streams the expression matrices between the
+files without loading them (see <code><a href="scConvert.html">scConvert</a></code>, section
+<em>Large datasets</em>); <code>FALSE</code> converts in memory; <code>NULL</code> or
+<code>"auto"</code> streams files larger than
+<code>options(scConvert.stream_threshold)</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

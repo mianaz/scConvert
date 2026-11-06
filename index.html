@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Universal Single-Cell Format Conversion for R">
-<meta name="description" content="Universal converter between single-cell data formats in R. Converts between any pair of h5Seurat, h5ad (AnnData), h5mu (MuData), Loom, Zarr, RDS, and SingleCellExperiment formats through a hub architecture using Seurat as an intermediate. Features memory-efficient direct HDF5 paths for h5ad/h5Seurat conversions, Visium spatial data roundtripping with image reconstruction, multimodal MuData support, and full Seurat v5 Assay5 compatibility. No Python or reticulate dependency required. Originally derived from SeuratDisk with substantial extensions for universal format coverage.">
-<meta property="og:description" content="Universal converter between single-cell data formats in R. Converts between any pair of h5Seurat, h5ad (AnnData), h5mu (MuData), Loom, Zarr, RDS, and SingleCellExperiment formats through a hub architecture using Seurat as an intermediate. Features memory-efficient direct HDF5 paths for h5ad/h5Seurat conversions, Visium spatial data roundtripping with image reconstruction, multimodal MuData support, and full Seurat v5 Assay5 compatibility. No Python or reticulate dependency required. Originally derived from SeuratDisk with substantial extensions for universal format coverage.">
+<meta name="description" content="Universal converter between single-cell data formats in R. Converts between any pair of h5Seurat, h5ad (AnnData), h5mu (MuData), Loom, Zarr, RDS, and SingleCellExperiment formats through a hub architecture using Seurat as an intermediate, with streaming HDF5 paths between file formats and an optional compiled converter for large h5ad/h5Seurat files. Supports Visium spatial data roundtripping with image reconstruction, multimodal MuData, and Seurat v5 Assay5 objects. Reads and writes the h5Seurat layout used by SeuratDisk. No Python or reticulate dependency required.">
+<meta property="og:description" content="Universal converter between single-cell data formats in R. Converts between any pair of h5Seurat, h5ad (AnnData), h5mu (MuData), Loom, Zarr, RDS, and SingleCellExperiment formats through a hub architecture using Seurat as an intermediate, with streaming HDF5 paths between file formats and an optional compiled converter for large h5ad/h5Seurat files. Supports Visium spatial data roundtripping with image reconstruction, multimodal MuData, and Seurat v5 Assay5 objects. Reads and writes the h5Seurat layout used by SeuratDisk. No Python or reticulate dependency required.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -292,12 +292,16 @@
 <td>Read/write SOMA for CELLxGENE Census interoperability.</td>
 </tr>
 <tr>
+<td><strong>Large data</strong></td>
+<td>Streaming conversion between h5ad, h5Seurat, h5mu and Loom that never loads the expression matrices (<code>stream = TRUE</code>), and parallel batch conversion (<code><a href="reference/scConvertBatch.html">scConvertBatch()</a></code>).</td>
+</tr>
+<tr>
 <td><strong>BPCells</strong></td>
 <td>On-disk matrix loading – 87% memory reduction at atlas scale.</td>
 </tr>
 <tr>
 <td><strong>C CLI</strong></td>
-<td>Standalone binary for streaming on-disk HDF5 conversion.</td>
+<td>Standalone binary for fast HDF5 conversion (opt-in; see below).</td>
 </tr>
 <tr>
 <td><strong>Version compatibility</strong></td>
@@ -359,22 +363,59 @@
 <p>The C writer writes h5ad directly via <code><a href="https://rdrr.io/r/base/CallExternal.html" class="external-link">.Call()</a></code>, using the zero-copy CSC↔︎CSR reinterpretation (no sparse transpose needed). Use <code>gzip = 0</code> for local/temporary files (6× faster), <code>gzip = 1</code> for a good speed/size balance (252 MB vs 1.2 GB at 100K cells). BPCells on-disk loading (<code>use.bpcells</code>) reduces memory by ~87% at atlas scale. Benchmarked on Apple M4 Max, 128 GB RAM.</p>
 </div>
 <div class="section level2">
+<h2 id="large-datasets">Large Datasets<a class="anchor" aria-label="anchor" href="#large-datasets"></a>
+</h2>
+<p>For files that do not fit comfortably in memory, convert without loading the object:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># any pair of h5ad, h5Seurat, h5mu and Loom; expression matrices copied on disk</span></span>
+<span><span class="fu"><a href="reference/scConvert.html">scConvert</a></span><span class="op">(</span><span class="st">"atlas.h5ad"</span>, dest <span class="op">=</span> <span class="st">"atlas.h5seurat"</span>, stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/scConvert.html">scConvert</a></span><span class="op">(</span><span class="st">"atlas.h5seurat"</span>, dest <span class="op">=</span> <span class="st">"atlas.h5ad"</span>, stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/scConvert.html">scConvert</a></span><span class="op">(</span><span class="st">"citeseq.h5mu"</span>, dest <span class="op">=</span> <span class="st">"citeseq.h5seurat"</span>, stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># many files at once, one worker process per file</span></span>
+<span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="st">"samples"</span>, pattern <span class="op">=</span> <span class="st">"\\.h5ad$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/scConvertBatch.html">scConvertBatch</a></span><span class="op">(</span><span class="va">files</span>, dest <span class="op">=</span> <span class="st">"h5seurat"</span>, workers <span class="op">=</span> <span class="fl">4</span>, stream <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>Streaming reads only the small parts of the file (metadata, embeddings, graphs, images, <code>uns</code>) and converts them with the regular reader and writer; the expression matrices (h5ad <code>X</code>, <code>layers</code> and <code>raw</code>, h5Seurat layers, h5mu modalities, the Loom matrix and layers) are copied between the files by HDF5, or in 64 MB blocks (<code>options(scConvert.stream_chunk_bytes)</code>) when they must be transposed or densified, or features subset or reordered. The output is identical to an in-memory conversion. <code>stream = "auto"</code> (the default) streams files larger than 2 GB (<code>options(scConvert.stream_threshold)</code>).</p>
+<p>Synthetic h5ad, 100,000 cells x 5,000 genes, 100 million non-zeros (Linux, 4 cores):</p>
+<table class="table">
+<thead><tr>
+<th>h5ad → h5Seurat</th>
+<th align="right">Peak memory</th>
+<th align="right">Time</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>in memory</td>
+<td align="right">6.5 GB</td>
+<td align="right">101 s</td>
+</tr>
+<tr>
+<td><code>stream = TRUE</code></td>
+<td align="right">1.2 GB</td>
+<td align="right">34 s</td>
+</tr>
+</tbody>
+</table>
+<p>Streaming memory depends on the number of cells (metadata), not on the size of the matrices: 60 million non-zeros over 200,000 cells also peak at 1.2 GB, of which 0.4 GB is R with Seurat loaded. Converting four 50,000-cell files with <code>scConvertBatch(workers = 4)</code> took 17 s instead of 47 s.</p>
+</div>
+<div class="section level2">
 <h2 id="command-line-interface">Command-Line Interface<a class="anchor" aria-label="anchor" href="#command-line-interface"></a>
 </h2>
 <p>A standalone C binary for HDF5-based conversions (h5ad, h5Seurat, h5mu, Loom) without R or Python:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Build (requires HDF5 headers)</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="bu">cd</span> src <span class="kw">&amp;&amp;</span> <span class="fu">make</span> <span class="at">-f</span> Makefile.cli</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Optional: install into the R package tree so `library(scConvert)` picks it up</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">make</span> <span class="at">-f</span> Makefile.cli install-bin   <span class="co"># copies to ../inst/bin/scconvert</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co"># Convert between any HDF5 format pair</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5ad data.h5seurat</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5seurat data.h5ad <span class="at">--assay</span> RNA</span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="ex">./scconvert</span> multimodal.h5mu multimodal.h5seurat</span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5ad data.loom</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="ex">./scconvert</span> data.loom data.h5seurat</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Build (requires HDF5 headers)</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="bu">cd</span> src <span class="kw">&amp;&amp;</span> <span class="fu">make</span> <span class="at">-f</span> Makefile.cli</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># Optional: install into the R package tree so `library(scConvert)` picks it up</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">make</span> <span class="at">-f</span> Makefile.cli install-bin   <span class="co"># copies to ../inst/bin/scconvert</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co"># Convert between any HDF5 format pair</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5ad data.h5seurat</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5seurat data.h5ad <span class="at">--assay</span> RNA</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="ex">./scconvert</span> multimodal.h5mu multimodal.h5seurat</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="ex">./scconvert</span> data.h5ad data.loom</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="ex">./scconvert</span> data.loom data.h5seurat</span></code></pre></div>
 <p>Options: <code>--assay &lt;name&gt;</code>, <code>--gzip &lt;0-9&gt;</code>, <code>--overwrite</code>, <code>--quiet</code>, <code>--version</code>, <code>--help</code></p>
+<p>The CLI is fast but does not carry everything the R paths do (feature metadata, variable features and spatial images are dropped), so <code><a href="reference/scConvert.html">scConvert()</a></code> only uses it with <code>options(scConvert.use_cli = TRUE)</code>. For large files with full fidelity, use <code>stream = TRUE</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
@@ -385,9 +426,11 @@
 <li><a href="https://mianaz.github.io/scConvert/articles/multimodal-h5mu.html">Multimodal H5MU</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-loom.html">Loom Format</a></li>
 <li><a href="https://mianaz.github.io/scConvert/articles/convert-zarr.html">Zarr Format</a></li>
-<li><a href="https://mianaz.github.io/scConvert/articles/spatial-technologies.html">Spatial Technologies</a></li>
+<li>
+<a href="https://mianaz.github.io/scConvert/articles/spatial-visium.html">Spatial: Visium</a> and <a href="https://mianaz.github.io/scConvert/articles/spatial-cosmx.html">CosMx</a>
+</li>
 <li><a href="https://mianaz.github.io/scConvert/articles/cli-usage.html">CLI Usage</a></li>
-<li><a href="https://mianaz.github.io/scConvert/articles/h5Seurat-spec.html">h5Seurat Specification</a></li>
+<li><a href="https://mianaz.github.io/scConvert/articles/atlas-scale-cli.html">Atlas-scale conversion</a></li>
 </ul>
 </div>
 <div class="section level2">
@@ -401,7 +444,7 @@
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>GPL-3</p>
+<p>scConvert is released under the <a href="LICENSE.html">MIT License</a>, © 2026 Ziyu Zeng. Versions before 0.3.0 were distributed under GPL-3 because they included code from SeuratDisk; that code has been replaced by an independent implementation. scConvert reads and writes the h5Seurat file layout used by SeuratDisk.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -416,9 +459,8 @@
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li>
-<a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a> | file <a href="LICENSE-text.html">LICENSE</a>
-</li>
+<li><a href="LICENSE.html">Full license</a></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
 </ul>
 </div>
 

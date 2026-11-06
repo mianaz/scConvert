@@ -79,42 +79,44 @@ an intermediate. No Python dependency required.</p>
     <h2 id="package-options">Package options<a class="anchor" aria-label="anchor" href="#package-options"></a></h2>
 
 
-
-<p>scConvert uses the following options to control behavior, users can configure
-these with <code><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></code>:</p>
-<dl><dt><code>scConvert.dtypes.logical_to_int</code></dt>
-<dd><p>When writing <a href="https://rdrr.io/r/base/logical.html" class="external-link">logical</a> vectors, coerce to integer types to
-  ensure compatibility across languages (see <code><a href="BoolToInt.html">BoolToInt</a></code> for
-  more details)</p></dd>
+<p>Set with <code><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></code>:</p><dl><dt><code>scConvert.dtypes.logical_to_int</code></dt>
+<dd><p>Store logical vectors as
+  integers (0/1, NA = 2) so other languages can read them (default
+  <code>TRUE</code>)</p></dd>
 
  <dt><code>scConvert.dtypes.dataframe_as_group</code></dt>
-<dd><p>When writing <a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a>s, always write out as a group
-  regardless of factor presence</p></dd>
+<dd><p>Store every data frame
+  as a group of column datasets, also when it has no factor columns
+  (default <code>TRUE</code>)</p></dd>
 
  <dt><code>scConvert.chunking.MARGIN</code></dt>
-<dd><p>Default direction for chunking datasets; choose from:</p><dl><dt>largest</dt>
-<dd><p>Chunk along the largest dimension of a dataset</p></dd>
-
-   <dt>smallest</dt>
-<dd><p>Chunk along the smallest dimension</p></dd>
-
-   <dt>first</dt>
-<dd><p>Chunk along the first dimension</p></dd>
-
-   <dt>last</dt>
-<dd><p>Chunk along the last dimension</p></dd>
-
-
-</dl><p></p></dd>
+<dd><p>Axis used when streaming a dataset
+  in blocks: <code>"largest"</code> (default), <code>"smallest"</code>,
+  <code>"first"</code> or <code>"last"</code></p></dd>
 
  <dt><code>scConvert.dimreducs.allglobal</code></dt>
-<dd><p>Treat all DimReducs as global, regardless of actual global status</p></dd>
+<dd><p>Load every dimensional
+  reduction as global (default <code>FALSE</code>)</p></dd>
 
  <dt><code>scConvert.compression.level</code></dt>
-<dd><p>Gzip compression level for HDF5 dataset writes (0-9). Level 0 means
-  no compression, level 4 (default) is a good balance of speed vs size.
-  Only applies to newly created datasets, not to data copied via
-  <code>obj_copy_from</code>.</p></dd>
+<dd><p>gzip level (0-9) for new HDF5
+  datasets; 0 disables compression (default 4)</p></dd>
+
+ <dt><code>scConvert.use_cli</code></dt>
+<dd><p>Use the optional compiled <code>scconvert</code>
+  binary for file-to-file conversions (default <code>FALSE</code>). It is fast
+  but drops feature metadata and spatial images; for large files prefer
+  the streaming R path (<code>scConvert(..., stream = TRUE)</code>)</p></dd>
+
+ <dt><code>scConvert.stream</code></dt>
+<dd><p>Default for the <code>stream</code> argument of
+  <code><a href="scConvert.html">scConvert</a></code>: <code>"auto"</code> (stream files larger than
+  <code>scConvert.stream_threshold</code> bytes, 2 GB by default), <code>TRUE</code> or
+  <code>FALSE</code></p></dd>
+
+ <dt><code>scConvert.stream_chunk_bytes</code></dt>
+<dd><p>Memory budget per block when
+  streaming matrices (default 64 MB)</p></dd>
 
 
 </dl></div>

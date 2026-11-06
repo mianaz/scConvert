@@ -67,7 +67,14 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">H5ADToLoom</span><span class="op">(</span><span class="va">source</span>, <span class="va">dest</span>, overwrite <span class="op">=</span> <span class="cn">FALSE</span>, gzip <span class="op">=</span> <span class="fl">4L</span>, verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">H5ADToLoom</span><span class="op">(</span></span>
+<span>  <span class="va">source</span>,</span>
+<span>  <span class="va">dest</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  gzip <span class="op">=</span> <span class="fl">4L</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  stream <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -92,6 +99,14 @@
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Show progress messages</p></dd>
+
+
+<dt id="arg-stream">stream<a class="anchor" aria-label="anchor" href="#arg-stream"></a></dt>
+<dd><p><code>TRUE</code> streams the expression matrices between the
+files without loading them (see <code><a href="scConvert.html">scConvert</a></code>, section
+<em>Large datasets</em>); <code>FALSE</code> converts in memory; <code>NULL</code> or
+<code>"auto"</code> streams files larger than
+<code>options(scConvert.stream_threshold)</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
