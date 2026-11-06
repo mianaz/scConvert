@@ -37,14 +37,12 @@ Imports:
   utils
 Collate:
     'zzz.R'
+    'H5Utils.R'
     'AnnDataCompat.R'
     'AnnDataEncoding.R'
     'GetObject.R'
     'UtilsH5Access.R'
     'AssembleObject.R'
-    'TestObject.R'
-    'TestH5.R'
-    'h5info.R'
     'scdisk.R'
     'h5Seurat.R'
     'Connect.R'
@@ -79,7 +77,6 @@ Collate:
     'SpatialData.R'
     'SpatialFOV.R'
     'StreamHDF5.R'
-    'sparse_matrix.R'
     'MatrixTranspose.R'
     'V5LayerSupport.R'
     'VerifyH5AD.R'

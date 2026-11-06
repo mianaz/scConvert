@@ -1,5 +1,5 @@
 #' @include zzz.R
-#' @include h5info.R
+#' @include H5Utils.R
 #'
 NULL
 
