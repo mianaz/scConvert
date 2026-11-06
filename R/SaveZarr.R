@@ -313,18 +313,28 @@ writeZarr <- function(object, filename, assay = DefaultAssay(object),
     col_data <- df[[col]]
     col_dir <- file.path(store_path, group_path, col)
 
+    # string-array cannot hold missing values: write as a categorical whose
+    # NA entries get code -1 (readable by every anndata version)
+    if (is.character(col_data) && anyNA(col_data)) {
+      col_data <- factor(col_data)
+    }
+
     if (is.factor(col_data)) {
       # Write as categorical
       encoded <- EncodeCategorical(col_data)
+      n_lev <- length(encoded$categories)
+      # codes must be wide enough for the level count (int8 silently
+      # wrapped for factors with more than 127 levels)
+      codes_dtype <- if (n_lev <= 127L) "|i1" else if (n_lev <= 32767L) "<i2" else "<i4"
       .zarr_create_group(col_dir, attrs = list(
         `encoding-type` = "categorical",
         `encoding-version` = "0.2.0",
-        ordered = FALSE
+        ordered = is.ordered(col_data)
       ))
       .zarr_write_numeric(
         dir = file.path(col_dir, "codes"),
         data = as.integer(encoded$codes),
-        dtype = "|i1",
+        dtype = codes_dtype,
         compressor = compressor
       )
       .zarr_write_strings(
@@ -347,8 +357,33 @@ writeZarr <- function(object, filename, assay = DefaultAssay(object),
           `encoding-version` = "0.2.0"
         )
       )
+    } else if ((is.logical(col_data) || is.integer(col_data)) && anyNA(col_data)) {
+      # nullable-boolean / nullable-integer: values + mask (NA was
+      # previously written as FALSE / 0)
+      mask <- is.na(col_data)
+      is_lgl <- is.logical(col_data)
+      vals <- if (is_lgl) as.integer(col_data) else col_data
+      vals[mask] <- 0L
+      .zarr_create_group(col_dir, attrs = list(
+        `encoding-type` = if (is_lgl) "nullable-boolean" else "nullable-integer",
+        `encoding-version` = "0.1.0"
+      ))
+      .zarr_write_numeric(
+        dir = file.path(col_dir, "values"),
+        data = vals,
+        dtype = if (is_lgl) "|b1" else "<i4",
+        compressor = compressor,
+        attrs = list(`encoding-type` = "array", `encoding-version` = "0.2.0")
+      )
+      .zarr_write_numeric(
+        dir = file.path(col_dir, "mask"),
+        data = as.integer(mask),
+        dtype = "|b1",
+        compressor = compressor,
+        attrs = list(`encoding-type` = "array", `encoding-version` = "0.2.0")
+      )
     } else if (is.logical(col_data)) {
-      # Boolean as int8
+      # numpy bool
       .zarr_write_numeric(
         dir = col_dir,
         data = as.integer(col_data),

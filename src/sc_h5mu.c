@@ -391,7 +391,7 @@ static int sc_stream_assay_to_modality(
             if (aa_buf[0] == '\0' || strcmp(aa_buf, assay_name) == 0) {
                 if (sc_has_dataset(red_grp, "cell.embeddings")) {
                     char dst_name[SC_MAX_NAME_LEN];
-                    snprintf(dst_name, sizeof(dst_name), "X_%s", name);
+                    SC_SNPRINTF_CLIP(dst_name, "X_%s", name);
 
                     if (verbose)
                         SC_MSG("    reductions/%s → mod/%s/obsm/%s\n",

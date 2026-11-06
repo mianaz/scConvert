@@ -38,9 +38,6 @@ S3method(readH5Seurat,h5Seurat)
 S3method(readLoom,H5File)
 S3method(readLoom,character)
 S3method(readLoom,loom)
-S3method(scAppendData,H5File)
-S3method(scAppendData,character)
-S3method(scAppendData,h5Seurat)
 S3method(scConvert,H5File)
 S3method(scConvert,Seurat)
 S3method(scConvert,SingleCellExperiment)
@@ -117,6 +114,7 @@ export(readSpatialData)
 export(readZarr)
 export(scConnect)
 export(scConvert)
+export(scConvertBatch)
 export(scConvert_cli)
 export(scLoadMeta)
 export(scTranspose)
@@ -132,100 +130,129 @@ export(writeSOMA)
 export(writeSpatialData)
 export(writeZarr)
 importClassesFrom(Matrix,dgCMatrix)
-importClassesFrom(Seurat,Assay)
-importClassesFrom(Seurat,DimReduc)
-importClassesFrom(Seurat,Graph)
-importClassesFrom(Seurat,JackStrawData)
-importClassesFrom(Seurat,Neighbor)
-importClassesFrom(Seurat,Seurat)
-importClassesFrom(Seurat,SeuratCommand)
+importClassesFrom(SeuratObject,Assay)
 importClassesFrom(SeuratObject,Assay5)
-importFrom(Matrix,sparseMatrix)
-importFrom(Matrix,t)
-importFrom(R6,R6Class)
-importFrom(R6,is.R6Class)
-importFrom(Seurat,"DefaultAssay<-")
-importFrom(Seurat,"Idents<-")
-importFrom(Seurat,"JS<-")
-importFrom(Seurat,"Key<-")
-importFrom(Seurat,"Loadings<-")
-importFrom(Seurat,"Project<-")
-importFrom(Seurat,"VariableFeatures<-")
-importFrom(Seurat,AddMetaData)
-importFrom(Seurat,Assays)
-importFrom(Seurat,Cells)
-importFrom(Seurat,Command)
-importFrom(Seurat,CreateAssayObject)
-importFrom(Seurat,CreateDimReducObject)
-importFrom(Seurat,CreateSeuratObject)
-importFrom(Seurat,DefaultAssay)
-importFrom(Seurat,Embeddings)
-importFrom(Seurat,GetAssayData)
-importFrom(Seurat,GetTissueCoordinates)
-importFrom(Seurat,Idents)
-importFrom(Seurat,Images)
-importFrom(Seurat,IsGlobal)
-importFrom(Seurat,JS)
-importFrom(Seurat,Key)
-importFrom(Seurat,Loadings)
-importFrom(Seurat,Misc)
-importFrom(Seurat,Project)
-importFrom(Seurat,Reductions)
-importFrom(Seurat,SetAssayData)
-importFrom(Seurat,Stdev)
-importFrom(Seurat,Tool)
-importFrom(Seurat,VariableFeatures)
-importFrom(Seurat,as.Graph)
-importFrom(Seurat,as.Seurat)
-importFrom(Seurat,as.sparse)
-importFrom(Seurat,scalefactors)
-importFrom(SeuratObject,AddMetaData)
-importFrom(SeuratObject,Cells)
-importFrom(SeuratObject,CreateCentroids)
-importFrom(SeuratObject,CreateFOV)
-importFrom(SeuratObject,Graphs)
-importFrom(SeuratObject,Layers)
-importFrom(SeuratObject,S4ToList)
+importClassesFrom(SeuratObject,DimReduc)
+importClassesFrom(SeuratObject,Graph)
+importClassesFrom(SeuratObject,JackStrawData)
+importClassesFrom(SeuratObject,Neighbor)
+importClassesFrom(SeuratObject,Seurat)
+importClassesFrom(SeuratObject,SeuratCommand)
+importFrom(Matrix,
+  sparseMatrix,
+  t
+)
+importFrom(R6,
+  R6Class,
+  is.R6Class
+)
+importFrom(Seurat,
+  "DefaultAssay<-",
+  "Key<-",
+  Assays,
+  Cells,
+  CreateAssayObject,
+  CreateDimReducObject,
+  CreateSeuratObject,
+  DefaultAssay,
+  Embeddings,
+  GetAssayData,
+  GetTissueCoordinates,
+  Images,
+  Key,
+  Project,
+  SetAssayData,
+  VariableFeatures,
+  as.Seurat,
+  scalefactors
+)
+importFrom(SeuratObject,
+  "DefaultAssay<-",
+  "Idents<-",
+  "JS<-",
+  "Key<-",
+  "Loadings<-",
+  "Project<-",
+  "VariableFeatures<-",
+  AddMetaData,
+  Assays,
+  Cells,
+  Command,
+  CreateAssayObject,
+  CreateCentroids,
+  CreateDimReducObject,
+  CreateFOV,
+  CreateSeuratObject,
+  DefaultAssay,
+  Embeddings,
+  GetAssayData,
+  Graphs,
+  Idents,
+  Images,
+  IsGlobal,
+  JS,
+  Key,
+  LayerData,
+  Layers,
+  Loadings,
+  Misc,
+  Project,
+  Reductions,
+  S4ToList,
+  SetAssayData,
+  Stdev,
+  Tool,
+  VariableFeatures,
+  as.Graph,
+  as.Seurat,
+  as.sparse
+)
 importFrom(cli,symbol)
-importFrom(crayon,col_align)
-importFrom(crayon,green)
-importFrom(crayon,red)
-importFrom(crayon,yellow)
-importFrom(hdf5r,H5File)
-importFrom(hdf5r,H5Group)
-importFrom(hdf5r,H5S)
-importFrom(hdf5r,H5T_COMPOUND)
-importFrom(hdf5r,H5T_STRING)
-importFrom(hdf5r,guess_dtype)
-importFrom(hdf5r,h5attr)
-importFrom(hdf5r,h5attr_names)
-importFrom(hdf5r,h5const)
-importFrom(hdf5r,h5types)
-importFrom(hdf5r,list.groups)
-importFrom(methods,"slot<-")
-importFrom(methods,as)
-importFrom(methods,getClass)
-importFrom(methods,is)
-importFrom(methods,new)
-importFrom(methods,setClassUnion)
-importFrom(methods,setGeneric)
-importFrom(methods,setMethod)
-importFrom(methods,setOldClass)
-importFrom(methods,slot)
-importFrom(methods,slotNames)
-importFrom(methods,tryNew)
-importFrom(methods,validObject)
+importFrom(crayon,
+  col_align,
+  green,
+  red,
+  yellow
+)
+importFrom(hdf5r,
+  H5File,
+  H5Group,
+  H5S,
+  H5T_COMPOUND,
+  H5T_STRING,
+  guess_dtype,
+  h5attr,
+  h5attr_names,
+  h5const,
+  h5types
+)
+importFrom(methods,
+  "slot<-",
+  as,
+  is,
+  new,
+  setGeneric,
+  setMethod,
+  setOldClass,
+  slot,
+  slotNames,
+  validObject
+)
 importFrom(rlang,"%||%")
-importFrom(stats,na.omit)
-importFrom(stats,setNames)
-importFrom(stringi,stri_count_fixed)
-importFrom(tools,file_ext)
-importFrom(tools,file_path_sans_ext)
-importFrom(tools,toTitleCase)
-importFrom(utils,data)
-importFrom(utils,packageVersion)
-importFrom(utils,read.csv)
-importFrom(utils,setTxtProgressBar)
-importFrom(utils,txtProgressBar)
+importFrom(stats,
+  na.omit,
+  setNames
+)
+importFrom(tools,
+  file_ext,
+  file_path_sans_ext
+)
+importFrom(utils,
+  data,
+  packageVersion,
+  read.csv,
+  setTxtProgressBar,
+  txtProgressBar
+)
 importMethodsFrom(Matrix,t)
 useDynLib(scConvert, .registration = TRUE)

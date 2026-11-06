@@ -126,4 +126,7 @@ SEXP C_zstd_compress(SEXP raw_sexp, SEXP level_sexp) {
 #endif
 }
 
+#else
+/* ISO C requires at least one declaration per translation unit */
+typedef int sc_zstd_unused_in_cli;
 #endif /* BUILDING_R_PACKAGE */

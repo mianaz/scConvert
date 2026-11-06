@@ -114,13 +114,13 @@ static int zarr_exists(const char *store, const char *rel) {
 
 static int zarr_is_group(const char *store, const char *rel) {
     char path[2048];
-    snprintf(path, sizeof(path), "%s/%s/.zgroup", store, rel);
+    SC_SNPRINTF(path, "%s/%s/.zgroup", store, rel);
     return access(path, F_OK) == 0;
 }
 
 static int zarr_is_array(const char *store, const char *rel) {
     char path[2048];
-    snprintf(path, sizeof(path), "%s/%s/.zarray", store, rel);
+    SC_SNPRINTF(path, "%s/%s/.zarray", store, rel);
     return access(path, F_OK) == 0;
 }
 
@@ -140,8 +140,9 @@ static void *zarr_read_chunk(const char *chunk_path, const sc_zarr_meta_t *meta,
 
     void *cbuf = malloc((size_t)clen);
     if (!cbuf) { fclose(f); return NULL; }
-    fread(cbuf, 1, (size_t)clen, f);
+    size_t got = fread(cbuf, 1, (size_t)clen, f);
     fclose(f);
+    if (got != (size_t)clen) { free(cbuf); return NULL; }
 
     int use_zlib = (strcmp(meta->compressor_id, "zlib") == 0 ||
                     strcmp(meta->compressor_id, "gzip") == 0);
@@ -477,7 +478,7 @@ static int zarr_write_numeric_2d(const char *dir, const void *data,
 
     int elem_sz = dtype_size(dtype);
     char chunk_path[2048];
-    snprintf(chunk_path, sizeof(chunk_path), "%s/0.0", dir);
+    SC_SNPRINTF(chunk_path, "%s/0.0", dir);
     return zarr_write_chunk(chunk_path, data, (size_t)(rows * cols) * elem_sz, gzip);
 }
 
@@ -683,13 +684,13 @@ static int zarr_categorical_to_h5seurat(const char *cat_dir, hid_t h5_grp,
     char sub[2048];
 
     /* Read categories (strings) */
-    snprintf(sub, sizeof(sub), "%s/categories", cat_dir);
+    SC_SNPRINTF(sub, "%s/categories", cat_dir);
     int64_t n_cats;
     char **cats = zarr_read_strings(sub, &n_cats);
     if (!cats) return SC_ERR;
 
     /* Read codes (int8 array, 0-based) */
-    snprintf(sub, sizeof(sub), "%s/codes", cat_dir);
+    SC_SNPRINTF(sub, "%s/codes", cat_dir);
     int64_t n_codes;
     void *codes_raw = zarr_read_numeric(sub, &n_codes);
     if (!codes_raw) { free_strings(cats, n_cats); return SC_ERR; }
@@ -755,7 +756,7 @@ static int zarr_df_to_h5seurat_md(const char *zarr_df_dir, hid_t h5_md_grp,
                                     int gzip) {
     /* Read .zattrs for column-order */
     char attrs_path[2048];
-    snprintf(attrs_path, sizeof(attrs_path), "%s/.zattrs", zarr_df_dir);
+    SC_SNPRINTF(attrs_path, "%s/.zattrs", zarr_df_dir);
     char *attrs_json = sc_json_read_file(attrs_path);
     if (!attrs_json) return SC_ERR_IO;
 
@@ -767,11 +768,11 @@ static int zarr_df_to_h5seurat_md(const char *zarr_df_dir, hid_t h5_md_grp,
     for (int ci = 0; ci < n_cols; ci++) {
         const char *col_name = col_order[ci];
         char col_dir[2048];
-        snprintf(col_dir, sizeof(col_dir), "%s/%s", zarr_df_dir, col_name);
+        SC_SNPRINTF(col_dir, "%s/%s", zarr_df_dir, col_name);
 
         /* Determine if categorical (has .zgroup and codes/ subdir) */
         char test[2048];
-        snprintf(test, sizeof(test), "%s/.zgroup", col_dir);
+        SC_SNPRINTF(test, "%s/.zgroup", col_dir);
         if (access(test, F_OK) == 0) {
             /* Categorical group */
             hid_t factor_grp = H5Gcreate2(h5_md_grp, col_name, H5P_DEFAULT,
@@ -782,7 +783,7 @@ static int zarr_df_to_h5seurat_md(const char *zarr_df_dir, hid_t h5_md_grp,
         }
 
         /* Regular array */
-        snprintf(test, sizeof(test), "%s/.zarray", col_dir);
+        SC_SNPRINTF(test, "%s/.zarray", col_dir);
         if (access(test, F_OK) != 0) continue;
 
         sc_zarr_meta_t col_meta;
@@ -937,7 +938,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
             if (opts->verbose) SC_MSG("  [1b] Transferring raw/X...\n");
             char raw_enc[64] = "csr_matrix";
             char raw_attrs_path[2048];
-            snprintf(raw_attrs_path, sizeof(raw_attrs_path), "%s/.zattrs", raw_x);
+            SC_SNPRINTF(raw_attrs_path, "%s/.zattrs", raw_x);
             char *ra = sc_json_read_file(raw_attrs_path);
             if (ra) {
                 sc_json_get_string(ra, "encoding-type", raw_enc, sizeof(raw_enc));
@@ -1030,7 +1031,7 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
             zarr_list_children(obsm_dir, &children, &n_children);
             for (int ci = 0; ci < n_children; ci++) {
                 char emb_dir[2048];
-                snprintf(emb_dir, sizeof(emb_dir), "%s/%s", obsm_dir, children[ci]);
+                SC_SNPRINTF(emb_dir, "%s/%s", obsm_dir, children[ci]);
                 if (!zarr_is_array(obsm_dir, children[ci])) continue;
 
                 sc_zarr_meta_t emb_meta;
@@ -1112,12 +1113,12 @@ int sc_zarr_to_h5seurat(const sc_opts_t *opts) {
             zarr_list_children(obsp_dir, &children, &n_children);
             for (int ci = 0; ci < n_children; ci++) {
                 char g_dir[2048];
-                snprintf(g_dir, sizeof(g_dir), "%s/%s", obsp_dir, children[ci]);
+                SC_SNPRINTF(g_dir, "%s/%s", obsp_dir, children[ci]);
                 if (!zarr_is_group(obsp_dir, children[ci])) continue;
 
                 /* Read encoding type */
                 char g_attrs[2048];
-                snprintf(g_attrs, sizeof(g_attrs), "%s/.zattrs", g_dir);
+                SC_SNPRINTF(g_attrs, "%s/.zattrs", g_dir);
                 char *gaj = sc_json_read_file(g_attrs);
                 char enc[64] = "csr_matrix";
                 if (gaj) {
@@ -1307,7 +1308,7 @@ static int h5seurat_factor_to_zarr(hid_t h5_grp, const char *cat_dir, int gzip) 
 
     /* Write categories */
     char cat_path[2048];
-    snprintf(cat_path, sizeof(cat_path), "%s/categories", cat_dir);
+    SC_SNPRINTF(cat_path, "%s/categories", cat_dir);
     zarr_write_strings(cat_path, (const char **)levels, (int64_t)n_lev, gzip);
 
     /* Read values (1-based int32) */
@@ -1342,7 +1343,7 @@ static int h5seurat_factor_to_zarr(hid_t h5_grp, const char *cat_dir, int gzip) 
 
     /* Write codes */
     char codes_path[2048];
-    snprintf(codes_path, sizeof(codes_path), "%s/codes", cat_dir);
+    SC_SNPRINTF(codes_path, "%s/codes", cat_dir);
     zarr_write_numeric_1d(codes_path, codes, (int64_t)n_val, "|i1", gzip);
 
     /* .zattrs */
@@ -1367,7 +1368,7 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
 
     /* Write _index */
     char idx_dir[2048];
-    snprintf(idx_dir, sizeof(idx_dir), "%s/_index", zarr_dir);
+    SC_SNPRINTF(idx_dir, "%s/_index", zarr_dir);
     zarr_write_strings(idx_dir, cell_names, n_cells, gzip);
 
     /* Get column names from colnames attr */
@@ -1395,7 +1396,7 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
             /* Factor group */
             hid_t fg = H5Gopen2(h5_grp, cname, H5P_DEFAULT);
             char col_dir[2048];
-            snprintf(col_dir, sizeof(col_dir), "%s/%s", zarr_dir, cname);
+            SC_SNPRINTF(col_dir, "%s/%s", zarr_dir, cname);
             h5seurat_factor_to_zarr(fg, col_dir, gzip);
             H5Gclose(fg);
         } else if (sc_has_dataset(h5_grp, cname)) {
@@ -1407,7 +1408,7 @@ static int h5seurat_md_to_zarr_df(hid_t h5_grp, const char *zarr_dir,
             H5Sclose(sp);
 
             char col_dir[2048];
-            snprintf(col_dir, sizeof(col_dir), "%s/%s", zarr_dir, cname);
+            SC_SNPRINTF(col_dir, "%s/%s", zarr_dir, cname);
 
             if (H5Tget_class(dt) == H5T_STRING) {
                 hid_t stype = sc_create_vlen_str_type();
@@ -1602,7 +1603,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
         } else {
             zarr_create_group(obs_dir);
             char idx_dir[2048];
-            snprintf(idx_dir, sizeof(idx_dir), "%s/_index", obs_dir);
+            SC_SNPRINTF(idx_dir, "%s/_index", obs_dir);
             if (cells)
                 zarr_write_strings(idx_dir, (const char **)cells, n_cells, gzip);
             sc_json_write_zattrs_str(obs_dir,
@@ -1698,9 +1699,9 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
                         transposed[c * n_comp + r] = flat[r * n_obs + c];
 
                 char emb_name[256];
-                snprintf(emb_name, sizeof(emb_name), "X_%s", rname);
+                SC_SNPRINTF_CLIP(emb_name, "X_%s", rname);
                 char emb_dir[2048];
-                snprintf(emb_dir, sizeof(emb_dir), "%s/%s", obsm_dir, emb_name);
+                SC_SNPRINTF(emb_dir, "%s/%s", obsm_dir, emb_name);
                 zarr_write_numeric_2d(emb_dir, transposed, n_obs, n_comp, "<f8", gzip);
 
                 /* .zattrs for obsm arrays */
@@ -1743,7 +1744,7 @@ int sc_h5seurat_to_zarr(const sc_opts_t *opts) {
                     short_name = gname + alen + 1;
 
                 char g_dir[2048];
-                snprintf(g_dir, sizeof(g_dir), "%s/%s", obsp_dir, short_name);
+                SC_SNPRINTF(g_dir, "%s/%s", obsp_dir, short_name);
                 h5seurat_sparse_to_zarr(gg, g_dir, gzip, "csc_matrix");
                 H5Gclose(gg);
             }

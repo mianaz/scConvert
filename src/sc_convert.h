@@ -50,6 +50,20 @@
 
 #define SC_OK       0
 #define SC_ERR     -1
+
+/*
+ * snprintf into a char array, using its return value to detect truncation.
+ * SC_SNPRINTF is for file paths: a truncated path would name the wrong file,
+ * so the buffer is emptied and the caller's "missing file" handling applies.
+ * SC_SNPRINTF_CLIP is for object names, where a clipped name is acceptable.
+ */
+#define SC_SNPRINTF(buf, ...) do { \
+    if (snprintf((buf), sizeof(buf), __VA_ARGS__) >= (int)sizeof(buf)) (buf)[0] = '\0'; \
+  } while (0)
+#define SC_SNPRINTF_CLIP(buf, ...) do { \
+    if (snprintf((buf), sizeof(buf), __VA_ARGS__) >= (int)sizeof(buf)) \
+      (buf)[sizeof(buf) - 1] = '\0'; \
+  } while (0)
 #define SC_ERR_IO  -2
 #define SC_ERR_HDF -3
 #define SC_ERR_ARG -4

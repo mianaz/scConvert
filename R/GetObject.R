@@ -3,25 +3,10 @@
 #'
 NULL
 
-#' Figure out which objects to load from an h5Seurat file
-#'
-#' @inheritParams readH5Seurat
-#' @param index An h5Seurat index (\code{\link{h5SI}}) object
-#'
-#' @seealso \code{\link{readH5Seurat}}
-#'
-#' @rdname GetObject
-#' @name GetObject
-#'
-#' @keywords internal
-#'
-NULL
+# Selection of what readH5Seurat() loads, resolved against the file index.
+# GetAssays() turns the `assays` argument into a named list
+# (assay -> layers/slots to load, NULL meaning all of them).
 
-#' @return \code{GetAssays}: A named list where each entry is a vector
-#' describing the slots of an assay to load and the names are the assays to load
-#'
-#' @rdname GetObject
-#'
 # Robust GetAssays implementation
 GetAssays <- function(assays = NULL, index) {
   # index is expected to contain element `assays` which is a named list of assay metadata
@@ -107,99 +92,59 @@ GetAssays <- function(assays = NULL, index) {
   )
 }
 
-#' @return \code{GetCommands}: A vector of command log names that are derived
-#' from an assay in \code{assay}
-#'
-#' @rdname GetObject
-#'
+# Selectors used by readH5Seurat(): which reductions / graphs / images /
+# neighbors / commands to load, given the user's request and the file
+# index. For reductions and images, NA means "only the global ones" and
+# FALSE means "none"; NULL means "everything belonging to the selected
+# assays".
+
+# Union of one index field over the given assay entries
+.index_collect <- function(index, entries, field, use_names = FALSE) {
+  unique(unlist(lapply(entries, function(e) {
+    v <- index[[e]][[field]]
+    if (use_names) names(v) else v
+  })))
+}
+
 GetCommands <- function(index, assays = NULL) {
-  assays <- GetAssays(assays = assays, index = index)
-  unique(unlist(lapply(names(assays), function(x) index[[x]]$commands)))
+  selected <- names(GetAssays(assays = assays, index = index))
+  .index_collect(index, selected, 'commands')
 }
 
-#' @return \code{GetDimReducs}: A vector of reduction names that are derived
-#' from an assay in \code{assays} or global dimensional reductions
-#'
-#' @rdname GetObject
-#'
 GetDimReducs <- function(reductions, index, assays = NULL) {
-  if (isFALSE(reductions)) {
-    return(NULL)
-  }
-  if (!is.null(reductions) && all(is.na(reductions))) {
-    return(index$global$reductions)
-  }
+  if (isFALSE(reductions)) return(NULL)
+  if (!is.null(reductions) && all(is.na(reductions))) return(index$global$reductions)
+  assay_entries <- setdiff(names(index), c('global', 'no.assay'))
   if (is.null(reductions)) {
-    reductions <- unique(unlist(lapply(
-      setdiff(names(index), 'no.assay'),
-      function(x) {
-        if (x == 'global') index[[x]]$reductions else names(index[[x]]$reductions)
-      }
-    )))
+    reductions <- unique(c(.index_collect(index, assay_entries, 'reductions', use_names = TRUE),
+                           index$global$reductions))
   }
-  if (isTRUE(getOption('scConvert.dimreducs.allglobal', default = FALSE))) {
-    return(reductions)
-  }
-  assays <- GetAssays(assays = assays, index = index)
-  assays.reducs <- unique(c(
-    unlist(lapply(names(assays), function(x) names(index[[x]]$reductions))),
-    index$global$reductions
-  ))
-  intersect(reductions, assays.reducs)
+  if (isTRUE(getOption('scConvert.dimreducs.allglobal', default = FALSE))) return(reductions)
+  selected <- names(GetAssays(assays = assays, index = index))
+  available <- unique(c(.index_collect(index, selected, 'reductions', use_names = TRUE),
+                        index$global$reductions))
+  intersect(reductions, available)
 }
 
-#' @return \code{GetGraphs}: A vector of graph names that are derived from an
-#' assay in \code{assays}
-#'
-#' @rdname GetObject
-#'
 GetGraphs <- function(graphs, index, assays = NULL) {
-  if (isFALSE(graphs)) {
-    return(NULL)
-  }
+  if (isFALSE(graphs)) return(NULL)
   if (is.null(graphs)) {
-    graphs <- unique(unlist(lapply(
-      setdiff(names(index), c('global', 'no.assay')),
-      function(x) index[[x]]$graphs
-    )))
+    graphs <- .index_collect(index, setdiff(names(index), c('global', 'no.assay')), 'graphs')
   }
-  assays <- GetAssays(assays = assays, index = index)
-  assays.graphs <- unique(unlist(lapply(names(assays), function(x) index[[x]]$graphs)))
-  intersect(graphs, assays.graphs)
+  selected <- names(GetAssays(assays = assays, index = index))
+  intersect(graphs, .index_collect(index, selected, 'graphs'))
 }
 
-#' @return \code{GetImages}: A vector of image names
-#'
-#' @rdname GetObject
-#'
 GetImages <- function(images, index, assays = NULL) {
-  if (isFALSE(images)) {
-    return(NULL)
-  }
-  if (!is.null(images) && all(is.na(images))) {
-    return(index$global$images)
-  }
-  if (is.null(images)) {
-    images <- unique(unlist(lapply(names(index), function(x) index[[x]]$images)))
-  }
-  assays <- GetAssays(assays = assays, index = index)
-  assays.images <- unique(c(
-    unlist(lapply(names(assays), function(x) index[[x]]$images)),
-    index$global$images
-  ))
-  intersect(images, assays.images)
+  if (isFALSE(images)) return(NULL)
+  if (!is.null(images) && all(is.na(images))) return(index$global$images)
+  if (is.null(images)) images <- .index_collect(index, names(index), 'images')
+  selected <- names(GetAssays(assays = assays, index = index))
+  intersect(images, unique(c(.index_collect(index, selected, 'images'), index$global$images)))
 }
 
-#' @return \code{GetNeighbors}: A vector of neighbor names
-#'
-#' @rdname GetObject
-#'
 GetNeighbors <- function(neighbors, index) {
-  if (isFALSE(neighbors)) {
-    return(NULL)
-  }
-  if (is.null(neighbors)) {
-    return(index$global$neighbors)
-  }
-  intersect(neighbors, index$global$neighbors)
+  if (isFALSE(neighbors)) return(NULL)
+  stored <- index$global$neighbors
+  if (is.null(neighbors)) stored else intersect(neighbors, stored)
 }

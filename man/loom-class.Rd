@@ -4,15 +4,20 @@
 \name{loom-class}
 \alias{loom-class}
 \alias{loom}
-\title{A class for connections to loom files}
+\title{Connection to a loom file}
 \format{
-An \code{\link[R6]{R6Class}} object
+An \code{\link[R6]{R6Class}} generator
 }
 \description{
-A class for connections to loom files
+An \code{\link{scdisk}} subclass for \href{http://linnarssonlab.org/loompy/format/}{loom}
+files. A loom file holds a main \code{/matrix} (genes x cells as seen by
+loompy), extra matrices under \code{/layers}, per-gene and per-cell
+vectors under \code{/row_attrs} and \code{/col_attrs}, sparse graphs under
+\code{/row_graphs} and \code{/col_graphs}, and global values under
+\code{/attrs}. New files are created with the loom 3.0.0 layout.
 }
 \seealso{
-\code{\link[hdf5r]{H5File}}
+\code{\link{scdisk}}, \code{\link{readLoom}}, \code{\link{writeLoom}}
 }
 \section{Super classes}{
 \code{\link[hdf5r:H5RefClass]{hdf5r::H5RefClass}} -> \code{\link[hdf5r:H5File]{hdf5r::H5File}} -> \code{\link[scConvert:scdisk]{scdisk}} -> \code{loom}
@@ -107,7 +112,8 @@ A class for connections to loom files
 \if{html}{\out{<a id="method-loom-add_attribute"></a>}}
 \if{latex}{\out{\hypertarget{method-loom-add_attribute}{}}}
 \subsection{\code{loom$add_attribute()}}{
-  Add an attribute
+  Add a global, per-gene (\code{"row"}) or per-cell
+  (\code{"col"}) attribute
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{loom$add_attribute(x, name, type = c("global", "row", "col"))}
@@ -116,11 +122,14 @@ A class for connections to loom files
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{x}}{Object to add as an attribute}
-      \item{\code{name}}{Name to store attribute as}
-      \item{\code{type}}{Type of attribute to add}
+      \item{\code{x}}{A vector (or, for global attributes, a matrix)}
+      \item{\code{name}}{Attribute name}
+      \item{\code{type}}{\code{"global"}, \code{"row"} or \code{"col"}}
     }
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly, the object
   }
 }
 
@@ -128,7 +137,8 @@ A class for connections to loom files
 \if{html}{\out{<a id="method-loom-add_graph"></a>}}
 \if{latex}{\out{\hypertarget{method-loom-add_graph}{}}}
 \subsection{\code{loom$add_graph()}}{
-  Add a graph
+  Add a sparse graph over genes (\code{"row"}) or cells
+  (\code{"col"})
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{loom$add_graph(x, name, type = c("col", "row"), verbose = TRUE)}
@@ -137,12 +147,15 @@ A class for connections to loom files
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{x}}{...}
-      \item{\code{name}}{...}
-      \item{\code{type}}{...}
-      \item{\code{verbose}}{...}
+      \item{\code{x}}{A \code{dgCMatrix}}
+      \item{\code{name}}{Graph name}
+      \item{\code{type}}{\code{"col"} or \code{"row"}}
+      \item{\code{verbose}}{Unused, kept for compatibility}
     }
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly, the object
   }
 }
 
@@ -150,7 +163,7 @@ A class for connections to loom files
 \if{html}{\out{<a id="method-loom-add_layer"></a>}}
 \if{latex}{\out{\hypertarget{method-loom-add_layer}{}}}
 \subsection{\code{loom$add_layer()}}{
-  Add a layer to this loom file
+  Add a matrix under \code{/layers}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{loom$add_layer(x, name, transpose = TRUE, verbose = TRUE)}
@@ -159,15 +172,16 @@ A class for connections to loom files
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{x}}{An object to save as a layer}
-      \item{\code{name}}{Name to store layer as}
-      \item{\code{transpose}}{...}
-      \item{\code{verbose}}{...}
+      \item{\code{x}}{A matrix with the same shape as the object (genes x cells), or
+its transpose when \code{transpose = FALSE}}
+      \item{\code{name}}{Layer name}
+      \item{\code{transpose}}{Transpose \code{x} before writing}
+      \item{\code{verbose}}{Show progress}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Invisibly returns \code{NULL}
+    Invisibly, the object
   }
 }
 
@@ -175,15 +189,14 @@ A class for connections to loom files
 \if{html}{\out{<a id="method-loom-version"></a>}}
 \if{latex}{\out{\hypertarget{method-loom-version}{}}}
 \subsection{\code{loom$version()}}{
-  Get version information
+  Loom specification version of the file
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{loom$version()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A \code{\link[base]{numeric_version}} object with the loom
-specification version information
+    A \code{\link[base]{numeric_version}}
   }
 }
 
@@ -191,7 +204,7 @@ specification version information
 \if{html}{\out{<a id="method-loom-timestamp"></a>}}
 \if{latex}{\out{\hypertarget{method-loom-timestamp}{}}}
 \subsection{\code{loom$timestamp()}}{
-  Add a timestamp to a dataset or group as an HDF5 attribute
+  Record the modification time in \code{last_modified}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{loom$timestamp(name = NULL)}
@@ -200,13 +213,12 @@ specification version information
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name}}{Name of dataset or group to add timestamp to; if \code{NULL},
-timestamps the file as a whole}
+      \item{\code{name}}{Object to stamp; \code{NULL} stamps the file itself}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Invisibly returns the object
+    Invisibly, the object
   }
 }
 
@@ -214,7 +226,7 @@ timestamps the file as a whole}
 \if{html}{\out{<a id="method-loom-last.modified"></a>}}
 \if{latex}{\out{\hypertarget{method-loom-last.modified}{}}}
 \subsection{\code{loom$last.modified()}}{
-  Retrieve a timestamp from a dataset or group
+  Modification time recorded in \code{last_modified}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{loom$last.modified(name = NULL, locale = FALSE)}
@@ -223,14 +235,13 @@ timestamps the file as a whole}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name}}{Name of dataset or group to retrieve timestamp from; if
-\code{NULL}, retrieves timestamp from at the file-level}
-      \item{\code{locale}}{Change the timestamp of to the timezone of the locale}
+      \item{\code{name}}{Object to read from; \code{NULL} reads the file itself}
+      \item{\code{locale}}{Show the time in the local time zone}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A character with the timestamp
+    The timestamp, or \code{NA} when there is none
   }
 }
 

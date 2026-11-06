@@ -4,12 +4,15 @@
 \name{scdisk-class}
 \alias{scdisk-class}
 \alias{scdisk}
-\title{A disk-based object for single-cell analysis}
+\title{Base class for single-cell file connections}
 \format{
-An \code{\link[R6]{R6Class}} object
+An \code{\link[R6]{R6Class}} generator
 }
 \description{
-A disk-based object for single-cell analysis
+\code{scdisk} extends \code{\link[hdf5r]{H5File}} with validation on
+connect, chunk iteration and timestamps. It is abstract: open files
+through a format class such as \code{\link{h5Seurat}} or \code{\link{loom}}
+(usually via \code{\link{scConnect}}).
 }
 \seealso{
 \code{\link[hdf5r]{H5File}}
@@ -103,7 +106,7 @@ A disk-based object for single-cell analysis
 \if{html}{\out{<a id="method-scdisk-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-scdisk-initialize}{}}}
 \subsection{\code{scdisk$new()}}{
-  Create a new \code{scdisk} object
+  Open or create a file and validate it
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{scdisk$new(
@@ -117,17 +120,13 @@ A disk-based object for single-cell analysis
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{filename}}{Name of on-disk file to connect to}
-      \item{\code{mode}}{How to open the file, choose from:
-\describe{
- \item{a}{Create new or open existing file, allow read and write}
- \item{r}{Open existing file, allow read only}
- \item{r+}{Open existing file, allow read and write}
- \item{w}{Create new file (deleting any existing one), allow read and write}
- \item{w-, x}{Create new file (error if exists), allow read and write}
-}}
-      \item{\code{validate}}{Validate the file upon connection}
-      \item{\code{...}}{Extra arguments passed to validation routine}
+      \item{\code{filename}}{Path to the file}
+      \item{\code{mode}}{\code{"r"} / \code{"r+"} open an existing file (read-only /
+read-write); \code{"w"} creates or truncates; \code{"w-"} and
+\code{"x"} create and fail if the file exists; \code{"a"} opens or
+creates read-write}
+      \item{\code{validate}}{Run the format's validation after opening}
+      \item{\code{...}}{Passed to the validation routine}
     }
     \if{html}{\out{</div>}}
   }
@@ -137,7 +136,7 @@ A disk-based object for single-cell analysis
 \if{html}{\out{<a id="method-scdisk-finalizer"></a>}}
 \if{latex}{\out{\hypertarget{method-scdisk-finalizer}{}}}
 \subsection{\code{scdisk$finalizer()}}{
-  Handle the loss of reference to this \code{scdisk} object
+  Release every HDF5 handle when the object is collected
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{scdisk$finalizer()}
@@ -149,12 +148,12 @@ A disk-based object for single-cell analysis
 \if{html}{\out{<a id="method-scdisk-chunk.points"></a>}}
 \if{latex}{\out{\hypertarget{method-scdisk-chunk.points}{}}}
 \subsection{\code{scdisk$chunk.points()}}{
-  Generate chunk points for a dataset
+  Start/end indices for iterating over a dataset in blocks
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{scdisk$chunk.points(
   dataset,
-  MARGIN = getOption(x = "scConvert.chunking.MARGIN", default = "largest"),
+  MARGIN = getOption("scConvert.chunking.MARGIN", default = "largest"),
   csize = NULL
 )}
     \if{html}{\out{</div>}}
@@ -162,15 +161,15 @@ A disk-based object for single-cell analysis
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{dataset}}{Name of dataset}
-      \item{\code{MARGIN}}{Direction to chunk in; defaults to largest dimension of dataset}
-      \item{\code{csize}}{Size of chunk; defaults to hdf5r-suggested chunk size}
+      \item{\code{dataset}}{Path of a dataset in the file}
+      \item{\code{MARGIN}}{Axis to iterate over (see \code{GetMargin})}
+      \item{\code{csize}}{Block size; defaults to the dataset's chunk size on that
+axis}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A matrix where each row is a chunk, column 1 is start points,
-column 2 is end points
+    A two-column matrix (\code{start}, \code{end}), one row per block
   }
 }
 
@@ -178,7 +177,7 @@ column 2 is end points
 \if{html}{\out{<a id="method-scdisk-timestamp"></a>}}
 \if{latex}{\out{\hypertarget{method-scdisk-timestamp}{}}}
 \subsection{\code{scdisk$timestamp()}}{
-  Add a timestamp to a dataset or group as an HDF5 attribute
+  Record the current time in an attribute
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{scdisk$timestamp(
@@ -192,15 +191,14 @@ column 2 is end points
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name}}{Name of dataset or group to add timestamp to; if \code{NULL},
-timestamps the file as a whole}
-      \item{\code{attr}}{Name of attribute to store timestamp ass}
-      \item{\code{tz, format}}{See \code{\link{Timestamp}}}
+      \item{\code{name}}{Object to stamp; \code{NULL} stamps the file itself}
+      \item{\code{attr}}{Attribute name}
+      \item{\code{tz, format}}{Time zone and \code{\link[base]{strptime}} format}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Invisilby returns the object
+    Invisibly, the object
   }
 }
 
@@ -208,7 +206,7 @@ timestamps the file as a whole}
 \if{html}{\out{<a id="method-scdisk-last.modified"></a>}}
 \if{latex}{\out{\hypertarget{method-scdisk-last.modified}{}}}
 \subsection{\code{scdisk$last.modified()}}{
-  Retrieve a timestamp from a dataset or group
+  Read a timestamp written by \code{timestamp()}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{scdisk$last.modified(
@@ -223,16 +221,15 @@ timestamps the file as a whole}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name}}{Name of dataset or group to retrieve timestamp from; if
-\code{NULL}, retrieves timestamp from at the file-level}
-      \item{\code{attr}}{Name of attribute to retrieve timestamp from}
-      \item{\code{locale}}{Change the timestamp of to the timezone of the locale}
-      \item{\code{tz, format}}{See \code{\link{Timestamp}}}
+      \item{\code{name}}{Object to read from; \code{NULL} reads the file itself}
+      \item{\code{attr}}{Attribute name}
+      \item{\code{locale}}{Show the time in the local time zone}
+      \item{\code{tz, format}}{Time zone and format the stamp was written with}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A character with the timestamp
+    The timestamp as a character string
   }
 }
 

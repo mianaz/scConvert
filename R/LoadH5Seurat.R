@@ -1,7 +1,6 @@
-#' @include zzz.R
-#' @include h5Seurat.R
-#' @include GetObject.R
 #' @include AssembleObject.R
+#' @include GetObject.R
+#' @include h5Seurat.R
 #'
 NULL
 
@@ -62,12 +61,20 @@ ReadLibraryIds <- function(file, library_col) {
   # Handle factor structure
   if (inherits(col_obj, 'H5Group') &&
       col_obj$exists('values') && col_obj$exists('levels')) {
-    values_int <- col_obj[['values']]$read()
-    levels_str <- col_obj[['levels']]$read()
-    return(levels_str[values_int + 1])
+    return(.DecodeH5SeuratFactor(col_obj))
   }
 
   as.character(col_obj$read())
+}
+
+# Decode an h5Seurat factor group (`values` + `levels`). h5Seurat stores
+# 1-based codes (as.integer(factor) on write; the h5ad converters add 1);
+# out-of-range codes are missing values.
+.DecodeH5SeuratFactor <- function(col_obj) {
+  values <- as.integer(col_obj[['values']]$read())
+  levels <- as.character(col_obj[['levels']]$read())
+  values[!is.na(values) & (values < 1L | values > length(levels))] <- NA_integer_
+  levels[values]
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,76 +190,37 @@ readH5Seurat <- function(file, ...) {
 # Methods
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+# Loading options shared by every readH5Seurat() method, collected from the
+# calling method's frame
+.h5s_load_options <- function(env = parent.frame()) {
+  mget(c('assays', 'reductions', 'graphs', 'neighbors', 'images', 'meta.data',
+         'commands', 'misc', 'tools', 'verbose'), envir = env)
+}
+
 #' @rdname readH5Seurat
 #' @method readH5Seurat character
 #' @export
 #'
-readH5Seurat.character <- function(
-  file,
-  assays = NULL,
-  reductions = NULL,
-  graphs = NULL,
-  neighbors = NULL,
-  images = NULL,
-  meta.data = TRUE,
-  commands = TRUE,
-  misc = is.null(x = assays),
-  tools = is.null(x = assays),
-  verbose = TRUE,
-  ...
-) {
+readH5Seurat.character <- function(file, assays = NULL, reductions = NULL, graphs = NULL,
+                                   neighbors = NULL, images = NULL, meta.data = TRUE,
+                                   commands = TRUE, misc = is.null(x = assays),
+                                   tools = is.null(x = assays), verbose = TRUE, ...) {
   hfile <- h5Seurat$new(filename = file, mode = 'r')
-  # Best-effort cleanup: HDF5 1.12.1 errors on close when leaf IDs are still
-  # held; read has completed by then. Same wrap as R/LoadH5AD.R.
-  on.exit(expr = tryCatch(hfile$close_all(), error = function(e) NULL))
-  return(readH5Seurat(
-    file = hfile,
-    assays = assays,
-    reductions = reductions,
-    graphs = graphs,
-    neighbors = neighbors,
-    images = images,
-    meta.data = meta.data,
-    commands = commands,
-    misc = misc,
-    tools = tools,
-    verbose = verbose,
-    ...
-  ))
+  # HDF5 1.12.1 can error while closing handles that are still referenced;
+  # the data has been read by then
+  on.exit(tryCatch(hfile$close_all(), error = function(e) NULL))
+  do.call(readH5Seurat, c(list(file = hfile), .h5s_load_options(), list(...)))
 }
 
 #' @rdname readH5Seurat
 #' @method readH5Seurat H5File
 #' @export
 #'
-readH5Seurat.H5File <- function(
-  file,
-  assays = NULL,
-  reductions = NULL,
-  graphs = NULL,
-  neighbors = NULL,
-  images = NULL,
-  meta.data = TRUE,
-  commands = TRUE,
-  misc = is.null(x = assays),
-  tools = is.null(x = assays),
-  verbose = TRUE,
-  ...
-) {
-  return(readH5Seurat(
-    file = as.h5Seurat(x = file),
-    assays = assays,
-    reductions = reductions,
-    graphs = graphs,
-    neighbors = neighbors,
-    images = images,
-    meta.data = meta.data,
-    commands = commands,
-    misc = misc,
-    tools = tools,
-    verbose = verbose,
-    ...
-  ))
+readH5Seurat.H5File <- function(file, assays = NULL, reductions = NULL, graphs = NULL,
+                                neighbors = NULL, images = NULL, meta.data = TRUE,
+                                commands = TRUE, misc = is.null(x = assays),
+                                tools = is.null(x = assays), verbose = TRUE, ...) {
+  do.call(readH5Seurat, c(list(file = as.h5Seurat(x = file)), .h5s_load_options(), list(...)))
 }
 
 #' @importFrom Seurat as.Seurat
@@ -261,126 +229,95 @@ readH5Seurat.H5File <- function(
 #' @method readH5Seurat h5Seurat
 #' @export
 #'
-readH5Seurat.h5Seurat <- function(
-  file,
-  assays = NULL,
-  reductions = NULL,
-  graphs = NULL,
-  neighbors = NULL,
-  images = NULL,
-  meta.data = TRUE,
-  commands = TRUE,
-  misc = is.null(x = assays),
-  tools = is.null(x = assays),
-  verbose = TRUE,
-  ...
-) {
-  # Check for multi-library spatial data
-  multi_lib_info <- DetectMultiLibrary(file)
-
-  # If multi-library, create separate Seurat objects for each library
-  if (multi_lib_info$is_multilibrary && is.null(images)) {
-    if (verbose) {
-      message("Detected multi-library spatial data")
-      message("Loading as a list of Seurat objects (one per library)")
-    }
-
-    lib_ids <- ReadLibraryIds(file, multi_lib_info$library_col)
-
-    unique_libs <- unique(lib_ids)
-
-    if (verbose) {
-      message("Found ", length(unique_libs), " libraries: ", paste(unique_libs, collapse = ", "))
-    }
-
-    # Create list of Seurat objects
-    seurat_list <- list()
-
-    for (lib in unique_libs) {
-      if (verbose) {
-        message("\nLoading library: ", lib)
-      }
-
-      # Load WITHOUT images first (to avoid cell mismatch errors)
-      obj <- as.Seurat(
-        x = file,
-        assays = assays,
-        reductions = reductions,
-        graphs = graphs,
-        neighbors = neighbors,
-        images = character(0),  # Don't load images yet
-        meta.data = meta.data,
-        commands = commands,
-        misc = misc,
-        tools = tools,
-        verbose = verbose,
-        ...
-      )
-
-      # Filter to only cells from this library
-      cells_in_lib <- lib_ids == lib
-      cell_names <- Cells(file)
-      cells_to_keep <- cell_names[cells_in_lib]
-
-      if (length(cells_to_keep) > 0) {
-        # Subset cells first
-        obj <- subset(obj, cells = cells_to_keep)
-
-        # Now add the image for this library
-        if (verbose) {
-          message("  Adding image for library ", lib)
-        }
-
-        tryCatch({
-          img_obj <- AssembleImage(image = lib, file = file, verbose = FALSE)
-          obj@images[[lib]] <- img_obj
-
-          if (verbose) {
-            message("  Successfully added image ", lib)
-          }
-        }, error = function(e) {
-          if (verbose) {
-            message("  Could not load image ", lib, ": ", conditionMessage(e))
-          }
-        })
-
-        seurat_list[[lib]] <- obj
-
-        if (verbose) {
-          message("  Loaded ", ncol(obj), " cells from library ", lib)
-        }
-      }
-    }
-
-    if (verbose) {
-      message("\nReturning list of ", length(seurat_list), " Seurat objects")
-    }
-
-    return(seurat_list)
+readH5Seurat.h5Seurat <- function(file, assays = NULL, reductions = NULL, graphs = NULL,
+                                  neighbors = NULL, images = NULL, meta.data = TRUE,
+                                  commands = TRUE, misc = is.null(x = assays),
+                                  tools = is.null(x = assays), verbose = TRUE, ...) {
+  opts <- .h5s_load_options()
+  libs <- DetectMultiLibrary(file)
+  if (!libs$is_multilibrary || !is.null(images)) {
+    return(do.call(as.Seurat, c(list(x = file), opts, list(...))))
   }
-
-  # Otherwise, load as single Seurat object
-  return(as.Seurat(
-    x = file,
-    assays = assays,
-    reductions = reductions,
-    graphs = graphs,
-    neighbors = neighbors,
-    images = images,
-    meta.data = meta.data,
-    commands = commands,
-    misc = misc,
-    tools = tools,
-    verbose = verbose,
-    ...
-  ))
+  # Several spatial libraries with their own images: one object per library
+  if (verbose) message("Detected multi-library spatial data; returning one Seurat object per library")
+  lib_of_cell <- ReadLibraryIds(file, libs$library_col)
+  cells <- Cells(x = file)
+  ids <- unique(lib_of_cell)
+  if (verbose) message("Found ", length(ids), " libraries: ", paste(ids, collapse = ", "))
+  # images are added per library after subsetting, to keep cells consistent
+  opts$images <- character(0)
+  out <- list()
+  for (lib in ids) {
+    keep <- cells[!is.na(lib_of_cell) & lib_of_cell == lib]
+    if (!length(keep)) next
+    if (verbose) message("\nLoading library: ", lib)
+    obj <- subset(do.call(as.Seurat, c(list(x = file), opts, list(...))), cells = keep)
+    img <- tryCatch(AssembleImage(image = lib, file = file, verbose = FALSE), error = function(e) {
+      if (verbose) message("  Could not load image ", lib, ": ", conditionMessage(e))
+      NULL
+    })
+    if (!is.null(img)) {
+      obj@images[[lib]] <- img
+      if (verbose) message("  Added image ", lib)
+    }
+    if (verbose) message("  Loaded ", ncol(obj), " cells from library ", lib)
+    out[[lib]] <- obj
+  }
+  if (verbose) message("\nReturning ", length(out), " Seurat objects")
+  out
 }
 
-#' @importClassesFrom Seurat Seurat
+# Assay objects for the requested assays/slots. Assays with nothing on
+# disk become empty placeholders.
+.h5s_load_assays <- function(x, index, requested, verbose) {
+  out <- list()
+  for (assay in names(requested)) {
+    slots <- requested[[assay]]
+    if (!is.character(slots) || !length(slots)) {
+      # everything the index lists (counts/data/scale.data, split and extra
+      # v5 layers), else the three standard slots
+      slots <- tryCatch(names(Filter(isTRUE, index[[assay]]$slots)), error = function(e) NULL)
+      if (!length(slots)) slots <- c('counts', 'data', 'scale.data')
+    }
+    on_disk <- tryCatch({
+      grp <- x[['assays']][[assay]]
+      found <- names(grp)
+      if ('layers' %in% found && inherits(grp[['layers']], 'H5Group')) {
+        found <- unique(c(found, names(grp[['layers']])))
+      }
+      found
+    }, error = function(e) character(0))
+    if (!length(on_disk)) {
+      if (verbose) message(sprintf("Assay '%s' has no data on disk; adding an empty assay", assay))
+      out[[assay]] <- SeuratObject::CreateAssayObject(counts = matrix(numeric(0), nrow = 0, ncol = 0))
+      next
+    }
+    use <- intersect(slots, on_disk)
+    if (!length(use)) {
+      use <- on_disk[1]
+      if (verbose) {
+        message(sprintf("None of the requested slots exist for assay '%s'; using '%s'", assay, use))
+      }
+    }
+    out[[assay]] <- AssembleAssay(assay = assay, file = x, slots = use, verbose = verbose)
+  }
+  out
+}
+
+# Should images be loaded? From the spatial layout on, or for v4 SliceImage
+# objects when an older Seurat is installed
+.h5s_images_supported <- function(x) {
+  if (packageVersion(pkg = 'Seurat') >= numeric_version(spatial.version)) return(TRUE)
+  if (!x$exists(name = 'images')) return(FALSE)
+  isTRUE(tryCatch(any(vapply(names(x[['images']]), function(img) {
+    g <- x[['images']][[img]]
+    g$attr_exists(attr_name = 's4class') && identical(h5attr(x = g, which = 's4class'), 'SliceImage')
+  }, logical(1))), error = function(e) FALSE))
+}
+
+#' @importClassesFrom SeuratObject Seurat
 #' @importFrom methods slot<-
-#' @importFrom Seurat as.Seurat DefaultAssay Cells
-#' Idents<- Idents Project<- Project
-#' AddMetaData
+#' @importFrom SeuratObject DefaultAssay Cells Idents<- Idents Project<- Project AddMetaData
 #'
 #' @aliases as.Seurat
 #'
@@ -388,279 +325,106 @@ readH5Seurat.h5Seurat <- function(
 #' @method as.Seurat h5Seurat
 #' @export
 #'
-as.Seurat.h5Seurat <- function(
-  x,
-  assays = NULL,
-  reductions = NULL,
-  graphs = NULL,
-  neighbors = NULL,
-  images = NULL,
-  meta.data = TRUE,
-  commands = TRUE,
-  misc = TRUE,
-  tools = TRUE,
-  verbose = TRUE,
-  ...
-) {
+as.Seurat.h5Seurat <- function(x, assays = NULL, reductions = NULL, graphs = NULL,
+                               neighbors = NULL, images = NULL, meta.data = TRUE,
+                               commands = TRUE, misc = TRUE, tools = TRUE,
+                               verbose = TRUE, ...) {
   index <- x$index()
-  obj.all <- all(vapply(
-    X = c(assays, reductions, graphs),
-    FUN = is.null,
-    FUN.VALUE = logical(length = 1L)
-  ))
-  # Load Assays
-  assays <- GetAssays(assays = assays, index = index)
-  if (!DefaultAssay(object = index) %in% names(x = assays)) {
-    active.assay <- names(x = assays)[1]
-    warning(
-      "Default assay not requested, using ",
-      active.assay,
-      " instead",
-      call. = FALSE,
-      immediate. = TRUE
-    )
-  } else {
-    active.assay <- DefaultAssay(object = index)
+  load_everything <- is.null(assays) && is.null(reductions) && is.null(graphs)
+  requested <- GetAssays(assays = assays, index = index)
+  active <- DefaultAssay(object = index)
+  if (!active %in% names(requested)) {
+    active <- names(requested)[1]
+    warning("The default assay was not requested; using ", active, " instead",
+            call. = FALSE, immediate. = TRUE)
   }
-  assay.objects <- vector(mode = 'list', length = length(x = assays))
-  names(x = assay.objects) <- names(x = assays)
-  for (assay in names(x = assays)) {
-    slots <- assays[[assay]]
-
-    # Ensure slots is a non-empty character vector (requested)
-    # When NULL, load all available expression slots (counts, data, scale.data)
-    if (is.null(slots) || length(slots) == 0 || !is.character(slots)) {
-      # Load every layer the index knows about (counts/data/scale.data plus
-      # any split or extra V5 layers), falling back to the standard three
-      slots <- tryCatch(names(x = Filter(f = isTRUE, x = index[[assay]]$slots)),
-                        error = function(e) NULL)
-      if (!length(slots)) slots <- c("counts", "data", "scale.data")
-    }
-
-    # Inspect the h5 file for available layer names for this assay
-    available_slots <- character(0)
-    try({
-      if (x$exists('assays') && x[['assays']]$exists(assay)) {
-        assay_group <- x[['assays']][[assay]]
-        # Use child names as available "slots"
-        available_slots <- names(assay_group)
-        # V5 format stores data inside 'layers/' sub-group; include those as slots
-        if ('layers' %in% available_slots && inherits(assay_group[['layers']], 'H5Group')) {
-          layer_names <- names(assay_group[['layers']])
-          available_slots <- unique(c(available_slots, layer_names))
-        }
-      }
-    }, silent = TRUE)
-
-    if (length(available_slots) == 0) {
-      # No data layers present for this assay in the file.
-      # Create a minimal placeholder assay object instead of calling AssembleAssay,
-      # so downstream code gets a valid Seurat Assay and we avoid the AssembleAssay validation error.
-      if (verbose) {
-        message(sprintf("Assay '%s' contains no on-disk slots; creating empty placeholder assay", assay))
-      }
-      # Create an empty assay (no features / no cells) as placeholder
-      # This uses SeuratObject::CreateAssayObject to create a valid empty assay
-      assay.objects[[assay]] <- SeuratObject::CreateAssayObject(counts = matrix(numeric(0), nrow = 0, ncol = 0))
-    } else {
-      # Only request slots that actually exist on disk
-      slots <- intersect(slots, available_slots)
-      if (length(slots) == 0) {
-        # If requested slots don't exist, fall back to the first available slot
-        slots <- available_slots[1]
-        if (verbose) {
-          message(sprintf("Requested slots for assay '%s' were not found; using available slot '%s' instead", assay, slots))
-        }
-      }
-      assay.objects[[assay]] <- AssembleAssay(
-        assay = assay,
-        file = x,
-        slots = slots,
-        verbose = verbose
-      )
-    }
-  }
-  default.assay <- list(assay.objects[[active.assay]])
-  names(x = default.assay) <- active.assay
+  assay_objs <- .h5s_load_assays(x, index, requested, verbose)
   object <- new(
     Class = 'Seurat',
-    assays = default.assay,
-    active.assay = active.assay,
+    assays = stats::setNames(list(assay_objs[[active]]), active),
+    active.assay = active,
     meta.data = data.frame(row.names = Cells(x = x)),
-    version = package_version(x = x$version())
+    version = package_version(x$version())
   )
-  for (assay in names(x = assay.objects)) {
-    if (assay != active.assay) {
-      object[[assay]] <- assay.objects[[assay]]
-    }
+  for (a in setdiff(names(assay_objs), active)) object[[a]] <- assay_objs[[a]]
+
+  all_global <- isTRUE(getOption('scConvert.dimreducs.allglobal', default = FALSE))
+  for (red in GetDimReducs(reductions = reductions, index = index, assays = requested)) {
+    if (verbose) message("Adding reduction ", red)
+    dr <- AssembleDimReduc(reduction = red, file = x, verbose = verbose)
+    if (all_global) slot(dr, 'global') <- TRUE
+    object[[red]] <- dr
   }
-  # Load DimReducs
-  reductions <- GetDimReducs(
-    reductions = reductions,
-    index = index,
-    assays = assays
-  )
-  for (reduc in reductions) {
-    if (verbose) {
-      message("Adding reduction ", reduc)
-    }
-    reduction <- AssembleDimReduc(
-      reduction = reduc,
-      file = x,
-      verbose = verbose
-    )
-    if (isTRUE(x = getOption(x = 'scConvert.dimreducs.allglobal', default = FALSE))) {
-      slot(object = reduction, name = 'global') <- TRUE
-    }
-    object[[reduc]] <- reduction
+  for (g in GetGraphs(graphs = graphs, index = index, assays = requested)) {
+    if (verbose) message("Adding graph ", g)
+    object[[g]] <- AssembleGraph(graph = g, file = x, verbose = verbose)
   }
-  # Load Graphs
-  graphs <- GetGraphs(graphs = graphs, index = index, assays = assays)
-  for (graph in graphs) {
-    if (verbose) {
-      message("Adding graph ", graph)
-    }
-    object[[graph]] <- AssembleGraph(graph = graph, file = x, verbose = verbose)
-  }
-  # Load Neighbors
-  neighbors <- GetNeighbors(neighbors = neighbors, index = index)
-  for (neighbor in neighbors) {
-    if (verbose) {
-      message("Adding neighbors ", neighbor)
-    }
-    object[[neighbor]] <- AssembleNeighbor(
-      neighbor = neighbor,
-      file = x,
-      verbose = verbose
-      )
-  }
-  # Load SpatialImages (Seurat v5 or SliceImage objects from v4)
-  has_slice_images <- FALSE
-  if (packageVersion(pkg = 'Seurat') < numeric_version(x = spatial.version) && x$exists(name = 'images')) {
-    has_slice_images <- tryCatch({
-      img_names <- names(x[['images']])
-      any(vapply(img_names, function(img_name) {
-        img_group <- x[['images']][[img_name]]
-        img_group$attr_exists(attr_name = 's4class') &&
-          h5attr(x = img_group, which = 's4class') == 'SliceImage'
-      }, logical(1)))
-    }, error = function(e) FALSE)
+  for (nb in GetNeighbors(neighbors = neighbors, index = index)) {
+    if (verbose) message("Adding neighbors ", nb)
+    object[[nb]] <- AssembleNeighbor(neighbor = nb, file = x, verbose = verbose)
   }
 
-  if (packageVersion(pkg = 'Seurat') >= numeric_version(x = spatial.version) || has_slice_images) {
-    images <- GetImages(images = images, index = index, assays = assays)
-    for (image in images) {
-      if (verbose) {
-        message("Adding image ", image)
-      }
-      img_obj <- tryCatch(
-        expr = AssembleImage(image = image, file = x, verbose = verbose),
-        error = function(e) {
-          if (verbose) {
-            message("Failed to load image ", image, ": ", conditionMessage(e))
-          }
-          NULL
-        }
-      )
-      if (!is.null(img_obj)) {
-        tryCatch(
-          expr = object[[image]] <- img_obj,
-          error = function(e) {
-            if (verbose) {
-              message("Storing image ", image, " in misc slot")
-            }
-            slot(object = object, name = 'misc')[[paste0('image_', image)]] <<- img_obj
-          }
-        )
+  # images that cannot be attached to the object are kept in misc
+  orphan_images <- list()
+  if (.h5s_images_supported(x)) {
+    for (img in GetImages(images = images, index = index, assays = requested)) {
+      if (verbose) message("Adding image ", img)
+      obj_img <- tryCatch(AssembleImage(image = img, file = x, verbose = verbose), error = function(e) {
+        if (verbose) message("Failed to load image ", img, ": ", conditionMessage(e))
+        NULL
+      })
+      if (is.null(obj_img)) next
+      attached <- tryCatch({ object[[img]] <- obj_img; TRUE }, error = function(e) FALSE)
+      if (!attached) {
+        if (verbose) message("Storing image ", img, " in misc slot")
+        orphan_images[[paste0('image_', img)]] <- obj_img
       }
     }
   }
-  # Load SeuratCommands
+
   if (commands) {
-    if (verbose) {
-      message("Adding command information")
-    }
-    cmds <- GetCommands(index = index, assays = assays)
-    cmdlogs <- vector(mode = 'list', length = length(x = cmds))
-    names(x = cmdlogs) <- cmds
-    for (cmd in cmds) {
-      cmdlogs[[cmd]] <- AssembleSeuratCommand(
-        cmd = cmd,
-        file = x,
-        verbose = verbose
-      )
-    }
-    slot(object = object, name = 'commands') <- cmdlogs
+    if (verbose) message("Adding command information")
+    cmds <- GetCommands(index = index, assays = requested)
+    slot(object, 'commands') <- stats::setNames(
+      lapply(cmds, AssembleSeuratCommand, file = x, verbose = verbose), cmds)
   }
-  # Load meta.data
-  if (meta.data && x$exists('meta.data')) {
-    if (verbose) {
-      message("Adding cell-level metadata")
-    }
 
-    # Safely read metadata with error handling
+  if (meta.data && x$exists('meta.data')) {
+    if (verbose) message("Adding cell-level metadata")
     tryCatch({
       md <- as.data.frame(x = x[['meta.data']], row.names = Cells(x = x))
-
-      # Validate columns before subsetting
-      if (ncol(x = md) > 0) {
-        # Remove any columns that might cause issues
-        problematic_cols <- sapply(md, function(col) {
-          inherits(col, "environment") || is.null(col)
-        })
-        if (any(problematic_cols)) {
-          md <- md[, !problematic_cols, drop = FALSE]
-        }
-
-        if (ncol(md) > 0) {
-          object <- AddMetaData(object = object, metadata = md)
-        }
-      }
+      md <- md[, !vapply(md, function(col) is.null(col) || is.environment(col), logical(1)),
+               drop = FALSE]
+      if (ncol(md)) object <- AddMetaData(object = object, metadata = md)
     }, error = function(e) {
       if (verbose) {
-        warning("Could not load metadata: ", conditionMessage(e),
-                call. = FALSE, immediate. = TRUE)
+        warning("Could not load metadata: ", conditionMessage(e), call. = FALSE, immediate. = TRUE)
       }
     })
   }
-  # Set cell identities and object project
   Idents(object = object) <- Idents(object = x)
   Project(object = object) <- Project(object = x)
-  # Load misc
+
   if (misc) {
-    if (verbose) {
-      message("Adding miscellaneous information")
-    }
-    # Use SafeH5GroupToList to handle 3D+ arrays
-    slot(object = object, name = 'misc') <- SafeH5GroupToList(h5obj = x[['misc']], recursive = TRUE)
+    if (verbose) message("Adding miscellaneous information")
+    # SafeH5GroupToList copes with 3-D+ arrays
+    slot(object, 'misc') <- SafeH5GroupToList(h5obj = x[['misc']], recursive = TRUE)
   }
-  # Load tools
+  if (length(orphan_images)) slot(object, 'misc')[names(orphan_images)] <- orphan_images
   if (tools) {
-    if (verbose) {
-      message("Adding tool-specific results")
-    }
-    # Use SafeH5GroupToList to handle 3D+ arrays
-    slot(object = object, name = 'tools') <- SafeH5GroupToList(h5obj = x[['tools']], recursive = TRUE)
+    if (verbose) message("Adding tool-specific results")
+    slot(object, 'tools') <- SafeH5GroupToList(h5obj = x[['tools']], recursive = TRUE)
   }
-  # Load no.assay information
-  if (obj.all && !is.null(x = index$no.assay)) {
-    if (verbose) {
-      message("Adding data that was not associated with an assay")
-    }
-    for (graph in index$no.assay$graphs) {
-      object[[graph]] <- AssembleGraph(
-        graph = graph,
-        file = x,
-        verbose = verbose
-      )
+
+  # graphs and command logs not tied to any assay
+  if (load_everything && !is.null(index$no.assay)) {
+    if (verbose) message("Adding data that was not associated with an assay")
+    for (g in index$no.assay$graphs) {
+      object[[g]] <- AssembleGraph(graph = g, file = x, verbose = verbose)
     }
     for (cmd in index$no.assay$commands) {
-      object[[cmd]] <- AssembleSeuratCommand(
-        cmd = cmd,
-        file = x,
-        verbose = verbose
-      )
+      object[[cmd]] <- AssembleSeuratCommand(cmd = cmd, file = x, verbose = verbose)
     }
   }
-  return(object)
+  object
 }

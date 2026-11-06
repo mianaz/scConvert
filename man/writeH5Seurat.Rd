@@ -63,7 +63,7 @@ same name. Default is \code{FALSE}.}
 \value{
 \code{writeH5Seurat}: Invisibly returns the filename of the saved file
 
-\code{as.h5Seurat}: An \code{\link{h5Seurat}} object
+\code{as.h5Seurat}: an open \code{\link{h5Seurat}} connection
 }
 \description{
 Save a Seurat object to the efficient HDF5-based h5Seurat format. This format

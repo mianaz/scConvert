@@ -9,6 +9,8 @@ experimental](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimenta
 [![R-CMD-check](https://github.com/mianaz/scConvert/actions/workflows/r-cmd-check.yaml/badge.svg)](https://github.com/mianaz/scConvert/actions/workflows/r-cmd-check.yaml)
 [![pkgdown](https://github.com/mianaz/scConvert/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/mianaz/scConvert/actions/workflows/pkgdown.yaml)
 [![Codecov](https://codecov.io/gh/mianaz/scConvert/graph/badge.svg)](https://codecov.io/gh/mianaz/scConvert)
+[![License:
+MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 <!-- badges: end -->
 
 **Load any single-cell format as a Seurat object. Write a Seurat object as any format. Convert any two formats in your terminal.**
@@ -111,8 +113,9 @@ Three conversion tiers provide optimal speed for each format pair:
 | **SpatialData** | Read/write scverse SpatialData zarr stores with OME-NGFF images. |
 | **Multimodal** | Native h5mu read/write for CITE-seq, ATAC+RNA, etc. |
 | **TileDB-SOMA** | Read/write SOMA for CELLxGENE Census interoperability. |
+| **Large data** | Streaming conversion between h5ad, h5Seurat, h5mu and Loom that never loads the expression matrices (`stream = TRUE`), and parallel batch conversion (`scConvertBatch()`). |
 | **BPCells** | On-disk matrix loading – 87% memory reduction at atlas scale. |
-| **C CLI** | Standalone binary for streaming on-disk HDF5 conversion. |
+| **C CLI** | Standalone binary for fast HDF5 conversion (opt-in; see below). |
 | **Version compatibility** | Reads every anndata layout from 0.7 to 0.13 (nullable strings, `null`, zarr v3 sharding + zstd); `upgradeH5AD()`/`downgradeH5AD()` rewrite h5ad files between layouts and `upgradeSeurat()`/`downgradeSeurat()` convert objects between Seurat v3/v4 and v5 losslessly. |
 
 ## Performance
@@ -133,6 +136,44 @@ local/temporary files (6× faster), `gzip = 1` for a good speed/size balance
 (252 MB vs 1.2 GB at 100K cells). BPCells on-disk loading (`use.bpcells`)
 reduces memory by ~87% at atlas scale. Benchmarked on Apple M4 Max, 128 GB
 RAM.
+
+## Large Datasets
+
+For files that do not fit comfortably in memory, convert without loading the
+object:
+
+``` r
+# any pair of h5ad, h5Seurat, h5mu and Loom; expression matrices copied on disk
+scConvert("atlas.h5ad", dest = "atlas.h5seurat", stream = TRUE)
+scConvert("atlas.h5seurat", dest = "atlas.h5ad", stream = TRUE)
+scConvert("citeseq.h5mu", dest = "citeseq.h5seurat", stream = TRUE)
+
+# many files at once, one worker process per file
+files <- list.files("samples", pattern = "\\.h5ad$", full.names = TRUE)
+scConvertBatch(files, dest = "h5seurat", workers = 4, stream = TRUE)
+```
+
+Streaming reads only the small parts of the file (metadata, embeddings,
+graphs, images, `uns`) and converts them with the regular reader and writer;
+the expression matrices (h5ad `X`, `layers` and `raw`, h5Seurat layers, h5mu
+modalities, the Loom matrix and layers) are copied between the files by HDF5,
+or in 64 MB blocks (`options(scConvert.stream_chunk_bytes)`) when they must be
+transposed or densified, or features subset or reordered. The output is identical to an
+in-memory conversion. `stream = "auto"` (the default) streams files larger
+than 2 GB (`options(scConvert.stream_threshold)`).
+
+Synthetic h5ad, 100,000 cells x 5,000 genes, 100 million non-zeros (Linux,
+4 cores):
+
+| h5ad → h5Seurat | Peak memory | Time |
+|-----------------|------------:|-----:|
+| in memory       | 6.5 GB      | 101 s |
+| `stream = TRUE` | 1.2 GB      | 34 s |
+
+Streaming memory depends on the number of cells (metadata), not on the size
+of the matrices: 60 million non-zeros over 200,000 cells also peak at 1.2 GB,
+of which 0.4 GB is R with Seurat loaded. Converting four 50,000-cell files
+with `scConvertBatch(workers = 4)` took 17 s instead of 47 s.
 
 ## Command-Line Interface
 
@@ -157,6 +198,11 @@ make -f Makefile.cli install-bin   # copies to ../inst/bin/scconvert
 Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`,
 `--version`, `--help`
 
+The CLI is fast but does not carry everything the R paths do (feature
+metadata, variable features and spatial images are dropped), so `scConvert()`
+only uses it with `options(scConvert.use_cli = TRUE)`. For large files with
+full fidelity, use `stream = TRUE`.
+
 ## Documentation
 
 - [Conversions: h5Seurat and
@@ -169,12 +215,12 @@ Options: `--assay <name>`, `--gzip <0-9>`, `--overwrite`, `--quiet`,
   Format](https://mianaz.github.io/scConvert/articles/convert-loom.html)
 - [Zarr
   Format](https://mianaz.github.io/scConvert/articles/convert-zarr.html)
-- [Spatial
-  Technologies](https://mianaz.github.io/scConvert/articles/spatial-technologies.html)
+- [Spatial: Visium](https://mianaz.github.io/scConvert/articles/spatial-visium.html)
+  and [CosMx](https://mianaz.github.io/scConvert/articles/spatial-cosmx.html)
 - [CLI
   Usage](https://mianaz.github.io/scConvert/articles/cli-usage.html)
-- [h5Seurat
-  Specification](https://mianaz.github.io/scConvert/articles/h5Seurat-spec.html)
+- [Atlas-scale
+  conversion](https://mianaz.github.io/scConvert/articles/atlas-scale-cli.html)
 
 ## Citation
 
@@ -185,4 +231,8 @@ If you use scConvert in your research, please cite:
 
 ## License
 
-GPL-3
+scConvert is released under the [MIT License](LICENSE.md), © 2026 Ziyu Zeng.
+Versions before 0.3.0 were distributed under GPL-3 because they included code
+from SeuratDisk; that code has been replaced by an independent
+implementation. scConvert reads and writes the h5Seurat file layout used by
+SeuratDisk.

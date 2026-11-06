@@ -4,15 +4,19 @@
 \name{h5Seurat-class}
 \alias{h5Seurat-class}
 \alias{h5Seurat}
-\title{A class for connections to h5Seurat files}
+\title{Connection to an h5Seurat file}
 \format{
-An \code{\link[R6]{R6Class}} object
+An \code{\link[R6]{R6Class}} generator
 }
 \description{
-A class for connections to h5Seurat files
+An \code{\link{scdisk}} subclass for h5Seurat files, the HDF5 layout used
+to store \code{Seurat} objects on disk. Opening an existing file checks
+its structure and builds an index of what it contains (see
+\code{$index()}); creating a file lays out the empty groups.
 }
 \seealso{
-\code{\link[hdf5r]{H5File}}
+\code{\link{scdisk}}, \code{\link{readH5Seurat}},
+  \code{\link{writeH5Seurat}}
 }
 \section{Super classes}{
 \code{\link[hdf5r:H5RefClass]{hdf5r::H5RefClass}} -> \code{\link[hdf5r:H5File]{hdf5r::H5File}} -> \code{\link[scConvert:scdisk]{scdisk}} -> \code{h5Seurat}
@@ -108,11 +112,15 @@ A class for connections to h5Seurat files
 \if{html}{\out{<a id="method-h5Seurat-index"></a>}}
 \if{latex}{\out{\hypertarget{method-h5Seurat-index}{}}}
 \subsection{\code{h5Seurat$index()}}{
-  Get the index for this h5Seurat file
+  Summary of the assays, layers, reductions, graphs,
+  images, commands and neighbors stored in the file
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{h5Seurat$index()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    An \code{h5SI} object (a nested list)
   }
 }
 
@@ -120,7 +128,7 @@ A class for connections to h5Seurat files
 \if{html}{\out{<a id="method-h5Seurat-set.version"></a>}}
 \if{latex}{\out{\hypertarget{method-h5Seurat-set.version}{}}}
 \subsection{\code{h5Seurat$set.version()}}{
-  Set the version attribute
+  Set the h5Seurat version recorded in the file
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{h5Seurat$set.version(version)}
@@ -129,10 +137,12 @@ A class for connections to h5Seurat files
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{version}}{A version number matching the regex
-\code{^\\d+(\\.\\d+){2}(\\.9\\d{3})?$}}
+      \item{\code{version}}{A version string such as \code{"5.0.0"}}
     }
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly, the object
   }
 }
 
@@ -140,11 +150,14 @@ A class for connections to h5Seurat files
 \if{html}{\out{<a id="method-h5Seurat-version"></a>}}
 \if{latex}{\out{\hypertarget{method-h5Seurat-version}{}}}
 \subsection{\code{h5Seurat$version()}}{
-  Get the version attribute
+  Version recorded in the file
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{h5Seurat$version()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A character string
   }
 }
 
@@ -152,14 +165,15 @@ A class for connections to h5Seurat files
 \if{html}{\out{<a id="method-h5Seurat-detect.version"></a>}}
 \if{latex}{\out{\hypertarget{method-h5Seurat-detect.version}{}}}
 \subsection{\code{h5Seurat$detect.version()}}{
-  Detect the Seurat version of the stored object
+  Seurat object generation the file was written from,
+  judged from its layout and, failing that, its version attribute
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{h5Seurat$detect.version()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A string indicating the detected version ("V3", "V4", or "V5")
+    \code{"V3"}, \code{"V4"} or \code{"V5"}
   }
 }
 
@@ -167,14 +181,14 @@ A class for connections to h5Seurat files
 \if{html}{\out{<a id="method-h5Seurat-is.v5"></a>}}
 \if{latex}{\out{\hypertarget{method-h5Seurat-is.v5}{}}}
 \subsection{\code{h5Seurat$is.v5()}}{
-  Check if this is a V5 format file
+  Was the file written from a Seurat v5 object?
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{h5Seurat$is.v5()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Logical indicating if file uses V5 format
+    \code{TRUE} or \code{FALSE}
   }
 }
 

@@ -2,10 +2,6 @@
 #'
 NULL
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Generics
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 #' Save a Seurat object to a Loom file
 #'
 #' Export a Seurat object to Loom format (HDF5-based file format optimized for storing
@@ -35,7 +31,7 @@ NULL
 #' \itemize{
 #'   \item Default assay data becomes the main matrix
 #'   \item Cell metadata and feature annotations are preserved
-#'   \item Dimensional reductions are stored in col_attrs
+#'   \item Dimensional reductions are stored under \code{/reductions}
 #'   \item The SEURAT_ASSAY attribute stores the assay name for roundtrip loading
 #' }
 #'
@@ -78,90 +74,35 @@ writeLoom <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) 
 
 #' @param x A Seurat object to convert
 #'
-#' @return \code{as.loom}: A \code{\link{loom}} object
+#' @return \code{as.loom}: an open \code{\link{loom}} connection
 #'
-#' @name writeLoom
 #' @rdname writeLoom
-#'
 #' @export
 #'
 as.loom <- function(x, ...) {
   UseMethod(generic = 'as.loom', object = x)
 }
 
-#' Write matrix data to a loom file
-#'
-#' @keywords internal
-#' @noRd
-setGeneric(
-  name = 'WriteMatrix',
-  def = function(x, name, lfile, transpose = TRUE, verbose = TRUE) {
-    if (!inherits(x = lfile, what = 'loom')) {
-      stop("'lfile' must be a loom object", call. = FALSE)
-    }
-    standardGeneric(f = 'WriteMatrix')
-  },
-  signature = c('x')
-)
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Methods
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 #' @rdname writeLoom
 #' @method writeLoom default
 #' @export
 #'
-writeLoom.default <- function(
-  object,
-  filename,
-  overwrite = FALSE,
-  verbose = TRUE,
-  ...
-) {
-  tryCatch(
-    expr = object <- as.Seurat(object = object, verbose = verbose, ...),
-    error = function(...) {
-      stop(
-        "Unable to coerce an object of class ",
-        paste(class(x = object), collapse = ', '),
-        " to a Seurat object",
-        call. = FALSE
-      )
-    }
-  )
-  if (missing(x = filename)) {
-    filename <- paste0(Project(object = object), '.loom')
-  }
-  return(invisible(x = writeLoom(
-    object = object,
-    filename = filename,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  )))
+writeLoom.default <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
+  object <- .as_seurat_or_stop(object, verbose = verbose, ...)
+  if (missing(filename)) filename <- paste0(Project(object = object), '.loom')
+  invisible(writeLoom(object = object, filename = filename, overwrite = overwrite,
+                      verbose = verbose, ...))
 }
 
 #' @rdname writeLoom
 #' @method writeLoom Seurat
 #' @export
 #'
-writeLoom.Seurat <- function(
-  object,
-  filename = paste0(Project(object = object), '.loom'),
-  overwrite = FALSE,
-  verbose = TRUE,
-  ...
-) {
-  loom <- as.loom(
-    x = object,
-    filename = filename,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  )
-  loom$close_all()
-  return(invisible(x = loom$filename))
+writeLoom.Seurat <- function(object, filename = paste0(Project(object = object), '.loom'),
+                             overwrite = FALSE, verbose = TRUE, ...) {
+  con <- as.loom(x = object, filename = filename, overwrite = overwrite, verbose = verbose, ...)
+  con$close_all()
+  invisible(con$filename)
 }
 
 #' @rdname writeLoom
@@ -169,27 +110,9 @@ writeLoom.Seurat <- function(
 #' @export
 #'
 as.loom.default <- function(x, filename, overwrite = FALSE, verbose = TRUE, ...) {
-  tryCatch(
-    expr = x <- as.Seurat(object = x, verbose = verbose, ...),
-    error = function(...) {
-      stop(
-        "Unable to coerce an object of class ",
-        paste(class(x = x), collapse = ', '),
-        " to a Seurat object",
-        call. = FALSE
-      )
-    }
-  )
-  if (missing(x = filename)) {
-    filename <- paste0(Project(object = x), '.loom')
-  }
-  return(as.loom(
-    object = x,
-    filename = filename,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  ))
+  x <- .as_seurat_or_stop(x, verbose = verbose, ...)
+  if (missing(filename)) filename <- paste0(Project(object = x), '.loom')
+  as.loom(x = x, filename = filename, overwrite = overwrite, verbose = verbose, ...)
 }
 
 #' @rdname writeLoom
@@ -197,351 +120,154 @@ as.loom.default <- function(x, filename, overwrite = FALSE, verbose = TRUE, ...)
 #' @export
 #'
 as.loom.H5File <- function(x, ...) {
-  # Validate that this is a loom file
-  if (!inherits(x = x, what = 'H5File')) {
-    stop("'x' must be an H5File object", call. = FALSE)
+  for (part in c('matrix', 'layers', 'row_attrs', 'col_attrs')) {
+    if (!x$exists(name = part)) stop("Not a loom file: '", part, "' is missing", call. = FALSE)
   }
-  # Check for required loom structure
-  if (!x$exists(name = 'matrix')) {
-    stop("H5File does not contain required '/matrix' dataset", call. = FALSE)
+  loom$new(filename = x$filename,
+           mode = if (x$get_file_id()$is_writeable()) 'r+' else 'r')
+}
+
+# /reductions/<name>: embeddings (components x cells), loadings, stdev
+.loom_write_reduction <- function(lfile, red, dr) {
+  base <- paste0('reductions/', red)
+  lfile$create_group(name = base)
+  emb <- Embeddings(object = dr)
+  lfile$create_dataset(name = paste0(base, '/embeddings'), robj = t(emb),
+                       dtype = GuessDType(x = emb[1, 1]))
+  ld <- tryCatch(Loadings(object = dr), error = function(e) NULL)
+  if (!is.null(ld) && !IsMatrixEmpty(x = ld)) {
+    lfile$create_dataset(name = paste0(base, '/loadings'), robj = ld,
+                         dtype = GuessDType(x = ld[1, 1]))
   }
-  required.groups <- c('layers', 'row_attrs', 'col_attrs')
-  for (group in required.groups) {
-    if (!x$exists(name = group)) {
-      stop("H5File does not contain required '", group, "' group", call. = FALSE)
+  sdev <- tryCatch(Stdev(object = dr), error = function(e) NULL)
+  if (length(sdev)) {
+    lfile$create_dataset(name = paste0(base, '/stdev'), robj = sdev, dtype = GuessDType(x = sdev))
+  }
+  invisible(NULL)
+}
+
+# Factor levels (and ordering) of cell metadata columns, kept outside
+# col_attrs: the loom spec only allows 1-D datasets there and loompy /
+# scanpy reject sub-groups
+.loom_write_factor_levels <- function(lfile, factors, verbose) {
+  if (!length(factors)) return(invisible(NULL))
+  tryCatch({
+    root_path <- 'scConvert_extensions/col_factor_levels'
+    for (p in c('scConvert_extensions', root_path)) {
+      if (!lfile$exists(p)) lfile$create_group(p)
     }
-  }
-  # Wrap the H5File in a loom object
-  loom.obj <- loom$new(
-    filename = x$filename,
-    mode = ifelse(test = x$get_file_id()$is_writeable(), yes = 'r+', no = 'r')
-  )
-  return(loom.obj)
+    root <- lfile[[root_path]]
+    for (col in names(factors)) {
+      if (root$exists(col)) root$link_delete(col)
+      g <- root$create_group(col)
+      g$create_dataset(name = 'levels', robj = levels(factors[[col]]))
+      g$create_dataset(name = 'ordered', robj = as.integer(is.ordered(factors[[col]])))
+    }
+    if (verbose) message("Preserved factor levels for ", length(factors), " meta.data column(s)")
+  }, error = function(e) {
+    warning("Could not write factor levels to loom file: ", conditionMessage(e), call. = FALSE)
+  })
+  invisible(NULL)
 }
 
 #' @importFrom tools file_ext
-#' @importFrom Seurat Assays DefaultAssay GetAssayData Reductions Embeddings Loadings Stdev
-#' @importFrom methods slotNames slot
+#' @importFrom SeuratObject Assays Reductions Embeddings Loadings Stdev Graphs GetAssayData
 #'
 #' @rdname writeLoom
 #' @method as.loom Seurat
 #' @export
 #'
-as.loom.Seurat <- function(
-  x,
-  filename = paste0(Project(object = x), '.loom'),
-  overwrite = FALSE,
-  verbose = TRUE,
-  ...
-) {
-  if (!grepl(pattern = '^loom$', x = file_ext(x = filename))) {
-    filename <- paste0(filename, '.loom')
-  }
+as.loom.Seurat <- function(x, filename = paste0(Project(object = x), '.loom'),
+                           overwrite = FALSE, verbose = TRUE, ...) {
+  if (!grepl('^loom$', file_ext(filename))) filename <- paste0(filename, '.loom')
   if (file.exists(filename)) {
-    if (isTRUE(x = overwrite)) {
-      warning(
-        "Overwriting previous file ",
-        filename,
-        call. = FALSE,
-        immediate. = TRUE
-      )
-      file.remove(filename)
-    } else {
-      stop("Loom file at ", filename, " already exists", call. = FALSE)
+    if (!isTRUE(overwrite)) stop("A loom file already exists at ", filename, call. = FALSE)
+    warning("Overwriting ", filename, call. = FALSE, immediate. = TRUE)
+    file.remove(filename)
+  }
+  default <- DefaultAssay(object = x)
+  # loom holds one matrix per layer: join split v5 layers (counts.a,
+  # counts.b, ...) back into counts / data / scale.data first
+  for (a in Assays(object = x)) {
+    if (inherits(x[[a]], 'Assay5') &&
+        any(grepl('^(counts|data|scale\\.data)\\.', SeuratObject::Layers(x[[a]])))) {
+      if (verbose) message("Joining split layers of assay ", a)
+      x[[a]] <- SeuratObject::JoinLayers(x[[a]])
     }
   }
   lfile <- loom$new(filename = filename, mode = 'w')
-  AddSlots <- function(assay) {
-    for (layer_name in c('counts', 'scale.data')) {
-      mat <- tryCatch(
-        GetAssayData(object = x, layer = layer_name, assay = assay),
-        error = function(e) NULL
-      )
-      if (!is.null(mat) && identical(x = dim(x = mat), y = dim(x = x))) {
-        if (isTRUE(x = verbose)) {
-          message("Adding layer ", layer_name, " for assay ", assay)
-        }
-        lfile$add_layer(
-          x = mat,
-          name = ifelse(
-            test = assay == DefaultAssay(object = x),
-            yes = layer_name,
-            no = paste(assay, layer_name, sep = '_')
-          ),
-          verbose = verbose
-        )
-      }
-    }
-    return(invisible(x = NULL))
+  # recorded so readLoom() restores the assay name
+  lfile$add_attribute(x = default, name = 'SEURAT_ASSAY')
+  layer_of <- function(layer, assay) {
+    tryCatch(GetAssayData(object = x, layer = layer, assay = assay), error = function(e) NULL)
   }
-  # Add assays
-  assays.write <- lapply(
-    X = Assays(object = x),
-    FUN = function(i) {
-      return(if (identical(x = dim(x = x[[i]]), y = dim(x = x))) {
-        i
-      } else {
-        NULL
-      })
-    }
-  )
-  assays.write <- unlist(x = Filter(f = Negate(f = is.null), x = assays.write))
-  assays.write <- setdiff(x = assays.write, y = DefaultAssay(object = x))
-  # Get data layer, fall back to counts if data is empty
-  main_matrix <- tryCatch(
-    GetAssayData(object = x, layer = 'data'),
-    error = function(e) NULL
-  )
-  if (is.null(main_matrix) || IsMatrixEmpty(main_matrix)) {
-    main_matrix <- tryCatch(
-      GetAssayData(object = x, layer = 'counts'),
-      error = function(e) NULL
-    )
-    if (verbose && !is.null(main_matrix)) {
-      message("Data layer empty, using counts from ", DefaultAssay(object = x), " as /matrix")
-    }
-  } else {
-    if (verbose) {
-      message("Saving data from ", DefaultAssay(object = x), " as /matrix")
+  # counts and scale.data of an assay as loom layers, when they are full size
+  add_extra_layers <- function(assay) {
+    for (layer in c('counts', 'scale.data')) {
+      m <- layer_of(layer, assay)
+      if (is.null(m) || !identical(dim(m), dim(x))) next
+      if (verbose) message("Adding layer ", layer, " for assay ", assay)
+      lfile$add_layer(x = m, name = if (assay == default) layer else paste(assay, layer, sep = '_'),
+                      verbose = verbose)
     }
   }
-  if (is.null(main_matrix) || IsMatrixEmpty(main_matrix)) {
+
+  # /matrix: normalized data of the default assay, else its counts
+  main <- layer_of('data', default)
+  if (is.null(main) || IsMatrixEmpty(x = main)) {
+    main <- layer_of('counts', default)
+    if (verbose && !is.null(main)) message("Data layer empty, using counts from ", default, " as /matrix")
+  } else if (verbose) {
+    message("Saving data from ", default, " as /matrix")
+  }
+  if (is.null(main) || IsMatrixEmpty(x = main)) {
     stop("No data or counts layer found in default assay", call. = FALSE)
   }
-  WriteMatrix(
-    x = main_matrix,
-    name = 'matrix',
-    lfile = lfile,
-    verbose = verbose
-  )
-  AddSlots(assay = DefaultAssay(object = x))
-  for (assay in assays.write) {
-    if (isTRUE(x = verbose)) {
-      message("Adding data for ", assay)
-    }
-    lfile$add_layer(
-      x = GetAssayData(object = x, layer = 'data', assay = assay),
-      name = assay,
-      verbose = verbose
-    )
-    AddSlots(assay = assay)
+  .loom_write_matrix(lfile = lfile, x = main, name = 'matrix', verbose = verbose)
+  add_extra_layers(default)
+  # other assays with the same shape go to layers named after the assay
+  others <- Filter(function(a) identical(dim(x[[a]]), dim(x)), setdiff(Assays(object = x), default))
+  for (a in others) {
+    if (verbose) message("Adding data for ", a)
+    lfile$add_layer(x = layer_of('data', a), name = a, verbose = verbose)
+    add_extra_layers(a)
   }
-  # Add dimensional reduction information
-  if (length(Reductions(object = x)) > 0) {
-    # Create parent reductions group first
-    if (!lfile$exists('reductions')) {
-      lfile$create_group(name = 'reductions')
-    }
-  }
-  for (reduc in Reductions(object = x)) {
-    tryCatch({
-      if (verbose) {
-        message("Adding dimensional reduction ", reduc)
-      }
-      reduc.obj <- x[[reduc]]
-      # Create a group for this reduction
-      reduc.group <- lfile$create_group(name = H5Path('reductions', reduc))
-      # Save embeddings (transpose to match loom convention: components x cells)
-      embeddings <- Embeddings(object = reduc.obj)
-      lfile$create_dataset(
-        name = H5Path('reductions', reduc, 'embeddings'),
-        robj = t(x = embeddings),
-        dtype = GuessDType(x = embeddings[1, 1])
-      )
-      # Save loadings if available
-      loadings <- tryCatch(Loadings(object = reduc.obj), error = function(e) NULL)
-      if (!is.null(x = loadings) && !IsMatrixEmpty(x = loadings)) {
-        lfile$create_dataset(
-          name = H5Path('reductions', reduc, 'loadings'),
-          robj = loadings,
-          dtype = GuessDType(x = loadings[1, 1])
-        )
-      }
-      # Save standard deviation if available
-      stdev <- tryCatch(Stdev(object = reduc.obj), error = function(e) NULL)
-      if (!is.null(x = stdev) && length(x = stdev) > 0) {
-        lfile$create_dataset(
-          name = H5Path('reductions', reduc, 'stdev'),
-          robj = stdev,
-          dtype = GuessDType(x = stdev)
-        )
-      }
-    }, error = function(e) {
-      warning(
-        "Failed to save dimensional reduction ", reduc, ": ", e$message,
-        call. = FALSE,
-        immediate. = TRUE
-      )
-    })
-  }
-  # Add graphs
-  # Get graph names using SeuratObject::Graphs if available
 
-  graph_names <- tryCatch({
-    # Use SeuratObject::Graphs which is exported
-    if (requireNamespace("SeuratObject", quietly = TRUE) &&
-        exists("Graphs", where = asNamespace("SeuratObject"), mode = "function")) {
-      SeuratObject::Graphs(object = x)
-    } else {
-      # Fall back to checking slot names
-      slot_names <- slotNames(x)
-      if ("graphs" %in% slot_names && length(slot(x, "graphs")) > 0) {
-        names(slot(x, "graphs"))
-      } else {
-        character()
-      }
-    }
-  }, error = function(e) character())
+  reds <- Reductions(object = x)
+  if (length(reds) && !lfile$exists('reductions')) lfile$create_group(name = 'reductions')
+  for (red in reds) {
+    if (verbose) message("Adding dimensional reduction ", red)
+    tryCatch(.loom_write_reduction(lfile, red, x[[red]]), error = function(e) {
+      warning("Failed to save dimensional reduction ", red, ": ", conditionMessage(e),
+              call. = FALSE, immediate. = TRUE)
+    })
+  }
 
-  for (graph in graph_names) {
-    tryCatch({
-      lfile$add_graph(x = x[[graph]], name = graph, type = 'col')
-    }, error = function(e) {
-      warning(paste("Could not add graph", graph), immediate. = TRUE)
+  for (g in tryCatch(Graphs(object = x), error = function(e) character(0))) {
+    tryCatch(lfile$add_graph(x = x[[g]], name = g, type = 'col'), error = function(e) {
+      warning("Could not add graph ", g, call. = FALSE, immediate. = TRUE)
     })
   }
-  # Add metadata
-  lfile$add_attribute(x = colnames(x = x), name = 'CellID', type = 'col')
-  # Track factor columns so we can preserve their levels; the default
-  # loom col_attrs encoding collapses factors to character and drops level
-  # ordering. We restore the original factor on read via the sibling group
-  # col_attrs/__factor_levels__/{name}. Read directly from @meta.data —
-  # x[[md, drop = TRUE]] unsets the 'ordered' class attribute.
-  factor_levels_cache <- list()
-  meta_df <- x@meta.data
-  for (md in names(x = x[[]])) {
-    col_value <- meta_df[[md]]
-    if (is.factor(col_value)) {
-      factor_levels_cache[[md]] <- list(
-        levels  = levels(col_value),
-        ordered = is.ordered(col_value)
-      )
-    }
-    lfile$add_attribute(x = col_value, name = md, type = 'col')
-  }
-  if (length(factor_levels_cache) > 0) {
-    # Factor levels live OUTSIDE col_attrs: the Loom spec restricts
-    # col_attrs children to 1-D datasets, and loompy / scanpy raise
-    # AttributeError on any sub-group under col_attrs. Use a top-level
-    # scConvert-specific extension namespace instead.
-    tryCatch({
-      ext_path <- 'scConvert_extensions/col_factor_levels'
-      if (!lfile$exists('scConvert_extensions')) {
-        lfile$create_group('scConvert_extensions')
-      }
-      if (!lfile$exists(ext_path)) {
-        lfile$create_group(ext_path)
-      }
-      lv_root <- lfile[[ext_path]]
-      for (fname in names(factor_levels_cache)) {
-        fl <- factor_levels_cache[[fname]]
-        if (lv_root$exists(fname)) lv_root$link_delete(fname)
-        fgrp <- lv_root$create_group(fname)
-        fgrp$create_dataset(name = 'levels',
-                             robj = as.character(fl$levels))
-        fgrp$create_dataset(name = 'ordered',
-                             robj = as.integer(isTRUE(fl$ordered)))
-      }
-      if (verbose) {
-        message("Preserved factor levels for ",
-                length(factor_levels_cache), " meta.data column(s)")
-      }
-    }, error = function(e) {
-      warning("Could not write factor levels to loom file: ",
-              conditionMessage(e), call. = FALSE)
-    })
-  }
-  # Add feature-level metadata
-  lfile$add_attribute(x = rownames(x = x), name = 'Gene', type = 'row')
-  # Add feature metadata from the default assay
-  default.assay <- DefaultAssay(object = x)
-  if (!is.null(x = default.assay) && default.assay %in% Assays(object = x)) {
-    feature.meta <- x[[default.assay]][[]]
-    if (ncol(x = feature.meta) > 0) {
-      for (feat.md in colnames(x = feature.meta)) {
-        tryCatch({
-          lfile$add_attribute(
-            x = feature.meta[[feat.md]],
-            name = feat.md,
-            type = 'row'
-          )
-        }, error = function(e) {
-          if (verbose) {
-            warning(
-              "Failed to save feature metadata '", feat.md, "': ", e$message,
-              call. = FALSE,
-              immediate. = TRUE
-            )
-          }
-        })
-      }
+
+  # cell attributes; read from @meta.data directly because x[[col]] drops
+  # the 'ordered' class
+  lfile$add_attribute(x = colnames(x), name = 'CellID', type = 'col')
+  md <- x@meta.data
+  for (col in colnames(md)) lfile$add_attribute(x = md[[col]], name = col, type = 'col')
+  .loom_write_factor_levels(lfile, Filter(is.factor, as.list(md)), verbose)
+
+  # gene attributes: names plus the default assay's feature metadata
+  lfile$add_attribute(x = rownames(x), name = 'Gene', type = 'row')
+  if (default %in% Assays(object = x)) {
+    fm <- x[[default]][[]]
+    for (col in colnames(fm)) {
+      tryCatch(lfile$add_attribute(x = fm[[col]], name = col, type = 'row'), error = function(e) {
+        if (verbose) {
+          warning("Failed to save feature metadata '", col, "': ", conditionMessage(e),
+                  call. = FALSE, immediate. = TRUE)
+        }
+      })
     }
   }
-  return(lfile)
+  lfile
 }
-
-#' @importFrom Matrix t
-#' @importFrom hdf5r H5S
-#' @importFrom methods slot
-#' @importFrom utils setTxtProgressBar
-#' @keywords internal
-#' @noRd
-setMethod(
-  f = 'WriteMatrix',
-  signature = c('x' = 'dgCMatrix'),
-  definition = function(x, name, lfile, transpose = TRUE, verbose = TRUE) {
-    if (isTRUE(x = transpose)) {
-      x <- Matrix::t(x = x)
-    }
-    lfile$create_dataset(
-      name = name,
-      dtype = GuessDType(x = x[1, 1]),
-      space = H5S$new(dims = dim(x = x))
-    )
-    MARGIN <- GetMargin(dims = lfile[[name]]$dims)
-    chunk.points <- ChunkPoints(
-      dsize = lfile[[name]]$dims[MARGIN],
-      csize = lfile[[name]]$chunk_dims[MARGIN]
-    )
-    dims <- vector(mode = 'list', length = 2L)
-    dims[[-MARGIN]] <- seq_len(length.out = lfile[[name]]$dims[-MARGIN])
-    if (isTRUE(x = verbose)) {
-      pb <- PB()
-    }
-    for (i in seq_len(length.out = nrow(x = chunk.points))) {
-      dims[[MARGIN]] <- seq.default(
-        from = chunk.points[i, 'start'],
-        to = chunk.points[i, 'end']
-      )
-      lfile[[name]]$write(
-        args = dims,
-        value = as.matrix(x = x[dims[[1]], dims[[2]]])
-      )
-      if (isTRUE(x = verbose)) {
-        setTxtProgressBar(pb = pb, value = i / nrow(x = chunk.points))
-      }
-    }
-    if (isTRUE(x = verbose)) {
-      close(con = pb)
-    }
-    return(invisible(x = NULL))
-  }
-)
-
-#' @keywords internal
-#' @noRd
-setMethod(
-  f = 'WriteMatrix',
-  signature = c('x' = 'matrix'),
-  definition = function(x, name, lfile, transpose = TRUE, verbose = TRUE) {
-    if (isTRUE(x = transpose)) {
-      x <- t(x = x)
-    }
-    lfile$create_dataset(
-      name = name,
-      robj = x,
-      dtype = GuessDType(x = x[1, 1])
-    )
-    return(invisible(x = NULL))
-  }
-)

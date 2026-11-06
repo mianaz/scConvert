@@ -53,7 +53,7 @@ as.loom(x, ...)
 \value{
 \code{writeLoom}: Invisibly returns the filename of the saved file
 
-\code{as.loom}: A \code{\link{loom}} object
+\code{as.loom}: an open \code{\link{loom}} connection
 }
 \description{
 Export a Seurat object to Loom format (HDF5-based file format optimized for storing
@@ -74,7 +74,7 @@ When saving a Seurat object:
 \itemize{
   \item Default assay data becomes the main matrix
   \item Cell metadata and feature annotations are preserved
-  \item Dimensional reductions are stored in col_attrs
+  \item Dimensional reductions are stored under \code{/reductions}
   \item The SEURAT_ASSAY attribute stores the assay name for roundtrip loading
 }
 }

@@ -1,5 +1,100 @@
 # scConvert 0.3.0 (development)
 
+## License and independent implementation
+
+scConvert is now released under the MIT license (previously GPL-3). The
+code inherited from SeuratDisk (h5Seurat/loom connection classes, h5Seurat
+reader and writer, loom reader and writer, HDF5 helpers and the
+h5ad <-> h5Seurat converters) has been replaced by a new implementation;
+unused inherited code (`AppendData`, `PadMatrix`, the V4 -> V5 migration
+helpers and others) was removed. The h5Seurat and loom on-disk layouts are
+unchanged: files written by earlier versions read back identically, and
+earlier versions read files written by this one identically. Public
+functions keep their names and arguments.
+
+Without the optional `scconvert` binary, file-to-file h5ad <-> h5Seurat
+conversion now loads the data into a Seurat object and writes it out again
+(`readH5AD()` + `writeH5Seurat()`, `readH5Seurat()` + `writeH5AD()`).
+
+## Large datasets
+
+- `scConvert(..., stream = TRUE)` converts between any two of h5ad,
+  h5Seurat, h5mu and loom without loading the expression matrices:
+  metadata, embeddings, graphs, images and `uns` go through the regular
+  reader and writer, and the matrices (`X`, `layers`, `raw/X`, h5Seurat
+  layers and slots, h5mu modalities, the loom `/matrix` and `/layers`) are
+  copied between the files by HDF5, or in bounded blocks when they have to
+  be transposed, densified or have features subset or reordered. The result is identical to an
+  in-memory conversion. On 100,000 cells with 100 million non-zeros, peak
+  memory drops from 6.5 GB to 1.2 GB and run time from 101 s to 34 s.
+  `stream = "auto"` (default) streams files larger than
+  `options(scConvert.stream_threshold)` (2 GB); the block size is
+  `options(scConvert.stream_chunk_bytes)` (64 MB).
+- New `scConvertBatch()` converts many files in parallel worker processes
+  and reports per-file success, time and errors.
+- `H5MUToH5AD()`, `H5ADToH5MU()`, `LoomToH5AD()`, `H5ADToLoom()` and the
+  other file-to-file converters take the same `stream` argument.
+
+## Other changes
+
+- `scConvert()` between h5Seurat, h5mu and loom files (h5ad -> loom,
+  h5Seurat -> h5mu / loom, h5mu -> h5Seurat / loom) failed with "unused
+  argument"; these now convert.
+
+- The compiled `scconvert` binary is opt-in (`options(scConvert.use_cli =
+  TRUE)`). The previous auto-detection never took effect, and the binary
+  drops feature metadata and spatial images, so the package no longer
+  probes for it or prints a startup message about it.
+- `writeLoom()` records the assay name (`/attrs/SEURAT_ASSAY`), so
+  `readLoom()` restores assays other than RNA, and writes Seurat v5 objects
+  with split layers (joined first).
+- h5Seurat keeps missing values in character vectors (stored as `""` with
+  an `na.positions` attribute; they used to become the string `"NA"`).
+- When counts come from `layers/counts` or `raw/X`, `readH5AD()` computes
+  `nCount_*` / `nFeature_*` from those counts instead of from `X` (unless
+  obs provides them).
+- `zstdlite` is listed in Suggests; `stringi` is no longer imported.
+
+## Bug fixes
+
+- Asymmetric graphs (the kNN `*_nn` graph) were transposed in several
+  h5ad paths: the compiled h5ad writer, the R h5ad reader, the reader for
+  `csc_matrix` graphs, and the h5mu reader. The demo h5ad files shipped in
+  `inst/` carried transposed `*_nn` graphs and have been corrected.
+- The compiled h5ad writer dropped gene metadata and `highly_variable`, and
+  `writeH5AD(standardize = TRUE)` had no effect.
+- `scConvert()` from h5ad to h5mu failed.
+- Loom graphs failed to load when the last cells had no edges.
+- `as.h5Seurat()` on an open `H5File` reopened it with the opposite
+  read/write mode; `as.loom()` and `writeLoom()` on non-Seurat input
+  always failed.
+- `readH5AD_obs()` now decodes nullable and boolean columns.
+- Metadata columns with missing values now round-trip through h5ad, h5mu and
+  zarr: logical `NA` is written as `nullable-boolean` (was `FALSE`), integer
+  `NA` as `nullable-integer` (was `INT_MIN`/0), and character `NA` as a
+  categorical with code -1 (was the literal string `"NA"` / `""`). Logical
+  columns are written as numpy-bool enums instead of int8.
+- Ordered factors keep `ordered = TRUE` in h5ad (C writer), zarr and
+  h5Seurat; h5mu now reads the flag back.
+- `readH5MU()` decodes obs/var columns through the shared AnnData decoder, so
+  nullable columns are no longer dropped.
+- h5Seurat logical columns are decoded back to logical (the NA sentinel 2 was
+  read as `TRUE`/2).
+- zarr categorical codes are sized to the number of levels; factors with more
+  than 127 levels were silently corrupted by int8 codes.
+- Library ids for multi-library spatial h5Seurat files are decoded with
+  1-based factor codes (they were shifted by one level).
+- Assay5 `counts`/`data` layers that cover a subset of features or cells are
+  restored by name from `layer.features`/`layer.cells` instead of being
+  dropped or padded positionally.
+- 2D HDF5 datasets with a length-1 axis are no longer collapsed to vectors
+  (single-cell loom files failed to load).
+- zarr vlen-utf8 strings are marked as UTF-8 (non-ASCII text was garbled in
+  non-UTF-8 locales).
+- C converters cap HDF5 chunk sizes for 2D datasets (full-size chunks broke
+  on dense matrices over 4 GiB and on empty axes) and report HDF5 write
+  failures instead of returning success.
+
 ## Seurat v5.6-beta and SeuratObject 5.4 compatibility
 
 Seurat `v5.6-beta` (branch `v5.6-beta`, version 5.5.1.9999, August 2026)

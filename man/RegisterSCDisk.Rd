@@ -3,53 +3,25 @@
 \name{RegisterSCDisk}
 \alias{RegisterSCDisk}
 \alias{GetSCDisk}
-\title{Get and Register \code{\link{scdisk}} Subclasses}
+\title{Register and look up \code{scdisk} format classes}
 \usage{
 GetSCDisk(r6class = NULL)
 
 RegisterSCDisk(r6class)
 }
 \arguments{
-\item{r6class}{An \link[R6:R6Class]{R6 class generator} or a character name
-of an R6 class generator}
+\item{r6class}{For \code{GetSCDisk}: a class name (case-insensitive), or
+\code{NULL} to list registered names. For \code{RegisterSCDisk}: an
+\code{\link[R6]{R6Class}} generator inheriting from \code{scdisk}}
 }
 \value{
-\code{GetSCDisk}: if \code{r6class} is \code{NULL}, then a vector of
-all registered \code{scdisk} subclasses; otherwise, a
-\link[R6:R6Class]{generator} for the requested \code{scdisk} subclass
-
-\code{RegisterSCDisk}: adds \code{r6class} to the internal subclass
-registry and invisibly returns \code{NULL}
+\code{GetSCDisk}: the generator for \code{r6class}, or the names
+  of all registered classes; \code{RegisterSCDisk}: invisibly \code{NULL}
 }
 \description{
-Mechanisms for registration of \code{\link{scdisk}} subclass generators for
-use in functions that rely on the class definition instead of an object.
+Format classes (subclasses of \code{\link{scdisk}}) are registered under
+their class name so that code which only knows a file type, such as
+\code{\link{scConnect}}, can find the right generator. Packages that add a
+format register it from their \code{.onLoad}.
 }
-\details{
-While \code{scdisk}-subclassed objects (eg. \code{\link{h5Seurat}} objects)
-follow traditional inheritance patterns (can be determined through
-\code{\link{inherits}}), the class definitions and object generators do not.
-These functions provide a simple mechanism for adding and getting the
-defintions of \code{scdisk} subclasses for functions that utilize the object
-generators or other aspects of the class definition (such as
-\code{\link{scConvert}})
-
-To register a subclass of \code{scdisk}, simply add a call to
-\code{RegisterSCDisk} in your \link[base:ns-hooks]{load hook}
-
-\preformatted{
-.onLoad <- function(libname, pkgname) {
-  RegisterSCDisk(classgen)
-  # Other code to be run on load
-}
-}
-}
-\examples{
-GetSCDisk()
-GetSCDisk("h5Seurat")
-
-\dontrun{
-RegisterSCDisk(h5Seurat)
-}
-
-}
+\keyword{internal}

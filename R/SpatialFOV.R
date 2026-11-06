@@ -407,25 +407,3 @@ ReadFOVFromH5AD <- function(lib_group, key = "fov", assay = "Spatial") {
 # that imported scConvert:::H5ADToFOV before the FOV serialization contract
 # was added. New code should use ReadFOVFromH5AD().
 #
-#' @keywords internal
-H5ADToFOV <- function(spatial_data, key = "fov") {
-  if (!requireNamespace("SeuratObject", quietly = TRUE)) return(NULL)
-  centroids <- NULL
-  if (!is.null(spatial_data$centroids) && is.matrix(spatial_data$centroids)) {
-    coords <- spatial_data$centroids
-    if (ncol(coords) >= 2L) {
-      cell_names <- rownames(coords) %||% paste0("cell_", seq_len(nrow(coords)))
-      centroids <- tryCatch(
-        SeuratObject::CreateCentroids(coords = data.frame(
-          x = coords[, 1], y = coords[, 2], cell = cell_names,
-          stringsAsFactors = FALSE)),
-        error = function(e) NULL
-      )
-    }
-  }
-  if (is.null(centroids)) return(NULL)
-  tryCatch(
-    SeuratObject::CreateFOV(coords = centroids, type = "centroids", key = key),
-    error = function(e) NULL
-  )
-}

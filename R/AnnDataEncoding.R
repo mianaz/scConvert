@@ -610,14 +610,14 @@ SeuratLayerToAnnData <- function(name) {
     if (.zstd_internal_available()) {
       return(.Call(C_zstd_decompress, raw_data))
     }
-    if (!requireNamespace("zstdlite", quietly = TRUE)) {
+    if (!.zstdlite_available()) {
       stop("Reading zstd-compressed zarr data requires a Zstd codec ",
            "package. No suitable provider was found on the search path. ",
            "zstdlite is currently the supported provider; see ",
            "https://github.com/coolbutuseless/zstdlite for installation.",
            call. = FALSE)
     }
-    zstdlite::zstd_decompress(raw_data)
+    .zstdlite_fun("zstd_decompress")(raw_data)
   } else if (comp_id == "blosc") {
     if (!requireNamespace("blosc", quietly = TRUE)) {
       stop("blosc package required for blosc-compressed zarr data. ",
@@ -629,6 +629,11 @@ SeuratLayerToAnnData <- function(name) {
          ". Supported: zlib, gzip, zstd, blosc.", call. = FALSE)
   }
 }
+
+# zstdlite is not on CRAN, so it is looked up by name rather than declared
+.zstdlite_pkg <- "zstdlite"
+.zstdlite_available <- function() requireNamespace(.zstdlite_pkg, quietly = TRUE)
+.zstdlite_fun <- function(name) getExportedValue(.zstdlite_pkg, name)
 
 #' Compress chunk data
 #'
@@ -649,14 +654,14 @@ SeuratLayerToAnnData <- function(name) {
     if (.zstd_internal_available()) {
       return(.Call(C_zstd_compress, raw_data, as.integer(level)))
     }
-    if (!requireNamespace("zstdlite", quietly = TRUE)) {
+    if (!.zstdlite_available()) {
       stop("Writing zstd-compressed zarr data requires a Zstd codec ",
            "package; none was found on the search path. ",
            "See https://github.com/coolbutuseless/zstdlite. ",
            "Use compressor = 'zlib' to fall back to gzip.", call. = FALSE)
     }
     level <- compressor$level %||% 3L
-    zstdlite::zstd_compress(raw_data, level = as.integer(level))
+    .zstdlite_fun("zstd_compress")(raw_data, level = as.integer(level))
   } else if (comp_id == "blosc") {
     if (!requireNamespace("blosc", quietly = TRUE)) {
       stop("blosc package required for blosc compression", call. = FALSE)
@@ -693,7 +698,7 @@ SeuratLayerToAnnData <- function(name) {
   if (is.list(x) && !is.null(x$id)) return(x)
   if (identical(x, "none") || identical(x, FALSE)) return(NULL)
   if (is.null(x) || identical(x, "auto")) {
-    if (.zstd_internal_available() || requireNamespace("zstdlite", quietly = TRUE)) {
+    if (.zstd_internal_available() || .zstdlite_available()) {
       return(list(id = "zstd", level = as.integer(level %||% 3L)))
     }
     return(list(id = "zlib", level = as.integer(level %||% GetCompressionLevel())))
@@ -1109,6 +1114,9 @@ SeuratLayerToAnnData <- function(name) {
       }
     }
   }
+  # the payload is UTF-8 by definition; without the mark non-ASCII strings
+  # are misinterpreted in non-UTF-8 locales (C/POSIX, older Windows R)
+  Encoding(strings) <- "UTF-8"
   strings
 }
 

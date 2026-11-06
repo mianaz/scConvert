@@ -2,9 +2,6 @@
 #'
 NULL
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Generics
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' Save a Seurat object to an h5Seurat file
 #'
@@ -85,36 +82,34 @@ NULL
 #'
 #' @export
 #'
-writeH5Seurat <- function(
-  object,
-  filename,
-  overwrite = FALSE,
-  verbose = TRUE,
-  gzip = NULL,
-  ...
-) {
-  # Optimization 3: configurable gzip level (0 = no compression, ~50-70% faster writes)
+writeH5Seurat <- function(object, filename, overwrite = FALSE, verbose = TRUE,
+                          gzip = NULL, ...) {
   if (!is.null(gzip)) {
-    old_gzip <- getOption("scConvert.compression.level")
-    on.exit(options("scConvert.compression.level" = old_gzip), add = TRUE)
-    options("scConvert.compression.level" = as.integer(gzip))
+    previous <- options(scConvert.compression.level = as.integer(gzip))
+    on.exit(options(previous), add = TRUE)
   }
   UseMethod(generic = 'writeH5Seurat', object = object)
 }
 
-#' @return \code{as.h5Seurat}: An \code{\link{h5Seurat}} object
+#' @return \code{as.h5Seurat}: an open \code{\link{h5Seurat}} connection
 #'
 #' @rdname writeH5Seurat
-#'
 #' @export
 #'
 as.h5Seurat <- function(x, ...) {
   UseMethod(generic = 'as.h5Seurat', object = x)
 }
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Methods
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Coerce anything Seurat knows how to convert
+.as_seurat_or_stop <- function(x, verbose, ...) {
+  tryCatch(
+    as.Seurat(x, verbose = verbose, ...),
+    error = function(e) {
+      stop("Cannot convert an object of class ", paste(class(x), collapse = ", "),
+           " to a Seurat object", call. = FALSE)
+    }
+  )
+}
 
 #' @importFrom Seurat as.Seurat Project
 #'
@@ -122,111 +117,46 @@ as.h5Seurat <- function(x, ...) {
 #' @method writeH5Seurat default
 #' @export
 #'
-writeH5Seurat.default <- function(
-  object,
-  filename,
-  overwrite = FALSE,
-  verbose = TRUE,
-  ...
-) {
-  tryCatch(
-    expr = object <- as.Seurat(object = object, verbose = verbose, ...),
-    error = function(...) {
-      stop(
-        "Unable to coerce an object of class ",
-        paste(class(x = object), collapse = ', '),
-        " to a Seurat object",
-        call. = FALSE
-      )
-    }
-  )
-  if (missing(x = filename)) {
-    filename <- paste0(Project(object = object), '.h5Seurat')
-  }
-  return(invisible(x = writeH5Seurat(
-    object = object,
-    filename = filename,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  )))
+writeH5Seurat.default <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
+  object <- .as_seurat_or_stop(object, verbose = verbose, ...)
+  if (missing(filename)) filename <- paste0(Project(object = object), '.h5Seurat')
+  invisible(writeH5Seurat(object = object, filename = filename, overwrite = overwrite,
+                          verbose = verbose, ...))
 }
 
-#' @importFrom Seurat Project
-#'
 #' @rdname writeH5Seurat
 #' @method writeH5Seurat Seurat
 #' @export
 #'
-writeH5Seurat.Seurat <- function(
-  object,
-  filename = paste0(Project(object = object), '.h5Seurat'),
-  overwrite = FALSE,
-  verbose = TRUE,
-  gzip = NULL,
-  ...
-) {
-  # Optimization 3: configurable gzip
+writeH5Seurat.Seurat <- function(object, filename = paste0(Project(object = object), '.h5Seurat'),
+                                 overwrite = FALSE, verbose = TRUE, gzip = NULL, ...) {
   if (!is.null(gzip)) {
-    old_gzip <- getOption("scConvert.compression.level")
-    on.exit(options("scConvert.compression.level" = old_gzip), add = TRUE)
-    options("scConvert.compression.level" = as.integer(gzip))
+    previous <- options(scConvert.compression.level = as.integer(gzip))
+    on.exit(options(previous), add = TRUE)
   }
-  # Try C writer (Optimization: ~10x faster with gzip=0)
-  # Enable with options(scConvert.use_c_writer = TRUE)
-  c_available <- isTRUE(getOption("scConvert.use_c_writer")) &&
-                 is.loaded("C_write_h5seurat", PACKAGE = "scConvert")
-  if (c_available) {
-    result <- .writeH5Seurat_c(object, filename = filename, overwrite = overwrite,
-                                verbose = verbose)
-    if (isTRUE(result)) return(invisible(filename))
+  # opt-in compiled writer: options(scConvert.use_c_writer = TRUE)
+  if (isTRUE(getOption("scConvert.use_c_writer")) &&
+      is.loaded("C_write_h5seurat", PACKAGE = "scConvert")) {
+    if (isTRUE(.writeH5Seurat_c(object, filename = filename, overwrite = overwrite,
+                                verbose = verbose))) {
+      return(invisible(filename))
+    }
     if (verbose) message("C writer failed, falling back to R writer")
   }
-  h5seurat <- as.h5Seurat(
-    x = object,
-    filename = filename,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  )
-  h5seurat$close_all()
-  return(invisible(x = h5seurat$filename))
+  hfile <- as.h5Seurat(x = object, filename = filename, overwrite = overwrite,
+                       verbose = verbose, ...)
+  hfile$close_all()
+  invisible(hfile$filename)
 }
 
-#' @importFrom Seurat as.Seurat Project
-#'
 #' @rdname writeH5Seurat
 #' @method as.h5Seurat default
 #' @export
 #'
-as.h5Seurat.default <- function(
-  x,
-  filename,
-  overwrite = FALSE,
-  verbose = TRUE,
-  ...
-) {
-  tryCatch(
-    expr = x <- as.Seurat(x = x, verbose = verbose, ...),
-    error = function(...) {
-      stop(
-        "Unable to coerce an object of class ",
-        paste(class(x = x), collapse = ', '),
-        " to a Seurat object",
-        call. = FALSE
-      )
-    }
-  )
-  if (missing(x = filename)) {
-    filename <- paste0(Project(object = x), '.h5Seurat')
-  }
-  return(writeH5Seurat(
-    object = x,
-    filename = filename,
-    overwrite = overwrite,
-    verbose = verbose,
-    ...
-  ))
+as.h5Seurat.default <- function(x, filename, overwrite = FALSE, verbose = TRUE, ...) {
+  x <- .as_seurat_or_stop(x, verbose = verbose, ...)
+  if (missing(filename)) filename <- paste0(Project(object = x), '.h5Seurat')
+  writeH5Seurat(object = x, filename = filename, overwrite = overwrite, verbose = verbose, ...)
 }
 
 #' @rdname writeH5Seurat
@@ -234,209 +164,72 @@ as.h5Seurat.default <- function(
 #' @export
 #'
 as.h5Seurat.H5File <- function(x, ...) {
-  return(h5Seurat$new(
-    filename = x$filename,
-    mode = ifelse(test = Writeable(x = x, error = FALSE), yes = 'r', no = 'r+')
-  ))
+  # reopen with the same intent as the existing handle
+  h5Seurat$new(filename = x$filename,
+               mode = if (Writeable(x = x, error = FALSE)) 'r+' else 'r')
 }
 
 #' @importFrom tools file_ext
-#' @importFrom Seurat Project Assays Reductions DefaultAssay<- DefaultAssay
-#' Idents Command Misc Tool
+#' @importFrom SeuratObject Assays Reductions Images Command Misc Tool Idents
 #'
 #' @rdname writeH5Seurat
 #' @method as.h5Seurat Seurat
 #' @export
 #'
-as.h5Seurat.Seurat <- function(
-  x,
-  filename = paste0(Project(object = x), '.h5seurat'),
-  overwrite = FALSE,
-  verbose = TRUE,
-  ...
-) {
-  if (!grepl(pattern = '^h5seurat$', x = file_ext(x = filename), ignore.case = TRUE)) {
+as.h5Seurat.Seurat <- function(x, filename = paste0(Project(object = x), '.h5seurat'),
+                               overwrite = FALSE, verbose = TRUE, ...) {
+  if (!grepl('^h5seurat$', file_ext(filename), ignore.case = TRUE)) {
     filename <- paste0(filename, '.h5seurat')
   }
   if (file.exists(filename)) {
-    if (overwrite) {
-      warning(
-        "Overwriting previous file ",
-        filename,
-        call. = FALSE,
-        immediate. = TRUE
-      )
-      file.remove(filename)
-    } else {
-      stop("H5Seurat file at ", filename, " already exists", call. = FALSE)
-    }
+    if (!overwrite) stop("An h5Seurat file already exists at ", filename, call. = FALSE)
+    warning("Overwriting ", filename, call. = FALSE, immediate. = TRUE)
+    file.remove(filename)
   }
-  # Get the object version
-  object.version <- as.character(x = slot(object = x, name = 'version'))
-
-  # Display version message before creating file
-  if (verbose) {
-    message("Object version ", object.version)
+  obj_version <- as.character(slot(x, 'version'))
+  if (verbose) message("Object version ", obj_version)
+  if (numeric_version(obj_version) < numeric_version('3.1.2')) {
+    stop("This Seurat object is too old to save; run UpdateSeuratObject() first ",
+         "(at least v3.1.2 is needed)", call. = FALSE)
   }
-
-  # Create h5Seurat file (validation happens automatically but messages are suppressed in create method)
   hfile <- h5Seurat$new(filename = filename, mode = 'w')
-
-  # Set the version to the object version
-  tryCatch(
-    expr = hfile$set.version(version = object.version),
-    error = function(err) {
-      file.remove(hfile$filename)
-      test.message <- paste0(
-        "All target versions greater than query version (",
-        object.version,
-        ")"
-      )
-      if (err$message == test.message) {
-        stop(
-          "Object too old to save, please update your Seurat object to at least v3.1.2 using UpdateSeuratObject",
-          call. = FALSE
-        )
-      }
-      stop(err$message, call. = FALSE)
-    }
-  )
-  # Add Assays
-  for (assay in Assays(object = x)) {
-    WriteH5Group(
-      x = x[[assay]],
-      name = assay,
-      hgroup = hfile[['assays']],
-      verbose = verbose
-    )
+  tryCatch(hfile$set.version(version = obj_version), error = function(err) {
+    hfile$close_all()
+    file.remove(filename)
+    stop(conditionMessage(err), call. = FALSE)
+  })
+  put <- function(value, name, where) {
+    WriteH5Group(x = value, name = name, hgroup = where, verbose = verbose)
   }
-  # Add DimReducs
-  for (reduc in Reductions(object = x)) {
-    WriteH5Group(
-      x = x[[reduc]],
-      name = reduc,
-      hgroup = hfile[['reductions']],
-      verbose = verbose
-    )
+  for (a in Assays(object = x)) put(x[[a]], a, hfile[['assays']])
+  for (r in Reductions(object = x)) put(x[[r]], r, hfile[['reductions']])
+  for (nb in names(slot(x, 'neighbors'))) put(x[[nb]], nb, hfile[['neighbors']])
+  for (g in names(x)) {
+    if (inherits(x[[g]], 'Graph')) put(x[[g]], g, hfile[['graphs']])
   }
-  # Add Neighbors
-  neighbors <- names(x = slot(object = x, name = "neighbors"))
-  for (neighbor in neighbors) {
-    WriteH5Group(
-      x = x[[neighbor]],
-      name = neighbor,
-      hgroup = hfile[['neighbors']],
-      verbose = verbose
-    )
-  }
-  # Add Graphs
-  graphs <- Filter(
-    f = function(g) {
-      return(inherits(x = x[[g]], what = 'Graph'))
-    },
-    x = names(x = x)
-  )
-  for (graph in graphs) {
-    WriteH5Group(
-      x = x[[graph]],
-      name = graph,
-      hgroup = hfile[['graphs']],
-      verbose = verbose
-    )
-  }
-  # Add attributes for project and default assay
   Project(object = hfile) <- Project(object = x)
   DefaultAssay(object = hfile) <- DefaultAssay(object = x)
-  # Add Images (if object has spatial data or SliceImage objects)
-  has_slice_images <- FALSE
-  if (package_version(x = object.version) < package_version(x = spatial.version)) {
-    has_slice_images <- tryCatch({
-      imgs <- Seurat::Images(object = x)
-      if (length(imgs) > 0) {
-        any(sapply(imgs, function(img) inherits(x[[img]], 'SliceImage')))
-      } else {
-        FALSE
-      }
-    }, error = function(e) {
-      FALSE
-    })
-  }
 
-  if (package_version(x = object.version) >= package_version(x = spatial.version) || has_slice_images) {
-    has_images <- tryCatch({
-      length(Seurat::Images(object = x)) > 0
-    }, error = function(e) {
-      FALSE
-    })
-
-    if (has_images) {
-      for (image in Seurat::Images(object = x)) {
-        if (verbose) {
-          message("Adding image ", image)
-        }
-        WriteH5Group(
-          x = x[[image]],
-          name = image,
-          hgroup = hfile[['images']],
-          verbose = verbose
-        )
-      }
+  # Images: from the spatial-aware layout on, or v4 SliceImage objects
+  images <- tryCatch(Images(object = x), error = function(e) character(0))
+  spatial_layout <- numeric_version(obj_version) >= numeric_version(spatial.version)
+  if (length(images) &&
+      (spatial_layout || any(vapply(images, function(i) inherits(x[[i]], 'SliceImage'), logical(1))))) {
+    for (img in images) {
+      if (verbose) message("Adding image ", img)
+      put(x[[img]], img, hfile[['images']])
     }
   }
-  # Add metadata, cell names, and identity classes
-  WriteH5Group(x = x[[]], name = 'meta.data', hgroup = hfile, verbose = verbose)
-  # Ensure cell names are written as a 1D vector, not a 2D matrix
-  # The issue causing the dimension mismatch when reading h5Seurat files is here
-  cell_names <- colnames(x = x)
-  
-  # Force cell names to be a standard character vector (not a matrix or data.frame)
-  if (!is.null(dim(cell_names)) || !is.vector(cell_names)) {
-    if (verbose) {
-      message("Converting cell names to a 1D vector for compatibility")
-    }
-    cell_names <- as.character(cell_names)
-  }
-  
-  # Create the dataset directly instead of using WriteH5Group to ensure proper dimensionality
-  hfile$create_dataset(
-    name = 'cell.names',
-    robj = cell_names,
-    dtype = GuessDType(x = cell_names)
-  )
-  WriteH5Group(
-    x = Idents(object = x),
-    name = 'active.ident',
-    hgroup = hfile,
-    verbose = verbose
-  )
-  # Add SeuratCommands
-  for (cmd in Command(object = x)) {
-    WriteH5Group(
-      x = x[[cmd]],
-      name = cmd,
-      hgroup = hfile[['commands']],
-      verbose = verbose
-    )
-  }
-  # Add miscellaneous data
-  for (misc in names(x = Misc(object = x))) {
-    WriteH5Group(
-      x = Misc(object = x, slot = misc),
-      name = misc,
-      hgroup = hfile[['misc']],
-      verbose = verbose
-    )
-  }
-  # Add tool data
-  for (tool in Tool(object = x)) {
-    WriteH5Group(
-      x = Tool(object = x, slot = tool),
-      name = tool,
-      hgroup = hfile[['tools']],
-      verbose = verbose
-    )
-  }
-  return(hfile)
+
+  put(x[[]], 'meta.data', hfile)
+  # cell names must be a plain 1-D character dataset
+  cells <- as.character(colnames(x))
+  hfile$create_dataset(name = 'cell.names', robj = cells, dtype = GuessDType(x = cells))
+  put(Idents(object = x), 'active.ident', hfile)
+  for (cmd in Command(object = x)) put(x[[cmd]], cmd, hfile[['commands']])
+  for (m in names(Misc(object = x))) put(Misc(object = x, slot = m), m, hfile[['misc']])
+  for (t in Tool(object = x)) put(Tool(object = x, slot = t), t, hfile[['tools']])
+  hfile
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

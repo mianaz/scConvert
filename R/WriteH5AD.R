@@ -7,8 +7,9 @@ NULL
 
 #' Read observation metadata from an H5AD file
 #'
-#' Read the cell-level metadata (obs) from an H5AD file and return it as a
-#' data.frame. Handles both categorical (factor) and standard data types.
+#' Read the cell-level metadata (\code{/obs}) of an H5AD file without loading
+#' the rest of the file. Categorical columns become factors; nullable
+#' integer, boolean and string columns keep their missing values.
 #'
 #' @param file Path to an H5AD file
 #'
@@ -19,51 +20,12 @@ NULL
 #' @export
 #'
 readH5AD_obs <- function(file) {
-  suppressWarnings(expr = hfile <- scConnect(filename = file, force = TRUE))
-  on.exit(hfile$close_all())
-  hfile_obs <- hfile[['obs']]
-  obs_groups <- setdiff(names(hfile_obs), c('__categories', '_index'))
-  matrix <- as.data.frame(
-    x = matrix(data = NA,
-               nrow = hfile_obs[['_index']]$dims[1],
-               ncol = length(obs_groups))
-    )
-  colnames(matrix) <- obs_groups
-  rownames(matrix) <- hfile_obs[['_index']][]
-  if ('__categories' %in% names(x = hfile_obs)) {
-    # Legacy h5ad format: __categories group with per-column category lists
-    hfile_cate <- hfile_obs[['__categories']]
-    for (i in seq_along(obs_groups)) {
-      obs.i <- obs_groups[i]
-      obs_value_i <- hfile_obs[[obs.i]][]
-      if (obs.i %in% names(x = hfile_cate)) {
-        categories <- as.character(hfile_cate[[obs.i]][])
-        codes <- obs_value_i
-        codes[codes == -1L] <- NA_integer_
-        obs_value_i <- factor(categories[codes + 1L], levels = categories)
-      }
-      matrix[, i] <- obs_value_i
-    }
-  } else {
-    # Modern h5ad format: categorical groups with categories/codes sub-datasets
-    for (i in seq_along(obs_groups)) {
-      obs.i <- obs_groups[i]
-      col_obj <- hfile_obs[[obs.i]]
-      if (inherits(col_obj, 'H5Group') &&
-          all(c("categories", "codes") %in% names(col_obj))) {
-        categories <- as.character(col_obj[['categories']]$read())
-        codes <- col_obj[['codes']]$read()
-        codes[codes == -1L] <- NA_integer_
-        obs_value_i <- factor(categories[codes + 1L], levels = categories)
-      } else if (inherits(col_obj, 'H5D')) {
-        obs_value_i <- col_obj$read()
-      } else {
-        obs_value_i <- NA
-      }
-      matrix[, i] <- obs_value_i
-    }
-  }
-  return(matrix)
+  h5 <- hdf5r::H5File$new(file, mode = 'r')
+  on.exit(h5$close_all())
+  if (!h5$exists('obs')) stop("No /obs group in ", file, call. = FALSE)
+  # every anndata column encoding (categoricals, nullable integers /
+  # booleans / strings, legacy __categories) via the shared decoder
+  .h5ad_read_dataframe(h5[['obs']])
 }
 
 #' Read observation embeddings from an H5AD file
@@ -81,10 +43,10 @@ readH5AD_obs <- function(file) {
 #' @export
 #'
 readH5AD_obsm <- function(file) {
-  suppressWarnings(hfile <- scConnect(filename = file, force = TRUE))
+  hfile <- hdf5r::H5File$new(file, mode = 'r')
   on.exit(hfile$close_all())
-  hfile_obsm <- hfile[['obsm']]
-  if (length(names(hfile_obsm)) == 0) {
+  hfile_obsm <- if (hfile$exists('obsm')) hfile[['obsm']] else NULL
+  if (is.null(hfile_obsm) || !length(names(hfile_obsm))) {
     message('No obsm found in this object')
     return(list())
   }
@@ -251,6 +213,11 @@ writeH5AD <- function(
   n_cells <- ncol(mat)
 
   meta <- as.list(object@meta.data)
+  # string-array cannot hold missing values (NA would be written as the
+  # literal "NA"); write such columns as categoricals with -1 codes
+  meta <- lapply(meta, function(x) {
+    if (is.character(x) && anyNA(x)) factor(x) else x
+  })
 
   reductions <- list()
   for (rname in names(object@reductions)) {
@@ -273,7 +240,11 @@ writeH5AD <- function(
   for (gname in names(object@graphs)) {
     g <- object@graphs[[gname]]
     if (inherits(g, "dgCMatrix") || inherits(g, "Graph")) {
-      gmat <- as(g, "dgCMatrix")
+      # The C writer stores CSC arrays as CSR, i.e. it writes the transpose.
+      # That is what X needs (genes x cells -> cells x genes) but a
+      # cells x cells graph must keep row i = neighbours of cell i, so hand
+      # it the transpose (only matters for asymmetric graphs such as *_nn).
+      gmat <- methods::as(Matrix::t(methods::as(g, "dgCMatrix")), "dgCMatrix")
       graphs[[gname]] <- list(i = gmat@i, p = gmat@p, x = gmat@x, dim = dim(gmat))
     }
   }
@@ -286,8 +257,18 @@ writeH5AD <- function(
     assay_name, as.integer(gzip_level), counts_list
   )
 
-  if (isTRUE(result) && verbose) {
-    message("  Written: ", ncol(mat), " cells, ", nrow(mat), " features")
+  if (isTRUE(result)) {
+    # the C writer only emits var/_index: add feature metadata and the
+    # highly_variable flag (variable features) the R writer also writes
+    var_df <- .h5ad_var_frame(object, assay_name, rownames(mat))
+    if (ncol(var_df) > 0) {
+      h5 <- hdf5r::H5File$new(filename, mode = "r+")
+      tryCatch({
+        h5$link_delete("var")
+        WriteDFGroup(h5, "var", var_df, rownames(mat), gzip = gzip_level)
+      }, finally = h5$close_all())
+    }
+    if (verbose) message("  Written: ", ncol(mat), " cells, ", nrow(mat), " features")
   }
   return(isTRUE(result))
 }
@@ -405,32 +386,12 @@ DirectSeuratToH5AD <- function(
   # ========== obs (cell metadata) ==========
   if (verbose) message("  Writing obs...")
   meta <- object[[]]
-  if (standardize) {
-    # Convert Seurat-style names to scanpy conventions
-    name_map <- c(
-      "nCount_RNA" = "n_counts", "nFeature_RNA" = "n_genes",
-      "percent.mt" = "pct_counts_mt", "orig.ident" = "batch"
-    )
-    for (old_name in names(name_map)) {
-      if (old_name %in% colnames(meta)) {
-        colnames(meta)[colnames(meta) == old_name] <- name_map[[old_name]]
-      }
-    }
-  }
+  if (standardize) meta <- .ScanpyMetaNames(meta)
   write_df_group(dfile, "obs", meta, cell_names)
 
   # ========== var (gene metadata) ==========
   if (verbose) message("  Writing var...")
-  meta_features <- tryCatch(assay_obj[[]], error = function(e) data.frame(row.names = gene_names))
-  if (is.null(meta_features) || nrow(meta_features) == 0) {
-    meta_features <- data.frame(row.names = gene_names)
-  }
-  # Add highly_variable boolean mask (scConvert unique feature)
-  var_features <- tryCatch(VariableFeatures(object, assay = assay), error = function(e) character(0))
-  if (length(var_features) > 0) {
-    meta_features$highly_variable <- rownames(meta_features) %in% var_features
-  }
-  write_df_group(dfile, "var", meta_features, gene_names)
+  write_df_group(dfile, "var", .h5ad_var_frame(object, assay, gene_names), gene_names)
 
   # ========== obsm (dimensional reductions) ==========
   reducs <- Reductions(object)
@@ -993,4 +954,35 @@ writeH5MU <- function(
 
   if (verbose) message("  Done: ", filename)
   invisible(filename)
+}
+
+
+# Rename Seurat-style cell metadata columns to their scanpy equivalents
+# (used by the `standardize` option of the h5ad writers). Columns whose
+# target name already exists are left alone.
+.ScanpyMetaNames <- function(meta) {
+  renames <- c(nCount_RNA = "n_counts", nFeature_RNA = "n_genes",
+               percent.mt = "pct_counts_mt", orig.ident = "batch")
+  cols <- colnames(meta)
+  for (from in intersect(names(renames), cols)) {
+    to <- renames[[from]]
+    if (!to %in% cols) cols[cols == from] <- to
+  }
+  colnames(meta) <- cols
+  meta
+}
+
+# Feature-level data frame written to h5ad /var: the assay's feature
+# metadata in `features` order plus a highly_variable flag when the assay
+# has variable features.
+.h5ad_var_frame <- function(object, assay, features) {
+  mf <- tryCatch(object[[assay]][[]], error = function(e) NULL)
+  df <- if (is.data.frame(mf) && nrow(mf) && all(features %in% rownames(mf))) {
+    mf[features, , drop = FALSE]
+  } else {
+    data.frame(row.names = features)
+  }
+  hv <- tryCatch(VariableFeatures(object, assay = assay), error = function(e) character(0))
+  if (length(hv)) df$highly_variable <- features %in% hv
+  df
 }

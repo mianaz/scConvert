@@ -101,7 +101,13 @@ to scanpy/AnnData conventions when converting to h5ad format. For example,
 \code{nCount_RNA} becomes \code{n_counts}, \code{nFeature_RNA} becomes \code{n_genes}.
 Only applicable for conversions to h5ad format. Default is \code{FALSE}.}
 
-\item{...}{Arguments passed to specific conversion methods}
+\item{...}{Arguments passed to specific conversion methods. File-to-file
+conversion between h5ad, h5Seurat, h5mu and loom files also takes
+\code{stream}: \code{TRUE} copies
+the expression matrices between the files in bounded-memory blocks instead
+of loading the object (see \emph{Large datasets}), \code{FALSE} loads it,
+and \code{"auto"} (the default, \code{options(scConvert.stream)}) streams
+files larger than \code{options(scConvert.stream_threshold)} (2 GB).}
 }
 \value{
 For file destinations, invisibly returns the destination filename.
@@ -137,153 +143,19 @@ without a direct path go through Seurat as a universal hub:
   \item Handles multiple data layers (V5 compatibility)
 }
 }
-\section{AnnData/H5AD to h5Seurat}{
+\section{Large datasets}{
 
-The AnnData/H5AD to h5Seurat conversion will try to automatically fill in
-datasets based on data presence. It works in the following manner:
-\subsection{Expression data}{
- The expression matrices \code{counts}, \code{data}, and \code{scale.data}
- are filled by \code{/X} and \code{/raw/X} in the following manner:
- \itemize{
-  \item \code{counts} will be filled with \code{/raw/X} if present;
-  otherwise, it will be filled with \code{/X}
-  \item \code{data} will be filled with \code{/raw/X} if \code{/raw/X} is
-  present and \code{/X} is dense; otherwise, it will be filled with \code{/X}
-  \item \code{scale.data} will be filled with \code{/X} if it dense;
-  otherwise, it will be empty
- }
- Feature names are taken from the feature-level metadata
-}
-\subsection{Feature-level metadata}{
-Feature-level metadata is added to the \code{meta.features} datasets in each
-assay. Feature names are taken from the dataset specified by the
-\dQuote{_index} attribute, the \dQuote{_index} dataset, or the \dQuote{index}
-dataset, in that order. Metadata is populated with \code{/raw/var} if
-present, otherwise with \code{/var}; if both \code{/raw/var} and \code{/var}
-are present, then \code{meta.features} will be populated with \code{/raw/var}
-first, then \code{/var} will be added to it. For columns present in both
-\code{/raw/var} and \code{/var}, the values in \code{/var} will be used
-instead. \strong{Note}: it is possible for \code{/var} to have fewer features
-than \code{/raw/var}; if this is the case, then only the features present in
-\code{/var} will be overwritten, with the metadata for features \emph{not}
-present in \code{/var} remaining as they were in \code{/raw/var} or empty
-}
-\subsection{Cell-level metadata}{
-Cell-level metadata is added to \code{meta.data}; the row names of the
-metadata (as determined by the value of the \dQuote{_index} attribute, the
-\dQuote{_index} dataset, or the \dQuote{index} dataset, in that order) are
-added to the \dQuote{cell.names} dataset instead. If the
-\dQuote{__categories} dataset is present, each dataset within
-\dQuote{__categories} will be stored as a factor group. Cell-level metadata
-will be added as an HDF5 group unless factors are \strong{not} present and
-the \code{scConvert.dtypes.dataframe_as_group} option is \code{FALSE}
-}
-\subsection{Dimensional reduction information:}{
- Cell embeddings are taken from \code{/obsm}; dimensional reductions are
- named based on their names from \code{obsm} by removing the preceding
- \dQuote{X_}.For example, if a dimensional reduction is named \dQuote{X_pca}
- in \code{/obsm}, the resulting dimensional reduction information will be
- named \dQuote{pca}. The key will be set to one of the following:
- \itemize{
-  \item \dQuote{PC_} if \dQuote{pca} is present in the dimensional reduction
-  name (\code{grepl("pca", reduction.name, ignore.case = TRUE)})
-  \item \dQuote{tSNE_} if \dQuote{tsne} is present in the dimensional
-  reduction name (\code{grepl("tsne", reduction.name, ignore.case = TRUE)})
-  \item \code{reduction.name_} for all other reductions
- }
- Remember that the preceding \dQuote{X_} will be removed from the reduction
- name before converting to a key. Feature loadings are taken from
- \code{/varm} and placed in the associated dimensional reduction. The
- dimensional reduction is determine from the loadings name in \code{/varm}:
- \itemize{
-  \item \dQuote{PCs} will be added to a dimensional reduction named
-  \dQuote{pca}
-  \item All other loadings in \code{/varm} will be added to a dimensional
-  reduction named \code{tolower(loading)} (eg. a loading named \dQuote{ICA}
-  will be added to a dimensional reduction named \dQuote{ica})
- }
- If a dimensional reduction cannot be found according to the rules above, the
- loading will not be taken from the AnnData/H5AD file. Miscellaneous
- information will be taken from \code{/uns/reduction} where \code{reduction}
- is the name of the reduction in \code{/obsm} without the preceding
- \dQuote{X_}; if no dimensional reduction information present, then
- miscellaneous information will not be taken from the AnnData/H5AD file.
- Standard deviations are taken from a dataset \code{/uns/reduction/variance};
- the variances will be converted to standard deviations and added to the
- \code{stdev} dataset of a dimensional reduction
-}
-\subsection{Nearest-neighbor graph}{
- If a nearest neighbor graph is present in \code{/uns/neighbors/distances},
- it will be added as a graph dataset in the h5Seurat file and associated with
- \code{assay}; if a value is present in \code{/uns/neighbors/params/method},
- the name of the graph will be \code{assay_method}, otherwise, it will be
- \code{assay_anndata}
-}
-\subsection{Miscellaneous information}{
- All groups and datasets from \code{/uns} will be copied to \code{misc} in
- the h5Seurat file except for the following:
- \itemize{
-  \item Any group or dataset named the same as a dimensional reduction (eg.
-  \code{/uns/pca})
-  \item \code{/uns/neighbors}
- }
-}
-}
-
-\section{h5Seurat to AnnData/H5AD}{
-
-The h5Seurat to AnnData/H5AD conversion will try to automatically fill in
-datasets based on data presence. Data presense is determined by the h5Seurat
-index (\code{source$index()}). It works in the following manner:
-\subsection{Assay data}{
- \itemize{
-  \item \code{X} will be filled with \code{scale.data} if \code{scale.data}
-  is present; otherwise, it will be filled with \code{data}
-  \item \code{var} will be filled with \code{meta.features} \strong{only} for
-  the features present in \code{X}; for example, if \code{X} is filled with
-  \code{scale.data}, then \code{var} will contain only features that have
-  been scaled
-  \item \code{raw.X} will be filled with \code{data} if \code{X} is filled
-  with \code{scale.data}; otherwise, it will be filled with \code{counts}. If
-  \code{counts} is not present, then \code{raw} will not be filled
-  \item \code{raw.var} will be filled with \code{meta.features} with the
-  features present in \code{raw.X}; if \code{raw.X} is not filled, then
-  \code{raw.var} will not be filled
- }
-}
-\subsection{Cell-level metadata}{
- Cell-level metadata is added to \code{obs}
-}
-\subsection{Dimensional reduction information}{
- Only dimensional reductions associated with \code{assay} or marked as
- \link[SeuratObject:IsGlobal]{global} will be transfered to the H5AD file. For
- every reduction \code{reduc}:
- \itemize{
-  \item cell embeddings are placed in \code{obsm} and renamed to
-  \code{X_reduc}
-  \item feature loadings, if present, are placed in \code{varm} and renamed
-  to either \dQuote{PCs} if \code{reduc} is \dQuote{pca} otherwise
-  \code{reduc} in all caps
- }
- For example, if \code{reduc} is \dQuote{ica}, then cell embeddings will be
- \dQuote{X_ica} in \code{obsm} and feature loaodings, if present, will be
- \dQuote{ICA} in \code{varm}
-}
-\subsection{Nearest-neighbor graphs}{
- If a nearest-neighbor graph is associated with \code{assay}, it will be
- added to \code{uns/neighbors/distances}; if more than one graph is present,
- then \strong{only} the last graph according to the index will be added.
-}
-\subsection{Layers}{
- Data from other assays can be added to \code{layers} if they have the same
- shape as \code{X} (same number of cells and features). To determine this,
- the shape of each alternate assays's \code{scale.data} and \code{data} slots
- are determined. If they are the same shape as \code{X}, then that slot
- (\code{scale.data} is given priority over \code{data}) will be added as a
- layer named the name of the assay (eg. \dQuote{SCT}). In addition, the
- features names will be added to \code{var} as \code{assay_features}
- (eg. \dQuote{SCT_features}).
-}
+With \code{stream = TRUE}, only the small parts of the file (cell and
+feature metadata, embeddings, graphs, images, unstructured data) are read
+into memory and converted by the regular reader and writer; the
+expression matrices (h5ad X, layers and raw, h5Seurat layers, h5mu
+modalities, loom matrix and layers) are copied between the files by HDF5
+itself, or in blocks of \code{options(scConvert.stream_chunk_bytes)} (64 MB)
+when they have to be transposed or densified, or features subset or
+reordered. The result is the same
+as an in-memory conversion; peak memory depends on the number of cells,
+not on the size of the matrices. Use \code{\link{scConvertBatch}} to convert
+many files in parallel.
 }
 
 \examples{

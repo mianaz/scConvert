@@ -9,14 +9,14 @@ Authors@R: c(
 Description: Universal converter between single-cell data formats in R. Converts
   between any pair of h5Seurat, h5ad (AnnData), h5mu (MuData), Loom, Zarr, RDS,
   and SingleCellExperiment formats through a hub architecture using Seurat as an
-  intermediate. Features memory-efficient direct HDF5 paths for h5ad/h5Seurat
-  conversions, Visium spatial data roundtripping with image reconstruction,
-  multimodal MuData support, and full Seurat v5 Assay5 compatibility. No Python
-  or reticulate dependency required. Originally derived from SeuratDisk with
-  substantial extensions for universal format coverage.
+  intermediate, with streaming HDF5 paths between file formats and an
+  optional compiled converter for large h5ad/h5Seurat files. Supports Visium
+  spatial data roundtripping with image reconstruction, multimodal MuData, and
+  Seurat v5 Assay5 objects. Reads and writes the h5Seurat layout used by
+  SeuratDisk. No Python or reticulate dependency required.
 URL: https://mianaz.github.io/scConvert/, https://github.com/mianaz/scConvert
 BugReports: https://github.com/mianaz/scConvert/issues
-License: GPL-3 | file LICENSE
+License: MIT + file LICENSE
 Encoding: UTF-8
 SystemRequirements: HDF5 (>= 1.14.0); libzstd (optional, zarr v3 zstd codec)
 Depends:
@@ -27,50 +27,47 @@ Imports:
   hdf5r (>= 1.3.0),
   Matrix (>= 1.2.18),
   methods (>= 3.6.0),
+  parallel,
   R6 (>= 2.4.1),
   rlang (>= 0.4.4),
   Seurat (>= 3.2.0),
   SeuratObject (>= 4.0.0),
   stats,
-  stringi (>= 1.4.6),
   tools,
   utils
 Collate:
     'zzz.R'
     'AnnDataCompat.R'
     'AnnDataEncoding.R'
-    'GetObject.R'
     'UtilsH5Access.R'
     'AssembleObject.R'
-    'AppendData.R'
-    'TestObject.R'
-    'TestH5.R'
-    'h5info.R'
+    'H5Utils.R'
     'scdisk.R'
+    'loom.R'
     'h5Seurat.R'
-    'Connect.R'
-    'PadMatrix.R'
+    'Bindings.R'
     'FormatRegistry.R'
     'Convert.R'
+    'ConvertBatch.R'
     'ConvertCLI.R'
     'ConvertZarr.R'
+    'GetObject.R'
     'H5ADVersion.R'
     'H5ADVersionAPI.R'
+    'H5Coerce.R'
     'H5DAccess.R'
     'LoadCosMx.R'
     'LoadH5AD.R'
     'LoadH5MU.R'
     'LoadH5Seurat.R'
-    'loom.R'
-    'loom_bindings.R'
     'LoadLoom.R'
     'LoadStereoSeq.R'
     'LoadXenium.R'
     'LoadZarr.R'
-    'ReadH5.R'
+    'MatrixTranspose.R'
     'ReadWriteSOMA.R'
     'SaveH5MU.R'
-    'UtilsAssayCompat.R'
+    'V5LayerSupport.R'
     'WriteH5Group.R'
     'SaveH5Seurat.R'
     'SaveLoom.R'
@@ -80,16 +77,13 @@ Collate:
     'SpatialConversion.R'
     'SpatialData.R'
     'SpatialFOV.R'
+    'StreamConvert.R'
     'StreamHDF5.R'
-    'sparse_matrix.R'
-    'Transpose.R'
-    'V5Compatibility.R'
-    'V5LayerSupport.R'
+    'UtilsAssayCompat.R'
     'VerifyH5AD.R'
     'WriteH5AD.R'
     'ZarrRemote.R'
     'ZarrStore.R'
-    'h5Seurat_bindings.R'
 NeedsCompilation: yes
 Suggests:
     arrow,
@@ -125,4 +119,4 @@ Remotes:
     SeuratData=github::satijalab/seurat-data
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

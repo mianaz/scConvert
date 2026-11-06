@@ -458,3 +458,277 @@ test_that("CLI preserves h5ad categoricals across HDF5 2.x cset boundary", {
     grp$close()
   }
 })
+
+# ---------------------------------------------------------------------------
+# Regression: Assay5 counts/data layers that cover only a subset of features
+#
+# The writer records such layers' dimnames under layer.features/layer.cells,
+# but the reader ignored them for counts/data and either dropped the layer
+# or padded it positionally (mislabelling rows).
+# ---------------------------------------------------------------------------
+test_that("h5Seurat round-trips a data layer covering a feature subset", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("SeuratObject")
+  skip_if(utils::packageVersion("SeuratObject") < "5.0.0")
+
+  set.seed(1)
+  m <- Matrix::rsparsematrix(10, 6, 0.5)
+  m@x <- abs(round(m@x * 10)) + 1
+  dimnames(m) <- list(paste0("g", 1:10), paste0("c", 1:6))
+  obj <- suppressWarnings(Seurat::CreateSeuratObject(counts = m))
+  d <- m[c(2, 5, 9), ] * 0.5
+  a <- obj[["RNA"]]
+  SeuratObject::LayerData(a, layer = "data", features = rownames(d)) <- d
+  obj[["RNA"]] <- a
+
+  tmp <- tempfile(fileext = ".h5seurat")
+  on.exit(unlink(tmp), add = TRUE)
+  writeH5Seurat(obj, tmp, overwrite = TRUE, verbose = FALSE)
+  o2 <- readH5Seurat(tmp, verbose = FALSE)
+
+  d2 <- SeuratObject::LayerData(o2, layer = "data")
+  expect_equal(dim(d2), dim(d))
+  expect_equal(as.matrix(d2[rownames(d), colnames(d)]), as.matrix(d))
+  expect_equal(as.matrix(SeuratObject::LayerData(o2, layer = "counts")), as.matrix(m))
+})
+
+# ---------------------------------------------------------------------------
+# Regression: metadata columns with missing values / ordered factors
+#
+# Logical NA was written as FALSE (h5ad) or decoded as TRUE/2 (h5Seurat),
+# character NA became the literal string "NA", integer NA became INT_MIN,
+# ordered factors lost their ordering, and h5mu dropped nullable columns.
+# ---------------------------------------------------------------------------
+.na_meta_object <- function() {
+  m <- Matrix::sparseMatrix(i = 1:4, j = 1:4, x = c(1, 2, 3, 4), dims = c(4, 4),
+                            dimnames = list(paste0("g", 1:4), paste0("c", 1:4)))
+  o <- suppressWarnings(Seurat::CreateSeuratObject(counts = m))
+  o$lgl <- c(TRUE, FALSE, TRUE, FALSE)
+  o$lgl_na <- c(TRUE, NA, FALSE, TRUE)
+  o$int_na <- c(1L, NA, 3L, 4L)
+  o$chr_na <- c("a", NA, "b", "a")
+  o$ord <- factor(c("lo", "hi", "lo", "mid"), levels = c("lo", "mid", "hi"),
+                  ordered = TRUE)
+  o
+}
+
+.expect_na_meta <- function(o2, label) {
+  md <- o2[[]][paste0("c", 1:4), ]
+  expect_identical(md$lgl, c(TRUE, FALSE, TRUE, FALSE), info = label)
+  expect_identical(md$lgl_na, c(TRUE, NA, FALSE, TRUE), info = label)
+  expect_equal(as.integer(md$int_na), c(1L, NA, 3L, 4L), info = label)
+  expect_identical(as.character(md$chr_na), c("a", NA, "b", "a"), info = label)
+  expect_true(is.ordered(md$ord), info = label)
+  expect_identical(levels(md$ord), c("lo", "mid", "hi"), info = label)
+}
+
+test_that("h5ad round-trips logical/NA/ordered metadata", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  tmp <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(tmp), add = TRUE)
+  writeH5AD(.na_meta_object(), tmp, overwrite = TRUE, verbose = FALSE)
+  .expect_na_meta(suppressWarnings(readH5AD(tmp, verbose = FALSE)), "h5ad")
+
+  # On disk: numpy-bool enum, nullable-boolean group, ordered flag set
+  h <- hdf5r::H5File$new(tmp, mode = "r")
+  on.exit(h$close_all(), add = TRUE, after = FALSE)
+  expect_s3_class(h[["obs/lgl"]]$get_type(), "H5T_ENUM")
+  expect_identical(hdf5r::h5attr(h[["obs/lgl_na"]], "encoding-type"), "nullable-boolean")
+  expect_identical(hdf5r::h5attr(h[["obs/int_na"]], "encoding-type"), "nullable-integer")
+  expect_true(as.logical(hdf5r::h5attr(h[["obs/ord"]], "ordered")))
+})
+
+test_that("h5mu round-trips logical/NA/ordered metadata", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  tmp <- tempfile(fileext = ".h5mu")
+  on.exit(unlink(tmp), add = TRUE)
+  writeH5MU(.na_meta_object(), tmp, overwrite = TRUE, verbose = FALSE)
+  .expect_na_meta(suppressWarnings(readH5MU(tmp, verbose = FALSE)), "h5mu")
+})
+
+test_that("h5Seurat round-trips logical NA and ordered factors", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  tmp <- tempfile(fileext = ".h5seurat")
+  on.exit(unlink(tmp), add = TRUE)
+  writeH5Seurat(.na_meta_object(), tmp, overwrite = TRUE, verbose = FALSE)
+  md <- suppressWarnings(readH5Seurat(tmp, verbose = FALSE))[[]][paste0("c", 1:4), ]
+  expect_identical(md$lgl, c(TRUE, FALSE, TRUE, FALSE))
+  expect_identical(md$lgl_na, c(TRUE, NA, FALSE, TRUE))
+  expect_true(is.ordered(md$ord))
+})
+
+test_that("h5Seurat factor codes decode as 1-based library ids", {
+  skip_if_not_installed("hdf5r")
+  tmp <- tempfile(fileext = ".h5")
+  on.exit(unlink(tmp), add = TRUE)
+  h <- hdf5r::H5File$new(tmp, mode = "w")
+  g <- h$create_group("lib")
+  g[["values"]] <- c(1L, 2L, 2L, 3L)
+  g[["levels"]] <- c("s1", "s2", "s3")
+  expect_identical(scConvert:::.DecodeH5SeuratFactor(g), c("s1", "s2", "s2", "s3"))
+  h$close_all()
+})
+
+# ---------------------------------------------------------------------------
+# Regression: 2D datasets with a length-1 axis were read through x[,], which
+# drops to a vector; a single-cell loom then failed with a dimnames error.
+# ---------------------------------------------------------------------------
+test_that("loom round-trips a single-cell object", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  m <- Matrix::sparseMatrix(i = c(1, 3), j = c(1, 1), x = c(1, 2), dims = c(5, 1),
+                            dimnames = list(paste0("g", 1:5), "c1"))
+  o <- suppressWarnings(Seurat::CreateSeuratObject(counts = m))
+  tmp <- tempfile(fileext = ".loom")
+  on.exit(unlink(tmp), add = TRUE)
+  suppressMessages(writeLoom(o, tmp, overwrite = TRUE, verbose = FALSE))
+  o2 <- suppressMessages(suppressWarnings(readLoom(tmp, verbose = FALSE)))
+  expect_equal(dim(o2), c(5L, 1L))
+  expect_equal(unname(as.matrix(SeuratObject::LayerData(o2, layer = "counts"))[, 1]),
+               c(1, 0, 2, 0, 0))
+})
+
+test_that("zarr round-trips NA/ordered metadata and >127-level factors", {
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("jsonlite")
+  o <- .na_meta_object()
+  n <- 200
+  m <- Matrix::sparseMatrix(i = rep(1:3, length.out = n), j = 1:n, x = 1,
+                            dims = c(3, n),
+                            dimnames = list(paste0("g", 1:3), paste0("c", 1:n)))
+  big <- suppressWarnings(Seurat::CreateSeuratObject(counts = m))
+  big$many <- factor(paste0("L", 1:n))   # int8 codes used to wrap past 127
+
+  tmp <- tempfile(fileext = ".zarr")
+  tmp2 <- tempfile(fileext = ".zarr")
+  on.exit(unlink(c(tmp, tmp2), recursive = TRUE), add = TRUE)
+  suppressWarnings(writeZarr(o, tmp, overwrite = TRUE, verbose = FALSE))
+  .expect_na_meta(suppressWarnings(readZarr(tmp, verbose = FALSE)), "zarr")
+
+  suppressWarnings(writeZarr(big, tmp2, overwrite = TRUE, verbose = FALSE))
+  md <- suppressWarnings(readZarr(tmp2, verbose = FALSE))[[]][colnames(big), ]
+  expect_identical(as.character(md$many), paste0("L", 1:n))
+})
+
+# ---------------------------------------------------------------------------
+# Regression: the C h5ad writer stored graphs transposed (CSC arrays written
+# as CSR), which flips asymmetric graphs such as the kNN "*_nn" graph; it
+# also dropped feature metadata / variable features and ignored
+# `standardize`.
+# ---------------------------------------------------------------------------
+test_that("writeH5AD keeps asymmetric graph orientation, var data and standardize", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  o <- suppressWarnings(SeuratObject::UpdateSeuratObject(SeuratObject::pbmc_small))
+  o <- suppressWarnings(Seurat::FindNeighbors(o, dims = 1:5, k.param = 5, verbose = FALSE))
+  nn <- as.matrix(o[["RNA_nn"]])
+  expect_true(all(rowSums(nn) == 5))   # row i = the k neighbours of cell i
+  tmp <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(tmp), add = TRUE)
+  suppressWarnings(writeH5AD(o, tmp, overwrite = TRUE, verbose = FALSE, standardize = TRUE))
+
+  h <- hdf5r::H5File$new(tmp, mode = "r")
+  g <- h[["obsp/RNA_nn"]]
+  indptr <- g[["indptr"]][]
+  expect_identical(hdf5r::h5attr(g, "encoding-type"), "csr_matrix")
+  expect_true(all(diff(indptr) == 5))  # CSR rows hold the neighbours
+  expect_true(h[["var"]]$exists("highly_variable"))
+  expect_true(all(c("n_counts", "n_genes") %in% names(h[["obs"]])))
+  h$close_all()
+
+  x <- suppressWarnings(readH5AD(tmp, verbose = FALSE))
+  expect_equal(as.matrix(x[["RNA_nn"]])[rownames(nn), colnames(nn)], nn,
+               ignore_attr = TRUE)
+  expect_setequal(SeuratObject::VariableFeatures(x), SeuratObject::VariableFeatures(o))
+})
+
+test_that("asymmetric graphs keep their orientation in every format", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("jsonlite")
+  o <- suppressWarnings(SeuratObject::UpdateSeuratObject(SeuratObject::pbmc_small))
+  o <- suppressWarnings(Seurat::FindNeighbors(o, dims = 1:5, k.param = 5, verbose = FALSE))
+  nn <- as.matrix(o[["RNA_nn"]])
+  q <- function(expr) suppressWarnings(suppressMessages(expr))
+  same <- function(x, label) {
+    g <- grep("_nn$", SeuratObject::Graphs(x), value = TRUE)[1]
+    expect_false(is.na(g), info = label)
+    expect_equal(as.matrix(x[[g]])[rownames(nn), colnames(nn)], nn,
+                 ignore_attr = TRUE, info = label)
+  }
+  tf <- function(ext) { f <- tempfile(fileext = ext); withr::defer(unlink(f, recursive = TRUE), envir = parent.frame(2)); f }
+  h5ad_r <- tf(".h5ad"); q(scConvert:::DirectSeuratToH5AD(o, h5ad_r, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5AD(h5ad_r, verbose = FALSE)), "h5ad R writer, C reader")
+  same(q(readH5AD(h5ad_r, verbose = FALSE, use.c = FALSE)), "h5ad R writer, R reader")
+  h5ad_c <- tf(".h5ad"); q(writeH5AD(o, h5ad_c, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5AD(h5ad_c, verbose = FALSE, use.c = FALSE)), "h5ad C writer, R reader")
+  h5mu <- tf(".h5mu"); q(writeH5MU(o, h5mu, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5MU(h5mu, verbose = FALSE)), "h5mu")
+  zarr <- tf(".zarr"); q(writeZarr(o, zarr, overwrite = TRUE, verbose = FALSE))
+  same(q(readZarr(zarr, verbose = FALSE)), "zarr")
+  h5s <- tf(".h5seurat"); q(writeH5Seurat(o, h5s, overwrite = TRUE, verbose = FALSE))
+  conv <- tf(".h5ad"); q(scConvert(h5s, dest = conv, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5AD(conv, verbose = FALSE)), "h5seurat -> h5ad")
+  conv_mu <- tf(".h5mu"); q(scConvert(h5ad_c, dest = conv_mu, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5MU(conv_mu, verbose = FALSE)), "h5ad -> h5mu")
+})
+
+# ---------------------------------------------------------------------------
+# Regression: loom graphs were rebuilt without explicit dimensions, so a
+# graph whose last cells have no edges came back too small and loading
+# failed when the cell names were attached.
+# ---------------------------------------------------------------------------
+test_that("loom graphs keep their size when trailing cells have no edges", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  m <- Matrix::sparseMatrix(i = 1:4, j = 1:4, x = 1, dims = c(4, 5),
+                            dimnames = list(paste0("g", 1:4), paste0("c", 1:5)))
+  o <- suppressWarnings(Seurat::CreateSeuratObject(counts = m))
+  g <- Matrix::sparseMatrix(i = c(1, 2), j = c(2, 1), x = 1, dims = c(5, 5),
+                            dimnames = list(colnames(o), colnames(o)))
+  o[["RNA_nn"]] <- SeuratObject::as.Graph(g)
+  tmp <- tempfile(fileext = ".loom")
+  on.exit(unlink(tmp), add = TRUE)
+  suppressMessages(writeLoom(o, tmp, overwrite = TRUE, verbose = FALSE))
+  x <- suppressMessages(suppressWarnings(readLoom(tmp, verbose = FALSE)))
+  expect_equal(dim(x[["RNA_nn"]]), c(5L, 5L))
+  expect_equal(as.matrix(x[["RNA_nn"]]), as.matrix(g), ignore_attr = TRUE)
+})
+
+# ---------------------------------------------------------------------------
+# Regression: writeLoom documented but never wrote SEURAT_ASSAY (assay names
+# other than RNA were lost), and failed on Seurat v5 objects with split
+# layers.
+# ---------------------------------------------------------------------------
+test_that("loom keeps the assay name and accepts split v5 layers", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  m <- Matrix::sparseMatrix(i = c(1, 2, 3, 4, 2), j = c(1, 2, 3, 4, 5), x = c(1, 2, 3, 4, 5),
+                            dims = c(4, 6), dimnames = list(paste0("g", 1:4), paste0("c", 1:6)))
+  o <- suppressWarnings(Seurat::CreateSeuratObject(counts = m, assay = "Spatial"))
+  o[["Spatial"]] <- split(o[["Spatial"]], f = rep(c("a", "b"), 3))
+  tmp <- tempfile(fileext = ".loom")
+  on.exit(unlink(tmp), add = TRUE)
+  suppressMessages(writeLoom(o, tmp, overwrite = TRUE, verbose = FALSE))
+  x <- suppressMessages(suppressWarnings(readLoom(tmp, verbose = FALSE)))
+  expect_identical(SeuratObject::DefaultAssay(x), "Spatial")
+  expect_equal(as.matrix(SeuratObject::LayerData(x, assay = "Spatial", layer = "counts")),
+               as.matrix(m), ignore_attr = TRUE)
+})
+
+test_that("h5Seurat keeps missing values in character columns", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  o <- .na_meta_object()
+  o@misc$labels <- c("x", NA, "z")
+  tmp <- tempfile(fileext = ".h5seurat")
+  on.exit(unlink(tmp), add = TRUE)
+  writeH5Seurat(o, tmp, overwrite = TRUE, verbose = FALSE)
+  x <- suppressWarnings(readH5Seurat(tmp, verbose = FALSE))
+  expect_identical(x[[]][paste0("c", 1:4), "chr_na"], c("a", NA, "b", "a"))
+  expect_identical(x@misc$labels, c("x", NA, "z"))
+})

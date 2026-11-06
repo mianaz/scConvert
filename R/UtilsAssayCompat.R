@@ -8,15 +8,6 @@
 #' @keywords internal
 NULL
 
-#' Check if object is Assay5 (V5 format)
-#'
-#' @param object Object to check
-#' @return Logical indicating if object inherits from Assay5
-#' @keywords internal
-#'
-IsAssay5 <- function(object) {
-  inherits(object, "Assay5")
-}
 
 #' Get assay data with V4/V5 compatibility
 #'
@@ -75,78 +66,4 @@ SetAssayDataCompat <- function(object, layer_or_slot, new.data, verbose = FALSE)
   ))
 }
 
-#' Get available layers or slots from assay
-#'
-#' Returns list of available data layers (V5) or slots (V4) from an Assay
-#' or Assay5 object.
-#'
-#' @param object Assay or Assay5 object
-#' @param verbose Print diagnostic messages
-#'
-#' @return Character vector of layer/slot names
-#' @keywords internal
-#'
-GetAssayLayersCompat <- function(object, verbose = FALSE) {
-  if (IsAssay5(object)) {
-    if (verbose) {
-      message("Getting layers from Assay5")
-    }
-    layers <- tryCatch(
-      expr = {
-        if (exists("Layers", where = "package:SeuratObject", mode = "function")) {
-          SeuratObject::Layers(object)
-        } else {
-          slotNames(object)
-        }
-      },
-      error = function(e) {
-        if (verbose) {
-          message("Error getting layers: ", conditionMessage(e))
-        }
-        return(character(0))
-      }
-    )
-    return(layers)
-  } else {
-    if (verbose) {
-      message("Getting slots from Assay (V4)")
-    }
-    return(c("counts", "data", "scale.data"))
-  }
-}
-
-#' Check if assay requires S4 slot reconstruction
-#'
-#' Determines if an assay object requires S4 slot reconstruction (V4 and below)
-#' or should be left intact (V5).
-#'
-#' @param object Assay or Assay5 object
-#' @param h5_group Optional HDF5 group to check for s4class attribute
-#' @param verbose Print diagnostic messages
-#'
-#' @return Logical indicating if S4 reconstruction is needed
-#' @keywords internal
-#'
-RequiresS4Reconstruction <- function(object, h5_group = NULL, verbose = FALSE) {
-  if (IsAssay5(object)) {
-    if (verbose) {
-      message("Assay5 detected - skipping S4 reconstruction")
-    }
-    return(FALSE)
-  }
-
-  if (!is.null(h5_group)) {
-    if (h5_group$attr_exists("s4class")) {
-      if (verbose) {
-        message("Legacy Assay with s4class attribute - needs reconstruction")
-      }
-      return(TRUE)
-    }
-  }
-
-  if (verbose) {
-    message("No S4 reconstruction required")
-  }
-  return(FALSE)
-}
 

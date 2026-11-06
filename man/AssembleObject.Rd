@@ -3,40 +3,43 @@
 \name{AssembleObject}
 \alias{AssembleObject}
 \alias{AssembleAssay}
+\alias{AssembleImage}
 \alias{AssembleDimReduc}
 \alias{AssembleGraph}
-\alias{AssembleImage}
 \alias{AssembleNeighbor}
 \alias{AssembleSeuratCommand}
-\title{Assemble an object from an h5Seurat file}
+\title{Rebuild Seurat components from an open h5Seurat file}
 \usage{
-AssembleAssay(assay, file, slots = NULL, verbose = TRUE)
+AssembleImage(image, file, verbose = TRUE)
 
 AssembleDimReduc(reduction, file, verbose = TRUE)
 
 AssembleGraph(graph, file, verbose = TRUE)
-
-AssembleImage(image, file, verbose = TRUE)
 
 AssembleNeighbor(neighbor, file, verbose = TRUE)
 
 AssembleSeuratCommand(cmd, file, verbose = TRUE)
 }
 \arguments{
-\item{assay, reduction, graph, image, neighbor, cmd}{Name of assay, reduction,
-graph, image, neighbor, or command to load}
+\item{file}{An open \code{\link{h5Seurat}} connection}
 
-\item{file}{A connected h5Seurat file to pull the data from}
+\item{verbose}{Report progress}
 
-\item{slots}{Optional vector of assay slots to load, defaults to all slots
-present in assay}
+\item{assay, reduction, graph, image, neighbor, cmd}{Name of the stored
+component}
 
-\item{verbose}{Show progress updates}
+\item{slots}{Layers/slots of the assay to read; all stored ones when
+\code{NULL}}
 }
 \value{
-\code{AssembleAssay}: An \code{Assay} object
+\code{AssembleAssay}: an \code{Assay} or \code{Assay5};
+  \code{AssembleDimReduc}: a \code{DimReduc}; \code{AssembleGraph}: a
+  \code{Graph}; \code{AssembleImage}: a spatial image object;
+  \code{AssembleNeighbor}: a \code{Neighbor}; \code{AssembleSeuratCommand}:
+  a \code{SeuratCommand}
 }
 \description{
-Assemble an object from an h5Seurat file
+Internal builders used by \code{\link{readH5Seurat}}: each reads one stored
+component and returns the corresponding SeuratObject class.
 }
 \keyword{internal}

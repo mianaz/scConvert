@@ -1,7 +1,7 @@
 #' @include zzz.R
 #' @include Convert.R
 #' @include AnnDataEncoding.R
-#' @importFrom hdf5r H5File h5attr H5S GuessDType
+#' @importFrom hdf5r H5File h5attr H5S
 #' @importFrom Matrix sparseMatrix t
 NULL
 
@@ -1540,29 +1540,20 @@ NULL
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), stream fields directly. If FALSE,
-#'   load as Seurat then save as h5seurat.
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5MUToH5Seurat <- function(source, dest, overwrite = FALSE, gzip = 4L,
-                            verbose = TRUE, stream = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  if (stream) {
-    .stream_h5mu_to_h5seurat(source, dest, gzip = gzip, verbose = verbose)
-  } else {
-    obj <- readH5MU(source, verbose = verbose)
-    writeH5Seurat(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
-  invisible(dest)
+                           verbose = TRUE, stream = TRUE) {
+  .run_direct('h5mu', 'h5seurat', source, dest, assay = NULL, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert an h5seurat file to h5mu format
@@ -1575,29 +1566,20 @@ H5MUToH5Seurat <- function(source, dest, overwrite = FALSE, gzip = 4L,
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), stream fields directly. If FALSE,
-#'   load as Seurat then save as h5mu.
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5SeuratToH5MU <- function(source, dest, overwrite = FALSE, gzip = 4L,
-                            verbose = TRUE, stream = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  if (stream) {
-    .stream_h5seurat_to_h5mu(source, dest, gzip = gzip, verbose = verbose)
-  } else {
-    obj <- readH5Seurat(source, verbose = verbose)
-    writeH5MU(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
-  invisible(dest)
+                           verbose = TRUE, stream = TRUE) {
+  .run_direct('h5seurat', 'h5mu', source, dest, assay = NULL, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert a loom file to h5seurat format
@@ -1611,30 +1593,20 @@ H5SeuratToH5MU <- function(source, dest, overwrite = FALSE, gzip = 4L,
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), stream fields directly. If FALSE,
-#'   load as Seurat then save as h5seurat.
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 LoomToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
-                            gzip = 4L, verbose = TRUE, stream = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  if (stream) {
-    .stream_loom_to_h5seurat(source, dest, assay = assay, gzip = gzip,
-                             verbose = verbose)
-  } else {
-    obj <- readLoom(source, verbose = verbose)
-    writeH5Seurat(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
-  invisible(dest)
+                           gzip = 4L, verbose = TRUE, stream = TRUE) {
+  .run_direct('loom', 'h5seurat', source, dest, assay = assay, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert an h5seurat file to loom format
@@ -1647,29 +1619,20 @@ LoomToH5Seurat <- function(source, dest, assay = "RNA", overwrite = FALSE,
 #' @param overwrite If TRUE, overwrite existing output
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
-#' @param stream If TRUE (default), stream fields directly. If FALSE,
-#'   load as Seurat then save as loom.
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
 #'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5SeuratToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
-                            verbose = TRUE, stream = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  if (stream) {
-    .stream_h5seurat_to_loom(source, dest, gzip = gzip, verbose = verbose)
-  } else {
-    obj <- readH5Seurat(source, verbose = verbose)
-    writeLoom(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
-  invisible(dest)
+                           verbose = TRUE, stream = TRUE) {
+  .run_direct('h5seurat', 'loom', source, dest, assay = NULL, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 
@@ -1689,23 +1652,20 @@ H5SeuratToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
 #'
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
+#'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5MUToH5AD <- function(source, dest, assay = NULL, overwrite = FALSE,
-                        gzip = 4L, verbose = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  obj <- readH5MU(source, verbose = verbose)
-  if (is.null(assay)) assay <- Seurat::DefaultAssay(obj)
-  writeH5AD(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
-  invisible(dest)
+                       gzip = 4L, verbose = TRUE, stream = NULL) {
+  .run_direct('h5mu', 'h5ad', source, dest, assay = assay, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert an h5ad file to h5mu format
@@ -1720,22 +1680,20 @@ H5MUToH5AD <- function(source, dest, assay = NULL, overwrite = FALSE,
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
 #'
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
+#'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5ADToH5MU <- function(source, dest, assay = "RNA", overwrite = FALSE,
-                        gzip = 4L, verbose = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  obj <- readH5AD(source, verbose = verbose)
-  writeH5MU(obj, dest, overwrite = FALSE, verbose = verbose)
-  invisible(dest)
+                       gzip = 4L, verbose = TRUE, stream = NULL) {
+  .run_direct('h5ad', 'h5mu', source, dest, assay = assay, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert a loom file to h5ad format
@@ -1749,22 +1707,20 @@ H5ADToH5MU <- function(source, dest, assay = "RNA", overwrite = FALSE,
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
 #'
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
+#'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 LoomToH5AD <- function(source, dest, assay = "RNA", overwrite = FALSE,
-                        gzip = 4L, verbose = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  obj <- readLoom(source, verbose = verbose)
-  writeH5AD(obj, dest, assay = assay, overwrite = FALSE, verbose = verbose)
-  invisible(dest)
+                       gzip = 4L, verbose = TRUE, stream = NULL) {
+  .run_direct('loom', 'h5ad', source, dest, assay = assay, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert an h5ad file to loom format
@@ -1777,22 +1733,20 @@ LoomToH5AD <- function(source, dest, assay = "RNA", overwrite = FALSE,
 #' @param gzip Gzip compression level (0-9)
 #' @param verbose Show progress messages
 #'
+#' @param stream \code{TRUE} streams the expression matrices between the
+#'   files without loading them (see \code{\link{scConvert}}, section
+#'   \emph{Large datasets}); \code{FALSE} converts in memory; \code{NULL} or
+#'   \code{"auto"} streams files larger than
+#'   \code{options(scConvert.stream_threshold)}.
+#'
 #' @return Invisibly returns \code{dest}
 #'
 #' @export
 #'
 H5ADToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
-                        verbose = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  obj <- readH5AD(source, verbose = verbose)
-  writeLoom(obj, dest, overwrite = FALSE, verbose = verbose)
-  invisible(dest)
+                       verbose = TRUE, stream = NULL) {
+  .run_direct('h5ad', 'loom', source, dest, assay = NULL, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert a loom file to h5mu format
@@ -1813,25 +1767,9 @@ H5ADToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
 #' @export
 #'
 LoomToH5MU <- function(source, dest, assay = "RNA", overwrite = FALSE,
-                        gzip = 4L, verbose = TRUE, stream = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  if (stream) {
-    tmp <- tempfile(fileext = ".h5seurat")
-    on.exit(unlink(tmp), add = TRUE)
-    .stream_loom_to_h5seurat(source, tmp, assay = assay, gzip = gzip,
-                             verbose = verbose)
-    .stream_h5seurat_to_h5mu(tmp, dest, gzip = gzip, verbose = verbose)
-  } else {
-    obj <- readLoom(source, verbose = verbose)
-    writeH5MU(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
-  invisible(dest)
+                       gzip = 4L, verbose = TRUE, stream = TRUE) {
+  .run_direct('loom', 'h5mu', source, dest, assay = assay, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 #' Convert an h5mu file to loom format
@@ -1851,24 +1789,9 @@ LoomToH5MU <- function(source, dest, assay = "RNA", overwrite = FALSE,
 #' @export
 #'
 H5MUToLoom <- function(source, dest, overwrite = FALSE, gzip = 4L,
-                        verbose = TRUE, stream = TRUE) {
-  if (!file.exists(source))
-    stop("Input file not found: ", source, call. = FALSE)
-  if (file.exists(dest)) {
-    if (!overwrite)
-      stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
-    unlink(dest)
-  }
-  if (stream) {
-    tmp <- tempfile(fileext = ".h5seurat")
-    on.exit(unlink(tmp), add = TRUE)
-    .stream_h5mu_to_h5seurat(source, tmp, gzip = gzip, verbose = verbose)
-    .stream_h5seurat_to_loom(tmp, dest, gzip = gzip, verbose = verbose)
-  } else {
-    obj <- readH5MU(source, verbose = verbose)
-    writeLoom(obj, dest, overwrite = FALSE, verbose = verbose)
-  }
-  invisible(dest)
+                       verbose = TRUE, stream = TRUE) {
+  .run_direct('h5mu', 'loom', source, dest, assay = NULL, overwrite = overwrite,
+              gzip = gzip, verbose = verbose, stream = stream)
 }
 
 
@@ -2029,5 +1952,22 @@ ZarrToLoom <- function(source, dest, assay = "RNA", overwrite = FALSE,
     obj <- readZarr(source, verbose = verbose)
     writeLoom(obj, dest, overwrite = FALSE, verbose = verbose)
   }
+  invisible(dest)
+}
+
+
+# Shared body of the exported file-to-file converters above
+.run_direct <- function(stype, dtype, source, dest, assay = NULL, overwrite = FALSE,
+                        gzip = 4L, verbose = TRUE, stream = NULL) {
+  if (!file.exists(source)) stop("Input file not found: ", source, call. = FALSE)
+  if (file.exists(dest) && !overwrite) {
+    stop("Output exists: ", dest, ". Use overwrite = TRUE.", call. = FALSE)
+  }
+  if (!is.null(gzip)) {
+    previous <- options(scConvert.compression.level = as.integer(gzip))
+    on.exit(options(previous), add = TRUE)
+  }
+  .make_direct(stype, dtype)(source, dest, assay = assay, overwrite = overwrite,
+                             verbose = verbose, stream = stream)
   invisible(dest)
 }

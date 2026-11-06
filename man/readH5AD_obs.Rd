@@ -15,6 +15,7 @@ A \code{data.frame} with cell metadata, where row names are cell
   observation annotations
 }
 \description{
-Read the cell-level metadata (obs) from an H5AD file and return it as a
-data.frame. Handles both categorical (factor) and standard data types.
+Read the cell-level metadata (\code{/obs}) of an H5AD file without loading
+the rest of the file. Categorical columns become factors; nullable
+integer, boolean and string columns keep their missing values.
 }
