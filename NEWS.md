@@ -1,4 +1,4 @@
-# scConvert 0.3.0 (development)
+# scConvert 0.3.0
 
 ## License and independent implementation
 
