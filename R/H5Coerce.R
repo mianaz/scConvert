@@ -48,6 +48,14 @@ IntToBool <- function(x) {
   ifelse(codes %in% 0:1, codes == 1L, NA)
 }
 
+# Missing strings: written as "" with their positions in `na.positions`
+.restore_missing <- function(obj, v) {
+  if (inherits(obj, 'H5D') && obj$attr_exists(attr_name = 'na.positions')) {
+    v[as.integer(h5attr(x = obj, which = 'na.positions'))] <- NA
+  }
+  v
+}
+
 # Restore the logical columns listed in the `logicals` attribute of `x`
 .restore_logicals <- function(df, x) {
   if (x$attr_exists(attr_name = 'logicals')) {
@@ -109,7 +117,7 @@ as.data.frame.H5Group <- function(x, row.names = NULL, optional = FALSE, ...) {
       if (inherits(obj, 'H5Group')) {
         if (IsFactor(obj)) .factor_from_group(obj, order_by) else NULL
       } else {
-        v <- as.vector(obj[])
+        v <- .restore_missing(obj, as.vector(obj[]))
         if (!is.null(order_by)) v <- v[order(order_by)]
         v
       }
@@ -153,7 +161,7 @@ as.list.H5Group <- function(x, recursive = TRUE, ...) {
     }
     kind <- GetStringType(obj)
     out[[nm]] <- if (identical(kind, 'H5T_STRING')) {
-      as.character(obj[])
+      .restore_missing(obj, as.character(obj[]))
     } else if (identical(kind, 'numeric')) {
       as.vector(obj[])
     } else {

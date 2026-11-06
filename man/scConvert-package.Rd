@@ -27,8 +27,16 @@ Set with \code{\link[base]{options}}:
   reduction as global (default \code{FALSE})}
  \item{\code{scConvert.compression.level}}{gzip level (0-9) for new HDF5
   datasets; 0 disables compression (default 4)}
- \item{\code{scConvert.use_cli}}{Use the optional \code{scconvert} binary
-  for file-to-file conversions (default \code{FALSE})}
+ \item{\code{scConvert.use_cli}}{Use the optional compiled \code{scconvert}
+  binary for file-to-file conversions (default \code{FALSE}). It is fast
+  but drops feature metadata and spatial images; for large files prefer
+  the streaming R path (\code{scConvert(..., stream = TRUE)})}
+ \item{\code{scConvert.stream}}{Default for the \code{stream} argument of
+  \code{\link{scConvert}}: \code{"auto"} (stream files larger than
+  \code{scConvert.stream_threshold} bytes, 2 GB by default), \code{TRUE} or
+  \code{FALSE}}
+ \item{\code{scConvert.stream_chunk_bytes}}{Memory budget per block when
+  streaming matrices (default 64 MB)}
 }
 }
 

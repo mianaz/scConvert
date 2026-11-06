@@ -33,8 +33,16 @@ NULL
 #'   reduction as global (default \code{FALSE})}
 #'  \item{\code{scConvert.compression.level}}{gzip level (0-9) for new HDF5
 #'   datasets; 0 disables compression (default 4)}
-#'  \item{\code{scConvert.use_cli}}{Use the optional \code{scconvert} binary
-#'   for file-to-file conversions (default \code{FALSE})}
+#'  \item{\code{scConvert.use_cli}}{Use the optional compiled \code{scconvert}
+#'   binary for file-to-file conversions (default \code{FALSE}). It is fast
+#'   but drops feature metadata and spatial images; for large files prefer
+#'   the streaming R path (\code{scConvert(..., stream = TRUE)})}
+#'  \item{\code{scConvert.stream}}{Default for the \code{stream} argument of
+#'   \code{\link{scConvert}}: \code{"auto"} (stream files larger than
+#'   \code{scConvert.stream_threshold} bytes, 2 GB by default), \code{TRUE} or
+#'   \code{FALSE}}
+#'  \item{\code{scConvert.stream_chunk_bytes}}{Memory budget per block when
+#'   streaming matrices (default 64 MB)}
 #' }
 #'
 "_PACKAGE"
@@ -310,7 +318,7 @@ CachedGuessDType <- function(x, stype = 'utf8') {
 }
 
 .h5ad_loader <- function(file, assay = 'RNA', verbose = TRUE, ...) {
-  readH5AD(file = file, assay = assay, verbose = verbose, ...)
+  readH5AD(file = file, assay.name = assay, verbose = verbose, ...)
 }
 
 .h5ad_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE,
@@ -546,6 +554,11 @@ CachedGuessDType <- function(x, stype = 'utf8') {
     }
     if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
   }
+  src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
+  if (.use_streaming(list(...)$stream, src_path)) {
+    return(.stream_h5ad_to_h5seurat(src_path, dest, assay = assay, overwrite = overwrite,
+                                    verbose = verbose))
+  }
   .hub_from_connection(source, dest, stype = "h5ad", dtype = "h5seurat",
                        assay = assay, overwrite = overwrite, verbose = verbose)
 }
@@ -570,6 +583,11 @@ CachedGuessDType <- function(x, stype = 'utf8') {
       if (file.exists(dest)) try(file.remove(dest), silent = TRUE)
     }
     if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
+  }
+  src_path <- if (inherits(source, c('H5File', 'h5Seurat'))) source$filename else source
+  if (.use_streaming(list(...)$stream, src_path)) {
+    return(.stream_h5seurat_to_h5ad(src_path, dest, assay = assay, overwrite = overwrite,
+                                    verbose = verbose, standardize = standardize))
   }
   .hub_from_connection(source, dest, stype = "h5seurat", dtype = "h5ad",
                        assay = assay, overwrite = overwrite, verbose = verbose,
@@ -620,22 +638,9 @@ CachedGuessDType <- function(x, stype = 'utf8') {
     .h5_guessdtype_cache[[s]] <<- GuessDType(x = s)
   }
 
-  # Auto-detect CLI binary and notify user
-  cli_bin <- tryCatch(sc_find_cli(), error = function(e) NULL)
-  if (!is.null(cli_bin)) {
-    # CLI binary found -- enable unless user explicitly pre-set to FALSE
-    if (!isFALSE(getOption("scConvert.use_cli"))) {
-      options("scConvert.use_cli" = TRUE)
-    }
-  } else {
-    packageStartupMessage(
-      "scConvert: optional `scconvert` C binary not found. ",
-      "HDF5 file-to-file paths will use the R fallback.\n",
-      "To build: from a source checkout, run `cd src && make -f Makefile.cli ",
-      "&& make -f Makefile.cli install-bin`, then reinstall the package.\n",
-      "Or set options(scConvert.cli_path = \"/path/to/scconvert\")."
-    )
-  }
+  # The compiled `scconvert` binary is opt-in (options(scConvert.use_cli =
+  # TRUE)): it is fast but does not carry everything the R paths do
+  # (feature metadata, spatial images); see ?scConvert_cli.
 
   # Register file format loaders and savers
   RegisterFormat(ext = 'h5seurat', loader = .h5seurat_loader, saver = .h5seurat_saver)

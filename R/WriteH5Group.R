@@ -14,7 +14,9 @@ NULL
 #
 # Layout conventions (shared with the readers in AssembleObject.R and
 # H5Coerce.R):
-#   atomic vector        dataset; a named vector also gets "<name>__names__"
+#   atomic vector        dataset; a named vector also gets "<name>__names__";
+#                        missing strings are stored as "" and listed in the
+#                        "na.positions" attribute
 #   logical              integer dataset (0/1, NA = 2) with s3class "logical"
 #   factor               group: values (1-based codes), levels, [ordered]
 #   list                 group of members, "names" attribute, s3class when
@@ -100,7 +102,16 @@ BasicWrite <- function(x, name, hgroup, verbose = TRUE) {
   if (is.vector(x) && !is.null(names(x))) {
     .h5_dataset(hgroup, paste0(name, '__names__'), names(x))
   }
+  missing_at <- if (is.character(x) && anyNA(x)) which(is.na(x)) else integer(0)
+  if (length(missing_at)) {
+    # HDF5 strings cannot be missing: store "" and record the positions
+    x[missing_at] <- ""
+  }
   .h5_dataset(hgroup, name, x)
+  if (length(missing_at)) {
+    .h5_attr(hgroup[[name]], 'na.positions', as.integer(missing_at))
+  }
+  invisible(NULL)
 }
 
 #' @rdname WriteH5Group

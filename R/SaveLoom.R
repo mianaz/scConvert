@@ -185,8 +185,19 @@ as.loom.Seurat <- function(x, filename = paste0(Project(object = x), '.loom'),
     warning("Overwriting ", filename, call. = FALSE, immediate. = TRUE)
     file.remove(filename)
   }
-  lfile <- loom$new(filename = filename, mode = 'w')
   default <- DefaultAssay(object = x)
+  # loom holds one matrix per layer: join split v5 layers (counts.a,
+  # counts.b, ...) back into counts / data / scale.data first
+  for (a in Assays(object = x)) {
+    if (inherits(x[[a]], 'Assay5') &&
+        any(grepl('^(counts|data|scale\\.data)\\.', SeuratObject::Layers(x[[a]])))) {
+      if (verbose) message("Joining split layers of assay ", a)
+      x[[a]] <- SeuratObject::JoinLayers(x[[a]])
+    }
+  }
+  lfile <- loom$new(filename = filename, mode = 'w')
+  # recorded so readLoom() restores the assay name
+  lfile$add_attribute(x = default, name = 'SEURAT_ASSAY')
   layer_of <- function(layer, assay) {
     tryCatch(GetAssayData(object = x, layer = layer, assay = assay), error = function(e) NULL)
   }

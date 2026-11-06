@@ -393,6 +393,18 @@
     if (verbose) message("  Could not copy counts -> data layer: ", e$message)
   })
 
+  # CreateSeuratObject() computed nCount_/nFeature_ from X; when the counts
+  # came from raw/X or layers/counts, recompute them from the real counts.
+  # (Columns stored in obs are added afterwards and still take precedence.)
+  if (!identical(x_mapped_to, "counts")) {
+    tryCatch({
+      cnt <- Seurat::GetAssayData(seurat_obj, assay = assay.name, layer = "counts")
+      seurat_obj@meta.data[[paste0("nCount_", assay.name)]] <- unname(Matrix::colSums(cnt))
+      seurat_obj@meta.data[[paste0("nFeature_", assay.name)]] <-
+        unname(as.integer(Matrix::colSums(cnt > 0)))
+    }, error = function(e) NULL)
+  }
+
   list(object = seurat_obj, x_mapped_to = x_mapped_to)
 }
 

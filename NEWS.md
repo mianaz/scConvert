@@ -16,6 +16,37 @@ Without the optional `scconvert` binary, file-to-file h5ad <-> h5Seurat
 conversion now loads the data into a Seurat object and writes it out again
 (`readH5AD()` + `writeH5Seurat()`, `readH5Seurat()` + `writeH5AD()`).
 
+## Large datasets
+
+- `scConvert(..., stream = TRUE)` converts h5ad <-> h5Seurat without loading
+  the expression matrices: metadata, embeddings, graphs, images and `uns`
+  go through the regular reader and writer, and `X` / `layers` / `raw` are
+  copied between the files by HDF5 (or in bounded column blocks when
+  features are subset or reordered). The result is identical to an
+  in-memory conversion. On 100,000 cells with 100 million non-zeros, peak
+  memory drops from 6.5 GB to 1.2 GB and run time from 101 s to 34 s.
+  `stream = "auto"` (default) streams files larger than
+  `options(scConvert.stream_threshold)` (2 GB); the block size is
+  `options(scConvert.stream_chunk_bytes)` (64 MB).
+- New `scConvertBatch()` converts many files in parallel worker processes
+  and reports per-file success, time and errors.
+
+## Other changes
+
+- The compiled `scconvert` binary is opt-in (`options(scConvert.use_cli =
+  TRUE)`). The previous auto-detection never took effect, and the binary
+  drops feature metadata and spatial images, so the package no longer
+  probes for it or prints a startup message about it.
+- `writeLoom()` records the assay name (`/attrs/SEURAT_ASSAY`), so
+  `readLoom()` restores assays other than RNA, and writes Seurat v5 objects
+  with split layers (joined first).
+- h5Seurat keeps missing values in character vectors (stored as `""` with
+  an `na.positions` attribute; they used to become the string `"NA"`).
+- When counts come from `layers/counts` or `raw/X`, `readH5AD()` computes
+  `nCount_*` / `nFeature_*` from those counts instead of from `X` (unless
+  obs provides them).
+- `zstdlite` is listed in Suggests; `stringi` is no longer imported.
+
 ## Bug fixes
 
 - Asymmetric graphs (the kNN `*_nn` graph) were transposed in several

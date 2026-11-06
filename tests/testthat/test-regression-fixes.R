@@ -698,3 +698,37 @@ test_that("loom graphs keep their size when trailing cells have no edges", {
   expect_equal(dim(x[["RNA_nn"]]), c(5L, 5L))
   expect_equal(as.matrix(x[["RNA_nn"]]), as.matrix(g), ignore_attr = TRUE)
 })
+
+# ---------------------------------------------------------------------------
+# Regression: writeLoom documented but never wrote SEURAT_ASSAY (assay names
+# other than RNA were lost), and failed on Seurat v5 objects with split
+# layers.
+# ---------------------------------------------------------------------------
+test_that("loom keeps the assay name and accepts split v5 layers", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  m <- Matrix::sparseMatrix(i = c(1, 2, 3, 4, 2), j = c(1, 2, 3, 4, 5), x = c(1, 2, 3, 4, 5),
+                            dims = c(4, 6), dimnames = list(paste0("g", 1:4), paste0("c", 1:6)))
+  o <- suppressWarnings(Seurat::CreateSeuratObject(counts = m, assay = "Spatial"))
+  o[["Spatial"]] <- split(o[["Spatial"]], f = rep(c("a", "b"), 3))
+  tmp <- tempfile(fileext = ".loom")
+  on.exit(unlink(tmp), add = TRUE)
+  suppressMessages(writeLoom(o, tmp, overwrite = TRUE, verbose = FALSE))
+  x <- suppressMessages(suppressWarnings(readLoom(tmp, verbose = FALSE)))
+  expect_identical(SeuratObject::DefaultAssay(x), "Spatial")
+  expect_equal(as.matrix(SeuratObject::LayerData(x, assay = "Spatial", layer = "counts")),
+               as.matrix(m), ignore_attr = TRUE)
+})
+
+test_that("h5Seurat keeps missing values in character columns", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  o <- .na_meta_object()
+  o@misc$labels <- c("x", NA, "z")
+  tmp <- tempfile(fileext = ".h5seurat")
+  on.exit(unlink(tmp), add = TRUE)
+  writeH5Seurat(o, tmp, overwrite = TRUE, verbose = FALSE)
+  x <- suppressWarnings(readH5Seurat(tmp, verbose = FALSE))
+  expect_identical(x[[]][paste0("c", 1:4), "chr_na"], c("a", NA, "b", "a"))
+  expect_identical(x@misc$labels, c("x", NA, "z"))
+})

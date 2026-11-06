@@ -20,7 +20,6 @@ reference:
     contents:
       - scConvert-package
       - scdisk
-      - IsSCDisk
       - RegisterSCDisk
 
   - title: "h5Seurat Format"
@@ -36,8 +35,6 @@ reference:
   - title: "AnnData (h5ad) Format"
     desc: "Converting between Seurat and Python AnnData format"
     contents:
-      - H5ADToH5Seurat
-      - H5SeuratToH5AD
       - writeH5AD
       - readH5AD
       - readH5AD_obs
@@ -68,8 +65,6 @@ reference:
       - writeLoom
       - loom-class
       - loom-bindings
-      - LoomLoading
-      - ValidateLoom
       - LoomToH5Seurat
       - H5SeuratToLoom
       - LoomToH5AD
@@ -140,6 +135,7 @@ reference:
       - scConvert
       - FileType
       - scConvert_cli
+      - scConvertBatch
 
   - title: "Reading & Writing"
     desc: "Low-level HDF5 reading and writing functions"
@@ -147,56 +143,12 @@ reference:
       - ReadH5
       - as.sparse.H5D
       - WriteH5Group
-      - BasicWrite
-      - ImageWrite
-      - SparseWrite
-      - H5Exists
-      - H5Path
 
   - title: "Object Operations"
     desc: "Utilities for working with HDF5 objects and attributes"
     contents:
-      - GetObject
       - AssembleObject
       - scTranspose
-      - PadMatrix
-
-  - title: "Testing & Validation"
-    desc: "Functions for testing and validating HDF5 files and Seurat objects"
-    contents:
-      - TestH5
-      - TestObject
-      - CheckMatrix
-      - IsMatrixEmpty
-
-  - title: "Data Type Utilities"
-    desc: "Utilities for handling data types and format conversions"
-    contents:
-      - GuessDType
-      - IsDType
-      - StringType
-      - BoolToInt
-      - Dims
-      - GetClass
-      - GetMargin
-      - GetParent
-      - SparsePointers
-      - ClosestVersion
-      - ChunkPoints
-      - MakeSpace
-
-  - title: "Metadata & Attributes"
-    desc: "Working with HDF5 attributes and metadata"
-    contents:
-      - PadNames
-      - RandomName
-      - Timestamp
-      - UpdateKey
-      - UpdateSlots
-      - FixFeatures
-      - CompoundToGroup
-      - Writeable
-      - WriteMode
 
   - title: "Internal"
     desc: "Internal functions and methods"
