@@ -676,3 +676,25 @@ test_that("asymmetric graphs keep their orientation in every format", {
   conv_mu <- tf(".h5mu"); q(scConvert(h5ad_c, dest = conv_mu, overwrite = TRUE, verbose = FALSE))
   same(q(readH5MU(conv_mu, verbose = FALSE)), "h5ad -> h5mu")
 })
+
+# ---------------------------------------------------------------------------
+# Regression: loom graphs were rebuilt without explicit dimensions, so a
+# graph whose last cells have no edges came back too small and loading
+# failed when the cell names were attached.
+# ---------------------------------------------------------------------------
+test_that("loom graphs keep their size when trailing cells have no edges", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  m <- Matrix::sparseMatrix(i = 1:4, j = 1:4, x = 1, dims = c(4, 5),
+                            dimnames = list(paste0("g", 1:4), paste0("c", 1:5)))
+  o <- suppressWarnings(Seurat::CreateSeuratObject(counts = m))
+  g <- Matrix::sparseMatrix(i = c(1, 2), j = c(2, 1), x = 1, dims = c(5, 5),
+                            dimnames = list(colnames(o), colnames(o)))
+  o[["RNA_nn"]] <- SeuratObject::as.Graph(g)
+  tmp <- tempfile(fileext = ".loom")
+  on.exit(unlink(tmp), add = TRUE)
+  suppressMessages(writeLoom(o, tmp, overwrite = TRUE, verbose = FALSE))
+  x <- suppressMessages(suppressWarnings(readLoom(tmp, verbose = FALSE)))
+  expect_equal(dim(x[["RNA_nn"]]), c(5L, 5L))
+  expect_equal(as.matrix(x[["RNA_nn"]]), as.matrix(g), ignore_attr = TRUE)
+})

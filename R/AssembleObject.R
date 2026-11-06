@@ -673,127 +673,6 @@ AssembleAssay <- function(assay, file, slots = NULL, verbose = TRUE) {
   return(obj)
 }
 
-#' @importClassesFrom Seurat JackStrawData
-#' @importFrom Seurat CreateDimReducObject Stdev IsGlobal JS<-
-#'
-#' @rdname AssembleObject
-#'
-AssembleDimReduc <- function(reduction, file, verbose = TRUE) {
-  safe_read_dataset <- function(dataset) {
-    as.character(SafeH5DRead(dataset))
-  }
-
-  index <- file$index()
-  index.check <- vapply(
-    X = setdiff(x = names(x = index), y = c('global', 'no.assay')),
-    FUN = function(x) {
-      return(reduction %in% names(x = index[[x]]$reductions))
-    },
-    FUN.VALUE = logical(length = 1L)
-  )
-  if (!any(index.check)) {
-    stop(
-      "Cannot find reduction ",
-      reduction,
-      " in this h5Seurat file",
-      call. = FALSE
-    )
-  } else if (sum(index.check) > 1) {
-    stop("Multiple reductions named ", reduction, call. = FALSE)
-  }
-  assay <- names(x = which(x = index.check))
-  reduc.group <- file[['reductions']][[reduction]]
-  key <- Key(object = reduc.group)
-  # Pull cell embeddings
-  if (index[[assay]]$reductions[[reduction]][['cell.embeddings']]) {
-    if (verbose) {
-      message("Adding cell embeddings for ", reduction)
-    }
-    embeddings <- as.matrix(x = reduc.group[['cell.embeddings']])
-    rownames(x = embeddings) <- Cells(x = file)
-    colnames(x = embeddings) <- paste0(key, 1:ncol(x = embeddings))
-  } else {
-    if (verbose) {
-      warning(
-        "No cell embeddings for ",
-        reduction,
-        call. = FALSE,
-        immediate. = TRUE
-      )
-    }
-    embeddings <- new(Class = 'matrix')
-  }
-  # Pull feature loadings
-  if (index[[assay]]$reductions[[reduction]][['feature.loadings']]) {
-    if (verbose) {
-      message("Adding feature loadings for ", reduction)
-    }
-    loadings <- as.matrix(x = reduc.group[['feature.loadings']])
-    rownames(x = loadings) <- safe_read_dataset(reduc.group[['features']])
-    colnames(x = loadings) <- paste0(key, 1:ncol(x = loadings))
-  } else {
-    loadings <- new(Class = 'matrix')
-  }
-  # Pull projected loadings
-  if (index[[assay]]$reductions[[reduction]][['feature.loadings.projected']]) {
-    if (verbose) {
-      message("Adding projected loadings for ", reduction)
-    }
-    projected <- as.matrix(x = reduc.group[['feature.loadings.projected']])
-    rownames(x = projected) <- safe_read_dataset(reduc.group[['projected.features']])
-    colnames(x = projected) <- paste0(key, 1:ncol(x = projected))
-  } else {
-    projected <- new(Class = 'matrix')
-  }
-  # Build the object
-  obj <- CreateDimReducObject(
-    embeddings = embeddings,
-    loadings = loadings,
-    projected = projected,
-    assay = assay,
-    stdev = Stdev(object = file, reduction = reduction),
-    key = key,
-    global = IsGlobal(object = reduc.group)
-  )
-  # Add misc
-  if (reduc.group$exists(name = 'misc')) {
-    if (verbose) {
-      message("Adding miscellaneous information for ", reduction)
-    }
-    # Use SafeH5GroupToList to handle 3D+ arrays (e.g., from Squidpy UMAP)
-    slot(object = obj, name = 'misc') <- SafeH5GroupToList(h5obj = reduc.group[['misc']], recursive = TRUE)
-  }
-  # Add jackstraw
-  if (index[[assay]]$reductions[[reduction]][['jackstraw']]) {
-    if (verbose) {
-      message("Loading JackStraw data for ", reduction)
-    }
-    js <- new(Class = 'JackStrawData')
-    for (slot in names(x = reduc.group[['jackstraw']])) {
-      JS(object = js, slot = slot) <- as.matrix(x = reduc.group[['jackstraw']][[slot]])
-    }
-    JS(object = obj) <- js
-  }
-  return(obj)
-}
-
-#' @importFrom Seurat as.sparse as.Graph
-#'
-#' @rdname AssembleObject
-#'
-AssembleGraph <- function(graph, file, verbose = TRUE) {
-  index <- file$index()
-  obj <- as.sparse(x = file[['graphs']][[graph]])
-  rownames(x = obj) <- colnames(x = obj) <- Cells(x = file)
-  obj <- as.Graph(x = obj)
-  if (file[['graphs']][[graph]]$attr_exists(attr_name = 'assay.used')) {
-    assay <- h5attr(x = file[['graphs']][[graph]], which = 'assay.used')
-    if (graph %in% index[[assay]]$graphs) {
-      DefaultAssay(object = obj) <- assay
-    }
-  }
-  return(obj)
-}
 
 #' @rdname AssembleObject
 #'
@@ -1244,50 +1123,116 @@ AssembleImage <- function(image, file, verbose = TRUE) {
   return(obj)
 }
 
-#' @importClassesFrom Seurat Neighbor
+
+
+# Name of the (single) assay entry in the index that lists `name` under
+# `field` ("reductions" or "commands")
+.index_owner <- function(index, name, field, what, skip = c('global', 'no.assay')) {
+  owners <- Filter(function(a) {
+    entry <- index[[a]][[field]]
+    if (is.list(entry)) name %in% names(entry) else name %in% entry
+  }, setdiff(names(index), skip))
+  if (!length(owners)) stop("No ", what, " named ", name, " in this h5Seurat file", call. = FALSE)
+  if (length(owners) > 1L) stop("More than one ", what, " is named ", name, call. = FALSE)
+  owners
+}
+
+#' @importClassesFrom SeuratObject JackStrawData
+#' @importFrom SeuratObject CreateDimReducObject Stdev IsGlobal JS<-
+#'
+#' @rdname AssembleObject
+#'
+AssembleDimReduc <- function(reduction, file, verbose = TRUE) {
+  index <- file$index()
+  assay <- .index_owner(index, reduction, 'reductions', 'reduction')
+  has <- index[[assay]]$reductions[[reduction]]
+  grp <- file[['reductions']][[reduction]]
+  key <- Key(object = grp)
+  # dense matrix component with dimnames; an empty matrix when absent
+  component <- function(part, rows, label) {
+    if (!isTRUE(has[[part]])) return(new(Class = 'matrix'))
+    if (verbose) message("Adding ", label, " for ", reduction)
+    m <- as.matrix(x = grp[[part]])
+    rownames(m) <- rows()
+    colnames(m) <- paste0(key, seq_len(ncol(m)))
+    m
+  }
+  if (!isTRUE(has[['cell.embeddings']]) && verbose) {
+    warning("No cell embeddings for ", reduction, call. = FALSE, immediate. = TRUE)
+  }
+  obj <- CreateDimReducObject(
+    embeddings = component('cell.embeddings', function() Cells(x = file), 'cell embeddings'),
+    loadings = component('feature.loadings',
+                         function() as.character(SafeH5DRead(grp[['features']])),
+                         'feature loadings'),
+    projected = component('feature.loadings.projected',
+                          function() as.character(SafeH5DRead(grp[['projected.features']])),
+                          'projected loadings'),
+    assay = assay,
+    stdev = Stdev(object = file, reduction = reduction),
+    key = key,
+    global = IsGlobal(object = grp)
+  )
+  if (grp$exists(name = 'misc')) {
+    if (verbose) message("Adding miscellaneous information for ", reduction)
+    # SafeH5GroupToList copes with 3-D+ arrays (e.g. squidpy embeddings)
+    slot(obj, 'misc') <- SafeH5GroupToList(h5obj = grp[['misc']], recursive = TRUE)
+  }
+  if (isTRUE(has[['jackstraw']])) {
+    if (verbose) message("Loading JackStraw data for ", reduction)
+    js <- new(Class = 'JackStrawData')
+    for (part in names(grp[['jackstraw']])) {
+      JS(object = js, slot = part) <- as.matrix(x = grp[['jackstraw']][[part]])
+    }
+    JS(object = obj) <- js
+  }
+  obj
+}
+
+#' @importFrom SeuratObject as.sparse as.Graph
+#'
+#' @rdname AssembleObject
+#'
+AssembleGraph <- function(graph, file, verbose = TRUE) {
+  grp <- file[['graphs']][[graph]]
+  m <- as.sparse(x = grp)
+  dimnames(m) <- list(Cells(x = file), Cells(x = file))
+  obj <- as.Graph(x = m)
+  if (grp$attr_exists(attr_name = 'assay.used')) {
+    assay <- h5attr(x = grp, which = 'assay.used')
+    if (graph %in% file$index()[[assay]]$graphs) DefaultAssay(object = obj) <- assay
+  }
+  obj
+}
+
+#' @importClassesFrom SeuratObject Neighbor
 #'
 #' @rdname AssembleObject
 #'
 AssembleNeighbor <- function(neighbor, file, verbose = TRUE) {
-  neighbor.group <- file[['neighbors']][[neighbor]]
-  obj <- new(
+  grp <- file[['neighbors']][[neighbor]]
+  new(
     Class = 'Neighbor',
-    nn.idx =  as.matrix(x = neighbor.group[["nn.idx"]]),
-    nn.dist = as.matrix(x = neighbor.group[["nn.dist"]]),
-    cell.names =  as.matrix(x = neighbor.group[["cell.names"]])[,1]
+    nn.idx = as.matrix(x = grp[['nn.idx']]),
+    nn.dist = as.matrix(x = grp[['nn.dist']]),
+    cell.names = as.matrix(x = grp[['cell.names']])[, 1]
   )
-  return(obj)
 }
 
-#' @importClassesFrom Seurat SeuratCommand
+#' @importClassesFrom SeuratObject SeuratCommand
 #'
 #' @rdname AssembleObject
 #'
 AssembleSeuratCommand <- function(cmd, file, verbose = TRUE) {
-  index <- file$index()
-  index.check <- vapply(
-    X = setdiff(x = names(x = index), y = 'global'),
-    FUN = function(x) {
-      return(cmd %in% index[[x]]$commands)
-    },
-    FUN.VALUE = logical(length = 1L)
-  )
-  if (!any(index.check)) {
-    stop("Cannot find command ", cmd, " in this h5Seurat file", call. = FALSE)
-  } else if (sum(index.check) > 1) {
-    stop("Multiple commands named ", cmd, call. = FALSE)
-  }
-  cmd.group <- file[['commands']][[cmd]]
-  cmdlog <- new(
+  owner <- .index_owner(file$index(), cmd, 'commands', 'command', skip = 'global')
+  grp <- file[['commands']][[cmd]]
+  log <- new(
     Class = 'SeuratCommand',
-    name = h5attr(x = cmd.group, which = 'name'),
-    time.stamp = as.POSIXct(x = h5attr(x = cmd.group, which = 'time.stamp')),
-    call.string = h5attr(x = cmd.group, 'call.string'),
-    params = as.list(x = cmd.group, recursive = TRUE)
+    name = h5attr(x = grp, which = 'name'),
+    time.stamp = as.POSIXct(h5attr(x = grp, which = 'time.stamp')),
+    call.string = h5attr(x = grp, which = 'call.string'),
+    params = as.list(x = grp, recursive = TRUE)
   )
-  assay <- names(x = which(x = index.check))
-  if (assay != 'no.assay') {
-    slot(object = cmdlog, name = 'assay.used') <- assay
-  }
-  return(cmdlog)
+  if (!identical(owner, 'no.assay')) slot(log, 'assay.used') <- owner
+  log
 }
