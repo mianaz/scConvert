@@ -699,8 +699,11 @@ readH5AD <- function(file, assay.name = "RNA", use.bpcells = NULL,
       if (verbose) message("  Adding graph: ", graph_name)
 
       tryCatch({
-        # obsp stores CSR; read as-is then transpose to get correct orientation
-        graph_matrix <- Matrix::t(ReadH5ADMatrix(h5ad[["obsp"]][[graph_name]], transpose = FALSE))
+        # transpose = FALSE keeps the stored orientation (row i = cell i) for
+        # both csr_matrix and csc_matrix encodings, which is also Seurat's
+        graph_matrix <- methods::as(
+          ReadH5ADMatrix(h5ad[["obsp"]][[graph_name]], transpose = FALSE),
+          "CsparseMatrix")
 
         if (nrow(graph_matrix) != ncol(graph_matrix) ||
             nrow(graph_matrix) != ncol(seurat_obj)) {
@@ -1099,8 +1102,9 @@ scLoadMeta <- function(object, components = NULL, verbose = TRUE) {
           i = gd$i, p = gd$p, x = gd$x,
           Dim = c(gd$nrow, gd$ncol)
         )
-        # obsp CSR was reinterpreted as CSC = transpose, so transpose back
-        graph_matrix <- Matrix::t(graph_matrix)
+        # A csr_matrix graph comes back from C as the CSC of its transpose;
+        # a csc_matrix graph already has the stored orientation
+        if (!isTRUE(gd$csc)) graph_matrix <- Matrix::t(graph_matrix)
         if (nrow(graph_matrix) == ncol(graph_matrix) && nrow(graph_matrix) == ncol(seurat_obj)) {
           rownames(graph_matrix) <- cell.names
           colnames(graph_matrix) <- cell.names

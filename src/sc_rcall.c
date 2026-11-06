@@ -1256,10 +1256,15 @@ SEXP C_read_h5ad_obsp(SEXP path_sexp) {
                          (int)(indptr_len - 1));
 
         /* Build sub-list: i, p, x, nrow, ncol */
-        SEXP entry = PROTECT(allocVector(VECSXP, 5));
+        SEXP entry = PROTECT(allocVector(VECSXP, 6));
         nprotect++;
-        SEXP enames = PROTECT(allocVector(STRSXP, 5));
+        SEXP enames = PROTECT(allocVector(STRSXP, 6));
         nprotect++;
+
+        /* tells R whether the arrays are the graph itself (csc) or its
+         * transpose (csr reinterpreted as csc) */
+        SET_VECTOR_ELT(entry, 5, ScalarLogical(is_csc));
+        SET_STRING_ELT(enames, 5, mkChar("csc"));
 
         SET_VECTOR_ELT(entry, 0, r_i);
         SET_STRING_ELT(enames, 0, mkChar("i"));

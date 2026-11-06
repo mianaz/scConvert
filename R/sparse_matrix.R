@@ -1,28 +1,3 @@
-#' Convert sparse matrix pointers to indices and vice versa
-#'
-#' @param j A vector of sparse matrix colum indices
-#'
-#' @return \code{IndexToPointer}: A vector of index pointers (p)
-#'
-#' @name SparsePointers
-#' @rdname SparsePointers
-#'
-#' @keywords internal
-#'
-#' @examples
-#' \donttest{
-#' dat <- dat <- c(0, 0, 1, 4, 0, 2, 0, 9, 0)
-#' smat <- Matrix::Matrix(data = dat, nrow = 3, sparse = TRUE)
-#' j <- scConvert:::PointerToIndex(p = smat@p)
-#' Matrix::sparseMatrix(i = smat@i + 1, j = j, x = smat@x)
-#' p <- scConvert:::IndexToPointer(j = j)
-#' Matrix::sparseMatrix(i = smat@i + 1, p = p, x= smat@x)
-#' }
-IndexToPointer <- function(j) {
-  counts <- tabulate(j, nbins = max(j))
-  p <- c(0L, cumsum(counts))
-  return(p)
-}
 
 #' @param p A vector of sparse matrix pointers
 #'

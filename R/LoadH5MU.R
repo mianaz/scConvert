@@ -75,67 +75,8 @@ readH5MU <- function(file,
   if (verbose) message("Loading H5MU file: ", file)
 
   # --- Helper: read sparse or dense matrix from an HDF5 group/dataset ---
-  ReadMatrix <- function(h5_obj, transpose = TRUE) {
-    if (inherits(h5_obj, "H5Group")) {
-      if (h5_obj$exists("data") && h5_obj$exists("indices") && h5_obj$exists("indptr")) {
-        data_vals <- h5_obj[["data"]][]
-        indices <- h5_obj[["indices"]][]
-        indptr <- h5_obj[["indptr"]][]
-
-        if (h5_obj$attr_exists("shape")) {
-          shape <- h5attr(h5_obj, "shape")
-          n_rows <- shape[1]
-          n_cols <- shape[2]
-        } else {
-          n_rows <- length(indptr) - 1
-          n_cols <- if (length(indices) > 0) max(indices) + 1L else 0L
-        }
-
-        # Sort row indices within each column for valid dgCMatrix
-        # (scipy CSR/CSC may have unsorted indices)
-        .sort_dgc <- function(i, p, x) {
-          n_col <- length(p) - 1L
-          for (ci in seq_len(n_col)) {
-            start <- p[ci] + 1L
-            end <- p[ci + 1L]
-            if (end > start && is.unsorted(i[start:end])) {
-              seg <- start:end
-              ord <- order(i[seg])
-              i[seg] <- i[seg][ord]
-              x[seg] <- x[seg][ord]
-            }
-          }
-          list(i = i, x = x)
-        }
-
-        if (transpose) {
-          # Zero-copy CSR->CSC: CSR of (n_rows x n_cols) == CSC of (n_cols x n_rows)
-          sorted <- .sort_dgc(as.integer(indices), as.integer(indptr),
-                              as.numeric(data_vals))
-          mat <- new("dgCMatrix",
-            i = sorted$i,
-            p = as.integer(indptr),
-            x = sorted$x,
-            Dim = c(as.integer(n_cols), as.integer(n_rows))
-          )
-        } else {
-          indices_1based <- indices + 1L
-          row_indices <- rep(seq_len(n_rows), diff(indptr))
-          mat <- sparseMatrix(
-            i = row_indices, j = indices_1based, x = data_vals,
-            dims = c(n_rows, n_cols), index1 = TRUE
-          )
-        }
-        return(mat)
-      }
-    } else if (inherits(h5_obj, "H5D")) {
-      # Dense matrix
-      mat <- h5_obj[, ]
-      if (transpose) mat <- t(mat)
-      return(mat)
-    }
-    stop("Unknown matrix format", call. = FALSE)
-  }
+  # Sparse (csr_matrix / csc_matrix) or dense matrices, encoding-aware
+  ReadMatrix <- .h5ad_read_matrix
 
   # --- Helper: read index (cell/feature names) from a df group ---
   ReadIndex <- function(grp) {

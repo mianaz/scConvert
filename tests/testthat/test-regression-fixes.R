@@ -613,3 +613,66 @@ test_that("zarr round-trips NA/ordered metadata and >127-level factors", {
   md <- suppressWarnings(readZarr(tmp2, verbose = FALSE))[[]][colnames(big), ]
   expect_identical(as.character(md$many), paste0("L", 1:n))
 })
+
+# ---------------------------------------------------------------------------
+# Regression: the C h5ad writer stored graphs transposed (CSC arrays written
+# as CSR), which flips asymmetric graphs such as the kNN "*_nn" graph; it
+# also dropped feature metadata / variable features and ignored
+# `standardize`.
+# ---------------------------------------------------------------------------
+test_that("writeH5AD keeps asymmetric graph orientation, var data and standardize", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  o <- suppressWarnings(SeuratObject::UpdateSeuratObject(SeuratObject::pbmc_small))
+  o <- suppressWarnings(Seurat::FindNeighbors(o, dims = 1:5, k.param = 5, verbose = FALSE))
+  nn <- as.matrix(o[["RNA_nn"]])
+  expect_true(all(rowSums(nn) == 5))   # row i = the k neighbours of cell i
+  tmp <- tempfile(fileext = ".h5ad")
+  on.exit(unlink(tmp), add = TRUE)
+  suppressWarnings(writeH5AD(o, tmp, overwrite = TRUE, verbose = FALSE, standardize = TRUE))
+
+  h <- hdf5r::H5File$new(tmp, mode = "r")
+  g <- h[["obsp/RNA_nn"]]
+  indptr <- g[["indptr"]][]
+  expect_identical(hdf5r::h5attr(g, "encoding-type"), "csr_matrix")
+  expect_true(all(diff(indptr) == 5))  # CSR rows hold the neighbours
+  expect_true(h[["var"]]$exists("highly_variable"))
+  expect_true(all(c("n_counts", "n_genes") %in% names(h[["obs"]])))
+  h$close_all()
+
+  x <- suppressWarnings(readH5AD(tmp, verbose = FALSE))
+  expect_equal(as.matrix(x[["RNA_nn"]])[rownames(nn), colnames(nn)], nn,
+               ignore_attr = TRUE)
+  expect_setequal(SeuratObject::VariableFeatures(x), SeuratObject::VariableFeatures(o))
+})
+
+test_that("asymmetric graphs keep their orientation in every format", {
+  skip_if_not_installed("hdf5r")
+  skip_if_not_installed("Seurat")
+  skip_if_not_installed("jsonlite")
+  o <- suppressWarnings(SeuratObject::UpdateSeuratObject(SeuratObject::pbmc_small))
+  o <- suppressWarnings(Seurat::FindNeighbors(o, dims = 1:5, k.param = 5, verbose = FALSE))
+  nn <- as.matrix(o[["RNA_nn"]])
+  q <- function(expr) suppressWarnings(suppressMessages(expr))
+  same <- function(x, label) {
+    g <- grep("_nn$", SeuratObject::Graphs(x), value = TRUE)[1]
+    expect_false(is.na(g), info = label)
+    expect_equal(as.matrix(x[[g]])[rownames(nn), colnames(nn)], nn,
+                 ignore_attr = TRUE, info = label)
+  }
+  tf <- function(ext) { f <- tempfile(fileext = ext); withr::defer(unlink(f, recursive = TRUE), envir = parent.frame(2)); f }
+  h5ad_r <- tf(".h5ad"); q(scConvert:::DirectSeuratToH5AD(o, h5ad_r, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5AD(h5ad_r, verbose = FALSE)), "h5ad R writer, C reader")
+  same(q(readH5AD(h5ad_r, verbose = FALSE, use.c = FALSE)), "h5ad R writer, R reader")
+  h5ad_c <- tf(".h5ad"); q(writeH5AD(o, h5ad_c, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5AD(h5ad_c, verbose = FALSE, use.c = FALSE)), "h5ad C writer, R reader")
+  h5mu <- tf(".h5mu"); q(writeH5MU(o, h5mu, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5MU(h5mu, verbose = FALSE)), "h5mu")
+  zarr <- tf(".zarr"); q(writeZarr(o, zarr, overwrite = TRUE, verbose = FALSE))
+  same(q(readZarr(zarr, verbose = FALSE)), "zarr")
+  h5s <- tf(".h5seurat"); q(writeH5Seurat(o, h5s, overwrite = TRUE, verbose = FALSE))
+  conv <- tf(".h5ad"); q(scConvert(h5s, dest = conv, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5AD(conv, verbose = FALSE)), "h5seurat -> h5ad")
+  conv_mu <- tf(".h5mu"); q(scConvert(h5ad_c, dest = conv_mu, overwrite = TRUE, verbose = FALSE))
+  same(q(readH5MU(conv_mu, verbose = FALSE)), "h5ad -> h5mu")
+})

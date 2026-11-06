@@ -8,15 +8,6 @@
 #' @keywords internal
 NULL
 
-#' Check if object is Assay5 (V5 format)
-#'
-#' @param object Object to check
-#' @return Logical indicating if object inherits from Assay5
-#' @keywords internal
-#'
-IsAssay5 <- function(object) {
-  inherits(object, "Assay5")
-}
 
 #' Get assay data with V4/V5 compatibility
 #'

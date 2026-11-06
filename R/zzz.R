@@ -420,23 +420,6 @@ GetMargin <- function(dims, MARGIN = getOption(x = 'scConvert.chunking.MARGIN'))
   return(MARGIN)
 }
 
-#' Get the parent of an HDF5 dataset or group
-#'
-#' @param x An HDF5 dataset or group
-#'
-#' @return An \code{\link[hdf5r]{H5File}} or \code{\link[hdf5r]{H5Group}} object
-#'
-#' @keywords internal
-#'
-GetParent <- function(x) {
-  dname <- dirname(path = x$get_obj_name())
-  dest <- if (dname == '/') {
-    x$get_file_id()
-  } else {
-    x$get_file_id()[[dname]]
-  }
-  return(dest)
-}
 
 #' Guess an HDF5 Datatype
 #'
@@ -837,23 +820,6 @@ WriteAttribute <- function(
   return(invisible(x = NULL))
 }
 
-#' Get the proper HDF5 connection mode for writing depending on overwrite status
-#'
-#' @param overwrite Overwrite a file
-#'
-#' @return \code{w} if \code{overwrite} else \code{w-}
-#'
-#' @keywords internal
-#'
-#' @examples
-#' \donttest{
-#' scConvert:::WriteMode(TRUE)
-#' scConvert:::WriteMode(FALSE)
-#' }
-#'
-WriteMode <- function(overwrite = FALSE) {
-  return(ifelse(test = overwrite, yes = 'w', no = 'w-'))
-}
 
 #' Get compression level for HDF5 dataset creation
 #'
@@ -943,8 +909,15 @@ CachedGuessDType <- function(x, stype = 'utf8') {
       if (isTRUE(cli_ok)) return(dest)
       if (verbose) message("CLI unavailable, using R streaming")
     }
-    r_fallback_fn(source, dest, assay = assay, overwrite = overwrite,
-                  verbose = verbose, ...)
+    # scConvert() forwards options such as `standardize` to every direct
+    # path; pass on only what this converter accepts
+    extra <- list(...)
+    accepted <- names(formals(r_fallback_fn))
+    if (!"..." %in% accepted) extra <- extra[names(extra) %in% accepted]
+    # the streaming converters work on file paths, not open handles
+    if (inherits(source, c('H5File', 'h5Seurat'))) source <- source$filename
+    do.call(r_fallback_fn, c(list(source, dest, assay = assay,
+                                  overwrite = overwrite, verbose = verbose), extra))
   }
 }
 
@@ -966,8 +939,14 @@ CachedGuessDType <- function(x, stype = 'utf8') {
   readH5AD(file = file, assay = assay, verbose = verbose, ...)
 }
 
-.h5ad_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE, ...) {
+.h5ad_saver <- function(object, filename, overwrite = FALSE, verbose = TRUE,
+                        standardize = FALSE, ...) {
   assay_name <- DefaultAssay(object = object)
+  if (isTRUE(standardize)) {
+    # the C writer has no renaming step, so rename up front
+    object@meta.data <- .ScanpyMetaNames(object@meta.data)
+    standardize <- FALSE
+  }
 
   # Detect BPCells on-disk layers to avoid materializing them in RAM
   bpcells_layers <- list()
@@ -1000,14 +979,11 @@ CachedGuessDType <- function(x, stype = 'utf8') {
       )
     }
 
-    # Standard pipeline with placeholders: Seurat -> h5seurat -> h5ad
-    temp <- tempfile(fileext = '.h5Seurat')
-    on.exit(unlink(temp), add = TRUE)
-    writeH5Seurat(object = obj_write, filename = temp, overwrite = TRUE, verbose = FALSE)
-    h5s <- scConnect(filename = temp, force = TRUE)
-    H5SeuratToH5AD(source = h5s, dest = filename, assay = assay_name,
-                    overwrite = overwrite, verbose = verbose, ...)
-    h5s$close_all()
+    # Write everything except the on-disk matrices (placeholders), then
+    # stream those matrices into the file below
+    DirectSeuratToH5AD(object = obj_write, filename = filename,
+                       assay = assay_name, overwrite = overwrite,
+                       verbose = verbose, standardize = standardize)
     rm(obj_write)
 
     gzip <- GetCompressionLevel()
@@ -1113,31 +1089,9 @@ CachedGuessDType <- function(x, stype = 'utf8') {
       }
       if (verbose) message("C h5ad writer failed, falling back to R writer")
     }
-    tryCatch({
-      DirectSeuratToH5AD(object = object, filename = filename,
-                         assay = assay_name, overwrite = overwrite,
-                         verbose = verbose, ...)
-    }, error = function(e) {
-      if (verbose) message("Direct pipeline failed (", e$message, "), falling back to two-pass")
-      if (file.exists(filename)) try(file.remove(filename), silent = TRUE)
-      temp <- tempfile(fileext = '.h5Seurat')
-      on.exit(unlink(temp, force = TRUE), add = TRUE)
-      writeH5Seurat(object = object, filename = temp, overwrite = TRUE, verbose = FALSE)
-      # Use CLI for the h5seurat->h5ad step if available (much faster)
-      if (isTRUE(getOption("scConvert.use_cli"))) {
-        cli_ok <- tryCatch(
-          scConvert_cli(input = temp, output = filename, assay = assay_name,
-                        overwrite = overwrite, verbose = verbose),
-          error = function(e2) FALSE
-        )
-        if (cli_ok) return(invisible(NULL))
-        if (verbose) message("CLI fallback failed, using R-level H5SeuratToH5AD")
-      }
-      h5s <- scConnect(filename = temp, force = TRUE)
-      H5SeuratToH5AD(source = h5s, dest = filename, assay = assay_name,
-                      overwrite = overwrite, verbose = verbose, ...)
-      h5s$close_all()
-    })
+    DirectSeuratToH5AD(object = object, filename = filename,
+                       assay = assay_name, overwrite = overwrite,
+                       verbose = verbose, standardize = standardize)
   }
   invisible(filename)
 }
@@ -1218,8 +1172,8 @@ CachedGuessDType <- function(x, stype = 'utf8') {
     }
     if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
   }
-  H5ADToH5Seurat(source = source, dest = dest, assay = assay,
-                 overwrite = overwrite, verbose = verbose)
+  .hub_from_connection(source, dest, stype = "h5ad", dtype = "h5seurat",
+                       assay = assay, overwrite = overwrite, verbose = verbose)
 }
 
 .h5seurat_to_h5ad_direct <- function(source, dest, assay = 'RNA',
@@ -1243,9 +1197,31 @@ CachedGuessDType <- function(x, stype = 'utf8') {
     }
     if (verbose && !cli_ok) message("CLI unavailable, using R-level conversion")
   }
-  H5SeuratToH5AD(source = source, dest = dest, assay = assay,
-                 overwrite = overwrite, verbose = verbose,
-                 standardize = standardize)
+  .hub_from_connection(source, dest, stype = "h5seurat", dtype = "h5ad",
+                       assay = assay, overwrite = overwrite, verbose = verbose,
+                       standardize = standardize)
+}
+
+# Without the CLI, file-to-file conversion goes through an in-memory Seurat
+# object. `source` may be a path or an open H5File / h5Seurat connection.
+.hub_from_connection <- function(source, dest, stype, dtype, assay = "RNA",
+                                 overwrite = FALSE, verbose = TRUE, ...) {
+  if (file.exists(dest) && !overwrite) {
+    stop("Destination file '", dest, "' already exists; set overwrite = TRUE",
+         call. = FALSE)
+  }
+  obj <- if (inherits(source, "h5Seurat")) {
+    readH5Seurat(file = source, verbose = verbose)
+  } else {
+    path <- if (inherits(source, "H5File")) source$filename else source
+    GetLoader(ext = stype)(file = path, assay = assay, verbose = verbose)
+  }
+  if (stype == "h5seurat" && !is.null(assay) && assay %in% Assays(obj)) {
+    DefaultAssay(obj) <- assay
+  }
+  GetSaver(ext = dtype)(object = obj, filename = dest, overwrite = overwrite,
+                        verbose = verbose, ...)
+  invisible(dest)
 }
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

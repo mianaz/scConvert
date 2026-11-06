@@ -231,35 +231,6 @@ loom <- R6Class(
 # Internal Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#' Check that a dataset is a proper loom matrix
-#'
-#' @param lfile A \code{\link{loom}} or \code{\link[hdf5r]{H5File}} object
-#' @param name Name of matrix to check
-#' @param dims If provided, ensure \code{lfile[[name]]} has these dimensions;
-#' should be a two-dimensional numeric vector with ncells/ncol as the first
-#' value and nfeature/nrow as the second
-#'
-#' @return If all checks pass successfully, invisibly returns \code{name}
-#'
-#' @keywords internal
-#'
-CheckMatrix <- function(lfile, name, dims = NULL) {
-  if (!inherits(x = lfile, what = "H5File")) {
-    stop("Not an HDF5 file", call. = FALSE)
-  }
-  if (!Exists(x = lfile, name = name)) {
-    stop("Cannot find '", name, "' in this file", call. = FALSE)
-  } else if (!inherits(x = lfile[[name]], what = 'H5D') || !IsMatrix(x = lfile[[name]])) {
-    stop("'", name, "' is not a matrix dataset", call. = FALSE)
-  }
-  if (is.numeric(x = dims) && length(x = dims) >= 2) {
-    if (!all(Dims(x = lfile[[name]]) == dims[1:2])) {
-      stop("'", name, "' does not match the provided dimensions", call. = FALSE)
-    }
-  }
-  return(invisible(x = name))
-}
-
 
 #' Write a sized attribute to a loom file
 #'
