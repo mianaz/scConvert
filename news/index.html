@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">scConvert</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.3.0" id="scconvert-030-development">scConvert 0.3.0 (development)<a class="anchor" aria-label="anchor" href="#scconvert-030-development"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.3.0" id="scconvert-030">scConvert 0.3.0<a class="anchor" aria-label="anchor" href="#scconvert-030"></a></h2>
 <div class="section level3">
 <h3 id="license-and-independent-implementation-0-3-0">License and independent implementation<a class="anchor" aria-label="anchor" href="#license-and-independent-implementation-0-3-0"></a></h3>
 <p>scConvert is now released under the MIT license (previously GPL-3). The code inherited from SeuratDisk (h5Seurat/loom connection classes, h5Seurat reader and writer, loom reader and writer, HDF5 helpers and the h5ad &lt;-&gt; h5Seurat converters) has been replaced by a new implementation; unused inherited code (<code>AppendData</code>, <code>PadMatrix</code>, the V4 -&gt; V5 migration helpers and others) was removed. The h5Seurat and loom on-disk layouts are unchanged: files written by earlier versions read back identically, and earlier versions read files written by this one identically. Public functions keep their names and arguments.</p>
@@ -77,7 +77,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="other-changes-0-3-0">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-3-0"></a></h3>
-<ul><li><p><code><a href="../reference/scConvert.html">scConvert()</a></code> between h5Seurat, h5mu and loom files (h5ad -&gt; loom, h5Seurat -&gt; h5mu / loom, h5mu -&gt; h5Seurat / loom) failed with “unused argument”; these now convert.</p></li>
+<ul><li><p>The standalone <code>scconvert</code> binary builds with GCC 14 on glibc: <code>main.c</code> now requests the XSI declaration of <code>realpath()</code>, which was implicitly declared before (a truncated pointer on 64-bit systems). Contributed by btraven00 (<a href="https://github.com/mianaz/scConvert/issues/5" class="external-link">#5</a>).</p></li>
+<li><p><code><a href="../reference/scConvert.html">scConvert()</a></code> between h5Seurat, h5mu and loom files (h5ad -&gt; loom, h5Seurat -&gt; h5mu / loom, h5mu -&gt; h5Seurat / loom) failed with “unused argument”; these now convert.</p></li>
 <li><p>The compiled <code>scconvert</code> binary is opt-in (<code>options(scConvert.use_cli = TRUE)</code>). The previous auto-detection never took effect, and the binary drops feature metadata and spatial images, so the package no longer probes for it or prints a startup message about it.</p></li>
 <li><p><code><a href="../reference/writeLoom.html">writeLoom()</a></code> records the assay name (<code>/attrs/SEURAT_ASSAY</code>), so <code><a href="../reference/readLoom.html">readLoom()</a></code> restores assays other than RNA, and writes Seurat v5 objects with split layers (joined first).</p></li>
 <li><p>h5Seurat keeps missing values in character vectors (stored as <code>""</code> with an <code>na.positions</code> attribute; they used to become the string <code>"NA"</code>).</p></li>
