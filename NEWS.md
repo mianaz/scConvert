@@ -1,4 +1,4 @@
-# scConvert 0.3.0 (development)
+# scConvert 0.3.0
 
 ## License and independent implementation
 
@@ -36,6 +36,11 @@ conversion now loads the data into a Seurat object and writes it out again
   other file-to-file converters take the same `stream` argument.
 
 ## Other changes
+
+- The standalone `scconvert` binary builds with GCC 14 on glibc: `main.c`
+  now requests the XSI declaration of `realpath()`, which was implicitly
+  declared before (a truncated pointer on 64-bit systems). Contributed by
+  btraven00 (#5).
 
 - `scConvert()` between h5Seurat, h5mu and loom files (h5ad -> loom,
   h5Seurat -> h5mu / loom, h5mu -> h5Seurat / loom) failed with "unused
